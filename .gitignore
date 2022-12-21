@@ -39,3 +39,5 @@ temp/
 test/
 
 application-dev.yml
+
+.gradle
