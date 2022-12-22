@@ -16,7 +16,7 @@ import java.util.Collection;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LoginUser implements UserDetails {
-    private MaaUser user;
+    private MaaUser maaUser;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -25,12 +25,12 @@ public class LoginUser implements UserDetails {
 
     @Override
     public String getPassword() {
-        return user.getPassword();
+        return maaUser.getPassword();
     }
 
     @Override
     public String getUsername() {
-        return user.getEmail();
+        return maaUser.getEmail();
     }
 
     @Override
