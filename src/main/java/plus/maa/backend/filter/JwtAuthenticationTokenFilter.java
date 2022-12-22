@@ -47,7 +47,7 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
         }
         //解析token，用密钥验证token是否有效
         String redisKey;
-        if (!JWTUtil.verify(token, secret.getBytes())) {
+        if (JWTUtil.verify(token, secret.getBytes())) {
             JWT jwt = JWTUtil.parseToken(token);
             DateTime now = DateTime.now();
             DateTime notBefore = DateTime.of((Long) jwt.getPayload(RegisteredPayload.NOT_BEFORE));
@@ -68,7 +68,7 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
             throw new RuntimeException("验证失败");
         }
         //存入SecurityContext
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(loginUser, null, loginUser.getAuthorities());
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(loginUser, null, null);
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
         //放行请求
         filterChain.doFilter(request, response);
