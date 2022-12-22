@@ -9,9 +9,6 @@ import lombok.Setter;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -19,6 +16,7 @@ import org.springframework.stereotype.Service;
 import plus.maa.backend.domain.LoginUser;
 import plus.maa.backend.domain.MaaResult;
 import plus.maa.backend.model.MaaUser;
+import plus.maa.backend.repositories.MaaUserRepository;
 import plus.maa.backend.service.UserService;
 import plus.maa.backend.utils.RedisCache;
 import plus.maa.backend.vo.LoginVo;
@@ -38,7 +36,7 @@ import java.util.concurrent.TimeUnit;
 public class UserServiceImpl implements UserService {
     private final AuthenticationManager authenticationManager;
     private final RedisCache redisCache;
-    private final MongoTemplate mongoTemplate;
+    private final MaaUserRepository userRepo;
     @Value("${maa-copilot.jwt.secret}")
     private String secret;
     @Value("${maa-copilot.jwt.expire}")
@@ -75,8 +73,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public MaaResult<MaaUserInfo> findUserInfoById(String id) {
-        Query query = new Query(Criteria.where("_id").is(id));
-        MaaUser user = mongoTemplate.findOne(query, MaaUser.class);
+        MaaUser user = userRepo.findById(id).orElse(null);
         if (!Objects.isNull(user)) {
             MaaUserInfo userInfo = new MaaUserInfo();
             BeanUtils.copyProperties(user, userInfo);
@@ -88,7 +85,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public MaaResult<Void> addUser(MaaUser user) {
         try {
-            mongoTemplate.insert(user);
+            userRepo.save(user);
         } catch (DuplicateKeyException e) {
             return MaaResult.fail(10001, "用户已存在");
         }
