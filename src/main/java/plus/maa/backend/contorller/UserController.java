@@ -12,6 +12,8 @@ import plus.maa.backend.domain.MaaResult;
 import plus.maa.backend.service.LoginService;
 import plus.maa.backend.vo.LoginVo;
 
+import java.util.Map;
+
 /**
  * @author AnselYuki
  */
@@ -25,7 +27,7 @@ public class UserController {
 
     @PostMapping("login")
     @Operation(summary = "登录接口", description = "执行用户登录，登陆成功返回Token")
-    public MaaResult login(@RequestBody LoginVo user) {
+    public MaaResult<Map<String, String>> login(@RequestBody LoginVo user) {
         return loginService.login(user);
     }
 }

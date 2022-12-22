@@ -19,7 +19,7 @@ import java.io.IOException;
 public class AccessDeniedHandlerImpl implements AccessDeniedHandler {
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException {
-        MaaResult result = new MaaResult(HttpStatus.FORBIDDEN.value(), "权限不足");
+        MaaResult<Void> result = MaaResult.fail(HttpStatus.FORBIDDEN.value(), "权限不足");
         String json = new ObjectMapper().writeValueAsString(result);
         WebUtils.renderString(response, json, 403);
     }
