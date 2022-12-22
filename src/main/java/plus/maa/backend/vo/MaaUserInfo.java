@@ -1,12 +1,10 @@
-package plus.maa.backend.model;
+package plus.maa.backend.vo;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
-
-import java.io.Serializable;
 
 /**
  * @author AnselYuki
@@ -16,9 +14,9 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class MaaUser implements Serializable {
+public class MaaUserInfo {
     private String id;
     private String userName;
-    private String email;
-    private String password;
+    private String activated;
+    private String uploadCount;
 }
