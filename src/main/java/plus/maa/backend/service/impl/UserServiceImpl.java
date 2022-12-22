@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 import plus.maa.backend.domain.LoginUser;
 import plus.maa.backend.domain.MaaResult;
 import plus.maa.backend.model.MaaUser;
-import plus.maa.backend.repositories.MaaUserRepository;
+import plus.maa.backend.repository.UserRepository;
 import plus.maa.backend.service.UserService;
 import plus.maa.backend.utils.RedisCache;
 import plus.maa.backend.vo.LoginVo;
@@ -25,6 +25,7 @@ import plus.maa.backend.vo.MaaUserInfo;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -36,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 public class UserServiceImpl implements UserService {
     private final AuthenticationManager authenticationManager;
     private final RedisCache redisCache;
-    private final MaaUserRepository userRepo;
+    private final UserRepository userRepository;
     @Value("${maa-copilot.jwt.secret}")
     private String secret;
     @Value("${maa-copilot.jwt.expire}")
@@ -73,21 +74,21 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public MaaResult<MaaUserInfo> findUserInfoById(String id) {
-        MaaUser user = userRepo.findById(id).orElse(null);
+        MaaUser user = userRepository.findById(id).orElse(null);
         if (!Objects.isNull(user)) {
             MaaUserInfo userInfo = new MaaUserInfo();
-            BeanUtils.copyProperties(user, userInfo);
+            BeanUtils.copyProperties(user.get(), userInfo);
             return MaaResult.success(userInfo);
         }
-        return MaaResult.fail(10002);
+        return MaaResult.fail(10002, "找不到用户");
     }
 
     @Override
     public MaaResult<Void> addUser(MaaUser user) {
         try {
-            userRepo.save(user);
+            userRepository.save(user);
         } catch (DuplicateKeyException e) {
-            return MaaResult.fail(10001, "用户已存在");
+            return MaaResult.fail(10001, "添加用户失败");
         }
         return MaaResult.success(null);
     }
