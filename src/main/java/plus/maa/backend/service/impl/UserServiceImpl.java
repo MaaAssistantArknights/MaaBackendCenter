@@ -15,6 +15,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import plus.maa.backend.domain.LoginUser;
 import plus.maa.backend.domain.MaaResult;
+import plus.maa.backend.domain.MaaResultException;
 import plus.maa.backend.model.MaaUser;
 import plus.maa.backend.repositories.UserRepository;
 import plus.maa.backend.service.UserService;
@@ -50,12 +51,11 @@ public class UserServiceImpl implements UserService {
         try {
             authenticate = authenticationManager.authenticate(authenticationToken);
         } catch (Exception e) {
-            //TODO 这里可以自定义异常
-            return MaaResult.fail(403, "用户名或密码不正确");
+            throw new MaaResultException(403, "用户名或密码不正确");
         }
         //若认证失败，给出相应提示
         if (Objects.isNull(authenticate)) {
-            throw new RuntimeException("登陆失败");
+            throw new MaaResultException("登陆失败");
         }
         //若认证成功，使用UserID生成一个JwtToken,Token存入ResponseResult返回
         LoginUser principal = (LoginUser) authenticate.getPrincipal();
@@ -85,7 +85,7 @@ public class UserServiceImpl implements UserService {
             BeanUtils.copyProperties(user, userInfo);
             return MaaResult.success(userInfo);
         }
-        return MaaResult.fail(10002, "找不到用户");
+        throw new MaaResultException(10002, "找不到用户");
     }
 
     @Override
@@ -93,7 +93,7 @@ public class UserServiceImpl implements UserService {
         try {
             userRepository.save(user);
         } catch (DuplicateKeyException e) {
-            return MaaResult.fail(10001, "添加用户失败");
+            throw new MaaResultException(10001, "添加用户失败");
         }
         return MaaResult.success(null);
     }
