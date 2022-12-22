@@ -21,6 +21,6 @@ public class AccessDeniedHandlerImpl implements AccessDeniedHandler {
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException {
         MaaResult result = new MaaResult(HttpStatus.FORBIDDEN.value(), "权限不足");
         String json = new ObjectMapper().writeValueAsString(result);
-        WebUtils.renderString(response, json, 403);
+        WebUtils.renderString(response, json, HttpStatus.FORBIDDEN.value());
     }
 }

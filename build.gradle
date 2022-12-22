@@ -5,7 +5,7 @@ plugins {
     id "io.freefair.lombok" version "6.6"
 }
 
-group 'cn.anselyuki'
+group 'plus.maa'
 version '1.0-SNAPSHOT'
 
 repositories {
@@ -21,8 +21,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-    implementation 'org.springdoc:springdoc-openapi-ui:1.6.13'
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+    implementation 'org.springdoc:springdoc-openapi-ui:1.6.13'
 
     implementation 'cn.hutool:hutool-jwt:5.8.10'
 }
