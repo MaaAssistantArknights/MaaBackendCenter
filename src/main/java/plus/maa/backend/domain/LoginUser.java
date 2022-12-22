@@ -10,6 +10,7 @@ import plus.maa.backend.model.User;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author AnselYuki
@@ -37,7 +38,7 @@ public class LoginUser implements UserDetails {
         if (null != authorities) {
             return authorities;
         }
-        authorities = permissions.stream().map(SimpleGrantedAuthority::new).toList();
+        authorities = permissions.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
         return authorities;
     }
 
