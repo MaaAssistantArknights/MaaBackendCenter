@@ -25,7 +25,6 @@ import plus.maa.backend.vo.MaaUserInfo;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -77,7 +76,7 @@ public class UserServiceImpl implements UserService {
         MaaUser user = userRepository.findById(id).orElse(null);
         if (!Objects.isNull(user)) {
             MaaUserInfo userInfo = new MaaUserInfo();
-            BeanUtils.copyProperties(user.get(), userInfo);
+            BeanUtils.copyProperties(user, userInfo);
             return MaaResult.success(userInfo);
         }
         return MaaResult.fail(10002, "找不到用户");
