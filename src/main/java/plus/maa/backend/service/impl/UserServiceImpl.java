@@ -74,8 +74,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public MaaResult<MaaUserInfo> findUserInfoById(String id) {
-        Optional<MaaUser> user = userRepository.findById(id);
-        if (user.isPresent()) {
+        MaaUser user = userRepository.findById(id).orElse(null);
+        if (!Objects.isNull(user)) {
             MaaUserInfo userInfo = new MaaUserInfo();
             BeanUtils.copyProperties(user.get(), userInfo);
             return MaaResult.success(userInfo);
@@ -86,7 +86,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public MaaResult<Void> addUser(MaaUser user) {
         try {
-            userRepository.insert(user);
+            userRepository.save(user);
         } catch (DuplicateKeyException e) {
             return MaaResult.fail(10001, "添加用户失败");
         }
