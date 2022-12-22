@@ -7,7 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
-import plus.maa.backend.domain.MaaResult;
+import plus.maa.backend.contorller.response.MaaResult;
 import plus.maa.backend.utils.WebUtils;
 
 import java.io.IOException;

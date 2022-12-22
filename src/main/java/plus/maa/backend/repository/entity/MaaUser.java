@@ -1,4 +1,4 @@
-package plus.maa.backend.model;
+package plus.maa.backend.repository.entity;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;

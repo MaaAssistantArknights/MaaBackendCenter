@@ -1,4 +1,4 @@
-package plus.maa.backend.vo;
+package plus.maa.backend.contorller.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
