@@ -1,12 +1,12 @@
 package plus.maa.backend.domain;
 
-import plus.maa.backend.model.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import plus.maa.backend.model.User;
 
 import java.util.Collection;
 import java.util.List;

@@ -2,14 +2,17 @@ server:
   port: 2333
 
 spring:
+  # 不是本地部署的Redis或者修改端口的记得修改Redis配置
   redis:
     port: 6379
-    host: 192.168.2.233
+    host: localhost
 
-anselyuki:
+maa-copilot:
   jwt:
     header: Authorization
-    expire: 21600 #过期时间，以秒为单位
+    # 默认的JwtToken过期时间，以秒为单位
+    expire: 21600
+    # JwtToken的加密密钥
     secret: $I_Am_The_Bone_Of_My_Sword!Steel_Is_My_Body_And_Fire_Is_My_Blood!$
 
 springdoc:

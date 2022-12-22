@@ -1,8 +1,5 @@
 package plus.maa.backend.config;
 
-import plus.maa.backend.filter.JwtAuthenticationTokenFilter;
-import plus.maa.backend.handler.AccessDeniedHandlerImpl;
-import plus.maa.backend.handler.AuthenticationEntryPointImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -13,13 +10,23 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import plus.maa.backend.filter.JwtAuthenticationTokenFilter;
+import plus.maa.backend.handler.AccessDeniedHandlerImpl;
+import plus.maa.backend.handler.AuthenticationEntryPointImpl;
 
 /**
  * @author AnselYuki
  */
 @SpringBootConfiguration
 public class SecurityConfig {
-    private static final String[] URL_WHITELIST = {"/user/login", "/user/logout", "/swagger-ui/**", "/v3/api-docs/**"};
+    /**
+     * 添加放行接口在此处
+     */
+    private static final String[] URL_WHITELIST = {"/user/login",
+            "/user/logout",
+            "/swagger-ui/**",
+            "/v3/api-docs/**",
+    };
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter;
     private final AuthenticationEntryPointImpl authenticationEntryPoint;
@@ -50,7 +57,7 @@ public class SecurityConfig {
                 //不通过Session获取SecurityContext
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 
-        //允许匿名访问的接口
+        //允许匿名访问的接口，如果是测试想要方便点就把这段全注释掉
         http.authorizeRequests()
                 .antMatchers(URL_WHITELIST).anonymous()
                 //拦截其余接口

@@ -1,7 +1,5 @@
 package plus.maa.backend.filter;
 
-import plus.maa.backend.domain.LoginUser;
-import plus.maa.backend.utils.RedisCache;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTUtil;
@@ -15,6 +13,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import plus.maa.backend.domain.LoginUser;
+import plus.maa.backend.utils.RedisCache;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -31,9 +31,9 @@ import java.util.Objects;
 @Component
 public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
     private final RedisCache redisCache;
-    @Value("${anselyuki.jwt.header}")
+    @Value("${maa-copilot.jwt.header}")
     private String header;
-    @Value("${anselyuki.jwt.secret}")
+    @Value("${maa-copilot.jwt.secret}")
     private String secret;
 
     @Autowired
@@ -41,7 +41,6 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
         this.redisCache = redisCache;
     }
 
-    @SuppressWarnings("NullableProblems")
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String token = request.getHeader(header);

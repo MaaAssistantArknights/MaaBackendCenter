@@ -1,6 +1,5 @@
 package plus.maa.backend.utils;
 
-import plus.maa.backend.domain.LoginUser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,6 +7,7 @@ import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
+import plus.maa.backend.domain.LoginUser;
 
 import java.util.concurrent.TimeUnit;
 
@@ -49,9 +49,5 @@ public class RedisCache {
             return null;
         }
         return loginUser;
-    }
-
-    public void deleteLoginUser(String key) {
-        redisTemplate.delete(key);
     }
 }

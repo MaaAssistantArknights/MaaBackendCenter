@@ -5,8 +5,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
-import java.io.Serializable;
-
 /**
  * @author AnselYuki
  */
@@ -14,7 +12,7 @@ import java.io.Serializable;
 @Accessors(chain = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoginVo implements Serializable {
-    private String username;
+public class LoginVo {
+    private String email;
     private String password;
 }
