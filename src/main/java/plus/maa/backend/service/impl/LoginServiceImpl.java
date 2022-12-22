@@ -37,7 +37,7 @@ public class LoginServiceImpl implements LoginService {
     private int expire;
 
     @Override
-    public MaaResult login(LoginVo user) {
+    public MaaResult<Map<String, String>> login(LoginVo user) {
         //使用 AuthenticationManager 中的 authenticate 进行用户认证
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(user.getEmail(), user.getPassword());
         Authentication authenticate = authenticationManager.authenticate(authenticationToken);
@@ -62,6 +62,6 @@ public class LoginServiceImpl implements LoginService {
         String token = JWTUtil.createToken(payload, secret.getBytes());
         //把完整的用户信息存入Redis，UserID作为Key
         redisCache.setCacheLoginUser("LOGIN:" + userId, principal, expire, TimeUnit.SECONDS);
-        return new MaaResult(200, "登录成功", Map.of("token", token));
+        return MaaResult.success("登录成功", Map.of("token", token));
     }
 }
