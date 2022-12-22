@@ -39,6 +39,7 @@ temp/
 test/
 
 application-dev.yml
+application-prod.yml
 
 # build systems
 .gradle
