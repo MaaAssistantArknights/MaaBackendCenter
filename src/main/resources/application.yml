@@ -7,3 +7,11 @@ spring:
 server:
   # 8848钛金接口.jpg
   port: 8848
+
+logging:
+  file:
+    name: ./logs/latest.log
+  logback:
+    rollingpolicy:
+      max-history: 14
+      clean-history-on-start: true
