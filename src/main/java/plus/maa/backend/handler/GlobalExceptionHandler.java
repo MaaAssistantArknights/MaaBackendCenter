@@ -5,8 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
-import plus.maa.backend.domain.MaaResult;
-import plus.maa.backend.domain.MaaResultException;
+import plus.maa.backend.contorller.response.MaaResult;
+import plus.maa.backend.contorller.response.MaaResultException;
 
 @Slf4j
 @ControllerAdvice

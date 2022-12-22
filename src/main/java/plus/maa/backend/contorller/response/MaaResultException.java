@@ -1,4 +1,4 @@
-package plus.maa.backend.domain;
+package plus.maa.backend.contorller.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
