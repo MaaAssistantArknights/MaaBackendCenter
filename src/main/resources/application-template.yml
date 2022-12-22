@@ -1,8 +1,9 @@
 spring:
   # 不是本地部署的Redis或者修改端口的记得修改Redis配置
-  redis:
-    port: 6379
-    host: localhost
+  data:
+    redis:
+      port: 6379
+      host: localhost
 
 maa-copilot:
   jwt:
