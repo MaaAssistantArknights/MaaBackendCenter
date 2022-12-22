@@ -1,6 +1,3 @@
-server:
-  port: 2333
-
 spring:
   # 不是本地部署的Redis或者修改端口的记得修改Redis配置
   redis:

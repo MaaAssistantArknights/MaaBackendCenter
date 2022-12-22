@@ -1,3 +1,7 @@
 spring:
   profiles:
     active: dev
+
+server:
+  # 8848钛金接口.jpg
+  port: 8848

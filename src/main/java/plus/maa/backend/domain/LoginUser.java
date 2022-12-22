@@ -1,44 +1,26 @@
 package plus.maa.backend.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import plus.maa.backend.model.User;
+import plus.maa.backend.model.MaaUser;
 
 import java.util.Collection;
-import java.util.List;
 
 /**
  * @author AnselYuki
  */
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 public class LoginUser implements UserDetails {
-    private User user;
-    private List<String> permissions;
-    @JsonIgnore
-    private List<SimpleGrantedAuthority> authorities;
+    private MaaUser user;
 
-    public LoginUser(User user, List<String> permissions) {
-        this.user = user;
-        this.permissions = permissions;
-    }
-
-    /**
-     * 返回权限信息
-     *
-     * @return 权限集合
-     */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        if (null != authorities) {
-            return authorities;
-        }
-        authorities = permissions.stream().map(SimpleGrantedAuthority::new).toList();
-        return authorities;
+        return null;
     }
 
     @Override
@@ -48,7 +30,7 @@ public class LoginUser implements UserDetails {
 
     @Override
     public String getUsername() {
-        return user.getUserName();
+        return user.getEmail();
     }
 
     @Override
@@ -58,7 +40,7 @@ public class LoginUser implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return "0".equals(user.getStatus());
+        return true;
     }
 
     @Override
@@ -68,6 +50,6 @@ public class LoginUser implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return user.getDelFlag() == 0;
+        return true;
     }
 }

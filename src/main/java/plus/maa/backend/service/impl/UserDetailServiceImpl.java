@@ -24,6 +24,6 @@ public class UserDetailServiceImpl implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         //TODO 查询用户信息
         //数据封装成UserDetails返回
-        return new LoginUser(null, null);
+        return new LoginUser();
     }
 }
