@@ -5,7 +5,7 @@
 ## 开发技术栈
 
 - Java 17
-- SpringBoot 2.7.6
+- SpringBoot 3.0.0
     - spring-security
     - springdoc-openapi
 - MongoDB
