@@ -1,3 +1,0 @@
-# MaaBackendCenter
-
-MAA Backends
