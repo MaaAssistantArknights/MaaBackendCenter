@@ -9,9 +9,6 @@ import lombok.Setter;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -19,6 +16,7 @@ import org.springframework.stereotype.Service;
 import plus.maa.backend.domain.LoginUser;
 import plus.maa.backend.domain.MaaResult;
 import plus.maa.backend.model.MaaUser;
+import plus.maa.backend.repository.UserRepository;
 import plus.maa.backend.service.UserService;
 import plus.maa.backend.utils.RedisCache;
 import plus.maa.backend.vo.LoginVo;
@@ -27,6 +25,7 @@ import plus.maa.backend.vo.MaaUserInfo;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -38,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 public class UserServiceImpl implements UserService {
     private final AuthenticationManager authenticationManager;
     private final RedisCache redisCache;
-    private final MongoTemplate mongoTemplate;
+    private final UserRepository userRepository;
     @Value("${maa-copilot.jwt.secret}")
     private String secret;
     @Value("${maa-copilot.jwt.expire}")
@@ -75,22 +74,21 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public MaaResult<MaaUserInfo> findUserInfoById(String id) {
-        Query query = new Query(Criteria.where("_id").is(id));
-        MaaUser user = mongoTemplate.findOne(query, MaaUser.class);
-        if (!Objects.isNull(user)) {
+        Optional<MaaUser> user = userRepository.findById(id);
+        if (user.isPresent()) {
             MaaUserInfo userInfo = new MaaUserInfo();
-            BeanUtils.copyProperties(user, userInfo);
+            BeanUtils.copyProperties(user.get(), userInfo);
             return MaaResult.success(userInfo);
         }
-        return MaaResult.fail(10002);
+        return MaaResult.fail(10002, "找不到用户");
     }
 
     @Override
     public MaaResult<Void> addUser(MaaUser user) {
         try {
-            mongoTemplate.insert(user);
+            userRepository.insert(user);
         } catch (DuplicateKeyException e) {
-            return MaaResult.fail(10001, "用户已存在");
+            return MaaResult.fail(10001, "添加用户失败");
         }
         return MaaResult.success(null);
     }
