@@ -14,16 +14,16 @@ import org.springframework.context.annotation.Bean;
 public class SpringDocConfig {
     @Bean
     public OpenAPI emergencyLogistics() {
-        return new OpenAPI().info(docInfos()).externalDocs(new ExternalDocumentation().description("AnselYuki 的博客园").url("https://www.anselyuki.cn"));
+        return new OpenAPI().info(docInfos()).externalDocs(new ExternalDocumentation().description("GitHub repo").url("https://github.com/MaaAssistantArknights/MaaBackendCenter"));
     }
 
     private Info docInfos() {
-        final String systemDescription = "无状态登录认证实验API";
+        final String systemDescription = "MAA Copilot Backend Center";
         Info info = new Info();
-        info.title("Spring Security Test API");
+        info.title("MAA Copilot Center API");
         info.description(systemDescription);
         info.version("v1.0.0");
-        info.license(new License().name("本项目采用 MIT License").url("https://mit-license.org/"));
+        info.license(new License().name("GNU Affero General Public License v3.0").url("https://www.gnu.org/licenses/agpl-3.0.html"));
         return info;
     }
 }

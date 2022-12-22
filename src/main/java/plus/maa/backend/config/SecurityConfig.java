@@ -25,8 +25,11 @@ public class SecurityConfig {
      */
     private static final String[] URL_WHITELIST = {"/user/login",
             "/user/logout",
+            "/swagger-ui.html",
             "/swagger-ui/**",
             "/v3/api-docs/**",
+            "/test/**",
+            "/"
     };
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter;
@@ -51,10 +54,14 @@ public class SecurityConfig {
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 
         //允许匿名访问的接口，如果是测试想要方便点就把这段全注释掉
-        http.authorizeRequests()
-                .antMatchers(URL_WHITELIST).anonymous()
-                //拦截其余接口
-                .anyRequest().authenticated();
+        http.authorizeHttpRequests(authorize -> {
+            try {
+                authorize.requestMatchers(URL_WHITELIST).anonymous()
+                        .anyRequest().authenticated();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
 
         //添加过滤器
         http.addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class);

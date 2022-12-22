@@ -6,16 +6,23 @@ import cn.hutool.jwt.JWTPayload;
 import cn.hutool.jwt.JWTUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import plus.maa.backend.domain.LoginUser;
 import plus.maa.backend.domain.MaaResult;
-import plus.maa.backend.service.LoginService;
+import plus.maa.backend.model.MaaUser;
+import plus.maa.backend.service.UserService;
 import plus.maa.backend.utils.RedisCache;
 import plus.maa.backend.vo.LoginVo;
+import plus.maa.backend.vo.MaaUserInfo;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,16 +35,17 @@ import java.util.concurrent.TimeUnit;
 @Setter
 @Service
 @RequiredArgsConstructor
-public class LoginServiceImpl implements LoginService {
+public class UserServiceImpl implements UserService {
     private final AuthenticationManager authenticationManager;
     private final RedisCache redisCache;
+    private final MongoTemplate mongoTemplate;
     @Value("${maa-copilot.jwt.secret}")
     private String secret;
     @Value("${maa-copilot.jwt.expire}")
     private int expire;
 
     @Override
-    public MaaResult login(LoginVo user) {
+    public MaaResult<Map<String, String>> login(LoginVo user) {
         //使用 AuthenticationManager 中的 authenticate 进行用户认证
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(user.getEmail(), user.getPassword());
         Authentication authenticate = authenticationManager.authenticate(authenticationToken);
@@ -62,6 +70,28 @@ public class LoginServiceImpl implements LoginService {
         String token = JWTUtil.createToken(payload, secret.getBytes());
         //把完整的用户信息存入Redis，UserID作为Key
         redisCache.setCacheLoginUser("LOGIN:" + userId, principal, expire, TimeUnit.SECONDS);
-        return new MaaResult(200, "登录成功", Map.of("token", token));
+        return MaaResult.success("登录成功", Map.of("token", token));
+    }
+
+    @Override
+    public MaaResult<MaaUserInfo> findUserInfoById(String id) {
+        Query query = new Query(Criteria.where("_id").is(id));
+        MaaUser user = mongoTemplate.findOne(query, MaaUser.class);
+        if (!Objects.isNull(user)) {
+            MaaUserInfo userInfo = new MaaUserInfo();
+            BeanUtils.copyProperties(user, userInfo);
+            return MaaResult.success(userInfo);
+        }
+        return MaaResult.fail(10002);
+    }
+
+    @Override
+    public MaaResult<Void> addUser(MaaUser user) {
+        try {
+            mongoTemplate.insert(user);
+        } catch (DuplicateKeyException e) {
+            return MaaResult.fail(10001, "用户已存在");
+        }
+        return MaaResult.success(null);
     }
 }

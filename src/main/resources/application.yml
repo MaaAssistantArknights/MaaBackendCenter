@@ -1,3 +1,9 @@
 spring:
   profiles:
     active: dev
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+
+server:
+  # 8848钛金接口.jpg
+  port: 8848
