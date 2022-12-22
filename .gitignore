@@ -40,4 +40,6 @@ test/
 
 application-dev.yml
 
+# build systems
 .gradle
+gradle/
