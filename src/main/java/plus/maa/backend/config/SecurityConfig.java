@@ -1,6 +1,6 @@
 package plus.maa.backend.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -18,6 +18,7 @@ import plus.maa.backend.handler.AuthenticationEntryPointImpl;
  * @author AnselYuki
  */
 @SpringBootConfiguration
+@RequiredArgsConstructor
 public class SecurityConfig {
     /**
      * 添加放行接口在此处
@@ -31,14 +32,6 @@ public class SecurityConfig {
     private final JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter;
     private final AuthenticationEntryPointImpl authenticationEntryPoint;
     private final AccessDeniedHandlerImpl accessDeniedHandler;
-
-    @Autowired
-    public SecurityConfig(AuthenticationConfiguration authenticationConfiguration, JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter, AuthenticationEntryPointImpl authenticationEntryPoint, AccessDeniedHandlerImpl accessDeniedHandler) {
-        this.authenticationConfiguration = authenticationConfiguration;
-        this.jwtAuthenticationTokenFilter = jwtAuthenticationTokenFilter;
-        this.authenticationEntryPoint = authenticationEntryPoint;
-        this.accessDeniedHandler = accessDeniedHandler;
-    }
 
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {

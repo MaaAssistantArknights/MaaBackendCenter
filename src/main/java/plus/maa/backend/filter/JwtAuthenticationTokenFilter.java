@@ -4,9 +4,9 @@ import cn.hutool.core.date.DateTime;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTUtil;
 import cn.hutool.jwt.RegisteredPayload;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,17 +29,13 @@ import java.util.Objects;
 @Slf4j
 @Setter
 @Component
+@RequiredArgsConstructor
 public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
     private final RedisCache redisCache;
     @Value("${maa-copilot.jwt.header}")
     private String header;
     @Value("${maa-copilot.jwt.secret}")
     private String secret;
-
-    @Autowired
-    public JwtAuthenticationTokenFilter(RedisCache redisCache) {
-        this.redisCache = redisCache;
-    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {

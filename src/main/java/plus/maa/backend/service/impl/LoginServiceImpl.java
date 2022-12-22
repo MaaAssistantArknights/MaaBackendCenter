@@ -4,8 +4,8 @@ import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.jwt.JWTPayload;
 import cn.hutool.jwt.JWTUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Setter
 @Service
+@RequiredArgsConstructor
 public class LoginServiceImpl implements LoginService {
     private final AuthenticationManager authenticationManager;
     private final RedisCache redisCache;
@@ -34,12 +35,6 @@ public class LoginServiceImpl implements LoginService {
     private String secret;
     @Value("${maa-copilot.jwt.expire}")
     private int expire;
-
-    @Autowired
-    public LoginServiceImpl(AuthenticationManager authenticationManager, RedisCache redisCache) {
-        this.authenticationManager = authenticationManager;
-        this.redisCache = redisCache;
-    }
 
     @Override
     public MaaResult login(LoginVo user) {

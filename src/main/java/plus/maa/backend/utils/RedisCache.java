@@ -3,8 +3,8 @@ package plus.maa.backend.utils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import plus.maa.backend.domain.LoginUser;
@@ -18,13 +18,9 @@ import java.util.concurrent.TimeUnit;
  */
 @Setter
 @Component
+@RequiredArgsConstructor
 public class RedisCache {
     private final StringRedisTemplate redisTemplate;
-
-    @Autowired
-    public RedisCache(StringRedisTemplate redisTemplate) {
-        this.redisTemplate = redisTemplate;
-    }
 
     public void setCacheLoginUser(final String key, LoginUser value, long timeout, TimeUnit timeUnit) {
         String str;
