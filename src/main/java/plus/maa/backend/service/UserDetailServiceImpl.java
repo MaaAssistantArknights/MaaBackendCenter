@@ -1,4 +1,4 @@
-package plus.maa.backend.service.impl;
+package plus.maa.backend.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -6,9 +6,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import plus.maa.backend.domain.LoginUser;
-import plus.maa.backend.model.MaaUser;
-import plus.maa.backend.repositories.UserRepository;
+import plus.maa.backend.repository.entity.MaaUser;
+import plus.maa.backend.service.model.LoginUser;
+import plus.maa.backend.repository.UserRepository;
 
 import java.util.Objects;
 

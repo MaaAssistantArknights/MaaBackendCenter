@@ -1,8 +1,8 @@
-package plus.maa.backend.repositories;
+package plus.maa.backend.repository;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
-import plus.maa.backend.model.MaaUser;
+import plus.maa.backend.repository.entity.MaaUser;
 
 /**
  * @author AnselYuki

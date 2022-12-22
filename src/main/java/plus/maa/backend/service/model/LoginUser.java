@@ -1,11 +1,11 @@
-package plus.maa.backend.domain;
+package plus.maa.backend.service.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import plus.maa.backend.model.MaaUser;
+import plus.maa.backend.repository.entity.MaaUser;
 
 import java.util.Collection;
 

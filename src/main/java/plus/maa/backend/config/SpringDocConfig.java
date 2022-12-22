@@ -14,16 +14,20 @@ import org.springframework.context.annotation.Bean;
 public class SpringDocConfig {
     @Bean
     public OpenAPI emergencyLogistics() {
-        return new OpenAPI().info(docInfos()).externalDocs(new ExternalDocumentation().description("GitHub repo").url("https://github.com/MaaAssistantArknights/MaaBackendCenter"));
+        return new OpenAPI()
+                .info(docInfos())
+                .externalDocs(new ExternalDocumentation()
+                        .description("GitHub repo")
+                        .url("https://github.com/MaaAssistantArknights/MaaBackendCenter"));
     }
 
     private Info docInfos() {
-        final String systemDescription = "MAA Copilot Backend Center";
-        Info info = new Info();
-        info.title("MAA Copilot Center API");
-        info.description(systemDescription);
-        info.version("v1.0.0");
-        info.license(new License().name("GNU Affero General Public License v3.0").url("https://www.gnu.org/licenses/agpl-3.0.html"));
-        return info;
+        return new Info()
+                .title("MAA Copilot Center API")
+                .description("MAA Copilot Backend Center")
+                .version("v1.0.0")
+                .license(new License()
+                        .name("GNU Affero General Public License v3.0")
+                        .url("https://www.gnu.org/licenses/agpl-3.0.html"));
     }
 }

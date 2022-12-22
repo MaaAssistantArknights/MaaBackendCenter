@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import plus.maa.backend.domain.MaaResult;
+import plus.maa.backend.contorller.response.MaaResult;
 
 /**
  * @author AnselYuki

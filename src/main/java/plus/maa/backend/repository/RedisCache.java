@@ -1,4 +1,4 @@
-package plus.maa.backend.utils;
+package plus.maa.backend.repository;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
-import plus.maa.backend.domain.LoginUser;
+import plus.maa.backend.service.model.LoginUser;
 
 import java.util.concurrent.TimeUnit;
 

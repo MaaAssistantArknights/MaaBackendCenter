@@ -17,8 +17,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
-import plus.maa.backend.domain.LoginUser;
-import plus.maa.backend.utils.RedisCache;
+import plus.maa.backend.service.model.LoginUser;
+import plus.maa.backend.repository.RedisCache;
 
 import java.io.IOException;
 import java.util.Objects;
