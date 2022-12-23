@@ -12,14 +12,15 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import plus.maa.backend.contorller.request.LoginRequest;
-import plus.maa.backend.repository.UserRepository;
-import plus.maa.backend.service.model.LoginUser;
 import plus.maa.backend.contorller.response.MaaResult;
-import plus.maa.backend.repository.entity.MaaUser;
-import plus.maa.backend.repository.RedisCache;
 import plus.maa.backend.contorller.response.MaaUserInfo;
+import plus.maa.backend.repository.RedisCache;
+import plus.maa.backend.repository.UserRepository;
+import plus.maa.backend.repository.entity.MaaUser;
+import plus.maa.backend.service.model.LoginUser;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -86,6 +87,9 @@ public class UserService {
     }
 
     public MaaResult<Void> addUser(MaaUser user) {
+        String rawPassword = user.getPassword();
+        String encode = new BCryptPasswordEncoder().encode(rawPassword);
+        user.setPassword(encode);
         try {
             userRepository.save(user);
         } catch (DuplicateKeyException e) {
