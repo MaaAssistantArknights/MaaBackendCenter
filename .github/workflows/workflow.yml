@@ -35,6 +35,8 @@ jobs:
         uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1
         with:
           arguments: build
+      - name: name to lower
+        run: echo IMAGE_NAME_LOWER=$(echo ${{env.IMAGE_NAME}} | tr '[:upper:]' '[:lower:]') >> $GITHUB_ENV
       - name: Build the Docker image
         run: docker build --file Dockerfile --tag ${{env.IMAGE_NAME}}:${{env.TAG_SHA}} --tag ${{env.IMAGE_NAME}}:${{env.TAG_LATEST}} ./docker
       - name: echo
