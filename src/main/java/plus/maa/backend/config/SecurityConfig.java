@@ -30,6 +30,7 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/test/**",
+            "/version",
             "/"
     };
     private final AuthenticationConfiguration authenticationConfiguration;

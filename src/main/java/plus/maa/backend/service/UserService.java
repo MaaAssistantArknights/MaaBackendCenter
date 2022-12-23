@@ -58,7 +58,7 @@ public class UserService {
         }
         //若认证成功，使用UserID生成一个JwtToken,Token存入ResponseResult返回
         LoginUser principal = (LoginUser) authenticate.getPrincipal();
-        String userId = String.valueOf(principal.getMaaUser().getId());
+        String userId = String.valueOf(principal.getMaaUser().getUserId());
         DateTime now = DateTime.now();
         DateTime newTime = now.offsetNew(DateField.SECOND, expire);
         //签发JwtToken，从上到下为设置签发时间，过期时间与生效时间

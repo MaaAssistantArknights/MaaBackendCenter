@@ -22,7 +22,7 @@ import java.io.Serializable;
 @Document("maa_user")
 public class MaaUser implements Serializable {
     @Id
-    private String id;
+    private String userId;
     private String userName;
     @Indexed(unique = true)
     private String email;
