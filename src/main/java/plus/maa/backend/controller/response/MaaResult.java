@@ -1,4 +1,4 @@
-package plus.maa.backend.contorller.response;
+package plus.maa.backend.controller.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
