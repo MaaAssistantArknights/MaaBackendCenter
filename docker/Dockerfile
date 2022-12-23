@@ -1,4 +1,4 @@
-FROM 18-jdk-oraclelinux8
+FROM openjdk:18-jdk-oraclelinux8
 
 ENV JVM_OPT -Xms250m -Xmx250m
 
