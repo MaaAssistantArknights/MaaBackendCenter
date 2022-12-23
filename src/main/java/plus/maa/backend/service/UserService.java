@@ -86,7 +86,7 @@ public class UserService {
         throw new MaaResultException(10002, "找不到用户");
     }
 
-    public MaaResult<Void> addUser(MaaUser user) {
+    public MaaResult<MaaUserInfo> addUser(MaaUser user) {
         String rawPassword = user.getPassword();
         String encode = new BCryptPasswordEncoder().encode(rawPassword);
         user.setPassword(encode);
