@@ -13,7 +13,7 @@ on:
 env:
   # Use docker.io for Docker Hub if empty
   REGISTRY: ''
-  IMAGE_NAME: maa_backend_center
+  IMAGE_NAME: lintxz/maa_backend_center
   TAG_SHA: ${{ github.sha }}
   TAG_LATEST: latest
 
