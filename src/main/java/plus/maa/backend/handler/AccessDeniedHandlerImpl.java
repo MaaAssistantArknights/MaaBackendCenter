@@ -8,7 +8,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
 import plus.maa.backend.controller.response.MaaResult;
-import plus.maa.backend.utils.WebUtils;
+import plus.maa.backend.common.utils.WebUtils;
 
 import java.io.IOException;
 

@@ -8,7 +8,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 import plus.maa.backend.controller.response.MaaResult;
-import plus.maa.backend.utils.WebUtils;
+import plus.maa.backend.common.utils.WebUtils;
 
 import java.io.IOException;
 

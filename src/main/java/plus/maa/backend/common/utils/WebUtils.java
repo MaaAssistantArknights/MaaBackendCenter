@@ -1,4 +1,4 @@
-package plus.maa.backend.utils;
+package plus.maa.backend.common.utils;
 
 import jakarta.servlet.http.HttpServletResponse;
 
