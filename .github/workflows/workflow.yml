@@ -35,10 +35,10 @@ jobs:
         uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1
         with:
           arguments: build
-      - name: Build the Docker image
-        run: docker build --file ./docker/Dockerfile --tag ${{env.IMAGE_NAME}}:v${{env.TAG_SHA}} --tag ${{env.IMAGE_NAME}}:${{env.TAG_LATEST}} .
-      - name: echo
-        run: echo $GITHUB_REF_NAME
+#      - name: Build the Docker image
+#        run: docker build --file ./docker/Dockerfile --tag ${{env.IMAGE_NAME}}:v${{env.TAG_SHA}} --tag ${{env.IMAGE_NAME}}:${{env.TAG_LATEST}} .
+#      - name: echo
+#        run: echo $GITHUB_REF_NAME
 
       # 登录
       - name: Log into registry ${{ env.REGISTRY }}
@@ -50,23 +50,22 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       # Extract metadata (tags, labels) for Docker
       # https://github.com/docker/metadata-action
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: ${{ env.IMAGE_NAME }}
-          tags: |
-            # set latest tag for default branch
-            type=raw,value=latest,enable={{is_default_branch}}
-            # tag event
-            type=ref,enable=true,priority=600,prefix=,suffix=,event=tag
+#      - name: Extract Docker metadata
+#        id: meta
+#        uses: docker/metadata-action@v4
+#        with:
+#          images: ${{ env.IMAGE_NAME }}
+#          tags: |
+#            # set latest tag for default branch
+#            type=raw,value=latest,enable={{is_default_branch}}
+#            # tag event
+#            type=ref,enable=true,priority=600,prefix=,suffix=,event=tag
       # 推送
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:
           context: .
-          build-args:
-            - "--file=./docker/Dockerfile"
+          file: ./docker/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{env.IMAGE_NAME}}:v${{env.TAG_SHA}},${{env.IMAGE_NAME}}:${{env.TAG_LATEST}}
 #          labels: ${{ steps.meta.outputs.labels }}
