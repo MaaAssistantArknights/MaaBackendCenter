@@ -36,7 +36,7 @@ jobs:
         with:
           arguments: build
       - name: Build the Docker image
-        run: docker build --file ./docker/Dockerfile --tag ${{env.IMAGE_NAME}}:${{env.TAG_SHA}} --tag ${{env.IMAGE_NAME}}:${{env.TAG_LATEST}} ./docker
+        run: docker build --file ./docker/Dockerfile --tag ${{env.IMAGE_NAME}}:${{env.TAG_SHA}} --tag ${{env.IMAGE_NAME}}:${{env.TAG_LATEST}} .
       - name: echo
         run: echo $GITHUB_REF_NAME
 
