@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: dev
+    active: template
   jackson:
     property-naming-strategy: SNAKE_CASE
 
