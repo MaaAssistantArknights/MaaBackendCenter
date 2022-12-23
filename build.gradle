@@ -12,7 +12,6 @@ repositories {
     maven {
         url 'https://maven.aliyun.com/repository/public/'
     }
-    mavenLocal()
     mavenCentral()
 }
 
@@ -22,6 +21,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+    //springdoc相关依赖没有被自动管理，必须保留版本号
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.0.2'
 
     implementation 'cn.hutool:hutool-jwt:5.8.10'

@@ -1,4 +1,4 @@
-package plus.maa.backend.model;
+package plus.maa.backend.repository.entity;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
@@ -23,6 +24,7 @@ public class MaaUser implements Serializable {
     @Id
     private String id;
     private String userName;
+    @Indexed(unique = true)
     private String email;
     private String password;
 }

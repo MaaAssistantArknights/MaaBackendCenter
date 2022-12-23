@@ -1,11 +1,11 @@
-package plus.maa.backend.domain;
+package plus.maa.backend.service.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import plus.maa.backend.model.MaaUser;
+import plus.maa.backend.repository.entity.MaaUser;
 
 import java.util.Collection;
 
@@ -16,7 +16,7 @@ import java.util.Collection;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LoginUser implements UserDetails {
-    private MaaUser user;
+    private MaaUser maaUser;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -25,12 +25,12 @@ public class LoginUser implements UserDetails {
 
     @Override
     public String getPassword() {
-        return user.getPassword();
+        return maaUser.getPassword();
     }
 
     @Override
     public String getUsername() {
-        return user.getEmail();
+        return maaUser.getEmail();
     }
 
     @Override

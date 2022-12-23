@@ -23,8 +23,9 @@ public class SecurityConfig {
     /**
      * 添加放行接口在此处
      */
-    private static final String[] URL_WHITELIST = {"/user/login",
-            "/user/logout",
+    private static final String[] URL_WHITELIST = {
+            "/user/login",
+            "/user/create",
             "/swagger-ui.html",
             "/swagger-ui/**",
             "/v3/api-docs/**",

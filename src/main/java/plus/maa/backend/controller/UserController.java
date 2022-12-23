@@ -1,15 +1,16 @@
-package plus.maa.backend.contorller;
+package plus.maa.backend.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import plus.maa.backend.domain.MaaResult;
-import plus.maa.backend.model.MaaUser;
+import plus.maa.backend.controller.request.LoginRequest;
+import plus.maa.backend.controller.response.MaaResult;
+import plus.maa.backend.controller.response.MaaUserInfo;
+import plus.maa.backend.repository.entity.MaaUser;
 import plus.maa.backend.service.UserService;
-import plus.maa.backend.vo.LoginVo;
-import plus.maa.backend.vo.MaaUserInfo;
 
 import java.util.Map;
 
@@ -26,7 +27,7 @@ public class UserController {
 
     @PostMapping("login")
     @Operation(summary = "登录接口", description = "执行用户登录，登陆成功返回Token")
-    public MaaResult<Map<String, String>> login(@RequestBody LoginVo user) {
+    public MaaResult<Map<String, String>> login(@RequestBody @Valid LoginRequest user) {
         return userService.login(user);
     }
 
@@ -36,7 +37,7 @@ public class UserController {
     }
 
     @PostMapping("create")
-    public MaaResult<Void> createUser(@RequestBody MaaUser user) {
+    public MaaResult<MaaUserInfo> createUser(@RequestBody MaaUser user) {
         return userService.addUser(user);
     }
 }
