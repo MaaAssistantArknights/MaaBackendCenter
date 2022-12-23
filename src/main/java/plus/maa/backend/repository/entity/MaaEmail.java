@@ -17,6 +17,7 @@ import java.io.File;
 @NoArgsConstructor
 @AllArgsConstructor
 
+//这是一条临时的邮件实体类 没有配置批量发送邮件 仅供测试 白天改
 public class MaaEmail {
     //接收邮箱
     private String toEmail;
