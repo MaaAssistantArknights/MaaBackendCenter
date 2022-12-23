@@ -1,4 +1,4 @@
-package plus.maa.backend.contorller.request;
+package plus.maa.backend.controller.request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;

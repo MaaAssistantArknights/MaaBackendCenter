@@ -1,4 +1,4 @@
-package plus.maa.backend.contorller;
+package plus.maa.backend.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -6,11 +6,11 @@ import jakarta.validation.Valid;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import plus.maa.backend.contorller.response.MaaResult;
+import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.repository.entity.MaaUser;
 import plus.maa.backend.service.UserService;
-import plus.maa.backend.contorller.request.LoginRequest;
-import plus.maa.backend.contorller.response.MaaUserInfo;
+import plus.maa.backend.controller.request.LoginRequest;
+import plus.maa.backend.controller.response.MaaUserInfo;
 
 import java.util.Map;
 
