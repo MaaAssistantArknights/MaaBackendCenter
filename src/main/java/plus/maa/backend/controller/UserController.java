@@ -6,11 +6,11 @@ import jakarta.validation.Valid;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import plus.maa.backend.controller.request.LoginRequest;
 import plus.maa.backend.controller.response.MaaResult;
+import plus.maa.backend.controller.response.MaaUserInfo;
 import plus.maa.backend.repository.entity.MaaUser;
 import plus.maa.backend.service.UserService;
-import plus.maa.backend.controller.request.LoginRequest;
-import plus.maa.backend.controller.response.MaaUserInfo;
 
 import java.util.Map;
 
@@ -37,7 +37,7 @@ public class UserController {
     }
 
     @PostMapping("create")
-    public MaaResult<Void> createUser(@RequestBody MaaUser user) {
+    public MaaResult<MaaUserInfo> createUser(@RequestBody MaaUser user) {
         return userService.addUser(user);
     }
 }

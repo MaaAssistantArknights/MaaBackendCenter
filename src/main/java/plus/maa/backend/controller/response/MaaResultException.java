@@ -1,10 +1,13 @@
-package plus.maa.backend.contorller.response;
+package plus.maa.backend.controller.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.http.HttpStatus;
 
+/**
+ * @author john180
+ */
 @Data
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)

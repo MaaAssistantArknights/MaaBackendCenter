@@ -5,15 +5,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
-import plus.maa.backend.contorller.response.MaaResult;
-import plus.maa.backend.contorller.response.MaaResultException;
+import plus.maa.backend.controller.response.MaaResult;
+import plus.maa.backend.controller.response.MaaResultException;
 
+/**
+ * @author john180
+ */
 @Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
     @ResponseBody
     @ExceptionHandler(value = MaaResultException.class)
-    public MaaResult<?> MaaExceptionHandler(MaaResultException e) {
+    public MaaResult<?> maaExceptionHandler(MaaResultException e) {
         return MaaResult.fail(e.getCode(), e.getMsg(), null);
     }
 

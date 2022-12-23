@@ -21,7 +21,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui'
+    //springdoc相关依赖没有被自动管理，必须保留版本号
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.0.2'
 
     implementation 'cn.hutool:hutool-jwt:5.8.10'
 }

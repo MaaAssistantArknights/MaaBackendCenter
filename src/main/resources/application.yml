@@ -3,6 +3,10 @@ spring:
     active: template
   jackson:
     property-naming-strategy: SNAKE_CASE
+  data:
+    mongodb:
+      # 打开自动索引生成（否则数据库内唯一索引不生效
+      auto-index-creation: true
 
 server:
   # 8848钛金接口.jpg
