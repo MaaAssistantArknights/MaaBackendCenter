@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
-import plus.maa.backend.contorller.response.MaaResult;
+import plus.maa.backend.controller.response.MaaResult;
 
 /**
  * @author FAll
@@ -21,21 +21,21 @@ import plus.maa.backend.contorller.response.MaaResult;
 public class GlobalExceptionHandler {
     /**
      * @author FAll
-     * @description
-     * @param e
-     * @param request
+     * @description 请求参数缺失
+     * @param e MissingServletRequestParameterException
+     * @param request HttpServletRequest
      * @return: plus.maa.backend.controller.response.MaaResult<java.lang.String>
      * @date 2022/12/23 9:50
      */
     @ExceptionHandler(MissingServletRequestParameterException.class)
-    public MaaResult<String> missingServletRequestParameterException(MissingServletRequestParameterException e,HttpServletRequest request) {
+    public MaaResult<String> missingServletRequestParameterException(MissingServletRequestParameterException e, HttpServletRequest request) {
         log.warn("请求参数缺失", e);
         return MaaResult.fail(405,String.format("请求参数缺失:%s", e.getParameterName()));
     }
 
     /**
      * @author FAll
-     * @description
+     * @description 参数类型不匹配
      * @return: plus.maa.backend.controller.response.MaaResult<java.lang.String>
      * @date 2022/12/23 9:55
      */
@@ -47,7 +47,7 @@ public class GlobalExceptionHandler {
 
     /**
      * @author FAll
-     * @description
+     * @description 参数校验错误
      * @return: plus.maa.backend.controller.response.MaaResult<java.lang.String>
      * @date 2022/12/23 10:01
      */
@@ -55,9 +55,7 @@ public class GlobalExceptionHandler {
     public MaaResult<String> methodArgumentNotValidException(MethodArgumentNotValidException e) {
         log.warn("参数校验错误", e);
         FieldError fieldError = e.getBindingResult().getFieldError();
-        if(fieldError == null) {
-            return MaaResult.fail(405,"参数校验错误");
-        }
+        assert fieldError != null;
         return MaaResult.fail(405,String.format("参数校验错误:%s", fieldError.getDefaultMessage()));
     }
 

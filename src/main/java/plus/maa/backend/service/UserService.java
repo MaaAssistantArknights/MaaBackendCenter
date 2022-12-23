@@ -15,8 +15,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import plus.maa.backend.controller.request.LoginRequest;
-import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaResultException;
+import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaUserInfo;
 import plus.maa.backend.repository.RedisCache;
 import plus.maa.backend.repository.UserRepository;
@@ -86,16 +86,15 @@ public class UserService {
         throw new MaaResultException(10002, "找不到用户");
     }
 
-    public MaaResult<MaaUserInfo> addUser(MaaUser user) {
-        MaaUserInfo userInfo;
+    public MaaResult<Void> addUser(MaaUser user) {
         String rawPassword = user.getPassword();
         String encode = new BCryptPasswordEncoder().encode(rawPassword);
         user.setPassword(encode);
         try {
-            userInfo = new MaaUserInfo(userRepository.save(user));
+            userRepository.save(user);
         } catch (DuplicateKeyException e) {
             throw new MaaResultException(10001, "添加用户失败");
         }
-        return MaaResult.success(userInfo);
+        return MaaResult.success(null);
     }
 }
