@@ -13,7 +13,7 @@ on:
 env:
   # Use docker.io for Docker Hub if empty
   REGISTRY: ''
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: maa_backend_center
   TAG_SHA: ${{ github.sha }}
   TAG_LATEST: latest
 
@@ -36,7 +36,6 @@ jobs:
         with:
           arguments: build
       - name: name to lower
-        run: echo IMAGE_NAME_LOWER=$(echo ${{env.IMAGE_NAME}} | tr '[:upper:]' '[:lower:]') >> $GITHUB_ENV
       - name: Build the Docker image
         run: docker build --file Dockerfile --tag ${{env.IMAGE_NAME}}:${{env.TAG_SHA}} --tag ${{env.IMAGE_NAME}}:${{env.TAG_LATEST}} ./docker
       - name: echo
