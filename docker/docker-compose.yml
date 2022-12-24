@@ -3,7 +3,7 @@ services:
   maa_backend_center:
     image: maa/maa_backend_center:latest
     container_name: maa_backend_center
-    command: --spring.config.location=optional:file:./
+    command: --spring.config.location=optional:file:/
     volumes:
       - ./application.yml:/application.yml:r
       - ./latest.log:/logs/latest.log:ro
