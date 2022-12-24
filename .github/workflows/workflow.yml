@@ -13,6 +13,7 @@ on:
 env:
   # REGISTRY是空就推送到官方仓库
   REGISTRY: ''
+  GRADLEW_IMAGE_NAME: 'maa-backend-center'
   IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPOSITORY }}
   TAG_SHA: ${{ github.sha }}
   TAG_LATEST: latest
@@ -51,7 +52,8 @@ jobs:
       - name: 使用Gradle编译项目
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: nativeCompile
+          arguments: bootBuildImage
+#          arguments: nativeCompile
 
       # 登录docker仓库
       - name: 登录docker仓库 ${{ env.REGISTRY }}
@@ -62,11 +64,25 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # build docker镜像并推送到docker仓库
-      - name: build docker镜像并推送到docker仓库
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          file: ./docker/Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{env.IMAGE_NAME}}:v${{env.TAG_SHA}},${{env.IMAGE_NAME}}:${{env.TAG_LATEST}}
+      #直接推送
+      - name: Push docker image to DockerHub
+        run: |
+          docker images
+          docker tag ${{env.GRADLEW_IMAGE_NAME}} ${{env.IMAGE_NAME}}:v${{env.TAG_SHA}}
+          docker tag ${{env.GRADLEW_IMAGE_NAME}} ${{env.IMAGE_NAME}}:${{env.TAG_LATEST}}
+          docker rmi ${{env.GRADLEW_IMAGE_NAME}}
+          docker images
+          docker push --all-tags ${{env.IMAGE_NAME}}
+
+#        run: |
+#          docker load < result
+#          docker push owner/repo:tag
+
+#      # build docker镜像并推送到docker仓库
+#      - name: build docker镜像并推送到docker仓库
+#        uses: docker/build-push-action@v3
+#        with:
+#          context: .
+#          file: ./docker/Dockerfile
+#          push: ${{ github.event_name != 'pull_request' }}
+#          tags: ${{env.IMAGE_NAME}}:v${{env.TAG_SHA}},${{env.IMAGE_NAME}}:${{env.TAG_LATEST}}
