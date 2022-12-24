@@ -165,7 +165,7 @@ public class ArkLevelService {
                 arkLevelRepo.save(level);
 
                 task.success();
-                log.info("下载地图数据 {} 成功, 进度{}/{}, 用时:{}s", tilePos.getName(), task.getCurrent(), task.getTotal(), task.getDuration());
+                log.info("[LEVEL]下载地图数据 {} 成功, 进度{}/{}, 用时:{}s", tilePos.getName(), task.getCurrent(), task.getTotal(), task.getDuration());
             }
         });
     }
