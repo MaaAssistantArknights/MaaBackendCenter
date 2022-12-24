@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import plus.maa.backend.common.bo.EmailBusinessObject;
 import plus.maa.backend.repository.RedisCache;
 
-import java.util.concurrent.TimeUnit;
+import java.util.Objects;
 
 /**
  * @author LoMu
@@ -34,7 +34,14 @@ public class EmailService {
                 .setEmail(email)
                 .sendVerificationCodeMessage(vcode);
         //存redis
-        redisCache.setCacheEmailVerificationCode("vCodeEmail:"+email,vcode,expire, TimeUnit.SECONDS);
+        redisCache.setCache("vCodeEmail:"+email,vcode,expire);
+    }
 
+    public boolean verifyVCode(String email, String vcode){
+        String cacheVCode = redisCache.getCache("vCodeEmail:"+email,String.class);
+        if (!Objects.equals(cacheVCode, vcode)){
+            throw new RuntimeException("验证码错误！");
+        }
+        return true;
     }
 }

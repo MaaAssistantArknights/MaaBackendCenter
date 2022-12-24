@@ -26,7 +26,6 @@ import plus.maa.backend.service.model.LoginUser;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author AnselYuki
@@ -78,7 +77,7 @@ public class UserService {
         };
         String token = JWTUtil.createToken(payload, secret.getBytes());
         //把完整的用户信息存入Redis，UserID作为Key
-        redisCache.setCacheLoginUser("LOGIN:" + userId, principal, expire, TimeUnit.SECONDS);
+        redisCache.setCache("LOGIN:" + userId, principal, expire);
         return MaaResult.success("登录成功", Map.of("token", token));
     }
 
@@ -111,9 +110,12 @@ public class UserService {
     public MaaResult<MaaUserInfo> findActivateUser(String token) {
         JWT jwt = JWTUtil.parseToken(token);
         String redisKey = "LOGIN:" + jwt.getPayload("userId");
-        MaaUser user = redisCache.getCacheLoginUser(redisKey).getMaaUser();
-        if (!Objects.isNull(user)) {
-            return MaaResult.success(new MaaUserInfo(user));
+        LoginUser loginUser = redisCache.getCache(redisKey, LoginUser.class);
+        if (!Objects.isNull(loginUser)) {
+            MaaUser user = loginUser.getMaaUser();
+            if (!Objects.isNull(user)) {
+                return MaaResult.success(new MaaUserInfo(user));
+            }
         }
         throw new MaaResultException(10002, "找不到用户");
     }

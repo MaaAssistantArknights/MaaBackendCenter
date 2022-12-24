@@ -63,7 +63,7 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
             throw new RuntimeException("验证失败");
         }
         //从redis中获取用户信息
-        LoginUser loginUser = redisCache.getCacheLoginUser(redisKey);
+        LoginUser loginUser = redisCache.getCache(redisKey, LoginUser.class);
         if (Objects.isNull(loginUser)) {
             throw new RuntimeException("验证失败");
         }

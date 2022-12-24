@@ -5,9 +5,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
-import plus.maa.backend.service.model.LoginUser;
 
 import java.util.concurrent.TimeUnit;
 
@@ -20,68 +20,87 @@ import java.util.concurrent.TimeUnit;
 @Component
 @RequiredArgsConstructor
 public class RedisCache {
+    interface CacheMissFunction<T> {
+        T GetData();
+    }
+
+    @Value("${maa-copilot.cache.default-expire}")
+    private int expire;
+
     private final StringRedisTemplate redisTemplate;
 
-    public void setCacheLoginUser(final String key, LoginUser value, long timeout, TimeUnit timeUnit) {
-        String str;
+    public <T> void setCache(final String key, T value) {
+        setCache(key, value, 0, TimeUnit.SECONDS);
+    }
+
+    public <T> void setCache(final String key, T value, long timeout) {
+        setCache(key, value, timeout, TimeUnit.SECONDS);
+    }
+
+    public <T> void setCache(final String key, T value, long timeout, TimeUnit timeUnit) {
+        String json;
         try {
-            str = new ObjectMapper().writeValueAsString(value);
+            json = new ObjectMapper().writeValueAsString(value);
         } catch (JsonProcessingException e) {
             return;
         }
-        redisTemplate.opsForValue().set(key, str, timeout, timeUnit);
+        if (timeout <= 0) {
+            redisTemplate.opsForValue().set(key, json);
+        } else {
+            redisTemplate.opsForValue().set(key, json, timeout, timeUnit);
+        }
     }
 
-    public LoginUser getCacheLoginUser(final String key) {
-        LoginUser loginUser;
+    public <T> T getCache(final String key, Class<T> valueType) {
+        return getCache(key, valueType, null, expire, TimeUnit.SECONDS);
+    }
+
+    public <T> T getCache(final String key, Class<T> valueType, CacheMissFunction<T> missFunction) {
+        return getCache(key, valueType, missFunction, expire, TimeUnit.SECONDS);
+    }
+
+    public <T> T getCache(final String key, Class<T> valueType, CacheMissFunction<T> missFunction, long timeout) {
+        return getCache(key, valueType, missFunction, timeout, TimeUnit.SECONDS);
+    }
+
+    public <T> T getCache(final String key, Class<T> valueType, CacheMissFunction<T> missFunction, long timeout, TimeUnit timeUnit) {
+        T result;
         try {
             String json = redisTemplate.opsForValue().get(key);
             if (json == null || json.isEmpty()) {
-                return null;
+                if (missFunction != null) {
+                    //上锁
+                    synchronized (RedisCache.class) {
+                        //再次查询缓存，目的是判断是否前面的线程已经set过了
+                        json = redisTemplate.opsForValue().get(key);
+                        //第二次校验缓存是否存在
+                        if (json == null || json.isEmpty()) {
+                            result = missFunction.GetData();
+                            //数据库中不存在
+                            if (result == null) {
+                                return null;
+                            }
+                            setCache(key, result, timeout, timeUnit);
+                            return result;
+                        }
+                    }
+                } else {
+                    return null;
+                }
             }
-            loginUser = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).readValue(json, LoginUser.class);
+            result = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).readValue(json, valueType);
         } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
-        return loginUser;
-    }
-
-    /**
-     * 验证码缓存 以邮箱为Key
-     *
-     * @param emailKey         vCodeEmail:邮箱形式传入
-     * @param verificationCode 验证码
-     * @param timeout          超时
-     * @param timeUnit         时间类型
-     */
-    public void setCacheEmailVerificationCode(final String emailKey, final String verificationCode, long timeout, TimeUnit timeUnit) {
-        if (!emailKey.contains("vCodeEmail:")) {
-            throw new RuntimeException("缓存Key类型不匹配,需以[vCodeEmail:邮箱]形式传入Key");
-        }
-        redisTemplate.opsForValue().set(emailKey, verificationCode, timeout, timeUnit);
-    }
-
-    /**
-     * 获取缓存信息
-     *
-     * @param emailKey         key
-     * @param verificationCode code
-     * @return boolean
-     */
-    public boolean checkCacheEmailVerificationCode(final String emailKey, final String verificationCode) {
-        if (!emailKey.contains("vCodeEmail:")) {
-            throw new RuntimeException("缓存Key类型不匹配,需以[vCodeEmail:邮箱]形式传入Key");
-        }
-        String vCode = redisTemplate.opsForValue().get(emailKey);
-        return !"".equals(vCode) && verificationCode.equals(vCode);
+        return result;
     }
 
     public String getCacheLevelCommit() {
-        return redisTemplate.opsForValue().get("level:commit");
+        return getCache("level:commit", String.class);
     }
 
     public void setCacheLevelCommit(String commit) {
-        redisTemplate.opsForValue().set("level:commit", commit);
+        setCache("level:commit", commit);
     }
 }
