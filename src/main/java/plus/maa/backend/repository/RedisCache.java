@@ -49,12 +49,30 @@ public class RedisCache {
 
     /**
      * 验证码缓存 以邮箱为Key
-     * @param emailKey 邮箱
+     *
+     * @param emailKey         vCodeEmail:邮箱形式传入
      * @param verificationCode 验证码
-     * @param timeout 超时
-     * @param timeUnit 时间类型
+     * @param timeout          超时
+     * @param timeUnit         时间类型
      */
-    public void setCacheEmailVerificationCode(String emailKey,final String verificationCode,long timeout,TimeUnit timeUnit){
-        redisTemplate.opsForValue().set(emailKey,verificationCode,timeout,timeUnit);
+    public void setCacheEmailVerificationCode(final String emailKey, final String verificationCode, long timeout, TimeUnit timeUnit) {
+        redisTemplate.opsForValue().set(emailKey, verificationCode, timeout, timeUnit);
+    }
+
+    /**
+     * 获取缓存信息
+     *
+     * @param emailKey         key
+     * @param verificationCode code
+     * @return boolean
+     */
+    public boolean checkCacheEmailVerificationCode(final String emailKey, final String verificationCode) {
+        if (!emailKey.contains("vCodeEmail:")) {
+            //这个不可能抛给前端吧？
+            throw new RuntimeException("获取缓存Key类型不匹配,需以[vCodeEmail:邮箱]形式传入Key");
+        }
+        String vCode = redisTemplate.opsForValue().get(emailKey);
+        if (!"".equals(vCode) && verificationCode.equals(vCode)) return true;
+        else return false;
     }
 }
