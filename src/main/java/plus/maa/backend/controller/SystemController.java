@@ -49,7 +49,7 @@ public class SystemController {
 
     @GetMapping("test/email")
     public MaaResult<String> testEmail() {
-        new EmailBusinessObject().TestEmail();
+        new EmailBusinessObject().setEmail("发送者邮箱").TestEmail();
         return MaaResult.success("发送成功");
     }
 }
