@@ -25,7 +25,7 @@ public class SecurityConfig {
      */
     private static final String[] URL_WHITELIST = {
             "/user/login",
-            "/user/create",
+            "/user/register",
             "/swagger-ui.html",
             "/swagger-ui/**",
             "/v3/api-docs/**",

@@ -1,6 +1,5 @@
 package plus.maa.backend.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -34,41 +33,49 @@ public class UserController {
     @Value("${maa-copilot.jwt.header}")
     private String header;
 
+    /**
+     * 获取当前登录的用户（通过请求携带的token）
+     *
+     * @param request http请求，获取头部携带的token
+     * @return Activates a user account.
+     */
     @GetMapping("activate")
-    @Operation(summary = "获取活动用户", description = "通过token获得当前登录用户信息")
     public MaaResult<MaaUserInfo> activate(HttpServletRequest request) {
+        String token = request.getHeader(header);
+        return userService.findActivateUser(token);
+    }
+
+    /**
+     * Requests a new activation code.
+     *
+     * @return null
+     */
+    @PostMapping("/activate/request")
+    public MaaResult<MaaUserInfo> activateRequest() {
         //TODO
         return null;
     }
 
-    @PostMapping("change")
-    @Operation(summary = "修改用户信息", description = "通过id修改用户信息")
-    public MaaResult<Void> change(@RequestBody @Valid MaaUserInfo userInfo) {
+    @PostMapping("update/password")
+    public MaaResult<Void> updatePassword() {
         //TODO
         return null;
     }
 
-    @PutMapping("create")
-    @Operation(summary = "创建新用户", description = "根据传入的用户创建新用户")
-    public MaaResult<MaaUserInfo> create(@RequestBody MaaUser user) {
-        return userService.addUser(user);
-    }
-
-    @DeleteMapping("delete/{user_id}")
-    @Operation(summary = "删除用户", description = "将用户状态设置为删除")
-    public MaaResult<Void> delete(@PathVariable("user_id") String id) {
+    @PostMapping("update/info")
+    public MaaResult<Void> updateInfo() {
         //TODO
         return null;
     }
 
-    @GetMapping("info/{id}")
-    @Operation(summary = "获取用户信息", description = "可变参数id，根据id获取用户信息")
-    public MaaResult<MaaUserInfo> info(@PathVariable("id") String id) {
-        return userService.findUserInfoById(id);
+    @PostMapping("password/reset")
+    public MaaResult<Void> passwordReset() {
+        //TODO
+        return null;
     }
 
-    @GetMapping("query")
-    public MaaResult<Void> query() {
+    @PostMapping("password/reset_request")
+    public MaaResult<Void> passwordResetRequest() {
         //TODO
         return null;
     }
@@ -84,44 +91,18 @@ public class UserController {
         return null;
     }
 
+    /**
+     * 用户注册
+     *
+     * @param user 传入用户参数
+     * @return 注册成功用户信息摘要
+     */
     @PostMapping("register")
-    public MaaResult<Void> register() {
-        //TODO
-        return null;
-    }
-
-    @PostMapping("activate/request")
-    public MaaResult<Void> activateRequest() {
-        //TODO
-        return null;
-    }
-
-    @PostMapping("password/reset_request")
-    public MaaResult<Void> passwordResetRequest() {
-        //TODO
-        return null;
-    }
-
-    @PostMapping("update/info")
-    public MaaResult<Void> updateInfo() {
-        //TODO
-        return null;
-    }
-
-    @PostMapping("update/password")
-    public MaaResult<Void> updatePassword() {
-        //TODO
-        return null;
-    }
-
-    @PostMapping("password/reset")
-    public MaaResult<Void> passwordReset() {
-        //TODO
-        return null;
+    public MaaResult<MaaUserInfo> register(@RequestBody MaaUser user) {
+        return userService.register(user);
     }
 
     @PostMapping("login")
-    @Operation(summary = "用户登录", description = "用户名与密码登录，成功后返回token")
     public MaaResult<Map<String, String>> login(@RequestBody @Valid LoginRequest user) {
         return userService.login(user);
     }

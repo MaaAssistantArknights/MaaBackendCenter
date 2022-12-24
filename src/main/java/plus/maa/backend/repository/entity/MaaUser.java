@@ -1,6 +1,7 @@
 package plus.maa.backend.repository.entity;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -25,6 +26,7 @@ public class MaaUser implements Serializable {
     private String userId;
     private String userName;
     @Indexed(unique = true)
+    @NotBlank(message = "邮箱为唯一身份标识，不能为空")
     private String email;
     private String password;
 }
