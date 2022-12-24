@@ -28,6 +28,14 @@
   - model 应用内传输用类型放这里
 - utils 工具类
 
+## native 编译
+
+1. 安装 [GraalVM](https://github.com/graalvm/graalvm-ce-builds/releases) Java17，并配置好环境变量，部分功能需要正确配置 `JAVA_HOME` 变量为 GraalVM 安装目录才能正常使用
+2. 如果您处于 Windows 环境下，需要安装 `Visual Studio` 并且安装 C++ 组件，Linux 环境下则需要安装 `gcc` 工具链，Mac 下需要安装 `xcode` 工具链，详情查看 [native-image#prerequisites](https://www.graalvm.org/22.3/reference-manual/native-image/#prerequisites)
+3. 通过 `gu install native-image` 安装 `native-image` AOT 编译器
+4. 在该项目目录下，执行 `./gradlew nativeRun` 或者 `.\gradlew.bat nativeRun` 编译并运行该项目
+5. 如果您希望产生 docker image，请执行 `./gradlew bootBuildImage`
+
 ## Join us!
 
 QQ Group: 724540644
