@@ -1,12 +1,11 @@
 package plus.maa.backend.common.utils;
-
 import cn.hutool.extra.mail.MailUtil;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-import plus.maa.backend.repository.entity.MaaEmail;
-
-import java.text.MessageFormat;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -14,41 +13,73 @@ import java.text.MessageFormat;
  * Date 2022-12-23 23:57
  */
 @Slf4j
-@Component
+@Accessors(chain = true)
+@Setter
 public class EmailUtils  {
+    private   List<String> emailList;
+    //邮件标题
+    private   String title;
+    //邮件内容
+    private  String message;
 
+    //html标签是否被识别使用
+    private Boolean isHtml;
 
-    /**
-     * 发送信息
-     * @param maaEmail 邮件类(邮件接收者,邮件信息,附件)
-     * @return boolean
-     */
-    public boolean sendMessage(MaaEmail maaEmail){
-      try {
-          MailUtil.send(maaEmail.getToEmail()
-                  ,maaEmail.getTitle()
-                  ,maaEmail.getMessage()
-                  ,maaEmail.getIsHtml());
-          return true;
-      }catch (Exception ex){
-         throw new RuntimeException(ex);
-      }
+    public EmailUtils() {
+        isHtml = true;
+        emailList  = new ArrayList<>();
+    }
+
+    public  EmailUtils setEmail(String email) {
+            emailList.add(email);
+            return this;
     }
 
 
     /**
-     * 发送信息和附件
-     * @param maaEmail 邮件类(邮件接收者,邮件信息,附件)
-     * @return  boolean
+     * 链式编程  没报错就说明发送成功
+     * 发送自定义信息
      */
-    public boolean sendMessageFile(MaaEmail maaEmail){
+    public boolean sendCustomMessageList(){
         try {
-            MailUtil.send(maaEmail.getToEmail()
-                    ,maaEmail.getTitle()
-                    ,maaEmail.getMessage()
-                    ,maaEmail.getIsHtml()
-                    ,maaEmail.getFile());
+            MailUtil.send(this.emailList
+                    ,this.title
+                    ,this.message
+                    ,this.isHtml
+            );
             return true;
+        }catch (Exception ex){
+            throw new RuntimeException(ex);
+        }
+    }
+
+    /**
+     * 链式编程  没报错就说明发送成功
+     * 发送自定义信息和附件
+     * @param file  附件 io流读文件地址 例:FileUtil.file("d:/aaa.xml")
+     */
+    public void sendCustomMessageFileList(File... file){
+        try {
+            MailUtil.send(this.emailList
+                    ,this.title
+                    ,this.message
+                    ,this.isHtml
+                    ,file);
+        }catch (Exception ex){
+            throw new RuntimeException(ex);
+        }
+    }
+
+    /**
+     * 测试
+     */
+    public void TestEmail(){
+        try {
+            MailUtil.send(this.emailList
+                    ,"Maa Backend Center"
+                    ,"This is a Test email"
+                    ,this.isHtml
+                    );
         }catch (Exception ex){
             throw new RuntimeException(ex);
         }

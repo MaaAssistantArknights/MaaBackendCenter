@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import plus.maa.backend.common.utils.EmailUtils;
 import plus.maa.backend.controller.response.MaaResult;
-import plus.maa.backend.repository.entity.MaaEmail;
 
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
@@ -24,13 +23,10 @@ import java.util.Map;
 @RestController
 @RequiredArgsConstructor
 public class SystemController {
-    @Value("maa-copilot.info.version")
-    public String version;
-
+    @Value("${maa-copilot.info.version}")
+    private String version;
     @Value("${maa-copilot.info.description}")
     private String description;
-
-    private final EmailUtils emailUtils;
 
 
 
@@ -50,10 +46,7 @@ public class SystemController {
 
     @GetMapping("test/email")
     public  MaaResult<String> testEmail(){
-        emailUtils.sendMessage(new MaaEmail()
-                .setToEmail("2842775752@qq.com")
-                .setTitle(description)
-                .setMessage("This is a test email"));
+        new EmailUtils().TestEmail();
         return MaaResult.success("发送成功");
     }
 }
