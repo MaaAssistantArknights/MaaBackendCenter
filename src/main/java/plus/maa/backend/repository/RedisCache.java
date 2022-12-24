@@ -46,4 +46,15 @@ public class RedisCache {
         }
         return loginUser;
     }
+
+    /**
+     * 验证码缓存 以邮箱为Key
+     * @param emailKey 邮箱
+     * @param verificationCode 验证码
+     * @param timeout 超时
+     * @param timeUnit 时间类型
+     */
+    public void setCacheEmailVerificationCode(String emailKey,final String verificationCode,long timeout,TimeUnit timeUnit){
+        redisTemplate.opsForValue().set(emailKey,verificationCode,timeout,timeUnit);
+    }
 }
