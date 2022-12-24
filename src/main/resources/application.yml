@@ -8,11 +8,6 @@ spring:
       # 打开自动索引生成（否则数据库内唯一索引不生效
       auto-index-creation: true
 
-  #整点花活qwq 是不是瞬间就高大上起来了
-  banner:
-    location:
-      classpath: banner.txt
-
 server:
   # 8848钛金接口.jpg
   port: 8848
