@@ -5,7 +5,7 @@ spring:
       # 如果没有密码
       # uri: mongodb://localhost:27017/MaaBackend
       # 有密码
-      uri: mongodb://user:pwd@localhost:27017/MaaBackend
+      uri: mongodb://localhost:27017/MaaBackend
     redis:
       port: 6379
       host: localhost
@@ -20,6 +20,13 @@ maa-copilot:
   github:
     # GitHub api token
     token: github_pat_xxx
+  info:
+    title: MAA Copilot Center API
+    description: MAA Copilot Backend Center
+    version: v1.0.0
+  vcode:
+    #默认的验证码失效时间,以秒为单位
+    expire: 600
 
 springdoc:
   swagger-ui:

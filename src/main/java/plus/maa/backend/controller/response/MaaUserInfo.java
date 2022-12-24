@@ -17,7 +17,7 @@ import plus.maa.backend.repository.entity.MaaUser;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MaaUserInfo {
-    private String id;
+    private String userId;
     private String userName;
     private String activated;
     private String uploadCount;

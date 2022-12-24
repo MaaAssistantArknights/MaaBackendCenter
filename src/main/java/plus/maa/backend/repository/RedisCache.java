@@ -47,6 +47,36 @@ public class RedisCache {
         return loginUser;
     }
 
+    /**
+     * 验证码缓存 以邮箱为Key
+     *
+     * @param emailKey         vCodeEmail:邮箱形式传入
+     * @param verificationCode 验证码
+     * @param timeout          超时
+     * @param timeUnit         时间类型
+     */
+    public void setCacheEmailVerificationCode(final String emailKey, final String verificationCode, long timeout, TimeUnit timeUnit) {
+        if (!emailKey.contains("vCodeEmail:")) {
+            throw new RuntimeException("缓存Key类型不匹配,需以[vCodeEmail:邮箱]形式传入Key");
+        }
+        redisTemplate.opsForValue().set(emailKey, verificationCode, timeout, timeUnit);
+    }
+
+    /**
+     * 获取缓存信息
+     *
+     * @param emailKey         key
+     * @param verificationCode code
+     * @return boolean
+     */
+    public boolean checkCacheEmailVerificationCode(final String emailKey, final String verificationCode) {
+        if (!emailKey.contains("vCodeEmail:")) {
+            throw new RuntimeException("缓存Key类型不匹配,需以[vCodeEmail:邮箱]形式传入Key");
+        }
+        String vCode = redisTemplate.opsForValue().get(emailKey);
+        return !"".equals(vCode) && verificationCode.equals(vCode);
+    }
+
     public String getCacheLevelCommit() {
         return redisTemplate.opsForValue().get("level:commit");
     }

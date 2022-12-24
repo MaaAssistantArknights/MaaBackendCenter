@@ -1,5 +1,6 @@
 package plus.maa.backend.service.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -19,16 +20,19 @@ public class LoginUser implements UserDetails {
     private MaaUser maaUser;
 
     @Override
+    @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return null;
     }
 
     @Override
+    @JsonIgnore
     public String getPassword() {
         return maaUser.getPassword();
     }
 
     @Override
+    @JsonIgnore
     public String getUsername() {
         return maaUser.getEmail();
     }
