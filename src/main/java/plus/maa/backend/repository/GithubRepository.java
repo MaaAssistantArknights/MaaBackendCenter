@@ -3,10 +3,9 @@ package plus.maa.backend.repository;
 import feign.Headers;
 import feign.Param;
 import feign.RequestLine;
-import plus.maa.backend.repository.entity.ArknightsTilePos;
-import plus.maa.backend.repository.entity.GithubContent;
+import plus.maa.backend.repository.entity.github.GithubCommit;
+import plus.maa.backend.repository.entity.github.GithubTrees;
 
-import java.net.URI;
 import java.util.List;
 
 /**
@@ -16,27 +15,26 @@ import java.util.List;
 public interface GithubRepository {
 
     /**
-     * api doc: <a href="https://docs.github.com/en/rest/repos/contents?apiVersion=2022-11-28">contents api</a>
-     *
-     * @param token GitHub api调用token 从 <a href="https://github.com/settings/tokens">tokens</a> 获取
-     * @param repo  GitHub 仓库名称（含用户名），例如 MaaAssistantArknights/MaaAssistantArknights
-     * @param path  文件路径，例如 src
+     * api doc: <a href="https://docs.github.com/en/rest/git/trees?apiVersion=2022-11-28#get-a-tree">git trees api</a>
      */
     @Headers({
             "Accept: application/vnd.github+json",
             "Authorization: {token}",
             "X-GitHub-Api-Version: 2022-11-28"
     })
-    @RequestLine("GET /repos/{repo}/contents/{path}")
-    List<GithubContent> getContents(@Param("token") String token, @Param("repo") String repo,
-                                    @Param("path") String path);
+    @RequestLine("GET /repos/{repo}/git/trees/{sha}")
+    GithubTrees getTrees(@Param("token") String token,
+                         @Param("repo") String repo,
+                         @Param("sha") String sha);
 
-    /**
-     * 下载
-     * @param uri 资源路径
-     * @return MAA level json文件
-     */
-    @RequestLine("GET")
-    ArknightsTilePos downloadArknightsTilePos(URI uri);
-
+    @Headers({
+            "Accept: application/vnd.github+json",
+            "Authorization: {token}",
+            "X-GitHub-Api-Version: 2022-11-28"
+    })
+    @RequestLine("GET /repos/{repo}/commits")
+    List<GithubCommit> getCommits(@Param("token") String token,
+                                  @Param("repo") String repo,
+                                  @Param("path") String path,
+                                  @Param("per_page") int prePage);
 }
