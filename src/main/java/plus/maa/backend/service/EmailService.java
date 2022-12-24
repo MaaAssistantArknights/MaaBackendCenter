@@ -32,7 +32,7 @@ public class EmailService {
                 .setEmail(email)
                 .sendVerificationCodeMessage(vcode);
         //存redis 默认10分钟失效
-        redisCache.setCacheEmailVerificationCode("vcodeEmail:"+email,vcode,expire, TimeUnit.SECONDS);
+        redisCache.setCacheEmailVerificationCode("vCodeEmail:"+email,vcode,expire, TimeUnit.SECONDS);
 
     }
 }
