@@ -76,4 +76,12 @@ public class RedisCache {
         String vCode = redisTemplate.opsForValue().get(emailKey);
         return !"".equals(vCode) && verificationCode.equals(vCode);
     }
+
+    public String getCacheLevelCommit() {
+        return redisTemplate.opsForValue().get("level:commit");
+    }
+
+    public void setCacheLevelCommit(String commit) {
+        redisTemplate.opsForValue().set("level:commit", commit);
+    }
 }

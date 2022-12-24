@@ -1,4 +1,4 @@
-package plus.maa.backend.repository.entity;
+package plus.maa.backend.repository.entity.github;
 
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
