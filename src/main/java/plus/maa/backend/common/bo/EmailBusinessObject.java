@@ -81,20 +81,19 @@ public class EmailBusinessObject {
 
         try {
             MailUtil.send(this.emailList
-                    , "[Maa Copilot]邮件验证码" + code
+                    , "[Maa Copilot]邮件验证码"
                     , """
-                             <center>
-                                <h1>Maa Copilot</h1>
-                                    为了确认您输入的邮箱地址，请输入以下验证码 有效期10分钟。<br>
-                                    <h3> + code + </h3>
-                                    ※此邮件为自动发送，请不要回复此邮件。<br>
-                                    ※如果您没有进行相关操作而受到了此邮件，<br>
-                                    可能是他人输入了错误的邮箱地址，请删除此邮件。<br>
-                                    <a href= 'https://maa.plus/' target='_blank'>
-                                    [MaaAssistantArknights]
-                                    </a>
-                            </center>
-                             """
+                            <center>
+                            <h1>Maa Copilot</h1>
+                            <h5>为了确认您输入的邮箱地址，请输入以下验证码 有效期10分钟。</h5>
+                            <h3> %s </h3>
+                            ※此邮件为自动发送，请不要回复此邮件。<br>
+                            ※如果您没有进行相关操作而受到了此邮件，<br>
+                            可能是他人输入了错误的邮箱地址，请删除此邮件。<br>
+                            <a href='https://maa.plus/' target="_blank">
+                            [MaaAssistantArknights]
+                            </a> </center>
+                            """.formatted(code)
                     , this.isHtml
             );
         } catch (Exception ex) {
