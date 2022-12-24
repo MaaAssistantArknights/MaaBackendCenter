@@ -3,9 +3,9 @@ host = smtp.qq.com
 # 邮件服务器的SMTP的端口 (qq为465,测试用的qq)
 port = 465
 # 发件人（必须正确，否则发送失败）
-from = 2842775752@qq.com
+from = 2842777777@qq.com
 # 用户名(foxmail和qq为发件人邮箱前缀 阿里云邮箱的user是邮箱的完整地址，即xxx@aliyun.com)
-user = 2842775752
+user = 2842777777
 # 密码(拿到的授权码)
 pass =
 # 使用STARTTLS安全链接
