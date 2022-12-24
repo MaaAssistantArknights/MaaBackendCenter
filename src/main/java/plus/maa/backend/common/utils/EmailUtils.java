@@ -19,15 +19,39 @@ public class EmailUtils  {
 
 
     /**
-     * 发送邮件
+     * 发送信息
+     * @param maaEmail 邮件类(邮件接收者,邮件信息,附件)
+     * @return boolean
      */
     public boolean sendMessage(MaaEmail maaEmail){
       try {
-          MailUtil.send(maaEmail.getToEmail(),maaEmail.getTitle(),maaEmail.getMessage(),true);
+          MailUtil.send(maaEmail.getToEmail()
+                  ,maaEmail.getTitle()
+                  ,maaEmail.getMessage()
+                  ,maaEmail.getIsHtml());
           return true;
       }catch (Exception ex){
          throw new RuntimeException(ex);
       }
+    }
+
+
+    /**
+     * 发送信息和附件
+     * @param maaEmail 邮件类(邮件接收者,邮件信息,附件)
+     * @return  boolean
+     */
+    public boolean sendMessageFile(MaaEmail maaEmail){
+        try {
+            MailUtil.send(maaEmail.getToEmail()
+                    ,maaEmail.getTitle()
+                    ,maaEmail.getMessage()
+                    ,maaEmail.getIsHtml()
+                    ,maaEmail.getFile());
+            return true;
+        }catch (Exception ex){
+            throw new RuntimeException(ex);
+        }
     }
 
 }
