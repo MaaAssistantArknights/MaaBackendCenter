@@ -56,6 +56,9 @@ public class RedisCache {
      * @param timeUnit         时间类型
      */
     public void setCacheEmailVerificationCode(final String emailKey, final String verificationCode, long timeout, TimeUnit timeUnit) {
+        if (!emailKey.contains("vCodeEmail:")) {
+            throw new RuntimeException("缓存Key类型不匹配,需以[vCodeEmail:邮箱]形式传入Key");
+        }
         redisTemplate.opsForValue().set(emailKey, verificationCode, timeout, timeUnit);
     }
 
@@ -68,11 +71,9 @@ public class RedisCache {
      */
     public boolean checkCacheEmailVerificationCode(final String emailKey, final String verificationCode) {
         if (!emailKey.contains("vCodeEmail:")) {
-            //这个不可能抛给前端吧？
-            throw new RuntimeException("获取缓存Key类型不匹配,需以[vCodeEmail:邮箱]形式传入Key");
+            throw new RuntimeException("缓存Key类型不匹配,需以[vCodeEmail:邮箱]形式传入Key");
         }
         String vCode = redisTemplate.opsForValue().get(emailKey);
-        if (!"".equals(vCode) && verificationCode.equals(vCode)) return true;
-        else return false;
+        return !"".equals(vCode) && verificationCode.equals(vCode);
     }
 }
