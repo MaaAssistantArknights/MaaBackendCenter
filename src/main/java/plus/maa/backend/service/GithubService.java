@@ -1,5 +1,7 @@
 package plus.maa.backend.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,7 +11,6 @@ import plus.maa.backend.repository.entity.ArknightsTilePos;
 import plus.maa.backend.repository.entity.GithubContent;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,18 +48,16 @@ public class GithubService {
      *
      * @return maa 地图数据列表
      */
-    public List<ArknightsTilePos> getAllTilePos() {
+    public List<ArknightsTilePos> getAllTilePos() throws JsonProcessingException {
         List<GithubContent> contents = getArknightsTilePosPaths();
         List<ArknightsTilePos> tilePosList = new ArrayList<>(contents.size());
-        try {
-            for (GithubContent content : contents) {
-                if (content.isDir() || content.getFileExtension().equals("json")) {
-                    continue;
-                }
-                tilePosList.add(githubRepository.downloadArknightsTilePos(new URI(content.getDownloadUrl())));
+        ObjectMapper objectMapper = new ObjectMapper();
+        for (GithubContent content : contents) {
+            if (content.isDir() || !content.getFileExtension().equals("json")) {
+                continue;
             }
-        } catch (URISyntaxException e) {
-            log.error("meet unexpected uri syntax, msg: {}", e.getMessage());
+            String res = githubRepository.downloadArknightsTilePos(URI.create(content.getDownloadUrl()));
+            tilePosList.add(objectMapper.readValue(res, ArknightsTilePos.class));
         }
         return tilePosList;
     }
