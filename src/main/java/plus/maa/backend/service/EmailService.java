@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import plus.maa.backend.common.bo.EmailBusinessObject;
 import plus.maa.backend.repository.RedisCache;
 
-import java.util.concurrent.TimeUnit;
+import java.util.Objects;
 
 /**
  * @author LoMu
@@ -25,16 +25,24 @@ public class EmailService {
      * 发送验证码
      * 以email作为 redis key
      * vcode(验证码)作为 redis value
+     *
      * @param email 邮箱
      */
-    public void sendVCode(String email){
+    public void sendVCode(String email) {
         //6位随机数验证码
-        String vcode = RandomStringUtils.random(6,true,true);
+        String vcode = RandomStringUtils.random(6, true, true);
         new EmailBusinessObject()
                 .setEmail(email)
                 .sendVerificationCodeMessage(vcode);
         //存redis
-        redisCache.setCacheEmailVerificationCode("vCodeEmail:"+email,vcode,expire, TimeUnit.SECONDS);
+        redisCache.setCache("vCodeEmail:" + email, vcode, expire);
+    }
 
+    public boolean verifyVCode(String email, String vcode) {
+        String cacheVCode = redisCache.getCache("vCodeEmail:" + email, String.class);
+        if (!Objects.equals(cacheVCode, vcode)) {
+            throw new RuntimeException("验证码错误！");
+        }
+        return true;
     }
 }
