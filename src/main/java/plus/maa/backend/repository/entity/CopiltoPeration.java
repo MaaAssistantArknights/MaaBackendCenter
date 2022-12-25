@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -13,11 +14,14 @@ import java.util.List;
  */
 @Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class CopiltoPeration {
-    private String title = "Maa Copilot Operation";
+public class CopiltoPeration implements Serializable {
+    private String id;
 
     @NotBlank(message = "关卡名，必选。关卡中文名")
     private String stageName;
+
+    //上传者
+    private String uploader;
 
     //查看次数
     private Integer views;
@@ -28,7 +32,7 @@ public class CopiltoPeration {
     //评级
     private Integer ratingLevel;
 
-    //评级
+    //评级比率
     private double ratingRatio;
 
     //难度
