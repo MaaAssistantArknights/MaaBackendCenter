@@ -10,6 +10,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  * Redis工具类
@@ -20,17 +21,17 @@ import java.util.concurrent.TimeUnit;
 @Component
 @RequiredArgsConstructor
 public class RedisCache {
-    interface CacheMissFunction<T> {
-        T GetData();
-    }
-
     @Value("${maa-copilot.cache.default-expire}")
     private int expire;
 
     private final StringRedisTemplate redisTemplate;
 
-    public <T> void setCache(final String key, T value) {
+    public <T> void setData(final String key, T value) {
         setCache(key, value, 0, TimeUnit.SECONDS);
+    }
+
+    public <T> void setCache(final String key, T value) {
+        setCache(key, value, expire, TimeUnit.SECONDS);
     }
 
     public <T> void setCache(final String key, T value, long timeout) {
@@ -55,27 +56,27 @@ public class RedisCache {
         return getCache(key, valueType, null, expire, TimeUnit.SECONDS);
     }
 
-    public <T> T getCache(final String key, Class<T> valueType, CacheMissFunction<T> missFunction) {
-        return getCache(key, valueType, missFunction, expire, TimeUnit.SECONDS);
+    public <T> T getCache(final String key, Class<T> valueType, Supplier<T> onMiss) {
+        return getCache(key, valueType, onMiss, expire, TimeUnit.SECONDS);
     }
 
-    public <T> T getCache(final String key, Class<T> valueType, CacheMissFunction<T> missFunction, long timeout) {
-        return getCache(key, valueType, missFunction, timeout, TimeUnit.SECONDS);
+    public <T> T getCache(final String key, Class<T> valueType, Supplier<T> onMiss, long timeout) {
+        return getCache(key, valueType, onMiss, timeout, TimeUnit.SECONDS);
     }
 
-    public <T> T getCache(final String key, Class<T> valueType, CacheMissFunction<T> missFunction, long timeout, TimeUnit timeUnit) {
+    public <T> T getCache(final String key, Class<T> valueType, Supplier<T> onMiss, long timeout, TimeUnit timeUnit) {
         T result;
         try {
             String json = redisTemplate.opsForValue().get(key);
             if (json == null || json.isEmpty()) {
-                if (missFunction != null) {
+                if (onMiss != null) {
                     //上锁
                     synchronized (RedisCache.class) {
                         //再次查询缓存，目的是判断是否前面的线程已经set过了
                         json = redisTemplate.opsForValue().get(key);
                         //第二次校验缓存是否存在
                         if (json == null || json.isEmpty()) {
-                            result = missFunction.GetData();
+                            result = onMiss.get();
                             //数据库中不存在
                             if (result == null) {
                                 return null;
@@ -101,6 +102,6 @@ public class RedisCache {
     }
 
     public void setCacheLevelCommit(String commit) {
-        setCache("level:commit", commit);
+        setData("level:commit", commit);
     }
 }
