@@ -10,6 +10,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -95,6 +96,32 @@ public class RedisCache {
             return null;
         }
         return result;
+    }
+
+    public <T> void updateCache(final String key, Class<T> valueType, T defaultValue, Function<T, T> onUpdate) {
+        updateCache(key, valueType, defaultValue, onUpdate, expire, TimeUnit.SECONDS);
+    }
+
+    public <T> void updateCache(final String key, Class<T> valueType, T defaultValue, Function<T, T> onUpdate, long timeout) {
+        updateCache(key, valueType, defaultValue, onUpdate, timeout, TimeUnit.SECONDS);
+    }
+
+    public <T> void updateCache(final String key, Class<T> valueType, T defaultValue, Function<T, T> onUpdate, long timeout, TimeUnit timeUnit) {
+        T result;
+        try {
+            synchronized (RedisCache.class) {
+                String json = redisTemplate.opsForValue().get(key);
+                if (json == null || json.isEmpty()) {
+                    result = defaultValue;
+                } else {
+                    result = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).readValue(json, valueType);
+                }
+                result = onUpdate.apply(result);
+                setCache(key, result, timeout, timeUnit);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public String getCacheLevelCommit() {
