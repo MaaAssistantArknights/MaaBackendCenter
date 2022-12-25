@@ -7,6 +7,7 @@ import cn.hutool.jwt.JWTPayload;
 import cn.hutool.jwt.JWTUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -24,6 +25,7 @@ import plus.maa.backend.repository.entity.MaaUser;
 import plus.maa.backend.service.model.LoginUser;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -64,6 +66,7 @@ public class UserService {
         //若认证成功，使用UserID生成一个JwtToken,Token存入ResponseResult返回
         LoginUser principal = (LoginUser) authenticate.getPrincipal();
         String userId = String.valueOf(principal.getMaaUser().getUserId());
+        String token = RandomStringUtils.random(16, true, true);
         DateTime now = DateTime.now();
         DateTime newTime = now.offsetNew(DateField.SECOND, expire);
         //签发JwtToken，从上到下为设置签发时间，过期时间与生效时间
@@ -73,12 +76,49 @@ public class UserService {
                 put(JWTPayload.EXPIRES_AT, newTime.getTime());
                 put(JWTPayload.NOT_BEFORE, now.getTime());
                 put("userId", userId);
+                put("token", token);
             }
         };
-        String token = JWTUtil.createToken(payload, secret.getBytes());
+
         //把完整的用户信息存入Redis，UserID作为Key
-        redisCache.setCache("LOGIN:" + userId, principal, expire);
-        return MaaResult.success("登录成功", Map.of("token", token));
+        String cacheKey = "LOGIN:" + userId;
+        redisCache.updateCache(cacheKey, LoginUser.class, principal, cacheUser -> {
+            List<String> tokens = cacheUser.getTokens();
+            tokens.add(token);
+            cacheUser.setTokens(tokens);
+            return cacheUser;
+        }, expire);
+
+        String jwt = JWTUtil.createToken(payload, secret.getBytes());
+        return MaaResult.success("登录成功", Map.of("token", jwt));
+    }
+
+    public MaaResult<MaaUserInfo> modifyPassword(String token, String newPassword) {
+        MaaUserInfo userInfo = new MaaUserInfo();
+        JWT jwt = JWTUtil.parseToken(token);
+        String redisKey = "LOGIN:" + jwt.getPayload("userId");
+        LoginUser loginUser = redisCache.getCache(redisKey, LoginUser.class);
+        if (!Objects.isNull(loginUser)) {
+            MaaUser user = loginUser.getMaaUser();
+            if (!Objects.isNull(user)) {
+                String jwtToken = jwt.getPayload("token").toString();
+                if (loginUser.getTokens().contains(jwtToken)) {
+                    //TODO:修改密码的逻辑
+                    //以下更新jwt
+                    redisCache.updateCache(redisKey, LoginUser.class, null, cacheUser -> {
+                        if (Objects.isNull(cacheUser)) {
+                            throw new MaaResultException(10002, "用户未登录");
+                        }
+                        List<String> tokens = cacheUser.getTokens();
+                        tokens.clear();
+                        tokens.add(jwtToken);
+                        cacheUser.setTokens(tokens);
+                        return cacheUser;
+                    }, expire);
+                }
+            }
+        }
+        return MaaResult.success(userInfo);
     }
 
     /**
@@ -114,7 +154,10 @@ public class UserService {
         if (!Objects.isNull(loginUser)) {
             MaaUser user = loginUser.getMaaUser();
             if (!Objects.isNull(user)) {
-                return MaaResult.success(new MaaUserInfo(user));
+                String jwtToken = jwt.getPayload("token").toString();
+                if (loginUser.getTokens().contains(jwtToken)) {
+                    return MaaResult.success(new MaaUserInfo(user));
+                }
             }
         }
         throw new MaaResultException(10002, "找不到用户");
