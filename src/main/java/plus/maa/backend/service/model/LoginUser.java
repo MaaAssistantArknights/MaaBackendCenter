@@ -8,9 +8,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import plus.maa.backend.repository.entity.MaaUser;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * @author AnselYuki
@@ -20,7 +18,7 @@ import java.util.List;
 @AllArgsConstructor
 public class LoginUser implements UserDetails {
     private MaaUser maaUser;
-    private List<String> tokens = new ArrayList<>();
+    private String token = "";
 
     @Override
     @JsonIgnore

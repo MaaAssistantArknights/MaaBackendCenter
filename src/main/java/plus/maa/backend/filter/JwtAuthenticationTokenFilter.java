@@ -69,7 +69,7 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
         if (Objects.isNull(loginUser)) {
             throw new RuntimeException("验证失败");
         }
-        if (!loginUser.getTokens().contains(jwtToken)) {
+        if (!Objects.equals(loginUser.getToken(), jwtToken)) {
             throw new RuntimeException("验证失败");
         }
 
