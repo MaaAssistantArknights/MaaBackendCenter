@@ -14,11 +14,13 @@ import java.util.Collection;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@RequiredArgsConstructor
 public class LoginUser implements UserDetails {
-    @NonNull
     private MaaUser maaUser;
     private String token = "";
+
+    public LoginUser(MaaUser user) {
+        maaUser = user;
+    }
 
     @Override
     @JsonIgnore
