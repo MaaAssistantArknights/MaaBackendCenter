@@ -7,6 +7,7 @@ import cn.hutool.jwt.JWTPayload;
 import cn.hutool.jwt.JWTUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -14,7 +15,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import plus.maa.backend.controller.request.LoginRequest;
+import plus.maa.backend.controller.request.LoginDTO;
+import plus.maa.backend.controller.request.RegisterDTO;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.controller.response.MaaUserInfo;
@@ -46,12 +48,12 @@ public class UserService {
     /**
      * 登录方法
      *
-     * @param loginRequest 登录参数
+     * @param loginDTO 登录参数
      * @return 携带了token的封装类
      */
-    public MaaResult<Map<String, String>> login(LoginRequest loginRequest) {
+    public MaaResult<Map<String, String>> login(LoginDTO loginDTO) {
         //使用 AuthenticationManager 中的 authenticate 进行用户认证
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword());
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(loginDTO.getEmail(), loginDTO.getPassword());
         Authentication authenticate;
         try {
             authenticate = authenticationManager.authenticate(authenticationToken);
@@ -85,12 +87,14 @@ public class UserService {
     /**
      * 用户注册
      *
-     * @param user 传入用户参数
+     * @param registerDTO 传入用户参数
      * @return 返回注册成功的用户摘要（脱敏）
      */
-    public MaaResult<MaaUserInfo> register(MaaUser user) {
-        String rawPassword = user.getPassword();
+    public MaaResult<MaaUserInfo> register(RegisterDTO registerDTO) {
+        String rawPassword = registerDTO.getPassword();
         String encode = new BCryptPasswordEncoder().encode(rawPassword);
+        MaaUser user = new MaaUser();
+        BeanUtils.copyProperties(registerDTO, user);
         user.setPassword(encode);
         MaaUserInfo userInfo;
         try {

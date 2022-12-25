@@ -39,6 +39,15 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ArkLevelService {
+    private final GithubRepository githubRepo;
+    private final RedisCache redisCache;
+    private final ArkLevelRepository arkLevelRepo;
+    private final ObjectMapper mapper = new ObjectMapper();
+    private final OkHttpClient okHttpClient = new OkHttpClient().newBuilder()
+            .connectTimeout(5, TimeUnit.SECONDS)
+            .readTimeout(5, TimeUnit.SECONDS)
+            .connectionPool(new ConnectionPool(10, 5, TimeUnit.MINUTES))
+            .build();
     /**
      * Github api调用token 从 <a href="https://github.com/settings/tokens">tokens</a> 获取
      */
@@ -54,21 +63,11 @@ public class ArkLevelService {
      */
     @Value("${maa-copilot.github.repo.tile.path:resource/Arknights-Tile-Pos}")
     private String tilePosPath;
-    private final GithubRepository githubRepo;
-    private final RedisCache redisCache;
-    private final ArkLevelRepository arkLevelRepo;
-    private final ObjectMapper mapper = new ObjectMapper();
-    private final OkHttpClient okHttpClient = new OkHttpClient().newBuilder()
-            .connectTimeout(5, TimeUnit.SECONDS)
-            .readTimeout(5, TimeUnit.SECONDS)
-            .connectionPool(new ConnectionPool(10, 5, TimeUnit.MINUTES))
-            .build();
 
     public List<ArkLevelInfo> getArkLevelInfos() {
         return arkLevelRepo.findAll()
                 .stream()
-                .map(ArkLevelInfo::new)
-                .collect(Collectors.toList());
+                .map(ArkLevelInfo::new).toList();
     }
 
     /**
@@ -101,7 +100,7 @@ public class ArkLevelService {
                 return;
             }
             GithubTree tree = trees.getTree().stream()
-                    .filter(t -> t.getPath().equals(file) && t.getType().equals("tree"))
+                    .filter(t -> t.getPath().equals(file) && "tree".equals(t.getType()))
                     .findFirst()
                     .orElse(null);
             if (tree == null) {
@@ -116,7 +115,7 @@ public class ArkLevelService {
         }
         //根据后缀筛选地图文件列表
         List<GithubTree> levelTrees = trees.getTree().stream()
-                .filter(t -> t.getType().equals("blob") && t.getPath().endsWith(".json"))
+                .filter(t -> "blob".equals(t.getType()) && t.getPath().endsWith(".json"))
                 .collect(Collectors.toList());
         log.info("[LEVEL]已发现{}份地图数据", levelTrees.size());
 
@@ -125,7 +124,7 @@ public class ArkLevelService {
         levelTrees.removeIf(t -> shaList.contains(t.getSha()));
         log.info("[LEVEL]{}份地图数据需要更新", levelTrees.size());
 
-        DownloadTask task = new DownloadTask(levelTrees.size(), (t) -> {
+        DownloadTask task = new DownloadTask(levelTrees.size(), t -> {
             //仅在全部下载任务成功后更新commit缓存
             if (t.isAllSuccess()) {
                 redisCache.setCacheLevelCommit(commit.getSha());

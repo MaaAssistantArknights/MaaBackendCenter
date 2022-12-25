@@ -11,6 +11,7 @@ import plus.maa.backend.repository.entity.MaaUser;
 public interface UserRepository extends MongoRepository<MaaUser, String> {
     /**
      * 根据邮箱（用户唯一登录凭据）查询
+     *
      * @param email 邮箱字段
      * @return 查询用户
      */

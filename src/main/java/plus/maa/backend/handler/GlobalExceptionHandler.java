@@ -6,14 +6,12 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import plus.maa.backend.controller.response.MaaResult;
-import plus.maa.backend.controller.response.MaaResultException;
 
 /**
  * @author john180
@@ -33,7 +31,7 @@ public class GlobalExceptionHandler {
                                                                      HttpServletRequest request) {
         logWarn(request);
         log.warn("请求参数缺失", e);
-        return MaaResult.fail(400,String.format("请求参数缺失:%s", e.getParameterName()));
+        return MaaResult.fail(400, String.format("请求参数缺失:%s", e.getParameterName()));
     }
 
     /**
@@ -47,7 +45,7 @@ public class GlobalExceptionHandler {
                                                                  HttpServletRequest request) {
         logWarn(request);
         log.warn("参数类型不匹配", e);
-        return MaaResult.fail(400,String.format("参数类型不匹配:%s", e.getMessage()));
+        return MaaResult.fail(400, String.format("参数类型不匹配:%s", e.getMessage()));
     }
 
     /**
@@ -63,7 +61,7 @@ public class GlobalExceptionHandler {
         log.warn("参数校验错误", e);
         FieldError fieldError = e.getBindingResult().getFieldError();
         assert fieldError != null;
-        return MaaResult.fail(400,String.format("参数校验错误:%s", fieldError.getDefaultMessage()));
+        return MaaResult.fail(400, String.format("参数校验错误:%s", fieldError.getDefaultMessage()));
     }
 
     /**
@@ -76,7 +74,7 @@ public class GlobalExceptionHandler {
     public MaaResult<String> noHandlerFoundExceptionHandler(NoHandlerFoundException e,
                                                             HttpServletRequest request) {
         log.warn("请求地址不存在", e);
-        return MaaResult.fail(404,String.format("请求地址 %s 不存在", e.getRequestURL()));
+        return MaaResult.fail(404, String.format("请求地址 %s 不存在", e.getRequestURL()));
     }
 
     /**
@@ -90,7 +88,7 @@ public class GlobalExceptionHandler {
                                                                            HttpServletRequest request) {
         logWarn(request);
         log.warn("请求方式错误", e);
-        return MaaResult.fail(405,String.format("请求方法不正确:%s", e.getMessage()));
+        return MaaResult.fail(405, String.format("请求方法不正确:%s", e.getMessage()));
     }
 
     /**
@@ -101,7 +99,7 @@ public class GlobalExceptionHandler {
      */
     @ResponseBody
     @ExceptionHandler(value = Exception.class)
-    public MaaResult<?> defaultExceptionHandler(Exception e,
+    public MaaResult<Void> defaultExceptionHandler(Exception e,
                                                 HttpServletRequest request) {
         logError(request);
         log.error("Exception: ", e);

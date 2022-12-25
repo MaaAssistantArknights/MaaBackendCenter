@@ -13,9 +13,10 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoginRequest {
+public class RegisterDTO {
     @NotBlank(message = "请输入邮箱信息")
     private String email;
+    private String userName;
     @NotBlank(message = "请输入用户密码")
     private String password;
 }

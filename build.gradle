@@ -27,12 +27,15 @@ ext {
 }
 
 dependencies {
+    implementation platform("org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}")
+
     annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
     implementation 'org.springframework.boot:spring-boot-starter-test'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
     //springdoc相关依赖没有被自动管理，必须保留版本号
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.0.2'
 
@@ -41,13 +44,6 @@ dependencies {
 
     implementation 'com.sun.mail:javax.mail:1.6.2'
     implementation 'cn.hutool:hutool-all:5.8.10'
-
-}
-
-dependencyManagement {
-    imports {
-        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
-    }
 }
 
 test {

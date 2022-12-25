@@ -17,8 +17,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
-import plus.maa.backend.service.model.LoginUser;
 import plus.maa.backend.repository.RedisCache;
+import plus.maa.backend.service.model.LoginUser;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -38,7 +38,7 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
     private String secret;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws IOException, ServletException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws IOException, ServletException{
         String token = request.getHeader(header);
         if (!StringUtils.hasText(token)) {
             //未携带token，直接放行，交由后续过滤链处理

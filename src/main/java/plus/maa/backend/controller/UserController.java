@@ -8,10 +8,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
-import plus.maa.backend.controller.request.LoginRequest;
+import plus.maa.backend.controller.request.LoginDTO;
+import plus.maa.backend.controller.request.RegisterDTO;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaUserInfo;
-import plus.maa.backend.repository.entity.MaaUser;
 import plus.maa.backend.service.UserService;
 
 import java.util.Map;
@@ -98,12 +98,12 @@ public class UserController {
      * @return 注册成功用户信息摘要
      */
     @PostMapping("register")
-    public MaaResult<MaaUserInfo> register(@RequestBody MaaUser user) {
+    public MaaResult<MaaUserInfo> register(@RequestBody RegisterDTO user) {
         return userService.register(user);
     }
 
     @PostMapping("login")
-    public MaaResult<Map<String, String>> login(@RequestBody @Valid LoginRequest user) {
+    public MaaResult<Map<String, String>> login(@RequestBody @Valid LoginDTO user) {
         return userService.login(user);
     }
 }
