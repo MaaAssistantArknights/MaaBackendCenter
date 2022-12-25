@@ -47,8 +47,10 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
         }
         //解析token，用密钥验证token是否有效
         String redisKey;
+        String jwtToken;
         if (JWTUtil.verify(token, secret.getBytes())) {
             JWT jwt = JWTUtil.parseToken(token);
+            jwtToken = jwt.getPayload("token").toString();
             DateTime now = DateTime.now();
             DateTime notBefore = DateTime.of((Long) jwt.getPayload(RegisteredPayload.NOT_BEFORE));
             DateTime expiresAt = DateTime.of((Long) jwt.getPayload(RegisteredPayload.EXPIRES_AT));
@@ -63,10 +65,14 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
             throw new RuntimeException("验证失败");
         }
         //从redis中获取用户信息
-        LoginUser loginUser = redisCache.getCacheLoginUser(redisKey);
+        LoginUser loginUser = redisCache.getCache(redisKey, LoginUser.class);
         if (Objects.isNull(loginUser)) {
             throw new RuntimeException("验证失败");
         }
+        if (!loginUser.getTokens().contains(jwtToken)) {
+            throw new RuntimeException("验证失败");
+        }
+
         //存入SecurityContext
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(loginUser, null, null);
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import plus.maa.backend.common.bo.EmailBusinessObject;
 import plus.maa.backend.repository.RedisCache;
 
-import java.util.concurrent.TimeUnit;
+import java.util.Objects;
 
 /**
  * @author LoMu
@@ -16,9 +16,10 @@ import java.util.concurrent.TimeUnit;
 @Service
 @RequiredArgsConstructor
 public class EmailService {
-    private final RedisCache redisCache;
     @Value("${maa-copilot.vcode.expire:600}")
     private int expire;
+
+    private final RedisCache redisCache;
 
     /**
      * 发送验证码
@@ -27,14 +28,21 @@ public class EmailService {
      *
      * @param email 邮箱
      */
-    public void sendCaptcha(String email) {
+    public void sendVCode(String email) {
         //6位随机数验证码
-        String captcha = RandomStringUtils.random(6, true, true);
+        String vcode = RandomStringUtils.random(6, true, true);
         new EmailBusinessObject()
                 .setEmail(email)
-                .sendVerificationCodeMessage(captcha);
+                .sendVerificationCodeMessage(vcode);
         //存redis
-        redisCache.setCacheEmailVerificationCode("vCodeEmail:" + email, captcha, expire, TimeUnit.SECONDS);
+        redisCache.setCache("vCodeEmail:" + email, vcode, expire);
+    }
 
+    public boolean verifyVCode(String email, String vcode) {
+        String cacheVCode = redisCache.getCache("vCodeEmail:" + email, String.class);
+        if (!Objects.equals(cacheVCode, vcode)) {
+            throw new RuntimeException("验证码错误！");
+        }
+        return true;
     }
 }
