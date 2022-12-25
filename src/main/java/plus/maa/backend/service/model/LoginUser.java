@@ -1,9 +1,7 @@
 package plus.maa.backend.service.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import plus.maa.backend.repository.entity.MaaUser;
@@ -16,7 +14,9 @@ import java.util.Collection;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@RequiredArgsConstructor
 public class LoginUser implements UserDetails {
+    @NonNull
     private MaaUser maaUser;
     private String token = "";
 
