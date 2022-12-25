@@ -17,17 +17,17 @@ import java.util.List;
 public class CopiltoPeration implements Serializable {
     private String id;
 
-    @NotBlank(message = "关卡名，必选。关卡中文名")
+    //关卡名
     private String stageName;
 
     //上传者
     private String uploader;
 
     //查看次数
-    private Integer views;
+    private int views;
 
     //热度
-    private Integer hotScore;
+    private int hotScore;
 
     //评级
     private Integer ratingLevel;
@@ -36,7 +36,7 @@ public class CopiltoPeration implements Serializable {
     private double ratingRatio;
 
     //难度
-    private Integer difficulty;
+    private int difficulty;
 
     //最低要求版本号
     private String minimumRequired;
