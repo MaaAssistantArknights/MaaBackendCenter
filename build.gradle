@@ -41,6 +41,8 @@ dependencies {
 
     implementation 'com.sun.mail:javax.mail:1.6.2'
     implementation 'cn.hutool:hutool-all:5.8.10'
+    implementation 'org.mapstruct:mapstruct:1.5.3.Final'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.3.Final'
 
 }
 

@@ -16,6 +16,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import plus.maa.backend.common.utils.converter.MaaUserConverter;
 import plus.maa.backend.controller.request.LoginRequest;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaResultException;
@@ -144,14 +145,12 @@ public class UserService {
         String rawPassword = user.getPassword();
         String encode = new BCryptPasswordEncoder().encode(rawPassword);
         user.setPassword(encode);
-        MaaUserInfo userInfo;
         try {
             MaaUser save = userRepository.save(user);
-            userInfo = new MaaUserInfo(save);
+            return MaaResult.success(MaaUserConverter.INSTANCE.convert(save));
         } catch (DuplicateKeyException e) {
             return MaaResult.fail(10001, "用户已存在");
         }
-        return MaaResult.success(userInfo);
     }
 
     /**
@@ -169,7 +168,7 @@ public class UserService {
             if (!Objects.isNull(user)) {
                 String jwtToken = jwt.getPayload("token").toString();
                 if (Objects.equals(loginUser.getToken(), jwtToken)) {
-                    return MaaResult.success(new MaaUserInfo(user));
+                    return MaaResult.success(MaaUserConverter.INSTANCE.convert(user));
                 }
             }
         }

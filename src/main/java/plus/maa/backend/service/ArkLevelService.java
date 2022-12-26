@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import plus.maa.backend.common.utils.converter.ArkLevelConverter;
 import plus.maa.backend.controller.response.ArkLevelInfo;
 import plus.maa.backend.repository.GithubRepository;
 import plus.maa.backend.repository.RedisCache;
@@ -67,7 +68,7 @@ public class ArkLevelService {
     public List<ArkLevelInfo> getArkLevelInfos() {
         return arkLevelRepo.findAll()
                 .stream()
-                .map(ArkLevelInfo::new)
+                .map(ArkLevelConverter.INSTANCE::convert)
                 .collect(Collectors.toList());
     }
 
