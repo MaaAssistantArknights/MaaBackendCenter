@@ -83,9 +83,12 @@ public class UserService {
         //把完整的用户信息存入Redis，UserID作为Key
         String cacheKey = "LOGIN:" + userId;
         redisCache.updateCache(cacheKey, LoginUser.class, principal, cacheUser -> {
-            List<String> tokens = cacheUser.getTokens();
-            tokens.add(token);
-            cacheUser.setTokens(tokens);
+            String cacheToken = cacheUser.getToken();
+            if (cacheToken != null && !cacheToken.equals("")) {
+                payload.put("token", cacheToken);
+            } else {
+                cacheUser.setToken(token);
+            }
             return cacheUser;
         }, expire);
 
@@ -102,19 +105,29 @@ public class UserService {
             MaaUser user = loginUser.getMaaUser();
             if (!Objects.isNull(user)) {
                 String jwtToken = jwt.getPayload("token").toString();
-                if (loginUser.getTokens().contains(jwtToken)) {
+                if (Objects.equals(loginUser.getToken(), jwtToken)) {
                     //TODO:修改密码的逻辑
-                    //以下更新jwt
-                    redisCache.updateCache(redisKey, LoginUser.class, null, cacheUser -> {
-                        if (Objects.isNull(cacheUser)) {
-                            throw new MaaResultException(10002, "用户未登录");
+                    //以下更新jwt-token并重新签发jwt
+                    String newJwtToken = RandomStringUtils.random(16, true, true);
+                    DateTime now = DateTime.now();
+                    DateTime newTime = now.offsetNew(DateField.SECOND, expire);
+                    Map<String, Object> payload = new HashMap<>(4) {
+                        {
+                            put(JWTPayload.ISSUED_AT, now.getTime());
+                            put(JWTPayload.EXPIRES_AT, newTime.getTime());
+                            put(JWTPayload.NOT_BEFORE, now.getTime());
+                            put("userId", user.getUserId());
+                            put("token", newJwtToken);
                         }
-                        List<String> tokens = cacheUser.getTokens();
-                        tokens.clear();
-                        tokens.add(jwtToken);
-                        cacheUser.setTokens(tokens);
+                    };
+
+                    redisCache.updateCache(redisKey, LoginUser.class, loginUser, cacheUser -> {
+                        cacheUser.setToken(newJwtToken);
                         return cacheUser;
                     }, expire);
+
+                    String newJwt = JWTUtil.createToken(payload, secret.getBytes());
+                    //TODO:通知客户端更新jwt
                 }
             }
         }
@@ -155,7 +168,7 @@ public class UserService {
             MaaUser user = loginUser.getMaaUser();
             if (!Objects.isNull(user)) {
                 String jwtToken = jwt.getPayload("token").toString();
-                if (loginUser.getTokens().contains(jwtToken)) {
+                if (Objects.equals(loginUser.getToken(), jwtToken)) {
                     return MaaResult.success(new MaaUserInfo(user));
                 }
             }

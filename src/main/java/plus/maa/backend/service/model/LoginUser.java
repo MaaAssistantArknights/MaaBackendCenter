@@ -1,16 +1,12 @@
 package plus.maa.backend.service.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import plus.maa.backend.repository.entity.MaaUser;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * @author AnselYuki
@@ -20,7 +16,11 @@ import java.util.List;
 @AllArgsConstructor
 public class LoginUser implements UserDetails {
     private MaaUser maaUser;
-    private List<String> tokens = new ArrayList<>();
+    private String token = "";
+
+    public LoginUser(MaaUser user) {
+        maaUser = user;
+    }
 
     @Override
     @JsonIgnore
