@@ -9,7 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.controller.request.LoginDTO;
+import plus.maa.backend.controller.request.PasswordUpdateDTO;
 import plus.maa.backend.controller.request.RegisterDTO;
+import plus.maa.backend.controller.request.UserInfoUpdateDTO;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaUserInfo;
 import plus.maa.backend.service.UserService;
@@ -56,16 +58,20 @@ public class UserController {
         return null;
     }
 
+    /**
+     * 更新当前用户的密码
+     *
+     * @return http响应
+     */
     @PostMapping("update/password")
-    public MaaResult<Void> updatePassword() {
-        //TODO
-        return null;
+    public MaaResult<MaaUserInfo> updatePassword(@RequestBody @Valid PasswordUpdateDTO updateDTO, HttpServletRequest request) {
+        String token = request.getHeader(header);
+        return userService.modifyPassword(token, updateDTO);
     }
 
     @PostMapping("update/info")
-    public MaaResult<Void> updateInfo() {
-        //TODO
-        return null;
+    public MaaResult<Void> updateInfo(UserInfoUpdateDTO updateDTO) {
+        return userService.updateUserInfo(updateDTO);
     }
 
     @PostMapping("password/reset")
