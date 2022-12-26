@@ -14,7 +14,7 @@ import plus.maa.backend.controller.response.ArkLevelInfo;
 import plus.maa.backend.repository.GithubRepository;
 import plus.maa.backend.repository.RedisCache;
 import plus.maa.backend.repository.entity.ArkLevel;
-import plus.maa.backend.repository.entity.ArkLevelRepository;
+import plus.maa.backend.repository.ArkLevelRepository;
 import plus.maa.backend.repository.entity.ArkLevelSha;
 import plus.maa.backend.repository.entity.ArknightsTilePos;
 import plus.maa.backend.repository.entity.github.GithubCommit;
