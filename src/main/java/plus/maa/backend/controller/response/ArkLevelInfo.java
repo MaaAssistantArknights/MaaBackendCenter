@@ -5,8 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
-import org.springframework.beans.BeanUtils;
-import plus.maa.backend.repository.entity.ArkLevel;
 
 /**
  * @author john180
@@ -26,7 +24,4 @@ public class ArkLevelInfo {
     private int height;
     private boolean custom;
 
-    public ArkLevelInfo(ArkLevel level) {
-        BeanUtils.copyProperties(level, this);
-    }
 }
