@@ -8,6 +8,7 @@ import cn.hutool.jwt.JWTUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -25,7 +26,6 @@ import plus.maa.backend.repository.entity.MaaUser;
 import plus.maa.backend.service.model.LoginUser;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -84,7 +84,7 @@ public class UserService {
         String cacheKey = "LOGIN:" + userId;
         redisCache.updateCache(cacheKey, LoginUser.class, principal, cacheUser -> {
             String cacheToken = cacheUser.getToken();
-            if (cacheToken != null && !cacheToken.equals("")) {
+            if (StringUtils.isNotEmpty(cacheToken)) {
                 payload.put("token", cacheToken);
             } else {
                 cacheUser.setToken(token);
