@@ -43,6 +43,7 @@ dependencies {
     implementation 'cn.hutool:hutool-all:5.8.10'
     implementation 'org.mapstruct:mapstruct:1.5.3.Final'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.3.Final'
+    implementation 'org.eclipse.jgit:org.eclipse.jgit:6.4.0.202211300538-r'
 
 }
 
