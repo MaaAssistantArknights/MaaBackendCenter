@@ -99,10 +99,7 @@ public class GlobalExceptionHandler {
     * @date 2022/12/26 12:00
     */
     @ExceptionHandler(MaaResultException.class)
-    public MaaResult<String>  maaResultExceptionHandler(MaaResultException e,
-                                                       HttpServletRequest request){
-        logWarn(request);
-        log.warn("业务异常: {}",e.getMessage(), e);
+    public MaaResult<String>  maaResultExceptionHandler(MaaResultException e){
         return MaaResult.fail(e.getCode(), e.getMsg());
     }
 
