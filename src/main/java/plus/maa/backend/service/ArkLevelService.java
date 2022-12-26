@@ -12,12 +12,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import plus.maa.backend.common.utils.converter.ArkLevelConverter;
 import plus.maa.backend.controller.response.ArkLevelInfo;
+import plus.maa.backend.repository.ArkLevelRepository;
 import plus.maa.backend.repository.GithubRepository;
 import plus.maa.backend.repository.RedisCache;
 import plus.maa.backend.repository.entity.ArkLevel;
-import plus.maa.backend.repository.ArkLevelRepository;
 import plus.maa.backend.repository.entity.ArkLevelSha;
-import plus.maa.backend.repository.entity.ArknightsTilePos;
+import plus.maa.backend.repository.entity.gamedata.ArkTilePos;
 import plus.maa.backend.repository.entity.github.GithubCommit;
 import plus.maa.backend.repository.entity.github.GithubTree;
 import plus.maa.backend.repository.entity.github.GithubTrees;
@@ -27,7 +27,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -58,12 +57,10 @@ public class ArkLevelService {
     private final GithubRepository githubRepo;
     private final RedisCache redisCache;
     private final ArkLevelRepository arkLevelRepo;
+    private final ArkLevelParserService parserService;
+    private final ArkGameDataService gameDataService;
     private final ObjectMapper mapper = new ObjectMapper();
-    private final OkHttpClient okHttpClient = new OkHttpClient().newBuilder()
-            .connectTimeout(5, TimeUnit.SECONDS)
-            .readTimeout(5, TimeUnit.SECONDS)
-            .connectionPool(new ConnectionPool(10, 5, TimeUnit.MINUTES))
-            .build();
+    private final OkHttpClient okHttpClient;
 
     public List<ArkLevelInfo> getArkLevelInfos() {
         return arkLevelRepo.findAll()
@@ -125,6 +122,11 @@ public class ArkLevelService {
         List<String> shaList = arkLevelRepo.findAllShaBy().stream().map(ArkLevelSha::getSha).toList();
         levelTrees.removeIf(t -> shaList.contains(t.getSha()));
         log.info("[LEVEL]{}份地图数据需要更新", levelTrees.size());
+        if (levelTrees.isEmpty()) {
+            return;
+        }
+        //同步GameData仓库数据
+        gameDataService.syncGameData();
 
         DownloadTask task = new DownloadTask(levelTrees.size(), (t) -> {
             //仅在全部下载任务成功后更新commit缓存
@@ -160,57 +162,20 @@ public class ArkLevelService {
                     log.error("[LEVEL]下载地图数据失败:" + tree.getPath());
                     return;
                 }
-                ArknightsTilePos tilePos = mapper.readValue(body.string(), ArknightsTilePos.class);
+                ArkTilePos tilePos = mapper.readValue(body.string(), ArkTilePos.class);
 
-                ArkLevel level = parseLevel(tilePos, tree.getSha());
+                ArkLevel level = parserService.parseLevel(tilePos, tree.getSha());
+                if (level == null) {
+                    task.fail();
+                    log.info("[LEVEL]地图数据解析失败:" + tree.getPath());
+                    return;
+                }
                 arkLevelRepo.save(level);
 
                 task.success();
                 log.info("[LEVEL]下载地图数据 {} 成功, 进度{}/{}, 用时:{}s", tilePos.getName(), task.getCurrent(), task.getTotal(), task.getDuration());
             }
         });
-    }
-
-    /**
-     * 具体地图信息生成规则见
-     * <a href="https://github.com/MaaAssistantArknights/MaaCopilotServer/blob/main/src/MaaCopilotServer.GameData/GameDataParser.cs">GameDataParser</a>
-     * 尚未全部实现 <br>
-     * TODO 完成剩余字段实现
-     */
-    private ArkLevel parseLevel(ArknightsTilePos tilePos, String sha) {
-        String type = parseTypeName(tilePos.getLevelId());
-        return ArkLevel.builder()
-                .levelId(tilePos.getLevelId())
-                .sha(sha)
-                .catOne(type)
-                .catTwo("")
-                .catThree(tilePos.getStageId())
-                .name(tilePos.getName())
-                .width(tilePos.getWidth())
-                .height(tilePos.getHeight())
-                .build();
-    }
-
-    private String parseTypeName(String levelId) {
-        String type;
-        String[] ids = levelId.split("/");
-        if (levelId.toLowerCase().startsWith("obt")) {
-            type = ids[1];
-        } else {
-            type = ids[0];
-        }
-        return switch (type.toLowerCase()) {
-            case "main", "hard" -> "主题曲";
-            case "weekly", "promote" -> "资源收集";
-            case "activities" -> "活动关卡";
-            case "campaign" -> "剿灭作战";
-            case "memory" -> "悖论模拟";
-            case "rune" -> "危机合约";
-            default -> {
-                log.error("未知关卡类型:{}", levelId);
-                yield "未知类型:" + type;
-            }
-        };
     }
 
     @Data
