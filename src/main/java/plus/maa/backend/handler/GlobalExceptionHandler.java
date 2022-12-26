@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import plus.maa.backend.controller.response.MaaResult;
+import plus.maa.backend.controller.response.MaaResultException;
 
 /**
  * @author john180
@@ -92,6 +93,17 @@ public class GlobalExceptionHandler {
     }
 
     /**
+    * @author cbc
+    * @description
+    * @return plus.maa.backend.controller.response.MaaResult<java.lang.String>
+    * @date 2022/12/26 12:00
+    */
+    @ExceptionHandler(MaaResultException.class)
+    public MaaResult<String>  maaResultExceptionHandler(MaaResultException e){
+        return MaaResult.fail(e.getCode(), e.getMsg());
+    }
+
+    /**
      * @author john180
      * @description 服务器内部错误，异常兜底处理
      * @return: plus.maa.backend.controller.response.MaaResult<?>
@@ -99,7 +111,7 @@ public class GlobalExceptionHandler {
      */
     @ResponseBody
     @ExceptionHandler(value = Exception.class)
-    public MaaResult<Void> defaultExceptionHandler(Exception e,
+    public MaaResult<?> defaultExceptionHandler(Exception e,
                                                 HttpServletRequest request) {
         logError(request);
         log.error("Exception: ", e);

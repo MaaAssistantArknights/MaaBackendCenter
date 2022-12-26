@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -69,14 +70,14 @@ public class RedisCache {
         T result;
         try {
             String json = redisTemplate.opsForValue().get(key);
-            if (json == null || json.isEmpty()) {
+            if (StringUtils.isEmpty(json)) {
                 if (onMiss != null) {
                     //上锁
                     synchronized (RedisCache.class) {
                         //再次查询缓存，目的是判断是否前面的线程已经set过了
                         json = redisTemplate.opsForValue().get(key);
                         //第二次校验缓存是否存在
-                        if (json == null || json.isEmpty()) {
+                        if (StringUtils.isEmpty(json)) {
                             result = onMiss.get();
                             //数据库中不存在
                             if (result == null) {
@@ -111,7 +112,7 @@ public class RedisCache {
         try {
             synchronized (RedisCache.class) {
                 String json = redisTemplate.opsForValue().get(key);
-                if (json == null || json.isEmpty()) {
+                if (StringUtils.isEmpty(json)) {
                     result = defaultValue;
                 } else {
                     result = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).readValue(json, valueType);

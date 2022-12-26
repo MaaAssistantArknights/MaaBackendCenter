@@ -9,7 +9,6 @@ spring:
       auto-index-creation: true
   application:
     name: MaaBackendCenter
-    version: 1.0-SNAPSHOT
 server:
   # 8848钛金接口.jpg
   port: 8848
