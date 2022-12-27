@@ -4,8 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import plus.maa.backend.controller.request.CopilotRequest;
+import plus.maa.backend.controller.response.CopilotPageInfo;
 import plus.maa.backend.controller.response.MaaResult;
-import plus.maa.backend.repository.entity.CopiltoPeration;
+import plus.maa.backend.repository.entity.CopilotOperation;
+import plus.maa.backend.service.CopilotOperationService;
 
 /**
  * @author LoMu
@@ -16,38 +18,37 @@ import plus.maa.backend.repository.entity.CopiltoPeration;
 @RestController
 @RequestMapping("copilot")
 public class CopilotController {
+    private final CopilotOperationService copilotPerationService;
 
     @PostMapping("upload")
-    public MaaResult<CopiltoPeration> uploadCoplilot(@RequestBody CopiltoPeration copiltoPeration) {
-        return null;
+    public MaaResult<String> uploadCoplilot(@RequestBody CopilotOperation copiltoPeration) {
+        return copilotPerationService.upload(copiltoPeration);
     }
 
     @PostMapping("delete")
-    public MaaResult<Void> deleteCoplilot(CopilotRequest request) {
-        return null;
+    public MaaResult<Void> deleteCoplilot(@RequestBody CopilotRequest request) {
+        return copilotPerationService.delete(request);
     }
 
-    @GetMapping("get")
-    public MaaResult<Void> getCoplilotById(CopilotRequest request) {
-        System.out.println(request.getId().toString() + request.getUploaderId());
-        return null;
+    @GetMapping("get/{id}")
+    public MaaResult<CopilotOperation> getCoplilotById(@PathVariable("id") String id) {
+        return copilotPerationService.getCoplilotById(id);
     }
 
 
     @GetMapping("query")
     //id
-    public MaaResult<CopiltoPeration> queriesCopilotCopiltot(CopilotRequest request) {
-        System.out.println(request.getId());
-        return null;
+    public MaaResult<CopilotPageInfo> queriesCopilotCopiltot(CopilotRequest request) {
+        return copilotPerationService.queriesCopilot(request);
     }
 
     @PostMapping("update")
-    public MaaResult<Void> updatesCopilot(CopiltoPeration copiltoPeration) {
-        return null;
+    public MaaResult<Void> updateCopilot(CopilotOperation copiltoPeration) {
+        return copilotPerationService.update(copiltoPeration);
     }
 
     @PostMapping("rating")
-    public MaaResult<Void> ratesCopilotOperation() {
+    public MaaResult<Void> ratesCopilotOperation(CopilotRequest request) {
         return null;
     }
 

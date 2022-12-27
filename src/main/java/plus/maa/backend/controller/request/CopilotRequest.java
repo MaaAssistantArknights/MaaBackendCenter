@@ -9,17 +9,20 @@ import lombok.Data;
 
 @Data
 public class CopilotRequest {
-    private Integer id;
+    private String id;
     private Integer page;
     private Integer limit;
     private String levelKeyword;
     private String operator;
     private String content;
     private String uploader;
+    private String document;
     private String uploaderId;
-    private String desc;
-    private String orderBy;
+    private Boolean desc;
+    private String orderby;
     private String language;
+
+    private String rating;
 
     public void setLevel_keyword(String levelKeyword) {
         this.levelKeyword = levelKeyword;
