@@ -1,4 +1,4 @@
-package plus.maa.backend.repository.entity;
+package plus.maa.backend.repository.entity.gamedata;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
@@ -14,7 +14,7 @@ import java.util.List;
  */
 @Data
 @JsonNaming(PropertyNamingStrategies.LowerCamelCaseStrategy.class)
-public class ArknightsTilePos {
+public class ArkTilePos {
 
     private String code;
     private Integer height;

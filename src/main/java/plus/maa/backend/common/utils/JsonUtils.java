@@ -1,7 +1,9 @@
 package plus.maa.backend.common.utils;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +24,10 @@ public class JsonUtils {
      */
     @Bean
     public ObjectMapper defaultObjectMapper() {
-        return new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+        return JsonMapper.builder()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                .build()
+                .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
     }
 
 }
