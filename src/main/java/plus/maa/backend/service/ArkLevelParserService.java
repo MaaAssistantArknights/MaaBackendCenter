@@ -6,6 +6,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 import plus.maa.backend.repository.entity.ArkLevel;
+import plus.maa.backend.repository.entity.gamedata.ArkActivity;
 import plus.maa.backend.repository.entity.gamedata.ArkStage;
 import plus.maa.backend.repository.entity.gamedata.ArkTilePos;
 import plus.maa.backend.repository.entity.gamedata.ArkZone;
@@ -43,8 +44,8 @@ public class ArkLevelParserService {
         String type = (ids[0].equals("obt")) ? ids[1] : ids[0];
         return switch (type) {
             case "main", "hard" -> parseMainline(level, tilePos);
-            case "weekly", "promote" -> parseWeekly(level);
-            case "activities" -> parseActivities(level);
+            case "weekly", "promote" -> parseWeekly(level, tilePos);
+            case "activities" -> parseActivities(level, tilePos);
             case "campaign" -> parseCampaign(level);
             case "memory" -> parseMemory(level);
             case "rune" -> parseRune(level);
@@ -72,15 +73,8 @@ public class ArkLevelParserService {
         String chapterStr = stageCodeEncoded.split("-")[0];                   // 10 (str)
         int chapter = Integer.parseInt(chapterStr);                           // 10 (int)
 
-        ArkStage stage = dataService.findStage(level.getLevelId(), tilePos.getCode(), tilePos.getStageId());
-        if (stage == null) {
-            log.error("[PARSER]stage信息不存在:{}, Level: {}", tilePos.getStageId(), level.getLevelId());
-            return null;
-        }
-
-        ArkZone zone = dataService.getZone(stage.getZoneId());
+        ArkZone zone = dataService.findZone(level.getLevelId(), tilePos.getCode(), tilePos.getStageId());
         if (zone == null) {
-            log.error("[PARSER]zone信息不存在:{}, Level: {}", stage.getZoneId(), level.getLevelId());
             return null;
         }
 
@@ -100,8 +94,15 @@ public class ArkLevelParserService {
      * 资源收集 -> 空中威胁 -> CA-5 == obt/weekly/level_weekly_fly_5<br>
      * 资源收集 -> 身先士卒 -> PR-D-2 == obt/promote/level_promote_d_2<br>
      */
-    private ArkLevel parseWeekly(ArkLevel level) {
+    private ArkLevel parseWeekly(ArkLevel level, ArkTilePos tilePos) {
         level.setCatOne("资源收集");
+
+        ArkZone zone = dataService.findZone(level.getLevelId(), tilePos.getCode(), tilePos.getStageId());
+        if (zone == null) {
+            return null;
+        }
+
+        level.setCatTwo(zone.getZoneNameSecond());
         return level;
     }
 
@@ -111,8 +112,22 @@ public class ArkLevelParserService {
      * eg:<br>
      * 活动关卡 -> 战地秘闻 -> SW-EV-1 == activities/act4d0/level_act4d0_01<br>
      */
-    private ArkLevel parseActivities(ArkLevel level) {
+    private ArkLevel parseActivities(ArkLevel level, ArkTilePos tilePos) {
         level.setCatOne("活动关卡");
+
+        ArkStage stage = dataService.findStage(level.getLevelId(), tilePos.getCode(), tilePos.getStageId());
+        if (stage == null) {
+            log.error("[PARSER]活动关卡未找到stage信息:{}", level.getLevelId());
+            return null;
+        }
+
+        ArkActivity act = dataService.findActivityByZoneId(stage.getZoneId());
+        if (act == null) {
+            log.error("[PARSER]活动关卡未找到activity信息:{}", level.getLevelId());
+            return null;
+        }
+
+        level.setCatTwo(act.getName());
         return level;
     }
 
