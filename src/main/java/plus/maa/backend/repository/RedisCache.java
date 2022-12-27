@@ -5,11 +5,13 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -68,14 +70,14 @@ public class RedisCache {
         T result;
         try {
             String json = redisTemplate.opsForValue().get(key);
-            if (json == null || json.isEmpty()) {
+            if (StringUtils.isEmpty(json)) {
                 if (onMiss != null) {
                     //上锁
                     synchronized (RedisCache.class) {
                         //再次查询缓存，目的是判断是否前面的线程已经set过了
                         json = redisTemplate.opsForValue().get(key);
                         //第二次校验缓存是否存在
-                        if (json == null || json.isEmpty()) {
+                        if (StringUtils.isEmpty(json)) {
                             result = onMiss.get();
                             //数据库中不存在
                             if (result == null) {
@@ -95,6 +97,32 @@ public class RedisCache {
             return null;
         }
         return result;
+    }
+
+    public <T> void updateCache(final String key, Class<T> valueType, T defaultValue, Function<T, T> onUpdate) {
+        updateCache(key, valueType, defaultValue, onUpdate, expire, TimeUnit.SECONDS);
+    }
+
+    public <T> void updateCache(final String key, Class<T> valueType, T defaultValue, Function<T, T> onUpdate, long timeout) {
+        updateCache(key, valueType, defaultValue, onUpdate, timeout, TimeUnit.SECONDS);
+    }
+
+    public <T> void updateCache(final String key, Class<T> valueType, T defaultValue, Function<T, T> onUpdate, long timeout, TimeUnit timeUnit) {
+        T result;
+        try {
+            synchronized (RedisCache.class) {
+                String json = redisTemplate.opsForValue().get(key);
+                if (StringUtils.isEmpty(json)) {
+                    result = defaultValue;
+                } else {
+                    result = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).readValue(json, valueType);
+                }
+                result = onUpdate.apply(result);
+                setCache(key, result, timeout, timeUnit);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public String getCacheLevelCommit() {
