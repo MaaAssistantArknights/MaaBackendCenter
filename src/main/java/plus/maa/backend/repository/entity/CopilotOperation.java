@@ -3,8 +3,14 @@ package plus.maa.backend.repository.entity;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.Data;
+import lombok.experimental.Accessors;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -13,7 +19,12 @@ import java.util.List;
  */
 @Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class CopiltoPeration implements Serializable {
+@Accessors(chain = true)
+@Document("copilot_operation")
+public class CopilotOperation implements Serializable {
+
+    @Id
+    //作业id
     private String id;
 
     //关卡名
@@ -23,6 +34,7 @@ public class CopiltoPeration implements Serializable {
     private String uploader;
 
     //上传者id
+    @Indexed
     private String uploaderId;
 
     //查看次数
@@ -40,20 +52,23 @@ public class CopiltoPeration implements Serializable {
     //难度
     private int difficulty;
 
-    //版本号(文档中说明:最低要求 maa 版本号，必选。保留字段，暂未实现)
+    //版本号(文档中说明:最低要求 maa 版本号，必选。保留字段)
     private String minimumRequired;
 
     //指定干员
-    private Oerators operators;
+    private List<Oerators> operators;
     //群组
-    private Groups groups;
+    private List<Groups> groups;
     // 战斗中的操作
-    private Action actions;
+    private List<Action> actions;
 
     //描述
     private Doc doc;
 
-    private ArkLevel level;
+    private ArkLevel arkLevel;
+
+   /* private LocalDateTime createDate;
+    private LocalDateTime updateDate;*/
 
 
     @Data
@@ -62,7 +77,7 @@ public class CopiltoPeration implements Serializable {
         // 干员名
         private String name;
         //技能序号。可选，默认 1
-        private int sill = 1;
+        private int sill;
         // 技能用法。可选，默认 0
         private int skillUsage;
         private Requirements requirements;
@@ -75,12 +90,14 @@ public class CopiltoPeration implements Serializable {
             private int elite;
             // 干员等级。可选，默认为 0
             private int level;
+
             // 技能等级。可选，默认为 0
             private int skillLevel;
             // 模组编号。可选，默认为 0
             private int module;
             // 潜能要求。可选，默认为 0
             private int potentiality;
+
         }
     }
 
@@ -97,11 +114,12 @@ public class CopiltoPeration implements Serializable {
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public static class Action {
         // 操作类型，可选，默认 "Deploy"
-        private String type = "deploy";
+        private String type;
         private int kills;
         private int costs;
         private int costChanges;
-        private int cooling = -1;
+        //-1
+        private int cooling;
         private String name;
         // 部署干员的位置。
         private Integer[] location;
@@ -116,16 +134,16 @@ public class CopiltoPeration implements Serializable {
         private Long timeout;
         private String doc;
         private String docColor;
-    }
 
+    }
 
     @Data
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public static class Doc {
         private String title;
-        private String title_color;
+        private String titleColor;
         private String details;
-        private String details_color;
-    }
+        private String detailsColor;
 
+    }
 }
