@@ -6,10 +6,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 import plus.maa.backend.repository.entity.ArkLevel;
-import plus.maa.backend.repository.entity.gamedata.ArkActivity;
-import plus.maa.backend.repository.entity.gamedata.ArkStage;
-import plus.maa.backend.repository.entity.gamedata.ArkTilePos;
-import plus.maa.backend.repository.entity.gamedata.ArkZone;
+import plus.maa.backend.repository.entity.gamedata.*;
 
 /**
  * @author john180
@@ -30,6 +27,7 @@ public class ArkLevelParserService {
     public ArkLevel parseLevel(ArkTilePos tilePos, String sha) {
         ArkLevel level = ArkLevel.builder()
                 .levelId(tilePos.getLevelId())
+                .stageId(tilePos.getStageId())
                 .sha(sha)
                 .catThree(tilePos.getCode())
                 .name(tilePos.getName())
@@ -46,12 +44,13 @@ public class ArkLevelParserService {
             case "main", "hard" -> parseMainline(level, tilePos);
             case "weekly", "promote" -> parseWeekly(level, tilePos);
             case "activities" -> parseActivities(level, tilePos);
-            case "campaign" -> parseCampaign(level);
+            case "campaign" -> parseCampaign(level, tilePos);
             case "memory" -> parseMemory(level);
-            case "rune" -> parseRune(level);
-            default -> {
-                log.error("[PARSER]未知关卡类型:{}", level.getLevelId());
-                yield null;
+            case "rune" -> parseRune(level, tilePos);
+            case "legion" -> parseLegion(level, tilePos);
+            default -> {//其它类型地图, 暂时不需要所以不处理
+                log.warn("[PARSER]未知关卡类型:{}", level.getLevelId());
+                yield parseUnknown(level, type);
             }
         };
     }
@@ -137,8 +136,10 @@ public class ArkLevelParserService {
      * eg:<br>
      * 剿灭作战	-> 炎国 -> 龙门外环 == obt/campaign/level_camp_02<br>
      */
-    private ArkLevel parseCampaign(ArkLevel level) {
+    private ArkLevel parseCampaign(ArkLevel level, ArkTilePos tilePos) {
         level.setCatOne("剿灭作战");
+        level.setCatTwo(tilePos.getCode());
+        level.setCatThree(level.getName());
         return level;
     }
 
@@ -150,11 +151,58 @@ public class ArkLevelParserService {
      */
     private ArkLevel parseMemory(ArkLevel level) {
         level.setCatOne("悖论模拟");
+
+        String[] chIdSplit = level.getStageId().split("_");     //mem_aurora_1
+        if (chIdSplit.length != 3) {
+            log.error("[PARSER]悖论模拟关卡stageId异常:{}, level:{}", level.getStageId(), level.getLevelId());
+            return null;
+        }
+        String chId = chIdSplit[1];     //aurora
+        ArkCharacter character = dataService.findCharacter(chId);
+        if (character == null) {
+            log.error("[PARSER]悖论模拟关卡未找到角色信息:{}, level:{}", level.getStageId(), level.getLevelId());
+            return null;
+        }
+
+        level.setCatTwo(parseProfession(character.getProfession()));
+        level.setCatThree(character.getName());
+
         return level;
     }
 
-    private ArkLevel parseRune(ArkLevel level) {
+    private ArkLevel parseRune(ArkLevel level, ArkTilePos tilePos) {
         level.setCatOne("危机合约");
+        level.setCatTwo(tilePos.getCode());
+        level.setCatThree(level.getName());
+        return level;
+    }
+
+    /**
+     * Legion level will be tagged like this:<br>
+     * LEGION -> POSITION -> StageCode == obt/legion/TOWER_ID/LEVEL_ID<br>
+     * eg:<br>
+     * 保全派驻 -> 阿卡胡拉丛林 -> LT-1 == obt/legion/lt06/level_lt06_01<br>
+     */
+    private ArkLevel parseLegion(ArkLevel level, ArkTilePos tilePos) {
+        level.setCatOne("保全派驻");
+
+        ArkStage stage = dataService.findStage(level.getLevelId(), tilePos.getCode(), tilePos.getStageId());
+        if (stage == null) {
+            log.error("[PARSER]保全派驻关卡未找到stage信息:{}", level.getLevelId());
+            return null;
+        }
+        ArkTower tower = dataService.findTower(stage.getZoneId());
+        if (tower == null) {
+            log.error("[PARSER]保全派驻关卡未找到tower信息:{}, level:{}", stage.getZoneId(), level.getLevelId());
+            return null;
+        }
+        level.setCatTwo(tower.getName());
+        level.setCatThree(tilePos.getCode());
+        return level;
+    }
+
+    private ArkLevel parseUnknown(ArkLevel level, String type) {
+        level.setCatOne("未知类型" + type);
         return level;
     }
 
@@ -163,6 +211,20 @@ public class ArkLevelParserService {
             case "easy" -> "简单";
             case "tough" -> "磨难";
             default -> "标准";
+        };
+    }
+
+    private String parseProfession(String professionId) {
+        return switch (professionId.toLowerCase()) {
+            case "medic" -> "医疗";
+            case "special" -> "特种";
+            case "warrior" -> "近卫";
+            case "sniper" -> "狙击";
+            case "tank" -> "重装";
+            case "caster" -> "术师";
+            case "pioneer" -> "先锋";
+            case "support" -> "辅助";
+            default -> "未知";
         };
     }
 
