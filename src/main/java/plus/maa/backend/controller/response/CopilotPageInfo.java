@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import plus.maa.backend.repository.entity.CopilotOperation;
+import plus.maa.backend.repository.entity.Copilot;
 
 import java.util.List;
 
@@ -19,5 +19,5 @@ public class CopilotPageInfo {
     private Boolean hasNext;
     private Integer page;
     private Long total;
-    private List<CopilotOperation> data;
+    private List<Copilot> data;
 }

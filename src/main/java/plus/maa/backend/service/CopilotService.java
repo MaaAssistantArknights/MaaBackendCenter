@@ -3,17 +3,22 @@ package plus.maa.backend.service;
 import cn.hutool.core.lang.ObjectId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import plus.maa.backend.controller.request.CopilotRequest;
 import plus.maa.backend.controller.response.CopilotPageInfo;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.repository.CopilotRepository;
-import plus.maa.backend.repository.entity.CopilotOperation;
+import plus.maa.backend.repository.entity.Copilot;
 import plus.maa.backend.repository.entity.MaaUser;
 import plus.maa.backend.service.model.LoginUser;
 
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -23,9 +28,10 @@ import java.util.Optional;
  */
 @Service
 @RequiredArgsConstructor
-public class CopilotOperationService {
+public class CopilotService {
 
     private final CopilotRepository copilotRepository;
+    private final MongoTemplate mongoTemplate;
 
 
     /**
@@ -44,10 +50,10 @@ public class CopilotOperationService {
      * @param id _id
      * @return CopilotOperation
      */
-    private CopilotOperation findByid(String id) {
-        Optional<CopilotOperation> optional = copilotRepository.findById(id);
+    private Copilot findByid(String id) {
+        Optional<Copilot> optional = copilotRepository.findById(id);
 
-        CopilotOperation copilot;
+        Copilot copilot;
         if (optional.isPresent()) {
             copilot = optional.get();
         } else {
@@ -64,15 +70,15 @@ public class CopilotOperationService {
      */
     private Boolean verifyOwner(String operationId) {
         String userId = getCurrentUser().getMaaUser().getUserId();
-        CopilotOperation copilotOperation = findByid(operationId);
-        return Objects.equals(copilotOperation.getUploaderId(), userId);
+        Copilot copilot = findByid(operationId);
+        return Objects.equals(copilot.getUploaderId(), userId);
     }
 
 
-    public MaaResult<String> upload(CopilotOperation copilotOperation) {
+    public MaaResult<String> upload(Copilot copilot) {
         LoginUser user = getCurrentUser();
         String id = ObjectId.next();
-        copilotOperation
+        copilot
                 .setUploaderId(user.getMaaUser().getUserId())
                 .setUploader(user.getMaaUser().getUserName())
                 /* .setCreateDate(LocalDateTime.now())
@@ -80,7 +86,7 @@ public class CopilotOperationService {
                 .setId(id);
 
         try {
-            copilotRepository.insert(copilotOperation);
+            copilotRepository.insert(copilot);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -100,8 +106,13 @@ public class CopilotOperationService {
     }
 
 
-    public MaaResult<CopilotOperation> getCoplilotById(String id) {
-        return MaaResult.success(findByid(id));
+    public MaaResult<Copilot> getCoplilotById(String id) {
+        Copilot copilot = findByid(id);
+        Query query = Query.query(Criteria.where("id").is(id));
+        Update update = new Update();
+        update.inc("views");
+        mongoTemplate.updateFirst(query, update, Copilot.class);
+        return MaaResult.success(copilot);
     }
 
 
@@ -114,61 +125,93 @@ public class CopilotOperationService {
     public MaaResult<CopilotPageInfo> queriesCopilot(CopilotRequest request) {
         String orderby = "id";
         Sort.Order sortOrder = new Sort.Order(Sort.Direction.ASC, orderby);
-        Integer page = 1;
-        Integer limit = 10;
+        int page = 1;
+        int limit = 10;
         boolean hasNext = false;
 
+        //判断是否有值 无值则为默认
         if (request.getPage() != null && request.getPage() > 0) {
             page = request.getPage();
         }
         if (request.getLimit() != null && request.getLimit() > 0) {
             limit = request.getLimit();
         }
-        if (request.getOrderby() != null && !Objects.equals(request.getOrderby(), "")) {
+        if (request.getOrderby() == null && !"".equals(request.getOrderby())) {
             orderby = request.getOrderby();
         }
-        if (request.getDesc() != null && request.getDesc()) {
+        if (request.getDesc() != null) {
             sortOrder = new Sort.Order(Sort.Direction.DESC, orderby);
         }
-        //分页排序
+
         Pageable pageable = PageRequest.of(
                 page - 1, limit
                 , Sort.by(sortOrder));
 
-        CopilotOperation copilotOperation = new CopilotOperation();
 
         //模糊查询
-        copilotOperation.setDoc(
-                        new CopilotOperation.Doc()
-                                .setTitle(request.getDocument())
-                                .setDetails(request.getDocument()))
-                .setUploader(request.getUploader())
-                .setUploaderId(request.getUploaderId());
-        Example<CopilotOperation> exampleObj = Example.of(
-                copilotOperation, ExampleMatcher.matching()
-                        .withStringMatcher(ExampleMatcher.StringMatcher.CONTAINING)
-                        .withIgnoreNullValues());
+        Query queryObj = new Query();
+        Criteria criteriaObj = new Criteria();
+
+        //or查询
+        criteriaObj.orOperator(
+                Criteria.where("doc.title").regex(request.getDocument()),
+                Criteria.where("doc.details").regex(request.getDocument()),
+                Criteria.where("arklevel.catOne").regex(request.getLevelKeyword()),
+                Criteria.where("arklevel.catTne").regex(request.getLevelKeyword()),
+                Criteria.where("arklevel.catThree").regex(request.getLevelKeyword()),
+                Criteria.where("arklevel.name").regex(request.getLevelKeyword())
+        );
 
 
-        Page<CopilotOperation> pageInfo = copilotRepository.findAll(exampleObj, pageable);
+        // operator 包含或排除干员
+        String operator = request.getOperator();
+        if (!"".equals(operator)) {
+            String[] split = operator.split(",");
+            for (String s : split) {
+                if ("~".equals(s.substring(0, 1))) {
+                    String exclude = s.substring(1);
+                    //排除查询
+                    criteriaObj.norOperator(
+                            Criteria.where("actions.name").regex(exclude));
+                } else {
+                    //包含查询
+                    criteriaObj.and("actions.name").is(s);
+                }
+            }
+        }
+
+        //is 查询
+        if (!"".equals(request.getUploader())) {
+            criteriaObj.and("uploader").is(request.getUploader());
+        }
+
+        queryObj.addCriteria(criteriaObj);
+        //查询总数
+        long count = mongoTemplate.count(queryObj, Copilot.class);
+        List<Copilot> copilots = mongoTemplate.find(queryObj.with(pageable), Copilot.class);
+
+        //计算页面
+        int pageNumber = (int) Math.ceil((double) count / limit);
 
         //判断是否存在下一页
-        if (pageInfo.getTotalElements() - page.longValue() * limit > 0) {
+        if (count - (long) page * limit > 0) {
             hasNext = true;
         }
         CopilotPageInfo copilotPageInfo = new CopilotPageInfo();
-        copilotPageInfo.setPage(pageInfo.getTotalPages())
-                .setTotal(pageInfo.getTotalElements())
+        copilotPageInfo
+                .setTotal(count)
                 .setHasNext(hasNext)
-                .setData(pageInfo.getContent());
+                .setData(copilots)
+                .setPage(pageNumber)
+        ;
         return MaaResult.success(copilotPageInfo);
     }
 
 
-    public MaaResult<Void> update(CopilotOperation copilotOperation) {
-        Boolean owner = verifyOwner(copilotOperation.getId());
+    public MaaResult<Void> update(Copilot copilot) {
+        Boolean owner = verifyOwner(copilot.getId());
         if (owner) {
-            copilotRepository.save(copilotOperation);
+            copilotRepository.save(copilot);
             return MaaResult.success(null);
         } else {
             throw new MaaResultException("无法更新他人作业");

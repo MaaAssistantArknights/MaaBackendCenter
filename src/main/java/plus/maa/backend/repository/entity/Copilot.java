@@ -7,10 +7,10 @@ import lombok.experimental.Accessors;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import plus.maa.backend.controller.response.ArkLevelInfo;
 
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -20,8 +20,8 @@ import java.util.List;
 @Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @Accessors(chain = true)
-@Document("copilot_operation")
-public class CopilotOperation implements Serializable {
+@Document("maa_copilot")
+public class Copilot implements Serializable {
 
     @Id
     //作业id
@@ -65,7 +65,7 @@ public class CopilotOperation implements Serializable {
     //描述
     private Doc doc;
 
-    private ArkLevel arkLevel;
+    private ArkLevelInfo arkLevel;
 
    /* private LocalDateTime createDate;
     private LocalDateTime updateDate;*/

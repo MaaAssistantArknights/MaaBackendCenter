@@ -1,9 +1,8 @@
 package plus.maa.backend.repository;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
-import plus.maa.backend.repository.entity.CopilotOperation;
+import plus.maa.backend.repository.entity.Copilot;
 
 /**
  * @author LoMu
@@ -11,6 +10,6 @@ import plus.maa.backend.repository.entity.CopilotOperation;
  */
 
 @Repository
-public interface CopilotRepository extends MongoRepository<CopilotOperation, String> {
-    
+public interface CopilotRepository extends MongoRepository<Copilot, String> {
+
 }

@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.controller.request.CopilotRequest;
 import plus.maa.backend.controller.response.CopilotPageInfo;
 import plus.maa.backend.controller.response.MaaResult;
-import plus.maa.backend.repository.entity.CopilotOperation;
-import plus.maa.backend.service.CopilotOperationService;
+import plus.maa.backend.repository.entity.Copilot;
+import plus.maa.backend.service.CopilotService;
 
 /**
  * @author LoMu
@@ -18,10 +18,10 @@ import plus.maa.backend.service.CopilotOperationService;
 @RestController
 @RequestMapping("copilot")
 public class CopilotController {
-    private final CopilotOperationService copilotPerationService;
+    private final CopilotService copilotPerationService;
 
     @PostMapping("upload")
-    public MaaResult<String> uploadCoplilot(@RequestBody CopilotOperation copiltoPeration) {
+    public MaaResult<String> uploadCoplilot(@RequestBody Copilot copiltoPeration) {
         return copilotPerationService.upload(copiltoPeration);
     }
 
@@ -31,7 +31,7 @@ public class CopilotController {
     }
 
     @GetMapping("get/{id}")
-    public MaaResult<CopilotOperation> getCoplilotById(@PathVariable("id") String id) {
+    public MaaResult<Copilot> getCoplilotById(@PathVariable("id") String id) {
         return copilotPerationService.getCoplilotById(id);
     }
 
@@ -43,7 +43,7 @@ public class CopilotController {
     }
 
     @PostMapping("update")
-    public MaaResult<Void> updateCopilot(CopilotOperation copiltoPeration) {
+    public MaaResult<Void> updateCopilot(Copilot copiltoPeration) {
         return copilotPerationService.update(copiltoPeration);
     }
 
