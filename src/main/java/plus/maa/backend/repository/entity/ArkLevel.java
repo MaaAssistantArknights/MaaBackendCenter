@@ -21,6 +21,7 @@ public class ArkLevel {
     @Id
     private String id;
     private String levelId;
+    private String stageId;
     //文件版本, 用于判断是否需要更新
     private String sha;
     //地图类型, 例: 主线、活动、危机合约
