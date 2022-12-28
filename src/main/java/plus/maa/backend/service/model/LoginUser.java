@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.repository.entity.MaaUser;
 
 import java.util.Collection;
@@ -75,6 +76,9 @@ public class LoginUser implements UserDetails {
      */
     @Override
     public boolean isEnabled() {
-        return maaUser.getStatus() == 1;
+        if (maaUser.getStatus() != 1) {
+            throw new MaaResultException(" 用户未启用");
+        }
+        return true;
     }
 }

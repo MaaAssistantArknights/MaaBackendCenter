@@ -64,11 +64,7 @@ public class UserService {
         //使用 AuthenticationManager 中的 authenticate 进行用户认证
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(loginDTO.getEmail(), loginDTO.getPassword());
         Authentication authenticate;
-        try {
-            authenticate = authenticationManager.authenticate(authenticationToken);
-        } catch (Exception e) {
-            throw new MaaResultException(403, "用户名或密码不正确");
-        }
+        authenticate = authenticationManager.authenticate(authenticationToken);
         //若认证失败，给出相应提示
         if (Objects.isNull(authenticate)) {
             throw new MaaResultException("登陆失败");
