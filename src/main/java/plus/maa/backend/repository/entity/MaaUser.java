@@ -9,6 +9,7 @@ import lombok.experimental.Accessors;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import plus.maa.backend.controller.request.UserInfoUpdateDTO;
 
 import java.io.Serializable;
 
@@ -29,4 +30,16 @@ public class MaaUser implements Serializable {
     @NotBlank(message = "邮箱为唯一身份标识，不能为空")
     private String email;
     private String password;
+    private Integer status = 0;
+
+    public void updateAttribute(UserInfoUpdateDTO updateDTO) {
+        String userName = updateDTO.getUserName();
+        String email = updateDTO.getEmail();
+        if (!userName.isBlank()) {
+            this.userName = userName;
+        }
+        if (!email.isBlank()) {
+            this.email = userName;
+        }
+    }
 }

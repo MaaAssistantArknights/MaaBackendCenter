@@ -16,8 +16,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import plus.maa.backend.common.MaaStatusCode;
 import plus.maa.backend.controller.request.LoginDTO;
-import plus.maa.backend.controller.request.PasswordUpdateDTO;
 import plus.maa.backend.controller.request.RegisterDTO;
 import plus.maa.backend.controller.request.UserInfoUpdateDTO;
 import plus.maa.backend.controller.response.MaaResult;
@@ -42,10 +42,17 @@ public class UserService {
     private final AuthenticationManager authenticationManager;
     private final RedisCache redisCache;
     private final UserRepository userRepository;
+    private final EmailService emailService;
     @Value("${maa-copilot.jwt.secret}")
     private String secret;
     @Value("${maa-copilot.jwt.expire}")
     private int expire;
+
+    private LoginUser getLoginUserByToken(String token) {
+        JWT jwt = JWTUtil.parseToken(token);
+        String redisKey = "LOGIN:" + jwt.getPayload("userId");
+        return redisCache.getCache(redisKey, LoginUser.class);
+    }
 
     /**
      * 登录方法
@@ -99,8 +106,14 @@ public class UserService {
         return MaaResult.success("登录成功", Map.of("token", jwt));
     }
 
-    public MaaResult<MaaUserInfo> modifyPassword(String token, PasswordUpdateDTO passwordUpdateDTO) {
-        MaaUserInfo userInfo = new MaaUserInfo();
+    /**
+     * 修改密码
+     *
+     * @param token    用户token
+     * @param password 新密码
+     * @return 修改成功响应
+     */
+    public MaaResult<Void> modifyPassword(String token, String password) {
         JWT jwt = JWTUtil.parseToken(token);
         String redisKey = "LOGIN:" + jwt.getPayload("userId");
         LoginUser loginUser = redisCache.getCache(redisKey, LoginUser.class);
@@ -111,7 +124,7 @@ public class UserService {
                 if (Objects.equals(loginUser.getToken(), jwtToken)) {
 
                     //修改密码的逻辑
-                    String newPassword = new BCryptPasswordEncoder().encode(passwordUpdateDTO.getNewPassword());
+                    String newPassword = new BCryptPasswordEncoder().encode(password);
                     user.setPassword(newPassword);
                     userRepository.save(user);
 
@@ -135,11 +148,11 @@ public class UserService {
                     }, expire);
 
                     String newJwt = JWTUtil.createToken(payload, secret.getBytes());
-                    //TODO:通知客户端更新jwt
+                    //TODO 通知客户端更新jwt
                 }
             }
         }
-        return MaaResult.success(userInfo);
+        return MaaResult.success(null);
     }
 
     /**
@@ -166,31 +179,91 @@ public class UserService {
     /**
      * 通过传入的JwtToken来获取当前用户的信息
      *
-     * @param token JwtToken
+     * @param activeCode 邮箱激活码
+     * @param token      JwtToken
      * @return 用户信息封装
      */
-    public MaaResult<MaaUserInfo> findActivateUser(String token) {
-        JWT jwt = JWTUtil.parseToken(token);
-        String redisKey = "LOGIN:" + jwt.getPayload("userId");
-        LoginUser loginUser = redisCache.getCache(redisKey, LoginUser.class);
+    public MaaResult<Void> activateUser(String activeCode, String token) {
+        LoginUser loginUser = getLoginUserByToken(token);
         if (!Objects.isNull(loginUser)) {
             MaaUser user = loginUser.getMaaUser();
             if (!Objects.isNull(user)) {
-                String jwtToken = jwt.getPayload("token").toString();
+                String jwtToken = JWTUtil.parseToken(token).getPayload("token").toString();
                 if (Objects.equals(loginUser.getToken(), jwtToken)) {
-                    return MaaResult.success(new MaaUserInfo(user));
+                    String email = loginUser.getMaaUser().getEmail();
+                    return emailService.verifyVCode(email, activeCode) ? MaaResult.success(null) : MaaResult.fail(MaaStatusCode.MAA_ACTIVE_ERROR);
                 }
             }
         }
-        throw new MaaResultException(10002, "找不到用户");
+        throw new MaaResultException(MaaStatusCode.MAA_USER_NOT_FOUND);
     }
 
-    public MaaResult<Void> updatePassword(PasswordUpdateDTO updateDTO, String token) {
+    /**
+     * 更新用户密码
+     *
+     * @param token     传入token
+     * @param updateDTO 更新参数
+     * @return 成功响应
+     */
+    public MaaResult<Void> updateUserInfo(String token, UserInfoUpdateDTO updateDTO) {
+        LoginUser loginUser = getLoginUserByToken(token);
+        if (!Objects.isNull(loginUser)) {
+            MaaUser user = loginUser.getMaaUser();
+            if (!Objects.isNull(user)) {
+                String jwtToken = JWTUtil.parseToken(token).getPayload("token").toString();
+                if (Objects.equals(loginUser.getToken(), jwtToken)) {
+                    user.updateAttribute(updateDTO);
+                    userRepository.save(user);
+                    return MaaResult.success(null);
+                }
+            }
+        }
+        throw new MaaResultException(MaaStatusCode.MAA_USER_NOT_FOUND);
+    }
 
+    /**
+     * 发送验证码，用户信息从token中获取
+     *
+     * @param token token
+     * @return 成功响应
+     */
+    public MaaResult<Void> senEmailCode(String token) {
+        LoginUser loginUser = getLoginUserByToken(token);
+        if (!Objects.isNull(loginUser)) {
+            MaaUser user = loginUser.getMaaUser();
+            if (!Objects.isNull(user)) {
+                String jwtToken = JWTUtil.parseToken(token).getPayload("token").toString();
+                if (Objects.equals(loginUser.getToken(), jwtToken)) {
+                    String email = loginUser.getEmail();
+                    emailService.sendVCode(email);
+                }
+            }
+        }
+        return MaaResult.success(null);
+    }
+
+    /**
+     * 刷新token
+     *
+     * @param token token
+     * @return 成功响应
+     */
+    public MaaResult<Void> refreshToken(String token) {
+        //TODO 刷新JwtToken
         return null;
     }
 
-    public MaaResult<Void> updateUserInfo(UserInfoUpdateDTO updateDTO) {
-        return null;
+    /**
+     * 通过邮箱激活码更新密码
+     *
+     * @param activeCode 激活码
+     * @param password   新密码
+     * @return 成功响应
+     */
+    public MaaResult<Void> modifyPasswordByActiveCode(String activeCode, String password, String jwtToken) {
+        LoginUser loginUser = getLoginUserByToken(jwtToken);
+        String email = loginUser.getEmail();
+        emailService.verifyVCode(email, activeCode);
+        return modifyPassword(jwtToken, password);
     }
 }
