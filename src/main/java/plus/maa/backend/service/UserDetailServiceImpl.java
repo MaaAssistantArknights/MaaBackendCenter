@@ -29,6 +29,9 @@ public class UserDetailServiceImpl implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         MaaUser user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new UsernameNotFoundException("用户不存在");
+        }
         //数据封装成UserDetails返回
         return new LoginUser(user);
     }

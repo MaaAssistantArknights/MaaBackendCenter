@@ -7,15 +7,18 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.bind.annotation.*;
-import plus.maa.backend.controller.request.LoginDTO;
-import plus.maa.backend.controller.request.PasswordUpdateDTO;
-import plus.maa.backend.controller.request.RegisterDTO;
-import plus.maa.backend.controller.request.UserInfoUpdateDTO;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import plus.maa.backend.common.annotation.CurrentUser;
+import plus.maa.backend.controller.request.*;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaUserInfo;
 import plus.maa.backend.service.EmailService;
 import plus.maa.backend.service.UserService;
+import plus.maa.backend.service.model.LoginUser;
 
 import java.util.Map;
 
@@ -29,6 +32,7 @@ import java.util.Map;
 @Slf4j
 @Tag(name = "CopilotUser")
 @RequestMapping("user")
+@Validated
 @RestController
 @RequiredArgsConstructor
 public class UserController {
@@ -40,13 +44,13 @@ public class UserController {
     /**
      * 激活token中的用户
      *
-     * @param token 激活码
+     * @param activateDTO 激活码
      * @return 成功响应
      */
-    @GetMapping("activate")
-    public MaaResult<Void> activate(String token, HttpServletRequest request) {
-        String jwtToken = request.getHeader(header);
-        return userService.activateUser(token, jwtToken);
+    @PostMapping("activate")
+    public MaaResult<Void> activate(@CurrentUser LoginUser user,
+                                    @Valid @RequestBody ActivateDTO activateDTO) {
+        return userService.activateUser(user, activateDTO);
     }
 
     /**
@@ -79,9 +83,9 @@ public class UserController {
      * @return http响应
      */
     @PostMapping("update/info")
-    public MaaResult<Void> updateInfo(@RequestBody UserInfoUpdateDTO updateDTO, HttpServletRequest request) {
-        String token = request.getHeader(header);
-        return userService.updateUserInfo(token, updateDTO);
+    public MaaResult<Void> updateInfo(@CurrentUser LoginUser user,
+                                      @Valid @RequestBody UserInfoUpdateDTO updateDTO) {
+        return userService.updateUserInfo(user, updateDTO);
     }
 
     /**
@@ -128,7 +132,7 @@ public class UserController {
      * @return 注册成功用户信息摘要
      */
     @PostMapping("register")
-    public MaaResult<MaaUserInfo> register(@RequestBody RegisterDTO user) {
+    public MaaResult<MaaUserInfo> register(@Valid @RequestBody RegisterDTO user) {
         return userService.register(user);
     }
 

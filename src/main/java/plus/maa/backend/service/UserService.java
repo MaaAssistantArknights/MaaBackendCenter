@@ -17,6 +17,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import plus.maa.backend.common.MaaStatusCode;
+import plus.maa.backend.controller.request.ActivateDTO;
 import plus.maa.backend.controller.request.LoginDTO;
 import plus.maa.backend.controller.request.RegisterDTO;
 import plus.maa.backend.controller.request.UserInfoUpdateDTO;
@@ -175,46 +176,28 @@ public class UserService {
     /**
      * 通过传入的JwtToken来获取当前用户的信息
      *
-     * @param activeCode 邮箱激活码
-     * @param token      JwtToken
+     * @param loginUser   当前用户
+     * @param activateDTO 邮箱激活码
      * @return 用户信息封装
      */
-    public MaaResult<Void> activateUser(String activeCode, String token) {
-        LoginUser loginUser = getLoginUserByToken(token);
-        if (!Objects.isNull(loginUser)) {
-            MaaUser user = loginUser.getMaaUser();
-            if (!Objects.isNull(user)) {
-                String jwtToken = JWTUtil.parseToken(token).getPayload("token").toString();
-                if (Objects.equals(loginUser.getToken(), jwtToken)) {
-                    String email = loginUser.getMaaUser().getEmail();
-                    return emailService.verifyVCode(email, activeCode) ? MaaResult.success(null) : MaaResult.fail(MaaStatusCode.MAA_ACTIVE_ERROR);
-                }
-            }
-        }
-        throw new MaaResultException(MaaStatusCode.MAA_USER_NOT_FOUND);
+    public MaaResult<Void> activateUser(LoginUser loginUser, ActivateDTO activateDTO) {
+        String email = loginUser.getMaaUser().getEmail();
+        return emailService.verifyVCode(email, activateDTO.getToken()) ? MaaResult.success(null) :
+                MaaResult.fail(MaaStatusCode.MAA_ACTIVE_ERROR);
     }
 
     /**
      * 更新用户密码
      *
-     * @param token     传入token
+     * @param loginUser 当前用户
      * @param updateDTO 更新参数
      * @return 成功响应
      */
-    public MaaResult<Void> updateUserInfo(String token, UserInfoUpdateDTO updateDTO) {
-        LoginUser loginUser = getLoginUserByToken(token);
-        if (!Objects.isNull(loginUser)) {
-            MaaUser user = loginUser.getMaaUser();
-            if (!Objects.isNull(user)) {
-                String jwtToken = JWTUtil.parseToken(token).getPayload("token").toString();
-                if (Objects.equals(loginUser.getToken(), jwtToken)) {
-                    user.updateAttribute(updateDTO);
-                    userRepository.save(user);
-                    return MaaResult.success(null);
-                }
-            }
-        }
-        throw new MaaResultException(MaaStatusCode.MAA_USER_NOT_FOUND);
+    public MaaResult<Void> updateUserInfo(LoginUser loginUser, UserInfoUpdateDTO updateDTO) {
+        MaaUser user = loginUser.getMaaUser();
+        user.updateAttribute(updateDTO);
+        userRepository.save(user);
+        return MaaResult.success(null);
     }
 
     /**

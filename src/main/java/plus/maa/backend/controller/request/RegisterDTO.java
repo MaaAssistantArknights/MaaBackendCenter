@@ -1,10 +1,11 @@
 package plus.maa.backend.controller.request;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import org.hibernate.validator.constraints.Length;
 
 /**
  * @author AnselYuki
@@ -14,9 +15,10 @@ import lombok.experimental.Accessors;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RegisterDTO {
-    @NotBlank(message = "请输入邮箱信息")
+    @Email(message = "邮箱格式错误")
     private String email;
+    @Length(min = 2, max = 20, message = "用户名长度应在2-20之间")
     private String userName;
-    @NotBlank(message = "请输入用户密码")
+    @Length(min = 6, max = 20, message = "密码长度应在6-20之间")
     private String password;
 }
