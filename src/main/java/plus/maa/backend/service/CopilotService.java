@@ -1,5 +1,6 @@
 package plus.maa.backend.service;
 
+
 import cn.hutool.core.lang.ObjectId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
@@ -18,6 +19,8 @@ import plus.maa.backend.repository.entity.MaaUser;
 import plus.maa.backend.service.model.LoginUser;
 
 
+
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -78,11 +81,12 @@ public class CopilotService {
     public MaaResult<String> upload(Copilot copilot) {
         LoginUser user = getCurrentUser();
         String id = ObjectId.next();
+        Date date = new Date();
         copilot
                 .setUploaderId(user.getMaaUser().getUserId())
                 .setUploader(user.getMaaUser().getUserName())
-                /* .setCreateDate(LocalDateTime.now())
-                 .setUpdateDate(LocalDateTime.now())*/
+                .setCreateDate(date)
+                .setUpdateDate(date)
                 .setId(id);
 
         try {
@@ -107,6 +111,7 @@ public class CopilotService {
 
 
     public MaaResult<Copilot> getCoplilotById(String id) {
+        //增加一次views
         Copilot copilot = findByid(id);
         Query query = Query.query(Criteria.where("id").is(id));
         Update update = new Update();
@@ -119,7 +124,7 @@ public class CopilotService {
     /**
      * 分页查询
      *
-     * @param request 指定查询
+     * @param request 模糊查询
      * @return CopilotPageInfo
      */
     public MaaResult<CopilotPageInfo> queriesCopilot(CopilotRequest request) {
@@ -164,18 +169,19 @@ public class CopilotService {
 
 
         // operator 包含或排除干员
-        String operator = request.getOperator();
-        if (!"".equals(operator)) {
-            String[] split = operator.split(",");
-            for (String s : split) {
-                if ("~".equals(s.substring(0, 1))) {
-                    String exclude = s.substring(1);
+        String oper = request.getOperator();
+        if (!"".equals(oper)) {
+            String[] operators = oper.split(",");
+            for (String operator : operators) {
+                if ("~".equals(operator.substring(0, 1))) {
+                    String exclude = operator.substring(1);
                     //排除查询
                     criteriaObj.norOperator(
-                            Criteria.where("actions.name").regex(exclude));
+                            Criteria.where("operator.name").regex(exclude),
+                            Criteria.where("operator.name").regex(exclude));
                 } else {
                     //包含查询
-                    criteriaObj.and("actions.name").is(s);
+                    criteriaObj.and("operator.name").regex(operator);
                 }
             }
         }
@@ -211,6 +217,7 @@ public class CopilotService {
     public MaaResult<Void> update(Copilot copilot) {
         Boolean owner = verifyOwner(copilot.getId());
         if (owner) {
+            copilot.setUpdateDate(new Date());
             copilotRepository.save(copilot);
             return MaaResult.success(null);
         } else {
@@ -219,7 +226,6 @@ public class CopilotService {
     }
 
     public MaaResult<Void> rates(CopilotRequest request) {
-
         return MaaResult.success(null);
     }
 }

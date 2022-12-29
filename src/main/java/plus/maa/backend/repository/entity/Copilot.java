@@ -11,6 +11,7 @@ import plus.maa.backend.controller.response.ArkLevelInfo;
 
 
 import java.io.Serializable;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -29,6 +30,7 @@ public class Copilot implements Serializable {
 
     //关卡名
     private String stageName;
+
 
     //上传者
     private String uploader;
@@ -55,8 +57,9 @@ public class Copilot implements Serializable {
     //版本号(文档中说明:最低要求 maa 版本号，必选。保留字段)
     private String minimumRequired;
 
+
     //指定干员
-    private List<Oerators> operators;
+    private List<Oerators> operator;
     //群组
     private List<Groups> groups;
     // 战斗中的操作
@@ -67,8 +70,8 @@ public class Copilot implements Serializable {
 
     private ArkLevelInfo arkLevel;
 
-   /* private LocalDateTime createDate;
-    private LocalDateTime updateDate;*/
+    private Date createDate;
+    private Date updateDate;
 
 
     @Data
@@ -106,7 +109,7 @@ public class Copilot implements Serializable {
     public static class Groups {
         // 群组名
         private String name;
-        private List<Oerators> operators;
+        private List<Oerators> operator;
     }
 
 

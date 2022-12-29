@@ -43,8 +43,8 @@ public class CopilotController {
     }
 
     @PostMapping("update")
-    public MaaResult<Void> updateCopilot(Copilot copiltoPeration) {
-        return copilotPerationService.update(copiltoPeration);
+    public MaaResult<Void> updateCopilot(@RequestBody Copilot copilot) {
+        return copilotPerationService.update(copilot);
     }
 
     @PostMapping("rating")
