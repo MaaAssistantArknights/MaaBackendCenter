@@ -1,6 +1,5 @@
 package plus.maa.backend.controller.request;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,15 +7,13 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
 /**
- * @author AnselYuki
+ * @author john180
  */
 @Data
 @Accessors(chain = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoginDTO {
-    @Email(message = "邮箱格式错误")
-    private String email;
-    @NotBlank(message = "请输入用户密码")
-    private String password;
+public class ActivateDTO {
+    @NotBlank(message = "激活码不能为空")
+    private String token;
 }

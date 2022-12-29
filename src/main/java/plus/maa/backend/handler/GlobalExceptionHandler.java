@@ -2,6 +2,7 @@ package plus.maa.backend.handler;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -56,10 +57,7 @@ public class GlobalExceptionHandler {
      * @date 2022/12/23 12:02
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public MaaResult<String> methodArgumentNotValidException(MethodArgumentNotValidException e,
-                                                             HttpServletRequest request) {
-        logWarn(request);
-        log.warn("参数校验错误", e);
+    public MaaResult<String> methodArgumentNotValidException(MethodArgumentNotValidException e) {
         FieldError fieldError = e.getBindingResult().getFieldError();
         assert fieldError != null;
         return MaaResult.fail(400, String.format("参数校验错误:%s", fieldError.getDefaultMessage()));
@@ -93,14 +91,23 @@ public class GlobalExceptionHandler {
     }
 
     /**
-    * @author cbc
-    * @description
-    * @return plus.maa.backend.controller.response.MaaResult<java.lang.String>
-    * @date 2022/12/26 12:00
-    */
+     * @return plus.maa.backend.controller.response.MaaResult<java.lang.String>
+     * @author cbc
+     * @description
+     * @date 2022/12/26 12:00
+     */
     @ExceptionHandler(MaaResultException.class)
-    public MaaResult<String>  maaResultExceptionHandler(MaaResultException e){
+    public MaaResult<String> maaResultExceptionHandler(MaaResultException e) {
         return MaaResult.fail(e.getCode(), e.getMsg());
+    }
+
+    /**
+     * @author john180
+     * @description 用户鉴权相关，异常兜底处理
+     */
+    @ExceptionHandler(AuthenticationException.class)
+    public MaaResult<String> authExceptionHandler(AuthenticationException e) {
+        return MaaResult.fail(401, e.getMessage());
     }
 
     /**
