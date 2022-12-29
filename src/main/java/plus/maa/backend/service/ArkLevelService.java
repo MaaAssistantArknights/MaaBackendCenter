@@ -12,6 +12,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.lang.Nullable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -22,6 +23,7 @@ import plus.maa.backend.repository.GithubRepository;
 import plus.maa.backend.repository.RedisCache;
 import plus.maa.backend.repository.entity.ArkLevel;
 import plus.maa.backend.repository.entity.ArkLevelSha;
+import plus.maa.backend.repository.entity.arklevel.ArkLevelId;
 import plus.maa.backend.repository.entity.gamedata.ArkTilePos;
 import plus.maa.backend.repository.entity.github.GithubCommit;
 import plus.maa.backend.repository.entity.github.GithubTree;
@@ -73,7 +75,6 @@ public class ArkLevelService {
     private final GithubRepository githubRepo;
     private final RedisCache redisCache;
     private final ArkLevelRepository arkLevelRepo;
-    private final ArkLevelParserService parserService;
     private final ArkGameDataService gameDataService;
     private final ObjectMapper mapper = new ObjectMapper();
     private final OkHttpClient okHttpClient;
@@ -180,7 +181,7 @@ public class ArkLevelService {
                 }
                 ArkTilePos tilePos = mapper.readValue(body.string(), ArkTilePos.class);
 
-                ArkLevel level = parserService.parseLevel(tilePos, tree.getSha());
+                ArkLevel level = parseLevel(tilePos, tree.getSha());
                 if (level == null) {
                     task.fail();
                     log.info("[LEVEL]地图数据解析失败:" + tree.getPath());
@@ -279,7 +280,7 @@ public class ArkLevelService {
                     continue;
                 }
                 ArkTilePos tilePos = mapper.readValue(bytes, ArkTilePos.class);
-                ArkLevel level = parserService.parseLevel(tilePos, sha);
+                ArkLevel level = parseLevel(tilePos, sha);
                 if (level == null) {
                     errorCount++;
                     log.info("[LEVEL]地图数据解析失败:" + file.getPath());
@@ -333,5 +334,26 @@ public class ArkLevelService {
             return false;
         }
         return true;
+    }
+
+    /**
+     * 具体地图信息生成规则见
+     * <a href="https://github.com/MaaAssistantArknights/MaaCopilotServer/blob/main/src/MaaCopilotServer.GameData/GameDataParser.cs">GameDataParser</a>
+     * 尚未全部实现 <br>
+     * TODO 完成剩余字段实现
+     */
+    @Nullable
+    public ArkLevel parseLevel(ArkTilePos tilePos, String sha) {
+        ArkLevel level = ArkLevel.builder()
+                .levelId(tilePos.getLevelId())
+                .stageId(tilePos.getStageId())
+                .sha(sha)
+                .catThree(tilePos.getCode())
+                .name(tilePos.getName())
+                .width(tilePos.getWidth())
+                .height(tilePos.getHeight())
+                .build();
+        ArkLevelId.getEnum(level.getLevelId()).getParse().parse(level, tilePos);
+        return level;
     }
 }
