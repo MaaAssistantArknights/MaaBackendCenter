@@ -17,6 +17,6 @@ import org.hibernate.validator.constraints.Length;
 public class UserInfoUpdateDTO {
     @Email(message = "邮箱格式错误")
     private String email;
-    @Length(min = 2, max = 20, message = "用户名长度应在2-20之间")
+    @Length(min = 4, max = 24, message = "用户名长度应在2-24位之间")
     private String userName;
 }
