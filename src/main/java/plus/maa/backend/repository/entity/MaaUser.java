@@ -34,12 +34,8 @@ public class MaaUser implements Serializable {
 
     public void updateAttribute(UserInfoUpdateDTO updateDTO) {
         String userName = updateDTO.getUserName();
-        String email = updateDTO.getEmail();
         if (!userName.isBlank()) {
             this.userName = userName;
-        }
-        if (!email.isBlank()) {
-            this.email = userName;
         }
     }
 }

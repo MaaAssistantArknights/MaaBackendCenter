@@ -14,13 +14,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import plus.maa.backend.common.annotation.CurrentUser;
 import plus.maa.backend.controller.request.*;
+import plus.maa.backend.controller.response.MaaLoginRsp;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaUserInfo;
 import plus.maa.backend.service.EmailService;
 import plus.maa.backend.service.UserService;
 import plus.maa.backend.service.model.LoginUser;
-
-import java.util.Map;
 
 /**
  * 用户相关接口
@@ -31,7 +30,7 @@ import java.util.Map;
 @Data
 @Slf4j
 @Tag(name = "CopilotUser")
-@RequestMapping("user")
+@RequestMapping("/user")
 @Validated
 @RestController
 @RequiredArgsConstructor
@@ -47,7 +46,7 @@ public class UserController {
      * @param activateDTO 激活码
      * @return 成功响应
      */
-    @PostMapping("activate")
+    @PostMapping("/activate")
     public MaaResult<Void> activate(@CurrentUser LoginUser user,
                                     @Valid @RequestBody ActivateDTO activateDTO) {
         return userService.activateUser(user, activateDTO);
@@ -56,13 +55,11 @@ public class UserController {
     /**
      * 注册完成后发送邮箱激活码
      *
-     * @param request http请求，用于获取token
      * @return null
      */
     @PostMapping("/activate/request")
-    public MaaResult<Void> activateRequest(HttpServletRequest request) {
-        String token = request.getHeader(header);
-        return userService.senEmailCode(token);
+    public MaaResult<Void> activateRequest(@CurrentUser LoginUser user) {
+        return userService.senEmailCode(user);
     }
 
     /**
@@ -70,10 +67,10 @@ public class UserController {
      *
      * @return http响应
      */
-    @PostMapping("update/password")
-    public MaaResult<Void> updatePassword(@RequestBody @Valid PasswordUpdateDTO updateDTO, HttpServletRequest request) {
-        String token = request.getHeader(header);
-        return userService.modifyPassword(token, updateDTO.getNewPassword());
+    @PostMapping("/update/password")
+    public MaaResult<Void> updatePassword(@CurrentUser LoginUser user,
+                                          @RequestBody @Valid PasswordUpdateDTO updateDTO) {
+        return userService.modifyPassword(user, updateDTO.getNewPassword());
     }
 
     /**
@@ -82,23 +79,24 @@ public class UserController {
      * @param updateDTO 用户信息参数
      * @return http响应
      */
-    @PostMapping("update/info")
+    @PostMapping("/update/info")
     public MaaResult<Void> updateInfo(@CurrentUser LoginUser user,
                                       @Valid @RequestBody UserInfoUpdateDTO updateDTO) {
         return userService.updateUserInfo(user, updateDTO);
     }
 
+    //TODO 邮件重置密码需要在用户未登录的情况下使用，需要修改
+
     /**
      * 邮箱重设密码
      *
-     * @param token   邮箱激活码
      * @param request http响应
      * @return 成功响应
      */
-    @PostMapping("password/reset")
-    public MaaResult<Void> passwordReset(String token, String password, HttpServletRequest request) {
+    @PostMapping("/password/reset")
+    public MaaResult<Void> passwordReset(@CurrentUser LoginUser user, String password, HttpServletRequest request) {
         String jwtToken = request.getHeader(header);
-        return userService.modifyPasswordByActiveCode(token, password, jwtToken);
+        return userService.modifyPasswordByActiveCode(user, password, jwtToken);
     }
 
     /**
@@ -107,7 +105,7 @@ public class UserController {
      *
      * @return 成功响应
      */
-    @PostMapping("password/reset_request")
+    @PostMapping("/password/reset_request")
     public MaaResult<Void> passwordResetRequest(String email) {
         emailService.sendVCode(email);
         return MaaResult.success(null);
@@ -119,7 +117,7 @@ public class UserController {
      * @param request http请求，用于获取请求头
      * @return 成功响应
      */
-    @PostMapping("refresh")
+    @PostMapping("/refresh")
     public MaaResult<Void> refresh(HttpServletRequest request) {
         String token = request.getHeader(header);
         return userService.refreshToken(token);
@@ -131,7 +129,7 @@ public class UserController {
      * @param user 传入用户参数
      * @return 注册成功用户信息摘要
      */
-    @PostMapping("register")
+    @PostMapping("/register")
     public MaaResult<MaaUserInfo> register(@Valid @RequestBody RegisterDTO user) {
         return userService.register(user);
     }
@@ -142,8 +140,8 @@ public class UserController {
      * @param user 登录参数
      * @return 成功响应，荷载JwtToken
      */
-    @PostMapping("login")
-    public MaaResult<Map<String, String>> login(@RequestBody @Valid LoginDTO user) {
+    @PostMapping("/login")
+    public MaaResult<MaaLoginRsp> login(@RequestBody @Valid LoginDTO user) {
         return userService.login(user);
     }
 }

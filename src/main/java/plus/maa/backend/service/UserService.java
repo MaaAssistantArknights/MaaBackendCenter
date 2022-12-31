@@ -17,10 +17,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import plus.maa.backend.common.MaaStatusCode;
+import plus.maa.backend.common.utils.converter.MaaUserConverter;
 import plus.maa.backend.controller.request.ActivateDTO;
 import plus.maa.backend.controller.request.LoginDTO;
 import plus.maa.backend.controller.request.RegisterDTO;
 import plus.maa.backend.controller.request.UserInfoUpdateDTO;
+import plus.maa.backend.controller.response.MaaLoginRsp;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.controller.response.MaaUserInfo;
@@ -29,6 +31,7 @@ import plus.maa.backend.repository.UserRepository;
 import plus.maa.backend.repository.entity.MaaUser;
 import plus.maa.backend.service.model.LoginUser;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -61,7 +64,7 @@ public class UserService {
      * @param loginDTO 登录参数
      * @return 携带了token的封装类
      */
-    public MaaResult<Map<String, String>> login(LoginDTO loginDTO) {
+    public MaaResult<MaaLoginRsp> login(LoginDTO loginDTO) {
         //使用 AuthenticationManager 中的 authenticate 进行用户认证
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(loginDTO.getEmail(), loginDTO.getPassword());
         Authentication authenticate;
@@ -100,55 +103,54 @@ public class UserService {
         }, expire);
 
         String jwt = JWTUtil.createToken(payload, secret.getBytes());
-        return MaaResult.success("登录成功", Map.of("token", jwt));
+
+        MaaLoginRsp rsp = new MaaLoginRsp();
+        rsp.setToken(jwt);
+        rsp.setValidAfter(LocalDateTime.now().toString());
+        rsp.setValidBefore(newTime.toLocalDateTime().toString());
+        rsp.setRefreshToken("");
+        rsp.setRefreshTokenValidBefore("");
+        rsp.setUserInfo(MaaUserConverter.INSTANCE.convert(principal.getMaaUser()));
+
+        return MaaResult.success("登录成功", rsp);
     }
 
     /**
      * 修改密码
      *
-     * @param token    用户token
-     * @param password 新密码
+     * @param loginUser 当前用户
+     * @param password  新密码
      * @return 修改成功响应
      */
-    public MaaResult<Void> modifyPassword(String token, String password) {
-        JWT jwt = JWTUtil.parseToken(token);
-        String redisKey = "LOGIN:" + jwt.getPayload("userId");
-        LoginUser loginUser = redisCache.getCache(redisKey, LoginUser.class);
-        if (!Objects.isNull(loginUser)) {
-            MaaUser user = loginUser.getMaaUser();
-            if (!Objects.isNull(user)) {
-                String jwtToken = jwt.getPayload("token").toString();
-                if (Objects.equals(loginUser.getToken(), jwtToken)) {
+    public MaaResult<Void> modifyPassword(LoginUser loginUser, String password) {
+        MaaUser user = loginUser.getMaaUser();
+        //修改密码的逻辑
+        String newPassword = new BCryptPasswordEncoder().encode(password);
+        user.setPassword(newPassword);
+        userRepository.save(user);
 
-                    //修改密码的逻辑
-                    String newPassword = new BCryptPasswordEncoder().encode(password);
-                    user.setPassword(newPassword);
-                    userRepository.save(user);
-
-                    //以下更新jwt-token并重新签发jwt
-                    String newJwtToken = RandomStringUtils.random(16, true, true);
-                    DateTime now = DateTime.now();
-                    DateTime newTime = now.offsetNew(DateField.SECOND, expire);
-                    Map<String, Object> payload = new HashMap<>(4) {
-                        {
-                            put(JWTPayload.ISSUED_AT, now.getTime());
-                            put(JWTPayload.EXPIRES_AT, newTime.getTime());
-                            put(JWTPayload.NOT_BEFORE, now.getTime());
-                            put("userId", user.getUserId());
-                            put("token", newJwtToken);
-                        }
-                    };
-
-                    redisCache.updateCache(redisKey, LoginUser.class, loginUser, cacheUser -> {
-                        cacheUser.setToken(newJwtToken);
-                        return cacheUser;
-                    }, expire);
-
-                    String newJwt = JWTUtil.createToken(payload, secret.getBytes());
-                    //TODO 通知客户端更新jwt
-                }
+        //以下更新jwt-token并重新签发jwt
+        String newJwtToken = RandomStringUtils.random(16, true, true);
+        DateTime now = DateTime.now();
+        DateTime newTime = now.offsetNew(DateField.SECOND, expire);
+        Map<String, Object> payload = new HashMap<>(4) {
+            {
+                put(JWTPayload.ISSUED_AT, now.getTime());
+                put(JWTPayload.EXPIRES_AT, newTime.getTime());
+                put(JWTPayload.NOT_BEFORE, now.getTime());
+                put("userId", user.getUserId());
+                put("token", newJwtToken);
             }
-        }
+        };
+        String redisKey = "LOGIN:" + user.getUserId();
+        redisCache.updateCache(redisKey, LoginUser.class, loginUser, cacheUser -> {
+            cacheUser.setToken(newJwtToken);
+            return cacheUser;
+        }, expire);
+
+        String newJwt = JWTUtil.createToken(payload, secret.getBytes());
+        //TODO 通知客户端更新jwt
+
         return MaaResult.success(null);
     }
 
@@ -203,21 +205,12 @@ public class UserService {
     /**
      * 发送验证码，用户信息从token中获取
      *
-     * @param token token
+     * @param loginUser 当前用户
      * @return 成功响应
      */
-    public MaaResult<Void> senEmailCode(String token) {
-        LoginUser loginUser = getLoginUserByToken(token);
-        if (!Objects.isNull(loginUser)) {
-            MaaUser user = loginUser.getMaaUser();
-            if (!Objects.isNull(user)) {
-                String jwtToken = JWTUtil.parseToken(token).getPayload("token").toString();
-                if (Objects.equals(loginUser.getToken(), jwtToken)) {
-                    String email = loginUser.getEmail();
-                    emailService.sendVCode(email);
-                }
-            }
-        }
+    public MaaResult<Void> senEmailCode(LoginUser loginUser) {
+        String email = loginUser.getEmail();
+        emailService.sendVCode(email);
         return MaaResult.success(null);
     }
 
@@ -239,10 +232,9 @@ public class UserService {
      * @param password   新密码
      * @return 成功响应
      */
-    public MaaResult<Void> modifyPasswordByActiveCode(String activeCode, String password, String jwtToken) {
-        LoginUser loginUser = getLoginUserByToken(jwtToken);
+    public MaaResult<Void> modifyPasswordByActiveCode(LoginUser loginUser, String activeCode, String password) {
         String email = loginUser.getEmail();
         emailService.verifyVCode(email, activeCode);
-        return modifyPassword(jwtToken, password);
+        return modifyPassword(loginUser, password);
     }
 }
