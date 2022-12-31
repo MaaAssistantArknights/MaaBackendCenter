@@ -48,6 +48,9 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
         //解析token，用密钥验证token是否有效
         String redisKey;
         String jwtToken;
