@@ -16,12 +16,11 @@ import lombok.experimental.Accessors;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ArkLevelInfo {
     private String levelId;
+    private String stageId;
     private String catOne;
     private String catTwo;
     private String catThree;
     private String name;
     private int width;
     private int height;
-    private boolean custom;
-
 }
