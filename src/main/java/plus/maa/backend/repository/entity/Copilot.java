@@ -2,6 +2,7 @@ package plus.maa.backend.repository.entity;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import org.springframework.data.annotation.Id;
@@ -29,6 +30,7 @@ public class Copilot implements Serializable {
     private String id;
 
     //关卡名
+    @NotBlank(message = "关卡名不能为空")
     private String stageName;
 
 
@@ -55,11 +57,12 @@ public class Copilot implements Serializable {
     private int difficulty;
 
     //版本号(文档中说明:最低要求 maa 版本号，必选。保留字段)
+    @NotBlank(message = "最低要求 maa 版本不可为空")
     private String minimumRequired;
 
 
     //指定干员
-    private List<Oerators> operator;
+    private List<Operators> operator;
     //群组
     private List<Groups> groups;
     // 战斗中的操作
@@ -76,7 +79,7 @@ public class Copilot implements Serializable {
 
     @Data
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-    public static class Oerators {
+    public static class Operators {
         // 干员名
         private String name;
         //技能序号。可选，默认 1
@@ -85,6 +88,9 @@ public class Copilot implements Serializable {
         private int skillUsage;
         private Requirements requirements;
 
+        {
+            this.sill = 1;
+        }
 
         @Data
         @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
@@ -109,7 +115,7 @@ public class Copilot implements Serializable {
     public static class Groups {
         // 群组名
         private String name;
-        private List<Oerators> operator;
+        private List<Operators> operator;
     }
 
 
@@ -121,10 +127,12 @@ public class Copilot implements Serializable {
         private int kills;
         private int costs;
         private int costChanges;
-        //-1
+        //默认 -1
         private int cooling;
+        @NotBlank(message = "干员或干员组名不能为空")
         private String name;
         // 部署干员的位置。
+        @NotBlank(message = "干员位置不能为空")
         private Integer[] location;
         // 部署干员的干员朝向 中英文皆可
         private String direction;
@@ -133,16 +141,22 @@ public class Copilot implements Serializable {
 
         private int preDelay;
         private int postDelay;
-        // 保留字段，暂未实现
+        //maa:保留字段，暂未实现
         private Long timeout;
         private String doc;
         private String docColor;
+
+        {
+            this.type = "Deploy";
+            this.cooling = -1;
+        }
 
     }
 
     @Data
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public static class Doc {
+        @NotBlank(message = "作业标题不能为空")
         private String title;
         private String titleColor;
         private String details;

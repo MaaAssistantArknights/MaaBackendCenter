@@ -32,7 +32,7 @@ public class CopilotController {
 
     @GetMapping("get/{id}")
     public MaaResult<Copilot> getCoplilotById(@PathVariable("id") String id) {
-        return copilotPerationService.getCoplilotById(id);
+        return copilotPerationService.getCopilotById(id);
     }
 
 

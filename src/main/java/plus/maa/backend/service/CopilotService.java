@@ -19,7 +19,6 @@ import plus.maa.backend.repository.entity.MaaUser;
 import plus.maa.backend.service.model.LoginUser;
 
 
-
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -48,10 +47,10 @@ public class CopilotService {
     }
 
     /**
-     * 根据_id获取CopilotOperation
+     * 根据_id获取Copilot
      *
      * @param id _id
-     * @return CopilotOperation
+     * @return Copilot
      */
     private Copilot findByid(String id) {
         Optional<Copilot> optional = copilotRepository.findById(id);
@@ -66,7 +65,7 @@ public class CopilotService {
     }
 
     /**
-     * 无法对他人作业进行操作
+     * 验证所有者
      *
      * @param operationId 作业id
      * @return boolean
@@ -77,13 +76,37 @@ public class CopilotService {
         return Objects.equals(copilot.getUploaderId(), userId);
     }
 
+    /**
+     * 验证type
+     *
+     * @param copilot copilot
+     */
+    private void verifyCopilot(Copilot copilot) {
+        if (copilot.getActions() != null) {
+            for (Copilot.Action action : copilot.getActions()) {
+                String type = action.getType();
+                if ("SkillUsage".equals(type) || "技能用法".equals(type)) {
+                    if (action.getSkillUsage() == null) {
+                        throw new MaaResultException("当动作类型为技能用法时,技能用法该选项必选");
+                    }
+                }
+            }
+        }
+    }
 
+
+    /**
+     * 上传新的作业
+     *
+     * @param copilot 前端编辑json作业内容
+     * @return 返回_id
+     */
     public MaaResult<String> upload(Copilot copilot) {
         LoginUser user = getCurrentUser();
         String id = ObjectId.next();
         Date date = new Date();
-        copilot
-                .setUploaderId(user.getMaaUser().getUserId())
+        verifyCopilot(copilot);
+        copilot.setUploaderId(user.getMaaUser().getUserId())
                 .setUploader(user.getMaaUser().getUserName())
                 .setCreateDate(date)
                 .setUpdateDate(date)
@@ -97,6 +120,12 @@ public class CopilotService {
         return MaaResult.success(id);
     }
 
+    /**
+     * 删除指定_id
+     *
+     * @param request _id
+     * @return null
+     */
     public MaaResult<Void> delete(CopilotRequest request) {
         String operationId = request.getId();
 
@@ -109,8 +138,13 @@ public class CopilotService {
 
     }
 
-
-    public MaaResult<Copilot> getCoplilotById(String id) {
+    /**
+     * 指定查询
+     *
+     * @param id copilot _id
+     * @return copilotInfo
+     */
+    public MaaResult<Copilot> getCopilotById(String id) {
         //增加一次views
         Copilot copilot = findByid(id);
         Query query = Query.query(Criteria.where("id").is(id));
@@ -186,7 +220,7 @@ public class CopilotService {
             }
         }
 
-        //is 查询
+        //匹配查询
         if (!"".equals(request.getUploader())) {
             criteriaObj.and("uploader").is(request.getUploader());
         }
@@ -213,9 +247,15 @@ public class CopilotService {
         return MaaResult.success(copilotPageInfo);
     }
 
-
+    /**
+     * 更新
+     *
+     * @param copilot 更新值
+     * @return null
+     */
     public MaaResult<Void> update(Copilot copilot) {
         Boolean owner = verifyOwner(copilot.getId());
+        verifyCopilot(copilot);
         if (owner) {
             copilot.setUpdateDate(new Date());
             copilotRepository.save(copilot);
@@ -224,6 +264,7 @@ public class CopilotService {
             throw new MaaResultException("无法更新他人作业");
         }
     }
+
 
     public MaaResult<Void> rates(CopilotRequest request) {
         return MaaResult.success(null);
