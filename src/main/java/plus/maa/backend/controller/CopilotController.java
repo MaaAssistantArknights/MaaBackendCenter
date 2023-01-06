@@ -37,7 +37,6 @@ public class CopilotController {
 
 
     @GetMapping("query")
-    //id
     public MaaResult<CopilotPageInfo> queriesCopilotCopiltot(CopilotRequest request) {
         return copilotPerationService.queriesCopilot(request);
     }
