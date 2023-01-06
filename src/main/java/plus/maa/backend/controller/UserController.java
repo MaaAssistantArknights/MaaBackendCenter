@@ -8,10 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.CurrentUser;
 import plus.maa.backend.controller.request.*;
 import plus.maa.backend.controller.response.MaaLoginRsp;
@@ -90,13 +87,13 @@ public class UserController {
     /**
      * 邮箱重设密码
      *
-     * @param request http响应
      * @return 成功响应
      */
     @PostMapping("/password/reset")
-    public MaaResult<Void> passwordReset(@CurrentUser LoginUser user, String password, HttpServletRequest request) {
-        String jwtToken = request.getHeader(header);
-        return userService.modifyPasswordByActiveCode(user, password, jwtToken);
+    public MaaResult<Void> passwordReset(String email, String activeCode, String password) {
+        //校验用户邮箱是否存在
+        userService.checkUserExistByEmail(email);
+        return userService.modifyPasswordByActiveCode(email, activeCode, password);
     }
 
     /**
@@ -107,6 +104,8 @@ public class UserController {
      */
     @PostMapping("/password/reset_request")
     public MaaResult<Void> passwordResetRequest(String email) {
+        //校验用户邮箱是否存在
+        userService.checkUserExistByEmail(email);
         emailService.sendVCode(email);
         return MaaResult.success(null);
     }

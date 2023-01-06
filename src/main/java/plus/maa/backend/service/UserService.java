@@ -2,6 +2,7 @@ package plus.maa.backend.service;
 
 import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateTime;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTPayload;
 import cn.hutool.jwt.JWTUtil;
@@ -43,6 +44,7 @@ import java.util.Objects;
 @Service
 @RequiredArgsConstructor
 public class UserService {
+    private static final String REDIS_KEY_PREFIX_LOGIN = "LOGIN:";
     private final AuthenticationManager authenticationManager;
     private final RedisCache redisCache;
     private final UserRepository userRepository;
@@ -54,7 +56,7 @@ public class UserService {
 
     private LoginUser getLoginUserByToken(String token) {
         JWT jwt = JWTUtil.parseToken(token);
-        String redisKey = "LOGIN:" + jwt.getPayload("userId");
+        String redisKey = REDIS_KEY_PREFIX_LOGIN + jwt.getPayload("userId");
         return redisCache.getCache(redisKey, LoginUser.class);
     }
 
@@ -66,7 +68,8 @@ public class UserService {
      */
     public MaaResult<MaaLoginRsp> login(LoginDTO loginDTO) {
         //使用 AuthenticationManager 中的 authenticate 进行用户认证
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(loginDTO.getEmail(), loginDTO.getPassword());
+        UsernamePasswordAuthenticationToken authenticationToken =
+                new UsernamePasswordAuthenticationToken(loginDTO.getEmail(), loginDTO.getPassword());
         Authentication authenticate;
         authenticate = authenticationManager.authenticate(authenticationToken);
         //若认证失败，给出相应提示
@@ -91,7 +94,7 @@ public class UserService {
         };
 
         //把完整的用户信息存入Redis，UserID作为Key
-        String cacheKey = "LOGIN:" + userId;
+        String cacheKey = REDIS_KEY_PREFIX_LOGIN + userId;
         redisCache.updateCache(cacheKey, LoginUser.class, principal, cacheUser -> {
             String cacheToken = cacheUser.getToken();
             if (cacheToken != null && !"".equals(cacheToken)) {
@@ -142,7 +145,9 @@ public class UserService {
                 put("token", newJwtToken);
             }
         };
-        String redisKey = "LOGIN:" + user.getUserId();
+        String redisKey = REDIS_KEY_PREFIX_LOGIN + user.getUserId();
+        //把更新后的MaaUser对象重新塞回去..
+        loginUser.setMaaUser(user);
         redisCache.updateCache(redisKey, LoginUser.class, loginUser, cacheUser -> {
             cacheUser.setToken(newJwtToken);
             return cacheUser;
@@ -228,13 +233,25 @@ public class UserService {
     /**
      * 通过邮箱激活码更新密码
      *
+     * @param email      用户邮箱
      * @param activeCode 激活码
      * @param password   新密码
      * @return 成功响应
      */
-    public MaaResult<Void> modifyPasswordByActiveCode(LoginUser loginUser, String activeCode, String password) {
-        String email = loginUser.getEmail();
+    public MaaResult<Void> modifyPasswordByActiveCode(String email, String activeCode, String password) {
         emailService.verifyVCode(email, activeCode);
+        LoginUser loginUser = new LoginUser();
+        MaaUser maaUser = userRepository.findByEmail(email);
+        loginUser.setMaaUser(maaUser);
         return modifyPassword(loginUser, password);
+    }
+
+    /**
+     * @param email 用户邮箱
+     */
+    public void checkUserExistByEmail(String email) {
+        if (null == userRepository.findByEmail(email)) {
+            throw new MaaResultException(MaaStatusCode.MAA_USER_NOT_FOUND);
+        }
     }
 }
