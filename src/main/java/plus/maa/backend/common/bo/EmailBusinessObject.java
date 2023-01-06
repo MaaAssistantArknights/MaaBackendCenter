@@ -28,7 +28,16 @@ public class EmailBusinessObject {
     private Boolean isHtml;
 
 
-    public EmailBusinessObject() {
+    /**
+     * 静态创建工厂
+     *
+     * @return EmailBusinessObject
+     */
+    public static EmailBusinessObject Builder() {
+        return new EmailBusinessObject();
+    }
+
+    private EmailBusinessObject() {
         isHtml = true;
         emailList = new ArrayList<>();
     }
@@ -59,7 +68,7 @@ public class EmailBusinessObject {
      * 链式编程  没报错就说明发送成功
      * 发送自定义信息和附件
      *
-     * @param file 附件 io流读文件地址 例:FileUtil.file("d:/aaa.xml")
+     * @param file 附件
      */
     public void sendCustomMessageFile(File... file) {
         try {

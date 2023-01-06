@@ -32,7 +32,7 @@ public class EmailService {
     public void sendVCode(String email) {
         //6位随机数验证码
         String vcode = RandomStringUtils.random(6, true, true);
-        new EmailBusinessObject()
+        EmailBusinessObject.Builder()
                 .setEmail(email)
                 .sendVerificationCodeMessage(vcode);
         //存redis
