@@ -19,10 +19,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import plus.maa.backend.common.MaaStatusCode;
 import plus.maa.backend.common.utils.converter.MaaUserConverter;
-import plus.maa.backend.controller.request.ActivateDTO;
-import plus.maa.backend.controller.request.LoginDTO;
-import plus.maa.backend.controller.request.RegisterDTO;
-import plus.maa.backend.controller.request.UserInfoUpdateDTO;
+import plus.maa.backend.controller.request.*;
 import plus.maa.backend.controller.response.MaaLoginRsp;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaResultException;
@@ -233,20 +230,20 @@ public class UserService {
     /**
      * 通过邮箱激活码更新密码
      *
-     * @param email      用户邮箱
-     * @param activeCode 激活码
-     * @param password   新密码
+     * @param passwordResetDTO 通过邮箱修改密码请求
      * @return 成功响应
      */
-    public MaaResult<Void> modifyPasswordByActiveCode(String email, String activeCode, String password) {
-        emailService.verifyVCode(email, activeCode);
+    public MaaResult<Void> modifyPasswordByActiveCode(PasswordResetDTO passwordResetDTO) {
+        emailService.verifyVCode(passwordResetDTO.getEmail(), passwordResetDTO.getActiveCode());
         LoginUser loginUser = new LoginUser();
-        MaaUser maaUser = userRepository.findByEmail(email);
+        MaaUser maaUser = userRepository.findByEmail(passwordResetDTO.getEmail());
         loginUser.setMaaUser(maaUser);
-        return modifyPassword(loginUser, password);
+        return modifyPassword(loginUser, passwordResetDTO.getPassword());
     }
 
     /**
+     * 根据邮箱校验用户是否存在
+     *
      * @param email 用户邮箱
      */
     public void checkUserExistByEmail(String email) {
