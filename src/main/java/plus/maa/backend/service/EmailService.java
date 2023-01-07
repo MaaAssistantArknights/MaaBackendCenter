@@ -5,6 +5,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import plus.maa.backend.common.bo.EmailBusinessObject;
+import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.repository.RedisCache;
 
 import java.util.Objects;
@@ -41,7 +42,7 @@ public class EmailService {
     public boolean verifyVCode(String email, String vcode) {
         String cacheVCode = redisCache.getCache("vCodeEmail:" + email, String.class);
         if (!Objects.equals(cacheVCode, vcode)) {
-            throw new RuntimeException("验证码错误！");
+            throw new MaaResultException("验证码错误！");
         }
         return true;
     }

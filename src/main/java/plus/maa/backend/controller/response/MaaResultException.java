@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.http.HttpStatus;
+import plus.maa.backend.common.MaaStatusCode;
 
 /**
  * @author john180
@@ -12,10 +13,15 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class MaaResultException extends RuntimeException {
-    private int code;
-    private String msg;
+    private final int code;
+    private final String msg;
 
     public MaaResultException(String msg) {
         this(HttpStatus.INTERNAL_SERVER_ERROR.value(), msg);
+    }
+
+    public MaaResultException(MaaStatusCode statusCode) {
+        this.code = statusCode.code;
+        this.msg = statusCode.message;
     }
 }

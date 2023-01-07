@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateTime;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTUtil;
 import cn.hutool.jwt.RegisteredPayload;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,8 +18,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
-import plus.maa.backend.service.model.LoginUser;
+import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.repository.RedisCache;
+import plus.maa.backend.service.model.LoginUser;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -32,6 +34,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
     private final RedisCache redisCache;
+    private final ObjectMapper objectMapper;
     @Value("${maa-copilot.jwt.header}")
     private String header;
     @Value("${maa-copilot.jwt.secret}")
@@ -45,32 +48,45 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
         //解析token，用密钥验证token是否有效
         String redisKey;
         String jwtToken;
-        if (JWTUtil.verify(token, secret.getBytes())) {
-            JWT jwt = JWTUtil.parseToken(token);
-            jwtToken = jwt.getPayload("token").toString();
-            DateTime now = DateTime.now();
-            DateTime notBefore = DateTime.of((Long) jwt.getPayload(RegisteredPayload.NOT_BEFORE));
-            DateTime expiresAt = DateTime.of((Long) jwt.getPayload(RegisteredPayload.EXPIRES_AT));
-            if (!now.isBefore(expiresAt)) {
-                throw new RuntimeException("Token已过期");
+        try {
+            if (!JWTUtil.verify(token, secret.getBytes())) {
+                handleError(response, "验证失败");
+                return;
             }
-            if (!now.isAfter(notBefore)) {
-                throw new RuntimeException("Token还未生效");
-            }
-            redisKey = "LOGIN:" + jwt.getPayload("userId");
-        } else {
-            throw new RuntimeException("验证失败");
+        } catch (Exception e) {
+            handleError(response, "验证失败");
+            return;
         }
+        JWT jwt = JWTUtil.parseToken(token);
+        jwtToken = jwt.getPayload("token").toString();
+        DateTime now = DateTime.now();
+        DateTime notBefore = DateTime.of((Long) jwt.getPayload(RegisteredPayload.NOT_BEFORE));
+        DateTime expiresAt = DateTime.of((Long) jwt.getPayload(RegisteredPayload.EXPIRES_AT));
+        if (!now.isBefore(expiresAt)) {
+            handleError(response, "Token已过期");
+            return;
+        }
+        if (!now.isAfter(notBefore)) {
+            handleError(response, "Token还未生效");
+            return;
+        }
+        redisKey = "LOGIN:" + jwt.getPayload("userId");
+
         //从redis中获取用户信息
         LoginUser loginUser = redisCache.getCache(redisKey, LoginUser.class);
         if (Objects.isNull(loginUser)) {
-            throw new RuntimeException("验证失败");
+            handleError(response, "验证失败");
+            return;
         }
         if (!Objects.equals(loginUser.getToken(), jwtToken)) {
-            throw new RuntimeException("验证失败");
+            handleError(response, "验证失败");
+            return;
         }
 
         //存入SecurityContext
@@ -78,5 +94,13 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
         //放行请求
         filterChain.doFilter(request, response);
+    }
+
+    private void handleError(HttpServletResponse response, String message) throws IOException {
+        MaaResult<Void> result = new MaaResult<>(HttpServletResponse.SC_BAD_REQUEST, message, null);
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType("application/json");
+        response.setStatus(result.statusCode());
+        response.getWriter().write(objectMapper.writeValueAsString(result));
     }
 }

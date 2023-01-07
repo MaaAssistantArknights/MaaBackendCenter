@@ -22,6 +22,7 @@ public class SpringDocConfig {
 
     @Value("${maa-copilot.info.description}")
     private String description;
+
     @Bean
     public OpenAPI emergencyLogistics() {
         return new OpenAPI()

@@ -7,14 +7,16 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import plus.maa.backend.controller.request.LoginRequest;
+import plus.maa.backend.common.annotation.CurrentUser;
+import plus.maa.backend.controller.request.*;
+import plus.maa.backend.controller.response.MaaLoginRsp;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaUserInfo;
-import plus.maa.backend.repository.entity.MaaUser;
+import plus.maa.backend.service.EmailService;
 import plus.maa.backend.service.UserService;
-
-import java.util.Map;
+import plus.maa.backend.service.model.LoginUser;
 
 /**
  * 用户相关接口
@@ -25,70 +27,99 @@ import java.util.Map;
 @Data
 @Slf4j
 @Tag(name = "CopilotUser")
-@RequestMapping("user")
+@RequestMapping("/user")
+@Validated
 @RestController
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
+    private final EmailService emailService;
     @Value("${maa-copilot.jwt.header}")
     private String header;
 
     /**
-     * 获取当前登录的用户（通过请求携带的token）
+     * 激活token中的用户
      *
-     * @param request http请求，获取头部携带的token
-     * @return Activates a user account.
+     * @param activateDTO 激活码
+     * @return 成功响应
      */
-    @GetMapping("activate")
-    public MaaResult<MaaUserInfo> activate(HttpServletRequest request) {
-        String token = request.getHeader(header);
-        return userService.findActivateUser(token);
+    @PostMapping("/activate")
+    public MaaResult<Void> activate(@CurrentUser LoginUser user,
+                                    @Valid @RequestBody ActivateDTO activateDTO) {
+        return userService.activateUser(user, activateDTO);
     }
 
     /**
-     * Requests a new activation code.
+     * 注册完成后发送邮箱激活码
      *
      * @return null
      */
     @PostMapping("/activate/request")
-    public MaaResult<MaaUserInfo> activateRequest() {
-        //TODO
-        return null;
+    public MaaResult<Void> activateRequest(@CurrentUser LoginUser user) {
+        return userService.senEmailCode(user);
     }
 
-    @PostMapping("update/password")
-    public MaaResult<Void> updatePassword() {
-        //TODO
-        return null;
+    /**
+     * 更新当前用户的密码(根据原密码)
+     *
+     * @return http响应
+     */
+    @PostMapping("/update/password")
+    public MaaResult<Void> updatePassword(@CurrentUser LoginUser user,
+                                          @RequestBody @Valid PasswordUpdateDTO updateDTO) {
+        return userService.modifyPassword(user, updateDTO.getNewPassword());
     }
 
-    @PostMapping("update/info")
-    public MaaResult<Void> updateInfo() {
-        //TODO
-        return null;
+    /**
+     * 更新用户详细信息
+     *
+     * @param updateDTO 用户信息参数
+     * @return http响应
+     */
+    @PostMapping("/update/info")
+    public MaaResult<Void> updateInfo(@CurrentUser LoginUser user,
+                                      @Valid @RequestBody UserInfoUpdateDTO updateDTO) {
+        return userService.updateUserInfo(user, updateDTO);
     }
 
-    @PostMapping("password/reset")
-    public MaaResult<Void> passwordReset() {
-        //TODO
-        return null;
+    //TODO 邮件重置密码需要在用户未登录的情况下使用，需要修改
+
+    /**
+     * 邮箱重设密码
+     *
+     * @return 成功响应
+     */
+    @PostMapping("/password/reset")
+    public MaaResult<Void> passwordReset(String email, String activeCode, String password) {
+        //校验用户邮箱是否存在
+        userService.checkUserExistByEmail(email);
+        return userService.modifyPasswordByActiveCode(email, activeCode, password);
     }
 
-    @PostMapping("password/reset_request")
-    public MaaResult<Void> passwordResetRequest() {
-        //TODO
-        return null;
+    /**
+     * 验证码重置密码功能：
+     * 发送验证码用于重置
+     *
+     * @return 成功响应
+     */
+    @PostMapping("/password/reset_request")
+    public MaaResult<Void> passwordResetRequest(String email) {
+        //校验用户邮箱是否存在
+        userService.checkUserExistByEmail(email);
+        emailService.sendVCode(email);
+        return MaaResult.success(null);
     }
 
     /**
      * 刷新token
      *
-     * @return null
+     * @param request http请求，用于获取请求头
+     * @return 成功响应
      */
-    @PostMapping("refresh")
-    public MaaResult<Void> refresh() {
-        //TODO
-        return null;
+    @PostMapping("/refresh")
+    public MaaResult<Void> refresh(HttpServletRequest request) {
+        String token = request.getHeader(header);
+        return userService.refreshToken(token);
     }
 
     /**
@@ -97,13 +128,19 @@ public class UserController {
      * @param user 传入用户参数
      * @return 注册成功用户信息摘要
      */
-    @PostMapping("register")
-    public MaaResult<MaaUserInfo> register(@RequestBody MaaUser user) {
+    @PostMapping("/register")
+    public MaaResult<MaaUserInfo> register(@Valid @RequestBody RegisterDTO user) {
         return userService.register(user);
     }
 
-    @PostMapping("login")
-    public MaaResult<Map<String, String>> login(@RequestBody @Valid LoginRequest user) {
+    /**
+     * 用户登录
+     *
+     * @param user 登录参数
+     * @return 成功响应，荷载JwtToken
+     */
+    @PostMapping("/login")
+    public MaaResult<MaaLoginRsp> login(@RequestBody @Valid LoginDTO user) {
         return userService.login(user);
     }
 }

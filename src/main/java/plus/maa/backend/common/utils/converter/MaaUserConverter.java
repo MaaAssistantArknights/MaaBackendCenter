@@ -15,6 +15,7 @@ public interface MaaUserConverter {
 
     MaaUserConverter INSTANCE = Mappers.getMapper(MaaUserConverter.class);
 
+    @Mapping(source = "userId", target = "id")
     @Mapping(target = "activated", ignore = true)
     @Mapping(target = "uploadCount", ignore = true)
     MaaUserInfo convert(MaaUser user);
