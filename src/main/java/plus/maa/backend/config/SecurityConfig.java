@@ -25,8 +25,6 @@ public class SecurityConfig {
      */
     private static final String[] URL_WHITELIST = {
             "/user/login",
-            "/user/password/reset_request",
-            "/user/password/reset",
             "/user/register",
             "/arknights/level",
             "/swagger-ui.html",
@@ -62,6 +60,8 @@ public class SecurityConfig {
         http.authorizeHttpRequests(authorize -> {
             try {
                 authorize.requestMatchers(URL_WHITELIST).anonymous()
+                        .requestMatchers("/user/password/reset_request",
+                                "/user/password/reset").permitAll()
                         .anyRequest().authenticated();
             } catch (Exception e) {
                 throw new RuntimeException(e);
