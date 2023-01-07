@@ -104,10 +104,10 @@ public class UserController {
      * @return 成功响应
      */
     @PostMapping("/password/reset_request")
-    public MaaResult<Void> passwordResetRequest(@RequestBody @Valid PasswordResetDTO passwordResetDTO) {
+    public MaaResult<Void> passwordResetRequest(@RequestBody @Valid PasswordResetVCodeDTO passwordResetVCodeDTO) {
         //校验用户邮箱是否存在
-        userService.checkUserExistByEmail(passwordResetDTO.getEmail());
-        emailService.sendVCode(passwordResetDTO.getEmail());
+        userService.checkUserExistByEmail(passwordResetVCodeDTO.getEmail());
+        emailService.sendVCode(passwordResetVCodeDTO.getEmail());
         return MaaResult.success(null);
     }
 
