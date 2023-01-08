@@ -87,13 +87,14 @@ public class UserController {
     /**
      * 邮箱重设密码
      *
+     * @param passwordResetDTO 通过邮箱修改密码请求
      * @return 成功响应
      */
     @PostMapping("/password/reset")
-    public MaaResult<Void> passwordReset(String email, String activeCode, String password) {
+    public MaaResult<Void> passwordReset(@RequestBody @Valid PasswordResetDTO passwordResetDTO) {
         //校验用户邮箱是否存在
-        userService.checkUserExistByEmail(email);
-        return userService.modifyPasswordByActiveCode(email, activeCode, password);
+        userService.checkUserExistByEmail(passwordResetDTO.getEmail());
+        return userService.modifyPasswordByActiveCode(passwordResetDTO);
     }
 
     /**
@@ -103,10 +104,10 @@ public class UserController {
      * @return 成功响应
      */
     @PostMapping("/password/reset_request")
-    public MaaResult<Void> passwordResetRequest(String email) {
+    public MaaResult<Void> passwordResetRequest(@RequestBody @Valid PasswordResetVCodeDTO passwordResetVCodeDTO) {
         //校验用户邮箱是否存在
-        userService.checkUserExistByEmail(email);
-        emailService.sendVCode(email);
+        userService.checkUserExistByEmail(passwordResetVCodeDTO.getEmail());
+        emailService.sendVCode(passwordResetVCodeDTO.getEmail());
         return MaaResult.success(null);
     }
 
