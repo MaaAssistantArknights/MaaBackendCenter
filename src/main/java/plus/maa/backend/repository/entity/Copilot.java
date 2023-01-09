@@ -1,5 +1,6 @@
 package plus.maa.backend.repository.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import jakarta.validation.constraints.NotBlank;
@@ -62,7 +63,7 @@ public class Copilot implements Serializable {
 
 
     //指定干员
-    private List<Operators> operator;
+    private List<Operators> operators;
     //群组
     private List<Groups> groups;
     // 战斗中的操作
@@ -73,7 +74,9 @@ public class Copilot implements Serializable {
 
     private ArkLevelInfo arkLevel;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createDate;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updateDate;
 
 

@@ -77,7 +77,7 @@ public class CopilotService {
     }
 
     /**
-     * 验证type
+     * 验证数值是否合法
      *
      * @param copilot copilot
      */
@@ -85,9 +85,16 @@ public class CopilotService {
         if (copilot.getActions() != null) {
             for (Copilot.Action action : copilot.getActions()) {
                 String type = action.getType();
+
                 if ("SkillUsage".equals(type) || "技能用法".equals(type)) {
                     if (action.getSkillUsage() == null) {
                         throw new MaaResultException("当动作类型为技能用法时,技能用法该选项必选");
+                    }
+                }
+
+                if (action.getLocation() != null) {
+                    if (action.getLocation().length > 2) {
+                        throw new MaaResultException("干员位置的数据格式不符合规定");
                     }
                 }
             }
@@ -175,10 +182,10 @@ public class CopilotService {
         if (request.getLimit() != null && request.getLimit() > 0) {
             limit = request.getLimit();
         }
-        if (request.getOrderby() == null && !"".equals(request.getOrderby())) {
+        if (request.getOrderby() != null && !"".equals(request.getOrderby())) {
             orderby = request.getOrderby();
         }
-        if (request.getDesc() != null) {
+        if (request.getDesc() != null && request.getDesc()) {
             sortOrder = new Sort.Order(Sort.Direction.DESC, orderby);
         }
 
@@ -191,43 +198,49 @@ public class CopilotService {
         Query queryObj = new Query();
         Criteria criteriaObj = new Criteria();
 
-        //or查询
-        criteriaObj.orOperator(
-                Criteria.where("doc.title").regex(request.getDocument()),
-                Criteria.where("doc.details").regex(request.getDocument()),
-                Criteria.where("arklevel.catOne").regex(request.getLevelKeyword()),
-                Criteria.where("arklevel.catTne").regex(request.getLevelKeyword()),
-                Criteria.where("arklevel.catThree").regex(request.getLevelKeyword()),
-                Criteria.where("arklevel.name").regex(request.getLevelKeyword())
-        );
+        //匹配模糊查询
+        if (request.getLevelKeyword() != null && !"".equals(request.getLevelKeyword())) {
+            criteriaObj.and("stageName").regex(request.getLevelKeyword());
+        }
+        //or模糊查询
+        if (request.getDocument() != null && !"".equals(request.getDocument())) {
+            criteriaObj.orOperator(
+                    Criteria.where("doc.title").regex(request.getDocument()),
+                    Criteria.where("doc.details").regex(request.getDocument())
+            );
+        }
 
-
-        // operator 包含或排除干员
+        //operator 包含或排除干员查询
+        //排除~开头的 查询非~开头
         String oper = request.getOperator();
         if (!"".equals(oper)) {
             String[] operators = oper.split(",");
             for (String operator : operators) {
                 if ("~".equals(operator.substring(0, 1))) {
                     String exclude = operator.substring(1);
-                    //排除查询
+                    //排除查询指定干员
                     criteriaObj.norOperator(
-                            Criteria.where("operator.name").regex(exclude),
-                            Criteria.where("operator.name").regex(exclude));
+                            Criteria.where("operators.name").regex(exclude),
+                            Criteria.where("operators.name").regex(exclude));
                 } else {
-                    //包含查询
-                    criteriaObj.and("operator.name").regex(operator);
+                    //模糊匹配查询指定干员
+                    criteriaObj.and("operators.name").regex(operator);
                 }
             }
         }
 
         //匹配查询
-        if (!"".equals(request.getUploader())) {
+        if (request.getUploader() != null && !"".equals(request.getUploader())) {
             criteriaObj.and("uploader").is(request.getUploader());
         }
 
+        //封装查询
         queryObj.addCriteria(criteriaObj);
+
         //查询总数
         long count = mongoTemplate.count(queryObj, Copilot.class);
+
+        //分页排序查询
         List<Copilot> copilots = mongoTemplate.find(queryObj.with(pageable), Copilot.class);
 
         //计算页面
@@ -237,6 +250,8 @@ public class CopilotService {
         if (count - (long) page * limit > 0) {
             hasNext = true;
         }
+
+        //封装数据
         CopilotPageInfo copilotPageInfo = new CopilotPageInfo();
         copilotPageInfo
                 .setTotal(count)
@@ -267,6 +282,7 @@ public class CopilotService {
 
 
     public MaaResult<Void> rates(CopilotRequest request) {
+        // TODO: 评分相关
         return MaaResult.success(null);
     }
 }
