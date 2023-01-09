@@ -4,13 +4,14 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import plus.maa.backend.controller.response.ArkLevelInfo;
-
 
 import java.io.Serializable;
 import java.util.Date;
@@ -21,6 +22,8 @@ import java.util.List;
  * Date  2022-12-25 17:56
  */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @Accessors(chain = true)
 @Document("maa_copilot")
@@ -63,7 +66,7 @@ public class Copilot implements Serializable {
 
 
     //指定干员
-    private List<Operators> operators;
+    private List<Operators> opers;
     //群组
     private List<Groups> groups;
     // 战斗中的操作
@@ -81,6 +84,8 @@ public class Copilot implements Serializable {
 
 
     @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public static class Operators {
         // 干员名
@@ -96,6 +101,8 @@ public class Copilot implements Serializable {
         }
 
         @Data
+        @NoArgsConstructor
+        @AllArgsConstructor
         @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
         public static class Requirements {
             // 精英化等级。可选，默认为 0, 不要求精英化等级
@@ -114,6 +121,8 @@ public class Copilot implements Serializable {
     }
 
     @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public static class Groups {
         // 群组名
@@ -123,6 +132,8 @@ public class Copilot implements Serializable {
 
 
     @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public static class Action {
         // 操作类型，可选，默认 "Deploy"
@@ -157,6 +168,8 @@ public class Copilot implements Serializable {
     }
 
     @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public static class Doc {
         @NotBlank(message = "作业标题不能为空")

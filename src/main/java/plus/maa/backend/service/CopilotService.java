@@ -2,22 +2,26 @@ package plus.maa.backend.service;
 
 
 import cn.hutool.core.lang.ObjectId;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 import plus.maa.backend.controller.request.CopilotRequest;
 import plus.maa.backend.controller.response.CopilotPageInfo;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.repository.CopilotRepository;
 import plus.maa.backend.repository.entity.Copilot;
-import plus.maa.backend.repository.entity.MaaUser;
 import plus.maa.backend.service.model.LoginUser;
-
 
 import java.util.Date;
 import java.util.List;
@@ -28,23 +32,13 @@ import java.util.Optional;
  * @author LoMu
  * Date  2022-12-25 19:57
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CopilotService {
-
     private final CopilotRepository copilotRepository;
     private final MongoTemplate mongoTemplate;
-
-
-    /**
-     * @return 获取当前登录用户
-     */
-    private LoginUser getCurrentUser() {
-        /* return (LoginUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();*/
-        LoginUser loginUser = new LoginUser();
-        loginUser.setMaaUser(new MaaUser().setUserId("66666").setUserName("halo"));
-        return loginUser;
-    }
+    private final ObjectMapper mapper;
 
     /**
      * 根据_id获取Copilot
@@ -70,8 +64,8 @@ public class CopilotService {
      * @param operationId 作业id
      * @return boolean
      */
-    private Boolean verifyOwner(String operationId) {
-        String userId = getCurrentUser().getMaaUser().getUserId();
+    private Boolean verifyOwner(LoginUser user, String operationId) {
+        String userId = user.getMaaUser().getUserId();
         Copilot copilot = findByid(operationId);
         return Objects.equals(copilot.getUploaderId(), userId);
     }
@@ -102,14 +96,24 @@ public class CopilotService {
     }
 
 
+    public MaaResult<String> upload(LoginUser user, String content) {
+        Copilot copilot = null;
+        try {
+            copilot = mapper.readValue(content, Copilot.class);
+        } catch (JsonProcessingException e) {
+            log.error("解析copilot失败", e);
+            throw new MaaResultException("解析copilot失败");
+        }
+        return upload(user, copilot);
+    }
+
     /**
      * 上传新的作业
      *
      * @param copilot 前端编辑json作业内容
      * @return 返回_id
      */
-    public MaaResult<String> upload(Copilot copilot) {
-        LoginUser user = getCurrentUser();
+    public MaaResult<String> upload(LoginUser user, Copilot copilot) {
         String id = ObjectId.next();
         Date date = new Date();
         verifyCopilot(copilot);
@@ -133,10 +137,10 @@ public class CopilotService {
      * @param request _id
      * @return null
      */
-    public MaaResult<Void> delete(CopilotRequest request) {
+    public MaaResult<Void> delete(LoginUser user, CopilotRequest request) {
         String operationId = request.getId();
 
-        if (verifyOwner(operationId)) {
+        if (verifyOwner(user, operationId)) {
             copilotRepository.deleteById(operationId);
             return MaaResult.success(null);
         } else {
@@ -182,8 +186,8 @@ public class CopilotService {
         if (request.getLimit() != null && request.getLimit() > 0) {
             limit = request.getLimit();
         }
-        if (request.getOrderby() != null && !"".equals(request.getOrderby())) {
-            orderby = request.getOrderby();
+        if (request.getOrderBy() != null && !"".equals(request.getOrderBy())) {
+            orderby = request.getOrderBy();
         }
         if (request.getDesc() != null && request.getDesc()) {
             sortOrder = new Sort.Order(Sort.Direction.DESC, orderby);
@@ -213,7 +217,7 @@ public class CopilotService {
         //operator 包含或排除干员查询
         //排除~开头的 查询非~开头
         String oper = request.getOperator();
-        if (!"".equals(oper)) {
+        if (!ObjectUtils.isEmpty(oper)) {
             String[] operators = oper.split(",");
             for (String operator : operators) {
                 if ("~".equals(operator.substring(0, 1))) {
@@ -253,12 +257,10 @@ public class CopilotService {
 
         //封装数据
         CopilotPageInfo copilotPageInfo = new CopilotPageInfo();
-        copilotPageInfo
-                .setTotal(count)
+        copilotPageInfo.setTotal(count)
                 .setHasNext(hasNext)
                 .setData(copilots)
-                .setPage(pageNumber)
-        ;
+                .setPage(pageNumber);
         return MaaResult.success(copilotPageInfo);
     }
 
@@ -268,8 +270,8 @@ public class CopilotService {
      * @param copilot 更新值
      * @return null
      */
-    public MaaResult<Void> update(Copilot copilot) {
-        Boolean owner = verifyOwner(copilot.getId());
+    public MaaResult<Void> update(LoginUser loginUser, Copilot copilot) {
+        Boolean owner = verifyOwner(loginUser, copilot.getId());
         verifyCopilot(copilot);
         if (owner) {
             copilot.setUpdateDate(new Date());

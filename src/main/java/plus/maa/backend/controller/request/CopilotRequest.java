@@ -19,18 +19,10 @@ public class CopilotRequest {
     private String document;
     private String uploaderId;
     private Boolean desc;
-    private String orderby;
+    private String orderBy;
     private String language;
-
     private String rating;
 
-    public void setLevel_keyword(String levelKeyword) {
-        this.levelKeyword = levelKeyword;
-    }
-
-    public void setUploader_id(String uploaderId) {
-        this.uploaderId = uploaderId;
-    }
 }
 
 
