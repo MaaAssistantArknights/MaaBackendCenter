@@ -2,12 +2,14 @@ package plus.maa.backend.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-
+import plus.maa.backend.common.annotation.CurrentUser;
 import plus.maa.backend.controller.request.CopilotRequest;
+import plus.maa.backend.controller.request.CopilotUploadRequest;
 import plus.maa.backend.controller.response.CopilotPageInfo;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.repository.entity.Copilot;
 import plus.maa.backend.service.CopilotService;
+import plus.maa.backend.service.model.LoginUser;
 
 /**
  * @author LoMu
@@ -16,37 +18,40 @@ import plus.maa.backend.service.CopilotService;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("copilot")
+@RequestMapping("/copilot")
 public class CopilotController {
-    private final CopilotService copilotPerationService;
+    private final CopilotService copilotService;
 
-    @PostMapping("upload")
-    public MaaResult<String> uploadCoplilot(@RequestBody Copilot copiltoPeration) {
-        return copilotPerationService.upload(copiltoPeration);
+    @PostMapping("/upload")
+    public MaaResult<String> uploadCopilot(@CurrentUser LoginUser loginUser,
+                                           @RequestBody CopilotUploadRequest request) {
+        return copilotService.upload(loginUser, request.getContent());
     }
 
-    @PostMapping("delete")
-    public MaaResult<Void> deleteCoplilot(@RequestBody CopilotRequest request) {
-        return copilotPerationService.delete(request);
+    @PostMapping("/delete")
+    public MaaResult<Void> deleteCopilot(@CurrentUser LoginUser loginUser,
+                                         @RequestBody CopilotRequest request) {
+        return copilotService.delete(loginUser, request);
     }
 
-    @GetMapping("get/{id}")
-    public MaaResult<Copilot> getCoplilotById(@PathVariable("id") String id) {
-        return copilotPerationService.getCopilotById(id);
+    @GetMapping("/get/{id}")
+    public MaaResult<Copilot> getCopilotById(@PathVariable("id") String id) {
+        return copilotService.getCopilotById(id);
     }
 
 
-    @GetMapping("query")
-    public MaaResult<CopilotPageInfo> queriesCopilotCopiltot(CopilotRequest request) {
-        return copilotPerationService.queriesCopilot(request);
+    @GetMapping("/query")
+    public MaaResult<CopilotPageInfo> queriesCopilot(CopilotRequest request) {
+        return copilotService.queriesCopilot(request);
     }
 
-    @PostMapping("update")
-    public MaaResult<Void> updateCopilot(@RequestBody Copilot copilot) {
-        return copilotPerationService.update(copilot);
+    @PostMapping("/update")
+    public MaaResult<Void> updateCopilot(@CurrentUser LoginUser loginUser,
+                                         @RequestBody Copilot copilot) {
+        return copilotService.update(loginUser, copilot);
     }
 
-    @PostMapping("rating")
+    @PostMapping("/rating")
     public MaaResult<Void> ratesCopilotOperation(CopilotRequest request) {
         return null;
     }

@@ -34,6 +34,13 @@ public class SecurityConfig {
             "/version",
             "/"
     };
+
+    private static final String[] URL_PERMIT_ALL = {
+            "/user/password/reset_request",
+            "/user/password/reset",
+            "/copilot/query",
+            "/copilot/get/**"
+    };
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter;
     private final AuthenticationEntryPointImpl authenticationEntryPoint;
@@ -60,8 +67,7 @@ public class SecurityConfig {
         http.authorizeHttpRequests(authorize -> {
             try {
                 authorize.requestMatchers(URL_WHITELIST).anonymous()
-                        .requestMatchers("/user/password/reset_request",
-                                "/user/password/reset").permitAll()
+                        .requestMatchers(URL_PERMIT_ALL).permitAll()
                         .anyRequest().authenticated();
             } catch (Exception e) {
                 throw new RuntimeException(e);
