@@ -6,6 +6,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import plus.maa.backend.controller.request.CopilotDTO;
+import plus.maa.backend.controller.response.CopilotInfo;
 import plus.maa.backend.repository.entity.Copilot;
 
 
@@ -30,4 +31,7 @@ public interface CopilotMapper {
 
 
     Copilot toCopilot(CopilotDTO copilotDto);
+
+
+    CopilotInfo toCopilotInfo(Copilot copilot);
 }
