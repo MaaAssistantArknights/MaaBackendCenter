@@ -47,8 +47,8 @@ public class CopilotController {
 
     @PostMapping("/update")
     public MaaResult<Void> updateCopilot(@CurrentUser LoginUser loginUser,
-                                         @RequestBody Copilot copilot) {
-        return copilotService.update(loginUser, copilot);
+                                         @RequestBody CopilotUploadRequest request) {
+        return copilotService.update(loginUser, request.getId(), request.getContent());
     }
 
     @PostMapping("/rating")

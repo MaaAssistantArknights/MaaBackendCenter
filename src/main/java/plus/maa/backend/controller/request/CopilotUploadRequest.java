@@ -9,4 +9,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CopilotUploadRequest {
     private String content;
+    private String id;
 }

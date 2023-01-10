@@ -21,6 +21,7 @@ import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.repository.CopilotRepository;
 import plus.maa.backend.repository.entity.Copilot;
+import plus.maa.backend.repository.entity.CopilotMapper;
 import plus.maa.backend.service.model.LoginUser;
 
 import java.util.Date;
@@ -39,6 +40,8 @@ public class CopilotService {
     private final CopilotRepository copilotRepository;
     private final MongoTemplate mongoTemplate;
     private final ObjectMapper mapper;
+
+    private final CopilotMapper copilotMapper;
 
     /**
      * 根据_id获取Copilot
@@ -65,7 +68,12 @@ public class CopilotService {
      * @return boolean
      */
     private Boolean verifyOwner(LoginUser user, String operationId) {
+        if (operationId == null) {
+            throw new MaaResultException("作业id不可为空");
+        }
+
         String userId = user.getMaaUser().getUserId();
+
         Copilot copilot = findByid(operationId);
         return Objects.equals(copilot.getUploaderId(), userId);
     }
@@ -76,6 +84,7 @@ public class CopilotService {
      * @param copilot copilot
      */
     private void verifyCopilot(Copilot copilot) {
+
         if (copilot.getActions() != null) {
             for (Copilot.Action action : copilot.getActions()) {
                 String type = action.getType();
@@ -91,29 +100,35 @@ public class CopilotService {
                         throw new MaaResultException("干员位置的数据格式不符合规定");
                     }
                 }
+
             }
         }
+
     }
 
 
-    public MaaResult<String> upload(LoginUser user, String content) {
-        Copilot copilot = null;
+    private Copilot contentToCopilot(String content) {
+        if (content == null) {
+            throw new MaaResultException("数据不可为空");
+        }
+        Copilot copilot;
         try {
             copilot = mapper.readValue(content, Copilot.class);
         } catch (JsonProcessingException e) {
             log.error("解析copilot失败", e);
             throw new MaaResultException("解析copilot失败");
         }
-        return upload(user, copilot);
+        return copilot;
     }
 
     /**
      * 上传新的作业
      *
-     * @param copilot 前端编辑json作业内容
+     * @param content 前端编辑json作业内容
      * @return 返回_id
      */
-    public MaaResult<String> upload(LoginUser user, Copilot copilot) {
+    public MaaResult<String> upload(LoginUser user, String content) {
+        Copilot copilot = contentToCopilot(content);
         String id = ObjectId.next();
         Date date = new Date();
         verifyCopilot(copilot);
@@ -224,11 +239,11 @@ public class CopilotService {
                     String exclude = operator.substring(1);
                     //排除查询指定干员
                     criteriaObj.norOperator(
-                            Criteria.where("operators.name").regex(exclude),
-                            Criteria.where("operators.name").regex(exclude));
+                            Criteria.where("opers.name").regex(exclude),
+                            Criteria.where("opers.name").regex(exclude));
                 } else {
                     //模糊匹配查询指定干员
-                    criteriaObj.and("operators.name").regex(operator);
+                    criteriaObj.and("opers.name").regex(operator);
                 }
             }
         }
@@ -265,17 +280,21 @@ public class CopilotService {
     }
 
     /**
-     * 更新
+     * 增量更新
      *
-     * @param copilot 更新值
+     * @param id      作业_id
+     * @param content json
      * @return null
      */
-    public MaaResult<Void> update(LoginUser loginUser, Copilot copilot) {
-        Boolean owner = verifyOwner(loginUser, copilot.getId());
+    public MaaResult<Void> update(LoginUser loginUser, String id, String content) {
+        Copilot copilot = contentToCopilot(content);
+        Boolean owner = verifyOwner(loginUser, id);
         verifyCopilot(copilot);
         if (owner) {
-            copilot.setUpdateDate(new Date());
-            copilotRepository.save(copilot);
+            Copilot rawCopilot = findByid(id);
+            rawCopilot.setUpdateDate(new Date());
+            copilotMapper.updateCopilotToRaw(copilot, rawCopilot);
+            copilotRepository.save(rawCopilot);
             return MaaResult.success(null);
         } else {
             throw new MaaResultException("无法更新他人作业");
@@ -283,6 +302,11 @@ public class CopilotService {
     }
 
 
+    /**
+     * 评分相关
+     * @param request 评分
+     * @return null
+     */
     public MaaResult<Void> rates(CopilotRequest request) {
         // TODO: 评分相关
         return MaaResult.success(null);
