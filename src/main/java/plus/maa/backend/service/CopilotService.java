@@ -24,7 +24,7 @@ import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.repository.CopilotRepository;
 import plus.maa.backend.repository.entity.Copilot;
-import plus.maa.backend.repository.entity.CopilotMapper;
+import plus.maa.backend.repository.entity.mapper.CopilotMapper;
 import plus.maa.backend.service.model.LoginUser;
 
 import java.util.Date;
@@ -75,8 +75,7 @@ public class CopilotService {
             throw new MaaResultException("作业id不可为空");
         }
 
-        /*String userId = user.getMaaUser().getUserId();*/
-        String userId = "66666";
+        String userId = user.getMaaUser().getUserId();
         Copilot copilot = findByid(operationId);
         return Objects.equals(copilot.getUploaderId(), userId);
     }
@@ -141,8 +140,8 @@ public class CopilotService {
         Copilot copilot = copilotMapper.toCopilot(copilotDto);
         copilot.setUploaderId(user.getMaaUser().getUserId())
                 .setUploader(user.getMaaUser().getUserName())
-                .setCreateDate(date)
-                .setUpdateDate(date)
+                .setFirstUploadTime(date)
+                .setUploadTime(date)
                 .setId(id);
 
         try {
@@ -302,8 +301,8 @@ public class CopilotService {
         verifyCopilot(copilotDto);
         if (owner) {
             Copilot rawCopilot = findByid(id);
-            rawCopilot.setUpdateDate(new Date());
-            copilotMapper.updateCopilotToRaw(copilotDto, rawCopilot);
+            rawCopilot.setUploadTime(new Date());
+            copilotMapper.updateCopilotFromDto(copilotDto, rawCopilot);
             copilotRepository.save(rawCopilot);
             return MaaResult.success(null);
         } else {

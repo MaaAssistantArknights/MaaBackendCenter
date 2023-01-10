@@ -26,14 +26,3 @@ public class CopilotQueriesRequest {
 }
 
 
-  /*
-    @RequestParam("page") Integer page,
-    @RequestParam("limit") Integer limit,
-    @RequestParam("level_keyword") String levelKeyword,
-    @RequestParam("operator") String operator,
-    @RequestParam("content") String content,
-    @RequestParam("uploader") String uploader,
-    @RequestParam("uploader_id") String uploaderId,
-    @RequestParam("desc") String desc,
-    @RequestParam("order_by") String orderBy,
-    @RequestParam("language") String language*/
