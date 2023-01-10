@@ -3,8 +3,8 @@ package plus.maa.backend.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.CurrentUser;
-import plus.maa.backend.controller.request.CopilotRequest;
-import plus.maa.backend.controller.request.CopilotUploadRequest;
+import plus.maa.backend.controller.request.CopilotQueriesRequest;
+import plus.maa.backend.controller.request.CopilotCUDRequest;
 import plus.maa.backend.controller.response.CopilotPageInfo;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.repository.entity.Copilot;
@@ -24,13 +24,13 @@ public class CopilotController {
 
     @PostMapping("/upload")
     public MaaResult<String> uploadCopilot(@CurrentUser LoginUser loginUser,
-                                           @RequestBody CopilotUploadRequest request) {
+                                           @RequestBody CopilotCUDRequest request) {
         return copilotService.upload(loginUser, request.getContent());
     }
 
     @PostMapping("/delete")
     public MaaResult<Void> deleteCopilot(@CurrentUser LoginUser loginUser,
-                                         @RequestBody CopilotRequest request) {
+                                         @RequestBody CopilotCUDRequest request) {
         return copilotService.delete(loginUser, request);
     }
 
@@ -41,18 +41,18 @@ public class CopilotController {
 
 
     @GetMapping("/query")
-    public MaaResult<CopilotPageInfo> queriesCopilot(CopilotRequest request) {
+    public MaaResult<CopilotPageInfo> queriesCopilot(CopilotQueriesRequest request) {
         return copilotService.queriesCopilot(request);
     }
 
     @PostMapping("/update")
     public MaaResult<Void> updateCopilot(@CurrentUser LoginUser loginUser,
-                                         @RequestBody CopilotUploadRequest request) {
+                                         @RequestBody CopilotCUDRequest request) {
         return copilotService.update(loginUser, request.getId(), request.getContent());
     }
 
     @PostMapping("/rating")
-    public MaaResult<Void> ratesCopilotOperation(CopilotRequest request) {
+    public MaaResult<Void> ratesCopilotOperation(CopilotQueriesRequest request) {
         return null;
     }
 

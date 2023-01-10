@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CopilotUploadRequest {
+public class CopilotCUDRequest {
     private String content;
     private String id;
 }

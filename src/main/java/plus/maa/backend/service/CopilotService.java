@@ -15,7 +15,9 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
-import plus.maa.backend.controller.request.CopilotRequest;
+import plus.maa.backend.controller.request.CopilotCUDRequest;
+import plus.maa.backend.controller.request.CopilotDTO;
+import plus.maa.backend.controller.request.CopilotQueriesRequest;
 import plus.maa.backend.controller.response.CopilotPageInfo;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaResultException;
@@ -62,7 +64,7 @@ public class CopilotService {
     }
 
     /**
-     * 验证所有者
+     * 验证当前账户是否为作业创建者
      *
      * @param operationId 作业id
      * @return boolean
@@ -72,8 +74,8 @@ public class CopilotService {
             throw new MaaResultException("作业id不可为空");
         }
 
-        String userId = user.getMaaUser().getUserId();
-
+        /*String userId = user.getMaaUser().getUserId();*/
+        String userId = "66666";
         Copilot copilot = findByid(operationId);
         return Objects.equals(copilot.getUploaderId(), userId);
     }
@@ -81,12 +83,12 @@ public class CopilotService {
     /**
      * 验证数值是否合法
      *
-     * @param copilot copilot
+     * @param copilotDto copilot
      */
-    private void verifyCopilot(Copilot copilot) {
+    private void verifyCopilot(CopilotDTO copilotDto) {
 
-        if (copilot.getActions() != null) {
-            for (Copilot.Action action : copilot.getActions()) {
+        if (copilotDto.getActions() != null) {
+            for (Copilot.Action action : copilotDto.getActions()) {
                 String type = action.getType();
 
                 if ("SkillUsage".equals(type) || "技能用法".equals(type)) {
@@ -107,18 +109,18 @@ public class CopilotService {
     }
 
 
-    private Copilot contentToCopilot(String content) {
+    private CopilotDTO contentToCopilotDto(String content) {
         if (content == null) {
             throw new MaaResultException("数据不可为空");
         }
-        Copilot copilot;
+        CopilotDTO copilotDto;
         try {
-            copilot = mapper.readValue(content, Copilot.class);
+            copilotDto = mapper.readValue(content, CopilotDTO.class);
         } catch (JsonProcessingException e) {
             log.error("解析copilot失败", e);
             throw new MaaResultException("解析copilot失败");
         }
-        return copilot;
+        return copilotDto;
     }
 
     /**
@@ -128,10 +130,14 @@ public class CopilotService {
      * @return 返回_id
      */
     public MaaResult<String> upload(LoginUser user, String content) {
-        Copilot copilot = contentToCopilot(content);
+        CopilotDTO copilotDto = contentToCopilotDto(content);
         String id = ObjectId.next();
         Date date = new Date();
-        verifyCopilot(copilot);
+
+        verifyCopilot(copilotDto);
+
+
+        Copilot copilot = copilotMapper.toCopilot(copilotDto);
         copilot.setUploaderId(user.getMaaUser().getUserId())
                 .setUploader(user.getMaaUser().getUserName())
                 .setCreateDate(date)
@@ -152,7 +158,7 @@ public class CopilotService {
      * @param request _id
      * @return null
      */
-    public MaaResult<Void> delete(LoginUser user, CopilotRequest request) {
+    public MaaResult<Void> delete(LoginUser user, CopilotCUDRequest request) {
         String operationId = request.getId();
 
         if (verifyOwner(user, operationId)) {
@@ -187,7 +193,7 @@ public class CopilotService {
      * @param request 模糊查询
      * @return CopilotPageInfo
      */
-    public MaaResult<CopilotPageInfo> queriesCopilot(CopilotRequest request) {
+    public MaaResult<CopilotPageInfo> queriesCopilot(CopilotQueriesRequest request) {
         String orderby = "id";
         Sort.Order sortOrder = new Sort.Order(Sort.Direction.ASC, orderby);
         int page = 1;
@@ -287,13 +293,13 @@ public class CopilotService {
      * @return null
      */
     public MaaResult<Void> update(LoginUser loginUser, String id, String content) {
-        Copilot copilot = contentToCopilot(content);
+        CopilotDTO copilotDto = contentToCopilotDto(content);
         Boolean owner = verifyOwner(loginUser, id);
-        verifyCopilot(copilot);
+        verifyCopilot(copilotDto);
         if (owner) {
             Copilot rawCopilot = findByid(id);
             rawCopilot.setUpdateDate(new Date());
-            copilotMapper.updateCopilotToRaw(copilot, rawCopilot);
+            copilotMapper.updateCopilotToRaw(copilotDto, rawCopilot);
             copilotRepository.save(rawCopilot);
             return MaaResult.success(null);
         } else {
@@ -304,10 +310,11 @@ public class CopilotService {
 
     /**
      * 评分相关
+     *
      * @param request 评分
      * @return null
      */
-    public MaaResult<Void> rates(CopilotRequest request) {
+    public MaaResult<Void> rates(CopilotQueriesRequest request) {
         // TODO: 评分相关
         return MaaResult.success(null);
     }
