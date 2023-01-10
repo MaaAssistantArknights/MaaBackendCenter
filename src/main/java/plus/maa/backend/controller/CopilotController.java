@@ -3,11 +3,11 @@ package plus.maa.backend.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.CurrentUser;
-import plus.maa.backend.controller.request.CopilotQueriesRequest;
 import plus.maa.backend.controller.request.CopilotCUDRequest;
+import plus.maa.backend.controller.request.CopilotQueriesRequest;
+import plus.maa.backend.controller.response.CopilotInfo;
 import plus.maa.backend.controller.response.CopilotPageInfo;
 import plus.maa.backend.controller.response.MaaResult;
-import plus.maa.backend.repository.entity.Copilot;
 import plus.maa.backend.service.CopilotService;
 import plus.maa.backend.service.model.LoginUser;
 
@@ -35,7 +35,7 @@ public class CopilotController {
     }
 
     @GetMapping("/get/{id}")
-    public MaaResult<Copilot> getCopilotById(@PathVariable("id") String id) {
+    public MaaResult<CopilotInfo> getCopilotById(@PathVariable("id") String id) {
         return copilotService.getCopilotById(id);
     }
 
