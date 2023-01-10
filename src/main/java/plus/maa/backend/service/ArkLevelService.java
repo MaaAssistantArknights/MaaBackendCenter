@@ -85,6 +85,12 @@ public class ArkLevelService {
                 .collect(Collectors.toList());
     }
 
+    //TODO 增加缓存
+    public ArkLevelInfo findByLevelId(String levelId) {
+        ArkLevel level = arkLevelRepo.findByLevelId(levelId);
+        return level == null ? null : ArkLevelConverter.INSTANCE.convert(level);
+    }
+
     /**
      * 地图数据更新任务
      */

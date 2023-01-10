@@ -18,6 +18,7 @@ import org.springframework.util.ObjectUtils;
 import plus.maa.backend.controller.request.CopilotCUDRequest;
 import plus.maa.backend.controller.request.CopilotDTO;
 import plus.maa.backend.controller.request.CopilotQueriesRequest;
+import plus.maa.backend.controller.response.CopilotInfo;
 import plus.maa.backend.controller.response.CopilotPageInfo;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaResultException;
@@ -42,7 +43,7 @@ public class CopilotService {
     private final CopilotRepository copilotRepository;
     private final MongoTemplate mongoTemplate;
     private final ObjectMapper mapper;
-
+    private final ArkLevelService levelService;
     private final CopilotMapper copilotMapper;
 
     /**
@@ -176,14 +177,15 @@ public class CopilotService {
      * @param id copilot _id
      * @return copilotInfo
      */
-    public MaaResult<Copilot> getCopilotById(String id) {
+    public MaaResult<CopilotInfo> getCopilotById(String id) {
         //增加一次views
         Copilot copilot = findByid(id);
         Query query = Query.query(Criteria.where("id").is(id));
         Update update = new Update();
         update.inc("views");
         mongoTemplate.updateFirst(query, update, Copilot.class);
-        return MaaResult.success(copilot);
+        CopilotInfo info = formatCopilot(copilot);
+        return MaaResult.success(info);
     }
 
 
@@ -267,6 +269,8 @@ public class CopilotService {
 
         //分页排序查询
         List<Copilot> copilots = mongoTemplate.find(queryObj.with(pageable), Copilot.class);
+        //填充前端所需信息
+        List<CopilotInfo> infos = copilots.stream().map(this::formatCopilot).toList();
 
         //计算页面
         int pageNumber = (int) Math.ceil((double) count / limit);
@@ -280,7 +284,7 @@ public class CopilotService {
         CopilotPageInfo copilotPageInfo = new CopilotPageInfo();
         copilotPageInfo.setTotal(count)
                 .setHasNext(hasNext)
-                .setData(copilots)
+                .setData(infos)
                 .setPage(pageNumber);
         return MaaResult.success(copilotPageInfo);
     }
@@ -317,5 +321,37 @@ public class CopilotService {
     public MaaResult<Void> rates(CopilotQueriesRequest request) {
         // TODO: 评分相关
         return MaaResult.success(null);
+    }
+
+    /**
+     * 将数据库内容转换为前端所需格式<br>
+     * TODO 当前仅为简单转换，具体细节待定
+     */
+    private CopilotInfo formatCopilot(Copilot copilot) {
+        CopilotInfo info = new CopilotInfo();
+        info.setId(copilot.getId());
+        info.setMinimumRequired(copilot.getMinimumRequired());
+        info.setUploadTime(copilot.getCreateDate());
+        info.setTitle(copilot.getDoc().getTitle());
+        info.setDetail(copilot.getDoc().getDetails());
+        info.setUploader(copilot.getUploader());
+        info.setOperators(copilot.getOpers().stream()
+                .map(Copilot.Operators::getName)
+                .toList());
+        info.setGroups(copilot.getGroups());
+        info.setViews(copilot.getViews());
+        info.setHotScore(copilot.getHotScore());
+        info.setLevel(levelService.findByLevelId(copilot.getStageName()));
+        info.setAvailable(true);
+        info.setRatingLevel(copilot.getRatingLevel());
+        info.setNotEnoughRating(true);
+        info.setRatingType(0);
+        info.setDifficulty(copilot.getDifficulty());
+        try {
+            info.setContent(mapper.writeValueAsString(copilot));
+        } catch (JsonProcessingException e) {
+            log.error("json序列化失败", e);
+        }
+        return info;
     }
 }
