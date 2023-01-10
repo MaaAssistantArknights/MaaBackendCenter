@@ -8,7 +8,7 @@ import lombok.Data;
  */
 
 @Data
-public class CopilotRequest {
+public class CopilotQueriesRequest {
     private String id;
     private Integer page;
     private Integer limit;
