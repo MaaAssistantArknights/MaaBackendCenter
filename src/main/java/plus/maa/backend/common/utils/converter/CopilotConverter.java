@@ -1,10 +1,11 @@
-package plus.maa.backend.repository.entity.mapper;
+package plus.maa.backend.common.utils.converter;
 
 
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
+import org.mapstruct.factory.Mappers;
 import plus.maa.backend.controller.request.CopilotDTO;
 import plus.maa.backend.controller.response.CopilotInfo;
 import plus.maa.backend.repository.entity.Copilot;
@@ -15,8 +16,10 @@ import plus.maa.backend.repository.entity.Copilot;
  * Date  2023-01-10 19:10
  */
 
-@Mapper(componentModel = "spring")
-public interface CopilotMapper {
+@Mapper
+public interface CopilotConverter {
+
+    CopilotConverter INSTANCE  = Mappers.getMapper(CopilotConverter.class);
 
     /**
      * 实现增量更新

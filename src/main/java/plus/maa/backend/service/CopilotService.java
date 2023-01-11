@@ -24,7 +24,7 @@ import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.repository.CopilotRepository;
 import plus.maa.backend.repository.entity.Copilot;
-import plus.maa.backend.repository.entity.mapper.CopilotMapper;
+import plus.maa.backend.common.utils.converter.CopilotConverter;
 import plus.maa.backend.service.model.LoginUser;
 
 import java.util.*;
@@ -41,7 +41,7 @@ public class CopilotService {
     private final MongoTemplate mongoTemplate;
     private final ObjectMapper mapper;
     private final ArkLevelService levelService;
-    private final CopilotMapper copilotMapper;
+
 
     /**
      * 根据_id获取Copilot
@@ -134,7 +134,7 @@ public class CopilotService {
         verifyCopilot(copilotDto);
 
 
-        Copilot copilot = copilotMapper.toCopilot(copilotDto);
+        Copilot copilot = CopilotConverter.INSTANCE.toCopilot(copilotDto);
         copilot.setUploaderId(user.getMaaUser().getUserId())
                 .setUploader(user.getMaaUser().getUserName())
                 .setFirstUploadTime(date)
@@ -305,7 +305,7 @@ public class CopilotService {
         if (owner) {
             Copilot rawCopilot = findByid(id);
             rawCopilot.setUploadTime(new Date());
-            copilotMapper.updateCopilotFromDto(copilotDto, rawCopilot);
+            CopilotConverter.INSTANCE.updateCopilotFromDto(copilotDto, rawCopilot);
             copilotRepository.save(rawCopilot);
             return MaaResult.success(null);
         } else {
@@ -330,7 +330,7 @@ public class CopilotService {
      * TODO 当前仅为简单转换，具体细节待定
      */
     private CopilotInfo formatCopilot(Copilot copilot) {
-        CopilotInfo info = copilotMapper.toCopilotInfo(copilot);
+        CopilotInfo info = CopilotConverter.INSTANCE.toCopilotInfo(copilot);
         info.setOperators(copilot.getOpers().stream()
                 .map(Copilot.Operators::getName)
                 .toList());
