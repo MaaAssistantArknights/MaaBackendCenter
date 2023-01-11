@@ -24,13 +24,10 @@ import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.repository.CopilotRepository;
 import plus.maa.backend.repository.entity.Copilot;
-import plus.maa.backend.repository.entity.CopilotMapper;
+import plus.maa.backend.common.utils.converter.CopilotConverter;
 import plus.maa.backend.service.model.LoginUser;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * @author LoMu
@@ -44,7 +41,7 @@ public class CopilotService {
     private final MongoTemplate mongoTemplate;
     private final ObjectMapper mapper;
     private final ArkLevelService levelService;
-    private final CopilotMapper copilotMapper;
+
 
     /**
      * 根据_id获取Copilot
@@ -75,8 +72,7 @@ public class CopilotService {
             throw new MaaResultException("作业id不可为空");
         }
 
-        /*String userId = user.getMaaUser().getUserId();*/
-        String userId = "66666";
+        String userId = user.getMaaUser().getUserId();
         Copilot copilot = findByid(operationId);
         return Objects.equals(copilot.getUploaderId(), userId);
     }
@@ -138,11 +134,11 @@ public class CopilotService {
         verifyCopilot(copilotDto);
 
 
-        Copilot copilot = copilotMapper.toCopilot(copilotDto);
+        Copilot copilot = CopilotConverter.INSTANCE.toCopilot(copilotDto);
         copilot.setUploaderId(user.getMaaUser().getUserId())
                 .setUploader(user.getMaaUser().getUserName())
-                .setCreateDate(date)
-                .setUpdateDate(date)
+                .setFirstUploadTime(date)
+                .setUploadTime(date)
                 .setId(id);
 
         try {
@@ -241,19 +237,25 @@ public class CopilotService {
         //排除~开头的 查询非~开头
         String oper = request.getOperator();
         if (!ObjectUtils.isEmpty(oper)) {
+            Set<Criteria> andOperators = new HashSet<>();
+            Set<Criteria> norOperators = new HashSet<>();
+            oper = oper.replaceAll("[“\"”]", "");
             String[] operators = oper.split(",");
             for (String operator : operators) {
                 if ("~".equals(operator.substring(0, 1))) {
                     String exclude = operator.substring(1);
                     //排除查询指定干员
-                    criteriaObj.norOperator(
-                            Criteria.where("opers.name").regex(exclude),
-                            Criteria.where("opers.name").regex(exclude));
+                    Criteria nOrOperatorCriteria = Criteria.where("opers.name").regex(exclude);
+                    norOperators.add(nOrOperatorCriteria);
                 } else {
                     //模糊匹配查询指定干员
-                    criteriaObj.and("opers.name").regex(operator);
+                    Criteria andOperatorCriteria = Criteria.where("opers.name").regex(operator);
+                    andOperators.add(andOperatorCriteria);
                 }
             }
+            if (andOperators.size() > 0) criteriaObj.andOperator(andOperators);
+            if (norOperators.size() > 0) criteriaObj.norOperator(norOperators);
+
         }
 
         //匹配查询
@@ -302,8 +304,8 @@ public class CopilotService {
         verifyCopilot(copilotDto);
         if (owner) {
             Copilot rawCopilot = findByid(id);
-            rawCopilot.setUpdateDate(new Date());
-            copilotMapper.updateCopilotToRaw(copilotDto, rawCopilot);
+            rawCopilot.setUploadTime(new Date());
+            CopilotConverter.INSTANCE.updateCopilotFromDto(copilotDto, rawCopilot);
             copilotRepository.save(rawCopilot);
             return MaaResult.success(null);
         } else {
@@ -328,25 +330,14 @@ public class CopilotService {
      * TODO 当前仅为简单转换，具体细节待定
      */
     private CopilotInfo formatCopilot(Copilot copilot) {
-        CopilotInfo info = new CopilotInfo();
-        info.setId(copilot.getId());
-        info.setMinimumRequired(copilot.getMinimumRequired());
-        info.setUploadTime(copilot.getCreateDate());
-        info.setTitle(copilot.getDoc().getTitle());
-        info.setDetail(copilot.getDoc().getDetails());
-        info.setUploader(copilot.getUploader());
+        CopilotInfo info = CopilotConverter.INSTANCE.toCopilotInfo(copilot);
         info.setOperators(copilot.getOpers().stream()
                 .map(Copilot.Operators::getName)
                 .toList());
-        info.setGroups(copilot.getGroups());
-        info.setViews(copilot.getViews());
-        info.setHotScore(copilot.getHotScore());
         info.setLevel(levelService.findByLevelId(copilot.getStageName()));
         info.setAvailable(true);
-        info.setRatingLevel(copilot.getRatingLevel());
         info.setNotEnoughRating(true);
         info.setRatingType(0);
-        info.setDifficulty(copilot.getDifficulty());
         try {
             info.setContent(mapper.writeValueAsString(copilot));
         } catch (JsonProcessingException e) {
