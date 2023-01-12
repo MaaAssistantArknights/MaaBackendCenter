@@ -8,7 +8,7 @@
         </tr>
         <tr>
             <td style="font-size: 13px; line-height: 1.6; color: #5c5c5c;   padding: 25px 0;">
-                <img src="https://camo.githubusercontent.com/bb005c8cb1408d4933c34a684b9a4282c1421b94f83f1a0ed0dec8f27ffc0cf6/68747470733a2f2f63646e2e6a7364656c6976722e6e65742f67682f4d6161417373697374616e7441726b6e69676874732f64657369676e406d61696e2f6c6f676f2f6d61612d6c6f676f5f353132783531322e706e67"
+                <img src="{0}/images/banner.png"
                      width="200" height="190"
                      alt="banner"
                 >
@@ -36,7 +36,7 @@
                                             验证你的账户
                                         </h2>
                                         <h1 style=" color: #333333; font-size: 28px; font-weight: 400; line-height: 1.4; margin: 0; padding-bottom: 3%;">
-                                            {0}
+                                            {1}
                                         </h1>
                                         <p style="font-size: 10px">为了确认您输入的邮箱地址，请输入以上验证码 有效期10分钟</p>
                                     </td>

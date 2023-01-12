@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
@@ -26,7 +27,9 @@ import java.util.List;
 @NoArgsConstructor
 public class EmailBusinessObject {
 
-
+    //用于获取banner图片
+    //api.prts.plus
+    private String domainPath = "http://localhost:8848";
     private List<String> emailList = new ArrayList<>();
     //邮件标题
     private String title = "Maa Backend Center";
@@ -149,15 +152,7 @@ public class EmailBusinessObject {
      * 测试
      */
     public void TestEmail() {
-        try {
-            MailUtil.send(this.emailList,
-                    this.title,
-                    parseMessages("6666", "static/templates/mail.ftl"),
-                    this.isHtml
-            );
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
+        sendVerificationCodeMessage("666");
     }
 
 
@@ -168,6 +163,7 @@ public class EmailBusinessObject {
      * @param path    ftl路径
      * @return String
      */
+
     private String parseMessages(String content, String path) {
 
         Resource resource = new ClassPathResource(path);
@@ -200,7 +196,7 @@ public class EmailBusinessObject {
             }
         }
         //替换html模板中的参数
-        return MessageFormat.format(buffer.toString(), content);
+        return MessageFormat.format(buffer.toString(), this.domainPath, content);
     }
 
 
