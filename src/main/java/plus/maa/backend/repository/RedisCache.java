@@ -132,4 +132,8 @@ public class RedisCache {
     public void setCacheLevelCommit(String commit) {
         setData("level:commit", commit);
     }
+
+    public void removeCache(String key) {
+        redisTemplate.delete(key);
+    }
 }

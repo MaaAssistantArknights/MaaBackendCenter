@@ -8,6 +8,7 @@ import plus.maa.backend.common.bo.EmailBusinessObject;
 import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.repository.RedisCache;
 
+
 import java.util.Objects;
 
 /**
@@ -31,7 +32,7 @@ public class EmailService {
      */
     public void sendVCode(String email) {
         //6位随机数验证码
-        String vcode = RandomStringUtils.random(6, true, true);
+        String vcode = RandomStringUtils.random(6, true, true).toUpperCase();
         EmailBusinessObject.Builder()
                 .setEmail(email)
                 .sendVerificationCodeMessage(vcode);
@@ -41,9 +42,12 @@ public class EmailService {
 
     public boolean verifyVCode(String email, String vcode) {
         String cacheVCode = redisCache.getCache("vCodeEmail:" + email, String.class);
-        if (!Objects.equals(cacheVCode, vcode)) {
+        if (!Objects.equals(cacheVCode, vcode.toUpperCase())) {
             throw new MaaResultException("验证码错误！");
         }
+        redisCache.removeCache("vCodeEmail:" + email);
         return true;
     }
+
+
 }
