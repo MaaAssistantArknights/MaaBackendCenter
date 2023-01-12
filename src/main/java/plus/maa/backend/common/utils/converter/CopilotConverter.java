@@ -1,19 +1,15 @@
 package plus.maa.backend.common.utils.converter;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+
 import org.mapstruct.*;
 import org.mapstruct.factory.Mappers;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+
 import plus.maa.backend.controller.request.CopilotDTO;
 import plus.maa.backend.controller.response.CopilotInfo;
 import plus.maa.backend.repository.entity.Copilot;
-import plus.maa.backend.service.ArkLevelService;
+
 
 
 /**
