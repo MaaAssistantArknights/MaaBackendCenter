@@ -8,7 +8,8 @@
         </tr>
         <tr>
             <td style="font-size: 13px; line-height: 1.6; color: #5c5c5c;   padding: 25px 0;">
-                <img src="{0}/images/banner.png"
+                <!-- https://api.prts.plus/images/logo.png -->
+                <img src="https://api.prts.plus/images/logo.png"
                      width="200" height="190"
                      alt="banner"
                 >
@@ -29,16 +30,7 @@
 
                                     <td style=" color: #333333; font-size: 15px; font-weight: 400; line-height: 1.4;   padding: 15px 5px;"
                                     >
-                                        <h1 style=" font-size: 28px; margin: 0; padding: 0; color: #5c5c5c;">
-                                            Maa Backend Center
-                                        </h1>
-                                        <h2 style="padding-bottom: 3%; color: #5c5c5c; margin: 1% 0 0 0;">
-                                            验证你的账户
-                                        </h2>
-                                        <h1 style=" color: #333333; font-size: 28px; font-weight: 400; line-height: 1.4; margin: 0; padding-bottom: 3%;">
-                                            {1}
-                                        </h1>
-                                        <p style="font-size: 10px">为了确认您输入的邮箱地址，请输入以上验证码 有效期10分钟</p>
+                                        {0}
                                     </td>
                                 </tr>
                                 </tbody>

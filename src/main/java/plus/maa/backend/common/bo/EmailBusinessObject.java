@@ -27,9 +27,6 @@ import java.util.List;
 @NoArgsConstructor
 public class EmailBusinessObject {
 
-    //用于获取banner图片
-    //api.prts.plus
-    private String domainPath = "http://localhost:8848";
     private List<String> emailList = new ArrayList<>();
     //邮件标题
     private String title = "Maa Backend Center";
@@ -84,14 +81,32 @@ public class EmailBusinessObject {
     }
 
     /**
-     * 发送Message内容
+     * 通过默认模板发送自定义Message内容
      */
     public void sendCustomMessage() {
         try {
             MailUtil.send(this.emailList
                     , this.title
-                    , this.message
+                    , defaultMailTemplates(this.message)
                     , this.isHtml
+            );
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    /**
+     * 通过默认模板发送自定义Message内容和附件
+     *
+     * @param files 附件
+     */
+    public void sendCustomMessageFiles(File... files) {
+        try {
+            MailUtil.send(this.emailList
+                    , this.title
+                    , defaultMailTemplates(this.message)
+                    , this.isHtml
+                    , files
             );
         } catch (Exception ex) {
             throw new RuntimeException(ex);
@@ -104,15 +119,15 @@ public class EmailBusinessObject {
      *
      * @param content 邮件动态内容
      * @param path    ftl路径
-     * @param file    附件
+     * @param files   附件
      */
-    public void sendCustomStaticTemplatesFile(String content, String path, File... file) {
+    public void sendCustomStaticTemplatesFiles(String content, String path, File... files) {
         try {
             MailUtil.send(this.emailList
                     , this.title
                     , this.parseMessages(content, path)
                     , this.isHtml
-                    , file);
+                    , files);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -126,20 +141,24 @@ public class EmailBusinessObject {
 
         try {
             MailUtil.send(this.emailList
-                    , this.title
-                   /* , """
-                            <center>
-                            <h1>Maa Backend Center</h1>
-                            <h5>为了确认您输入的邮箱地址，请输入以下验证码 有效期10分钟。</h5>
-                            <h3> %s </h3>
-                            ※此邮件为自动发送，请不要回复此邮件。<br>
-                            ※如果您没有进行相关操作而受到了此邮件，<br>
-                            可能是他人输入了错误的邮箱地址，请删除此邮件。<br>
-                            <a href='https://maa.plus/' target="_blank">
-                            [MaaAssistantArknights]
-                            </a> </center>
-                            """.formatted(code)*/
-                    , parseMessages(code, "static/templates/mail.ftl")
+                    , this.title + "  验证码"
+                    , defaultMailTemplates(
+                            MessageFormat.format(
+
+                                    """
+                                               <h1 style=" font-size: 28px; margin: 0; padding: 0; color: #5c5c5c">
+                                                    Maa Backend Center
+                                               </h1>
+                                               <h2 style="padding-bottom: 3%; color: #5c5c5c; margin: 1% 0 0 0">
+                                                    验证你的账户
+                                               </h2>
+                                               <h1 style=" color: #333333; font-size: 28px; font-weight: 400; line-height: 1.4; margin: 0; padding-bottom: 4%">
+                                                    {0}
+                                               </h1>
+                                               <p style="font-size: 10px">为了确认您输入的邮箱地址，请输入以上验证码 有效期10分钟</p>
+                                            """
+                                    , code)
+                    )
                     , this.isHtml
             );
         } catch (Exception ex) {
@@ -149,10 +168,13 @@ public class EmailBusinessObject {
 
 
     /**
-     * 测试
+     * 默认邮件模板
+     *
+     * @param content 自定义html内容
+     * @return 封装邮件模板内容
      */
-    public void TestEmail() {
-        sendVerificationCodeMessage("666");
+    private String defaultMailTemplates(String content) {
+        return parseMessages(content, "static/templates/mail.ftl");
     }
 
 
@@ -178,7 +200,7 @@ public class EmailBusinessObject {
                 buffer.append(line);
             }
         } catch (Exception e) {
-            log.error("邮件解析失败{}", e.toString());
+            log.error("邮件解析失败", e);
         } finally {
             if (fileReader != null) {
                 try {
@@ -195,8 +217,8 @@ public class EmailBusinessObject {
                 }
             }
         }
-        //替换html模板中的参数
-        return MessageFormat.format(buffer.toString(), this.domainPath, content);
+
+        return MessageFormat.format(buffer.toString(), content);
     }
 
 
