@@ -37,7 +37,7 @@
 5. 获得编译后的 jar 文件 `cp ./build/libs/MaaBackendCenter-1.0-SNAPSHOT.jar .`
 6. 复制一份配置文件 `cp ./build/resources/main/application-template.yml ./application-prod.yml`
 7. 修改配置文件 `application-prod.yml`
-8. 运行项目 `java -jar MaaBackendCenter-1.0-SNAPSHOT.jar -Dspring.config.location=./application-prod.yml`
+8. 运行项目 `java -jar MaaBackendCenter-1.0-SNAPSHOT.jar --spring.config.location=./application-prod.yml`
 
 ## native 编译
 
