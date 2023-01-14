@@ -95,14 +95,11 @@ public class Copilot implements Serializable {
         // 干员名
         private String name;
         //技能序号。可选，默认 1
-        private int sill;
+        private int sill = 1;
         // 技能用法。可选，默认 0
         private int skillUsage;
         private Requirements requirements;
 
-        {
-            this.sill = 1;
-        }
 
         @Data
         @NoArgsConstructor
@@ -141,12 +138,12 @@ public class Copilot implements Serializable {
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public static class Action {
         // 操作类型，可选，默认 "Deploy"
-        private String type;
+        private String type = "Deploy";
         private int kills;
         private int costs;
         private int costChanges;
         //默认 -1
-        private int cooling;
+        private int cooling = -1;
         @NotBlank(message = "干员或干员组名不能为空")
         private String name;
         // 部署干员的位置。
@@ -164,10 +161,6 @@ public class Copilot implements Serializable {
         private String doc;
         private String docColor;
 
-        {
-            this.type = "Deploy";
-            this.cooling = -1;
-        }
 
     }
 

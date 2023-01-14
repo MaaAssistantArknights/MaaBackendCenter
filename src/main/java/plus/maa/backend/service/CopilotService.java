@@ -180,6 +180,7 @@ public class CopilotService {
         Update update = new Update();
         update.inc("views");
         mongoTemplate.updateFirst(query, update, Copilot.class);
+
         CopilotInfo info = formatCopilot(copilot);
         return MaaResult.success(info);
     }
