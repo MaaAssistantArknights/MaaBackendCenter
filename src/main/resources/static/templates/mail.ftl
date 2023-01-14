@@ -10,7 +10,7 @@
             <td style="padding: 25px 0;">
                 <!-- https://api.prts.plus/images/logo.png -->
                 <img src="https://api.prts.plus/images/logo.png"
-                     width="13%" height="13%"
+                     width="200" height="200"
                      alt="logo"
                 >
             </td>

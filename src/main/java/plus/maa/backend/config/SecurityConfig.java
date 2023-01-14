@@ -32,6 +32,7 @@ public class SecurityConfig {
             "/v3/api-docs/**",
             "/test/**",
             "/version",
+            "/images/logo.png",
             "/"
     };
 
@@ -73,7 +74,6 @@ public class SecurityConfig {
                 throw new RuntimeException(e);
             }
         });
-
         //添加过滤器
         http.addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class);
 

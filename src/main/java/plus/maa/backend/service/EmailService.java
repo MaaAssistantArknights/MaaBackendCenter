@@ -55,7 +55,8 @@ public class EmailService {
     public void sendActivateUrl(String email) {
         //生成uuid作为唯一标识符
         String uuid = UUID.randomUUID().toString().replaceAll("-", "");
-        String url = "https://api.prts.plus/activateAccount?nonce=" + uuid;
+        //http://localhost:8848/user/activateAccount?nonce=
+        String url = "https:api.prts.plus/user/activateAccount?nonce=" + uuid;
         EmailBusinessObject.builder()
                 .setEmail(email)
                 .sendActivateUrlMessage(url);

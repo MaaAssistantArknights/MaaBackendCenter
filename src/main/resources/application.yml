@@ -3,6 +3,8 @@ spring:
     active: dev
   jackson:
     property-naming-strategy: SNAKE_CASE
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
   data:
     mongodb:
       # 打开自动索引生成（否则数据库内唯一索引不生效
