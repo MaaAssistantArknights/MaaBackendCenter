@@ -88,7 +88,12 @@ public class ArkLevelService {
     //TODO 增加缓存
     public ArkLevelInfo findByLevelId(String levelId) {
         ArkLevel level = arkLevelRepo.findByLevelId(levelId);
-        return level == null ? null : ArkLevelConverter.INSTANCE.convert(level);
+        return ArkLevelConverter.INSTANCE.convert(level);
+    }
+
+    public ArkLevelInfo findByStageId(String stageId) {
+        ArkLevel level = arkLevelRepo.findByStageId(stageId);
+        return ArkLevelConverter.INSTANCE.convert(level);
     }
 
     /**
