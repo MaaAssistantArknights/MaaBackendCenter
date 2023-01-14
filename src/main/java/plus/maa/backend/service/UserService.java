@@ -5,6 +5,7 @@ import cn.hutool.core.date.DateTime;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTPayload;
 import cn.hutool.jwt.JWTUtil;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -28,6 +29,7 @@ import plus.maa.backend.repository.UserRepository;
 import plus.maa.backend.repository.entity.MaaUser;
 import plus.maa.backend.service.model.LoginUser;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,6 +47,7 @@ public class UserService {
     private final RedisCache redisCache;
     private final UserRepository userRepository;
     private final EmailService emailService;
+
     @Value("${maa-copilot.jwt.secret}")
     private String secret;
     @Value("${maa-copilot.jwt.expire}")
@@ -173,7 +176,7 @@ public class UserService {
         } catch (DuplicateKeyException e) {
             return MaaResult.fail(10001, "用户已存在");
         }
-        emailService.sendVCode(user.getEmail());
+        emailService.sendActivateUrl(user.getEmail());
         return MaaResult.success(userInfo);
     }
 
@@ -186,7 +189,7 @@ public class UserService {
      */
     public MaaResult<Void> activateUser(LoginUser loginUser, ActivateDTO activateDTO) {
         String email = loginUser.getMaaUser().getEmail();
-        return emailService.verifyVCode(email, activateDTO.getToken()) ? MaaResult.success(null) :
+        return emailService.verifyVCode(email, activateDTO.getNonce()) ? MaaResult.success(null) :
                 MaaResult.fail(MaaStatusCode.MAA_ACTIVE_ERROR);
     }
 
@@ -250,5 +253,35 @@ public class UserService {
         if (null == userRepository.findByEmail(email)) {
             throw new MaaResultException(MaaStatusCode.MAA_USER_NOT_FOUND);
         }
+    }
+
+    /**
+     * 激活账户
+     *
+     * @param activateDTO  uuid
+     * @param httpResponse 跳转页面
+     * @return null
+     */
+    public MaaResult<Void> activateAccount(ActivateDTO activateDTO, HttpServletResponse httpResponse) {
+        String uuid = activateDTO.getNonce();
+        String email = redisCache.getCache("UUID:" + uuid, String.class);
+        if (Objects.isNull(email)) {
+            throw new MaaResultException("链接已过期");
+        }
+        MaaUser user = userRepository.findByEmail(email);
+
+        //激活账户
+        user.setStatus(1);
+
+        userRepository.save(user);
+        //清除缓存
+        redisCache.removeCache("UUID:" + uuid);
+        //激活成功 跳转页面
+        try {
+            httpResponse.sendRedirect("https://prts.plus/");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return MaaResult.success(null);
     }
 }

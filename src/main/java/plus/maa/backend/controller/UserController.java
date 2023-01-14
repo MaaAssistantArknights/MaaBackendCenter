@@ -2,16 +2,14 @@ package plus.maa.backend.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.CurrentUser;
 import plus.maa.backend.controller.request.*;
 import plus.maa.backend.controller.response.MaaLoginRsp;
@@ -146,5 +144,10 @@ public class UserController {
     @PostMapping("/login")
     public MaaResult<MaaLoginRsp> login(@RequestBody @Valid LoginDTO user) {
         return userService.login(user);
+    }
+
+    @GetMapping("/activateAccount")
+    public MaaResult<Void> activateAccount(ActivateDTO activateDTO, HttpServletResponse response) {
+        return userService.activateAccount(activateDTO, response);
     }
 }
