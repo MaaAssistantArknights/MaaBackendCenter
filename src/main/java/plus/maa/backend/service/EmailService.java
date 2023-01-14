@@ -8,7 +8,6 @@ import plus.maa.backend.common.bo.EmailBusinessObject;
 import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.repository.RedisCache;
 
-
 import java.util.Objects;
 
 /**

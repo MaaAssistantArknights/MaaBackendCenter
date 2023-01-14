@@ -269,7 +269,7 @@ public class ArkLevelService {
             log.warn("[LEVEL]地图数据获取失败, 未找到文件夹{}", jsonPath);
             return;
         }
-        List<File> jsons = Arrays.stream(Objects.requireNonNull(file.listFiles())).filter(f -> f.isFile() && f.getName().endsWith(".json")).collect(Collectors.toList());
+        List<File> jsons = Arrays.stream(Objects.requireNonNull(file.listFiles())).filter(f -> f.isFile() && f.getName().endsWith(".json")).toList();
         log.info("[LEVEL]已发现{}份地图数据", jsons.size());
 
         List<String> shaList = arkLevelRepo.findAllShaBy().stream().map(ArkLevelSha::getSha).toList();
@@ -277,7 +277,7 @@ public class ArkLevelService {
 
         int errorCount = 0;
         int handleCount = 0;
-        for (File f : jsons) {
+        for (File ignored : jsons) {
             try {
                 byte[] bytes = Files.readAllBytes(file.toPath());
                 String sha = inserter.idFor(Constants.OBJ_BLOB, bytes).name();

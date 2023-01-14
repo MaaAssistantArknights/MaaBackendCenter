@@ -23,9 +23,9 @@ import plus.maa.backend.controller.response.MaaResultException;
 public class GlobalExceptionHandler {
 
     /**
+     * @return plus.maa.backend.controller.response.MaaResult<java.lang.String>
      * @author FAll
      * @description 请求参数缺失
-     * @return: plus.maa.backend.controller.response.MaaResult<java.lang.String>
      * @date 2022/12/23 12:00
      */
     @ExceptionHandler(MissingServletRequestParameterException.class)
@@ -37,9 +37,9 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * @return plus.maa.backend.controller.response.MaaResult<java.lang.String>
      * @author FAll
      * @description 参数类型不匹配
-     * @return: plus.maa.backend.controller.response.MaaResult<java.lang.String>
      * @date 2022/12/23 12:01
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
@@ -51,9 +51,9 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * @return plus.maa.backend.controller.response.MaaResult<java.lang.String>
      * @author FAll
      * @description 参数校验错误
-     * @return: plus.maa.backend.controller.response.MaaResult<java.lang.String>
      * @date 2022/12/23 12:02
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -64,22 +64,21 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * @return plus.maa.backend.controller.response.MaaResult<java.lang.String>
      * @author FAll
      * @description 请求地址不存在
-     * @return: plus.maa.backend.controller.response.MaaResult<java.lang.String>
      * @date 2022/12/23 12:03
      */
     @ExceptionHandler(NoHandlerFoundException.class)
-    public MaaResult<String> noHandlerFoundExceptionHandler(NoHandlerFoundException e,
-                                                            HttpServletRequest request) {
+    public MaaResult<String> noHandlerFoundExceptionHandler(NoHandlerFoundException e) {
         log.warn("请求地址不存在", e);
         return MaaResult.fail(404, String.format("请求地址 %s 不存在", e.getRequestURL()));
     }
 
     /**
+     * @return plus.maa.backend.controller.response.MaaResult<java.lang.String>
      * @author FAll
      * @description
-     * @return: plus.maa.backend.controller.response.MaaResult<java.lang.String>
      * @date 2022/12/23 12:04
      */
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
@@ -111,9 +110,9 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * @return plus.maa.backend.controller.response.MaaResult<?>
      * @author john180
      * @description 服务器内部错误，异常兜底处理
-     * @return: plus.maa.backend.controller.response.MaaResult<?>
      * @date 2022/12/23 12:06
      */
     @ResponseBody

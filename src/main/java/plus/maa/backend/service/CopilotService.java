@@ -15,6 +15,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
+import plus.maa.backend.common.utils.converter.CopilotConverter;
 import plus.maa.backend.controller.request.CopilotCUDRequest;
 import plus.maa.backend.controller.request.CopilotDTO;
 import plus.maa.backend.controller.request.CopilotQueriesRequest;
@@ -24,7 +25,6 @@ import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.repository.CopilotRepository;
 import plus.maa.backend.repository.entity.Copilot;
-import plus.maa.backend.common.utils.converter.CopilotConverter;
 import plus.maa.backend.service.model.LoginUser;
 
 import java.util.*;
@@ -49,7 +49,7 @@ public class CopilotService {
      * @param id _id
      * @return Copilot
      */
-    private Copilot findByid(String id) {
+    private Copilot findById(String id) {
         Optional<Copilot> optional = copilotRepository.findById(id);
 
         Copilot copilot;
@@ -73,7 +73,7 @@ public class CopilotService {
         }
 
         String userId = user.getMaaUser().getUserId();
-        Copilot copilot = findByid(operationId);
+        Copilot copilot = findById(operationId);
         return Objects.equals(copilot.getUploaderId(), userId);
     }
 
@@ -175,7 +175,7 @@ public class CopilotService {
      */
     public MaaResult<CopilotInfo> getCopilotById(String id) {
         //增加一次views
-        Copilot copilot = findByid(id);
+        Copilot copilot = findById(id);
         Query query = Query.query(Criteria.where("id").is(id));
         Update update = new Update();
         update.inc("views");
@@ -193,8 +193,8 @@ public class CopilotService {
      * @return CopilotPageInfo
      */
     public MaaResult<CopilotPageInfo> queriesCopilot(CopilotQueriesRequest request) {
-        String orderby = "id";
-        Sort.Order sortOrder = new Sort.Order(Sort.Direction.ASC, orderby);
+        String orderBy = "id";
+        Sort.Order sortOrder = new Sort.Order(Sort.Direction.ASC, orderBy);
         int page = 1;
         int limit = 10;
         boolean hasNext = false;
@@ -207,10 +207,10 @@ public class CopilotService {
             limit = request.getLimit();
         }
         if (request.getOrderBy() != null && !"".equals(request.getOrderBy())) {
-            orderby = request.getOrderBy();
+            orderBy = request.getOrderBy();
         }
         if (request.getDesc() != null && request.getDesc()) {
-            sortOrder = new Sort.Order(Sort.Direction.DESC, orderby);
+            sortOrder = new Sort.Order(Sort.Direction.DESC, orderBy);
         }
 
         Pageable pageable = PageRequest.of(
@@ -304,7 +304,7 @@ public class CopilotService {
         Boolean owner = verifyOwner(loginUser, id);
         verifyCopilot(copilotDto);
         if (owner) {
-            Copilot rawCopilot = findByid(id);
+            Copilot rawCopilot = findById(id);
             rawCopilot.setUploadTime(new Date());
             CopilotConverter.INSTANCE.updateCopilotFromDto(copilotDto, rawCopilot);
             copilotRepository.save(rawCopilot);

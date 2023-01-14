@@ -44,7 +44,7 @@ dependencies {
 
     implementation 'com.squareup.okhttp3:okhttp:4.10.0'
     implementation 'com.sun.mail:javax.mail:1.6.2'
-    implementation 'cn.hutool:hutool-all:5.8.10'
+    implementation 'cn.hutool:hutool-all:5.8.11'
     implementation 'org.mapstruct:mapstruct:1.5.3.Final'
     implementation 'org.eclipse.jgit:org.eclipse.jgit:6.4.0.202211300538-r'
 }

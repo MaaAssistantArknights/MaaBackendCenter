@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaSystemInfo;
 import plus.maa.backend.service.EmailService;
@@ -20,7 +19,6 @@ import plus.maa.backend.service.EmailService;
 @RequiredArgsConstructor
 public class SystemController {
     private final MaaSystemInfo systemInfo;
-    private final EmailService emailService;
 
     @GetMapping("/")
     @Operation(summary = "Tests if the server is ready.")
