@@ -56,6 +56,7 @@ public interface CopilotConverter {
     @Mapping(target = "level", ignore = true)
     @Mapping(target = "content", ignore = true)
     @Mapping(target = "available", ignore = true)
+    @Mapping(target = "opers", ignore = true)
     @Mapping(target = "operators", ignore = true)
     @Mapping(source = "doc.title", target = "title")
     @Mapping(source = "doc.details", target = "detail")
