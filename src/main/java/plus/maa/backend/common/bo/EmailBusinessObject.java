@@ -47,7 +47,7 @@ public class EmailBusinessObject {
      *
      * @return EmailBusinessObject
      */
-    public static EmailBusinessObject Builder() {
+    public static EmailBusinessObject builder() {
         return new EmailBusinessObject();
     }
 
@@ -166,7 +166,7 @@ public class EmailBusinessObject {
                     , this.isHtml
             );
         } catch (Exception ex) {
-            throw new RuntimeException(ex);
+            throw new RuntimeException("邮件发送失败", ex);
         }
     }
 
