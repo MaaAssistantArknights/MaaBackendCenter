@@ -22,6 +22,7 @@ public class CopilotInfo {
     private String uploader;
     //用于前端显示的格式化后的干员信息 [干员名]::[技能]
     private List<String> operators;
+    private List<String> opers;
     private List<Copilot.Groups> groups;
     private int views;
     private int hotScore;
