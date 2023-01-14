@@ -19,10 +19,7 @@ import plus.maa.backend.common.utils.converter.CopilotConverter;
 import plus.maa.backend.controller.request.CopilotCUDRequest;
 import plus.maa.backend.controller.request.CopilotDTO;
 import plus.maa.backend.controller.request.CopilotQueriesRequest;
-import plus.maa.backend.controller.response.CopilotInfo;
-import plus.maa.backend.controller.response.CopilotPageInfo;
-import plus.maa.backend.controller.response.MaaResult;
-import plus.maa.backend.controller.response.MaaResultException;
+import plus.maa.backend.controller.response.*;
 import plus.maa.backend.repository.CopilotRepository;
 import plus.maa.backend.repository.entity.Copilot;
 import plus.maa.backend.service.model.LoginUser;
@@ -332,10 +329,18 @@ public class CopilotService {
      */
     private CopilotInfo formatCopilot(Copilot copilot) {
         CopilotInfo info = CopilotConverter.INSTANCE.toCopilotInfo(copilot);
-        info.setOperators(copilot.getOpers().stream()
-                .map(Copilot.Operators::getName)
-                .toList());
-        info.setLevel(levelService.findByStageId(copilot.getStageName()));
+        //设置干员信息
+        List<String> operStrList = copilot.getOpers().stream()
+                .map(o -> String.format("%s::%s", o.getName(), o.getSill()))
+                .toList();
+        info.setOpers(operStrList);
+        info.setOperators(operStrList);
+
+        ArkLevelInfo levelInfo = levelService.findByLevelId(copilot.getStageName());
+        if (levelInfo == null) {
+            levelInfo = levelService.findByStageId(copilot.getStageName());
+        }
+        info.setLevel(levelInfo);
         info.setAvailable(true);
         info.setNotEnoughRating(true);
         info.setRatingType(0);
