@@ -335,7 +335,7 @@ public class CopilotService {
         info.setOperators(copilot.getOpers().stream()
                 .map(Copilot.Operators::getName)
                 .toList());
-        info.setLevel(levelService.findByLevelId(copilot.getStageName()));
+        info.setLevel(levelService.findByStageId(copilot.getStageName()));
         info.setAvailable(true);
         info.setNotEnoughRating(true);
         info.setRatingType(0);

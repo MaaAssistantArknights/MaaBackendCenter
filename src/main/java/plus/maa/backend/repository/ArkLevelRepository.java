@@ -15,4 +15,6 @@ public interface ArkLevelRepository extends MongoRepository<ArkLevel, String> {
     List<ArkLevelSha> findAllShaBy();
 
     ArkLevel findByLevelId(String levelId);
+
+    ArkLevel findByStageId(String stageId);
 }
