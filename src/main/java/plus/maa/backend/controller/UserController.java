@@ -59,7 +59,7 @@ public class UserController {
      */
     @PostMapping("/activate/request")
     public MaaResult<Void> activateRequest(@CurrentUser LoginUser user) {
-        return userService.senEmailCode(user);
+        return userService.sendEmailCode(user);
     }
 
     /**

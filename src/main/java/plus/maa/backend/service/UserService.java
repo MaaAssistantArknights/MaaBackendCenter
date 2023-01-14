@@ -173,6 +173,7 @@ public class UserService {
         } catch (DuplicateKeyException e) {
             return MaaResult.fail(10001, "用户已存在");
         }
+        emailService.sendVCode(user.getEmail());
         return MaaResult.success(userInfo);
     }
 
@@ -209,7 +210,7 @@ public class UserService {
      * @param loginUser 当前用户
      * @return 成功响应
      */
-    public MaaResult<Void> senEmailCode(LoginUser loginUser) {
+    public MaaResult<Void> sendEmailCode(LoginUser loginUser) {
         String email = loginUser.getEmail();
         emailService.sendVCode(email);
         return MaaResult.success(null);

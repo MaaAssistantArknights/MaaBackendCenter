@@ -9,7 +9,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import plus.maa.backend.repository.entity.MaaUser;
 
 import java.util.Collection;
-import java.util.Objects;
 
 /**
  * @author AnselYuki
@@ -76,6 +75,6 @@ public class LoginUser implements UserDetails {
      */
     @Override
     public boolean isEnabled() {
-        return Objects.equals(maaUser.getStatus(), 1);
+        return true;
     }
 }
