@@ -27,9 +27,12 @@ import java.util.List;
 @NoArgsConstructor
 public class EmailBusinessObject {
 
+    private final String DEFAULT_TITLE_PREFIX = "Maa Backend Center";
+
     private List<String> emailList = new ArrayList<>();
-    //邮件标题
-    private String title = "Maa Backend Center";
+
+    //自定义标题
+    private String title = DEFAULT_TITLE_PREFIX;
 
     //邮件内容
     private String message;
@@ -59,7 +62,7 @@ public class EmailBusinessObject {
      * @param title 标题
      */
     public void setTitle(String title) {
-        this.title = this.title + "  " + title;
+        this.title = this.DEFAULT_TITLE_PREFIX + "  " + title;
     }
 
     /**
@@ -189,33 +192,15 @@ public class EmailBusinessObject {
     private String parseMessages(String content, String path) {
 
         Resource resource = new ClassPathResource(path);
-        InputStream inputStream = null;
-        BufferedReader fileReader = null;
         StringBuilder buffer = new StringBuilder();
         String line;
-        try {
-            inputStream = resource.getInputStream();
-            fileReader = new BufferedReader(new InputStreamReader(inputStream));
+        try (InputStream inputStream = resource.getInputStream();
+             BufferedReader fileReader = new BufferedReader(new InputStreamReader(inputStream))) {
             while ((line = fileReader.readLine()) != null) {
                 buffer.append(line);
             }
         } catch (Exception e) {
             log.error("邮件解析失败", e);
-        } finally {
-            if (fileReader != null) {
-                try {
-                    fileReader.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
         }
 
         return MessageFormat.format(buffer.toString(), content);
