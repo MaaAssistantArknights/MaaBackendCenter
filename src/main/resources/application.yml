@@ -7,11 +7,16 @@ spring:
     mongodb:
       # 打开自动索引生成（否则数据库内唯一索引不生效
       auto-index-creation: true
-  application:
-    name: MaaBackendCenter
 server:
   # 8848钛金接口.jpg
   port: 8848
+
+maa-copilot:
+  info:
+    name: MaaBackendCenter
+    title: MAA Copilot Center API
+    description: MAA Copilot Backend Center
+    version: v1.0.0
 
 logging:
   file:

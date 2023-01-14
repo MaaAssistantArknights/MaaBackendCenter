@@ -3,7 +3,6 @@ package plus.maa.backend.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,7 +12,6 @@ import plus.maa.backend.controller.response.MaaSystemInfo;
 /**
  * @author AnselYuki
  */
-@Setter
 @Tag(name = "System")
 @RequestMapping("")
 @RestController

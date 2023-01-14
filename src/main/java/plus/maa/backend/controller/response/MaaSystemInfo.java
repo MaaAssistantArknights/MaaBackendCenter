@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
  */
 @Data
 @Component
-@ConfigurationProperties("spring.application")
+@ConfigurationProperties("maa-copilot.info")
 public class MaaSystemInfo {
     private String name;
     private String version;
