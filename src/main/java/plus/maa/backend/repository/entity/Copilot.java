@@ -54,7 +54,7 @@ public class Copilot implements Serializable {
     //评级
     private int ratingLevel;
 
-    //评级比率
+    //评级比率 十分之一代表半颗星
     private double ratingRatio;
 
     private int ratingType;
@@ -81,9 +81,7 @@ public class Copilot implements Serializable {
 
     private ArkLevelInfo arkLevel;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date firstUploadTime;
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date uploadTime;
 
 

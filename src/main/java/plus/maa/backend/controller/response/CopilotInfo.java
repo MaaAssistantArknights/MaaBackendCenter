@@ -15,7 +15,7 @@ import java.util.List;
 public class CopilotInfo {
     private String id;
     private String minimumRequired;
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+
     private Date uploadTime;
     private String title;
     private String detail;
@@ -30,6 +30,7 @@ public class CopilotInfo {
     private boolean available;
     private int ratingLevel;
     private boolean isNotEnoughRating;
+    private double ratingRatio;
     private int ratingType;
     private int difficulty;
     private String content;
