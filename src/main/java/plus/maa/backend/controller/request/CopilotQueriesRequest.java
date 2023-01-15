@@ -10,19 +10,32 @@ import lombok.Data;
 @Data
 public class CopilotQueriesRequest {
     private String id;
-    private Integer page;
-    private Integer limit;
+    private int page;
+    private int limit;
     private String levelKeyword;
     private String operator;
     private String content;
     private String uploader;
     private String document;
     private String uploaderId;
-    private Boolean desc;
+    private boolean desc;
     private String orderBy;
     private String language;
     private String rating;
 
+
+    //params参数 没有这一段spring将无法set参数
+    public void setLevel_keyword(String levelKeyword) {
+        this.levelKeyword = levelKeyword;
+    }
+
+    public void setUploader_id(String uploaderId) {
+        this.uploaderId = uploaderId;
+    }
+
+    public void setOrder_by(String orderBy) {
+        this.orderBy = orderBy;
+    }
 }
 
 

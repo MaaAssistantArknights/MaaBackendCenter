@@ -9,6 +9,7 @@ import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.repository.RedisCache;
 
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * @author LoMu
@@ -48,5 +49,18 @@ public class EmailService {
         return true;
     }
 
+    /**
+     * @param email 发送激活验证邮箱
+     */
+    public void sendActivateUrl(String email) {
+        //生成uuid作为唯一标识符
+        String uuid = UUID.randomUUID().toString().replaceAll("-", "");
+        String url = "https://api.prts.plus/user/activateAccount?nonce=" + uuid;
+        EmailBusinessObject.builder()
+                .setEmail(email)
+                .sendActivateUrlMessage(url);
+        //存redis
+        redisCache.setCache("UUID:" + uuid, email, expire);
+    }
 
 }

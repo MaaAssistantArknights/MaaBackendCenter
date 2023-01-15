@@ -1,11 +1,11 @@
 package plus.maa.backend.service;
 
 
-import cn.hutool.core.lang.ObjectId;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -76,17 +76,18 @@ public class CopilotService {
 
     /**
      * 验证数值是否合法
+     * 并修正前端的冗余部分
      *
-     * @param copilotDto copilot
+     * @param copilotDTO copilotDTO
      */
-    private void verifyCopilot(CopilotDTO copilotDto) {
+    private CopilotDTO verifyCorrectCopilot(CopilotDTO copilotDTO) {
 
-        if (copilotDto.getActions() != null) {
-            for (Copilot.Action action : copilotDto.getActions()) {
+        if (copilotDTO.getActions() != null) {
+            for (Copilot.Action action : copilotDTO.getActions()) {
                 String type = action.getType();
 
                 if ("SkillUsage".equals(type) || "技能用法".equals(type)) {
-                    if (action.getSkillUsage() == null) {
+                    if (action.getSkillUsage() == 0) {
                         throw new MaaResultException("当动作类型为技能用法时,技能用法该选项必选");
                     }
                 }
@@ -96,14 +97,23 @@ public class CopilotService {
                         throw new MaaResultException("干员位置的数据格式不符合规定");
                     }
                 }
-
             }
         }
 
+
+        //去除name的冗余部分
+        copilotDTO.getOpers().forEach(operator -> operator.setName(operator.getName().replaceAll("[\"“”]", "")));
+        return copilotDTO;
     }
 
 
-    private CopilotDTO contentToCopilotDto(String content) {
+    /**
+     * 将content解析为CopilotDTO
+     *
+     * @param content content
+     * @return CopilotDTO
+     */
+    private CopilotDTO parseToCopilotDto(String content) {
         if (content == null) {
             throw new MaaResultException("数据不可为空");
         }
@@ -124,26 +134,22 @@ public class CopilotService {
      * @return 返回_id
      */
     public MaaResult<String> upload(LoginUser user, String content) {
-        CopilotDTO copilotDto = contentToCopilotDto(content);
-        String id = ObjectId.next();
+        CopilotDTO copilotDTO = verifyCorrectCopilot(parseToCopilotDto(content));
         Date date = new Date();
 
-        verifyCopilot(copilotDto);
-
-
-        Copilot copilot = CopilotConverter.INSTANCE.toCopilot(copilotDto);
+        //将其转换为数据库存储对象
+        Copilot copilot = CopilotConverter.INSTANCE.toCopilot(copilotDTO);
         copilot.setUploaderId(user.getMaaUser().getUserId())
                 .setUploader(user.getMaaUser().getUserName())
                 .setFirstUploadTime(date)
-                .setUploadTime(date)
-                .setId(id);
+                .setUploadTime(date);
 
         try {
-            copilotRepository.insert(copilot);
+            String id = copilotRepository.insert(copilot).getId();
+            return MaaResult.success(id);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
-        return MaaResult.success(id);
     }
 
     /**
@@ -197,16 +203,16 @@ public class CopilotService {
         boolean hasNext = false;
 
         //判断是否有值 无值则为默认
-        if (request.getPage() != null && request.getPage() > 0) {
+        if (request.getPage() > 0) {
             page = request.getPage();
         }
-        if (request.getLimit() != null && request.getLimit() > 0) {
+        if (request.getLimit() > 0) {
             limit = request.getLimit();
         }
-        if (request.getOrderBy() != null && !"".equals(request.getOrderBy())) {
+        if (StringUtils.isNotBlank(request.getOrderBy())) {
             orderBy = request.getOrderBy();
         }
-        if (request.getDesc() != null && request.getDesc()) {
+        if (request.isDesc()) {
             sortOrder = new Sort.Order(Sort.Direction.DESC, orderBy);
         }
 
@@ -218,50 +224,47 @@ public class CopilotService {
         //模糊查询
         Query queryObj = new Query();
         Criteria criteriaObj = new Criteria();
+        Set<Criteria> andQueries = new HashSet<>();
+        Set<Criteria> norQueries = new HashSet<>();
+        Set<Criteria> orQueries = new HashSet<>();
 
         //匹配模糊查询
-        if (request.getLevelKeyword() != null && !"".equals(request.getLevelKeyword())) {
-            criteriaObj.and("stageName").regex(request.getLevelKeyword());
+        if (StringUtils.isNotBlank(request.getLevelKeyword())) {
+            andQueries.add(Criteria.where("stageName").regex(request.getLevelKeyword()));
         }
         //or模糊查询
-        if (request.getDocument() != null && !"".equals(request.getDocument())) {
-            criteriaObj.orOperator(
-                    Criteria.where("doc.title").regex(request.getDocument()),
-                    Criteria.where("doc.details").regex(request.getDocument())
-            );
+        if (StringUtils.isNotBlank(request.getDocument())) {
+            orQueries.add(Criteria.where("doc.title").regex(request.getDocument()));
+            orQueries.add(Criteria.where("doc.details").regex(request.getDocument()));
         }
 
         //operator 包含或排除干员查询
         //排除~开头的 查询非~开头
         String oper = request.getOperator();
         if (!ObjectUtils.isEmpty(oper)) {
-            Set<Criteria> andOperators = new HashSet<>();
-            Set<Criteria> norOperators = new HashSet<>();
             oper = oper.replaceAll("[“\"”]", "");
             String[] operators = oper.split(",");
             for (String operator : operators) {
                 if ("~".equals(operator.substring(0, 1))) {
                     String exclude = operator.substring(1);
                     //排除查询指定干员
-                    Criteria nOrOperatorCriteria = Criteria.where("opers.name").regex(exclude);
-                    norOperators.add(nOrOperatorCriteria);
+                    norQueries.add(Criteria.where("opers.name").regex(exclude));
                 } else {
                     //模糊匹配查询指定干员
-                    Criteria andOperatorCriteria = Criteria.where("opers.name").regex(operator);
-                    andOperators.add(andOperatorCriteria);
+                    andQueries.add(Criteria.where("opers.name").regex(operator));
                 }
             }
-            if (andOperators.size() > 0) criteriaObj.andOperator(andOperators);
-            if (norOperators.size() > 0) criteriaObj.norOperator(norOperators);
-
         }
 
         //匹配查询
-        if (request.getUploader() != null && !"".equals(request.getUploader())) {
-            criteriaObj.and("uploader").is(request.getUploader());
+        if (StringUtils.isNotBlank(request.getUploader())) {
+            andQueries.add(Criteria.where("uploader").is(request.getUploaderId()));
         }
 
         //封装查询
+        if (andQueries.size() > 0) criteriaObj.andOperator(andQueries);
+        if (norQueries.size() > 0) criteriaObj.norOperator(norQueries);
+        if (orQueries.size() > 0) criteriaObj.orOperator(orQueries);
         queryObj.addCriteria(criteriaObj);
 
         //查询总数
@@ -297,13 +300,13 @@ public class CopilotService {
      * @return null
      */
     public MaaResult<Void> update(LoginUser loginUser, String id, String content) {
-        CopilotDTO copilotDto = contentToCopilotDto(content);
+        CopilotDTO copilotDTO = verifyCorrectCopilot(parseToCopilotDto(content));
         Boolean owner = verifyOwner(loginUser, id);
-        verifyCopilot(copilotDto);
+
         if (owner) {
             Copilot rawCopilot = findById(id);
             rawCopilot.setUploadTime(new Date());
-            CopilotConverter.INSTANCE.updateCopilotFromDto(copilotDto, rawCopilot);
+            CopilotConverter.INSTANCE.updateCopilotFromDto(copilotDTO, rawCopilot);
             copilotRepository.save(rawCopilot);
             return MaaResult.success(null);
         } else {

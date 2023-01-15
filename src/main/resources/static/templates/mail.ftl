@@ -7,11 +7,11 @@
             <td style="height: 4px; font-size: 4px; line-height: 4px; background-color: #6b4fbb"> &nbsp;</td>
         </tr>
         <tr>
-            <td style="font-size: 13px; line-height: 1.6; color: #5c5c5c;   padding: 25px 0;">
+            <td style="padding: 25px 0;">
                 <!-- https://api.prts.plus/images/logo.png -->
                 <img src="https://api.prts.plus/images/logo.png"
-                     width="200" height="190"
-                     alt="banner"
+                     width="200" height="200"
+                     alt="logo"
                 >
             </td>
         </tr>
