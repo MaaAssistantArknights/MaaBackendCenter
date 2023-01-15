@@ -23,6 +23,19 @@ public class CopilotQueriesRequest {
     private String language;
     private String rating;
 
+
+    //params参数 没有这一段spring将无法set参数
+    public void setLevel_keyword(String levelKeyword) {
+        this.levelKeyword = levelKeyword;
+    }
+
+    public void setUploader_id(String uploaderId) {
+        this.uploaderId = uploaderId;
+    }
+
+    public void setOrder_by(String orderBy) {
+        this.orderBy = orderBy;
+    }
 }
 
 

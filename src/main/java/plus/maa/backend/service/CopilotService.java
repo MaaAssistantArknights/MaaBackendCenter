@@ -102,7 +102,7 @@ public class CopilotService {
 
 
         //去除name的冗余部分
-        copilotDTO.getOpers().forEach(operator -> operator.setName(operator.getName().replaceAll("[\"“”\\\\]", "")));
+        copilotDTO.getOpers().forEach(operator -> operator.setName(operator.getName().replaceAll("[\"“”]", "")));
         return copilotDTO;
     }
 
@@ -113,7 +113,7 @@ public class CopilotService {
      * @param content content
      * @return CopilotDTO
      */
-    private CopilotDTO contentToCopilotDto(String content) {
+    private CopilotDTO parseToCopilotDto(String content) {
         if (content == null) {
             throw new MaaResultException("数据不可为空");
         }
@@ -134,7 +134,7 @@ public class CopilotService {
      * @return 返回_id
      */
     public MaaResult<String> upload(LoginUser user, String content) {
-        CopilotDTO copilotDTO = verifyCorrectCopilot(contentToCopilotDto(content));
+        CopilotDTO copilotDTO = verifyCorrectCopilot(parseToCopilotDto(content));
         Date date = new Date();
 
         //将其转换为数据库存储对象
@@ -224,50 +224,47 @@ public class CopilotService {
         //模糊查询
         Query queryObj = new Query();
         Criteria criteriaObj = new Criteria();
+        Set<Criteria> andQueries = new HashSet<>();
+        Set<Criteria> norQueries = new HashSet<>();
+        Set<Criteria> orQueries = new HashSet<>();
 
         //匹配模糊查询
         if (StringUtils.isNotBlank(request.getLevelKeyword())) {
-            criteriaObj.and("stageName").regex(request.getLevelKeyword());
+            andQueries.add(Criteria.where("stageName").regex(request.getLevelKeyword()));
         }
         //or模糊查询
         if (StringUtils.isNotBlank(request.getDocument())) {
-            criteriaObj.orOperator(
-                    Criteria.where("doc.title").regex(request.getDocument()),
-                    Criteria.where("doc.details").regex(request.getDocument())
-            );
+            orQueries.add(Criteria.where("doc.title").regex(request.getDocument()));
+            orQueries.add(Criteria.where("doc.details").regex(request.getDocument()));
         }
 
         //operator 包含或排除干员查询
         //排除~开头的 查询非~开头
         String oper = request.getOperator();
         if (!ObjectUtils.isEmpty(oper)) {
-            Set<Criteria> andOperators = new HashSet<>();
-            Set<Criteria> norOperators = new HashSet<>();
             oper = oper.replaceAll("[“\"”]", "");
             String[] operators = oper.split(",");
             for (String operator : operators) {
                 if ("~".equals(operator.substring(0, 1))) {
                     String exclude = operator.substring(1);
                     //排除查询指定干员
-                    Criteria nOrOperatorCriteria = Criteria.where("opers.name").regex(exclude);
-                    norOperators.add(nOrOperatorCriteria);
+                    norQueries.add(Criteria.where("opers.name").regex(exclude));
                 } else {
                     //模糊匹配查询指定干员
-                    Criteria andOperatorCriteria = Criteria.where("opers.name").regex(operator);
-                    andOperators.add(andOperatorCriteria);
+                    andQueries.add(Criteria.where("opers.name").regex(operator));
                 }
             }
-            if (andOperators.size() > 0) criteriaObj.andOperator(andOperators);
-            if (norOperators.size() > 0) criteriaObj.norOperator(norOperators);
-
         }
 
         //匹配查询
         if (StringUtils.isNotBlank(request.getUploader())) {
-            criteriaObj.and("uploader").is(request.getUploader());
+            andQueries.add(Criteria.where("uploader").is(request.getUploaderId()));
         }
 
         //封装查询
+        if (andQueries.size() > 0) criteriaObj.andOperator(andQueries);
+        if (norQueries.size() > 0) criteriaObj.norOperator(norQueries);
+        if (orQueries.size() > 0) criteriaObj.orOperator(orQueries);
         queryObj.addCriteria(criteriaObj);
 
         //查询总数
@@ -303,7 +300,7 @@ public class CopilotService {
      * @return null
      */
     public MaaResult<Void> update(LoginUser loginUser, String id, String content) {
-        CopilotDTO copilotDTO = verifyCorrectCopilot(contentToCopilotDto(content));
+        CopilotDTO copilotDTO = verifyCorrectCopilot(parseToCopilotDto(content));
         Boolean owner = verifyOwner(loginUser, id);
 
         if (owner) {
