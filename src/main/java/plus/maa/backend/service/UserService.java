@@ -52,7 +52,7 @@ public class UserService {
 
     private LoginUser getLoginUserByToken(String token) {
         JWT jwt = JWTUtil.parseToken(token);
-        String redisKey = REDIS_KEY_PREFIX_LOGIN + jwt.getPayload("userId");
+        String redisKey = buildUserCacheKey(jwt.getPayload("userId").toString());
         return redisCache.getCache(redisKey, LoginUser.class);
     }
 
@@ -90,7 +90,7 @@ public class UserService {
         };
 
         //把完整的用户信息存入Redis，UserID作为Key
-        String cacheKey = REDIS_KEY_PREFIX_LOGIN + userId;
+        String cacheKey = buildUserCacheKey(userId);
         redisCache.updateCache(cacheKey, LoginUser.class, principal, cacheUser -> {
             String cacheToken = cacheUser.getToken();
             if (cacheToken != null && !"".equals(cacheToken)) {
@@ -141,7 +141,7 @@ public class UserService {
                 put("token", newJwtToken);
             }
         };
-        String redisKey = REDIS_KEY_PREFIX_LOGIN + user.getUserId();
+        String redisKey = buildUserCacheKey(user.getUserId());
         //把更新后的MaaUser对象重新塞回去..
         loginUser.setMaaUser(user);
         redisCache.updateCache(redisKey, LoginUser.class, loginUser, cacheUser -> {
@@ -201,6 +201,7 @@ public class UserService {
         MaaUser user = loginUser.getMaaUser();
         user.updateAttribute(updateDTO);
         userRepository.save(user);
+        redisCache.setCache(buildUserCacheKey(user.getUserId()), loginUser);
         return MaaResult.success(null);
     }
 
@@ -250,5 +251,9 @@ public class UserService {
         if (null == userRepository.findByEmail(email)) {
             throw new MaaResultException(MaaStatusCode.MAA_USER_NOT_FOUND);
         }
+    }
+
+    private static String buildUserCacheKey(String userId) {
+        return REDIS_KEY_PREFIX_LOGIN + userId;
     }
 }
