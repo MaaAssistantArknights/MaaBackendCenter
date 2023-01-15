@@ -1,11 +1,11 @@
 package plus.maa.backend.service;
 
 
-import cn.hutool.core.lang.ObjectId;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -75,9 +75,10 @@ public class CopilotService {
     }
 
     /**
-     * 验证数值是否合法并修正前端的冗余部分
+     * 验证数值是否合法
+     * 并修正前端的冗余部分
      *
-     * @param copilotDTO copilot
+     * @param copilotDTO copilotDTO
      */
     private CopilotDTO verifyCorrectCopilot(CopilotDTO copilotDTO) {
 
@@ -106,6 +107,12 @@ public class CopilotService {
     }
 
 
+    /**
+     * 将content解析为CopilotDTO
+     *
+     * @param content content
+     * @return CopilotDTO
+     */
     private CopilotDTO contentToCopilotDto(String content) {
         if (content == null) {
             throw new MaaResultException("数据不可为空");
@@ -128,9 +135,6 @@ public class CopilotService {
      */
     public MaaResult<String> upload(LoginUser user, String content) {
         CopilotDTO copilotDTO = verifyCorrectCopilot(contentToCopilotDto(content));
-
-
-        String id = ObjectId.next();
         Date date = new Date();
 
         //将其转换为数据库存储对象
@@ -138,15 +142,14 @@ public class CopilotService {
         copilot.setUploaderId(user.getMaaUser().getUserId())
                 .setUploader(user.getMaaUser().getUserName())
                 .setFirstUploadTime(date)
-                .setUploadTime(date)
-                .setId(id);
+                .setUploadTime(date);
 
         try {
-            copilotRepository.insert(copilot);
+            String id = copilotRepository.insert(copilot).getId();
+            return MaaResult.success(id);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
-        return MaaResult.success(id);
     }
 
     /**
@@ -200,16 +203,16 @@ public class CopilotService {
         boolean hasNext = false;
 
         //判断是否有值 无值则为默认
-        if (request.getPage() != null && request.getPage() > 0) {
+        if (request.getPage() > 0) {
             page = request.getPage();
         }
-        if (request.getLimit() != null && request.getLimit() > 0) {
+        if (request.getLimit() > 0) {
             limit = request.getLimit();
         }
-        if (request.getOrderBy() != null && !"".equals(request.getOrderBy())) {
+        if (StringUtils.isNotBlank(request.getOrderBy())) {
             orderBy = request.getOrderBy();
         }
-        if (request.getDesc() != null && request.getDesc()) {
+        if (request.isDesc()) {
             sortOrder = new Sort.Order(Sort.Direction.DESC, orderBy);
         }
 
@@ -223,11 +226,11 @@ public class CopilotService {
         Criteria criteriaObj = new Criteria();
 
         //匹配模糊查询
-        if (request.getLevelKeyword() != null && !"".equals(request.getLevelKeyword())) {
+        if (StringUtils.isNotBlank(request.getLevelKeyword())) {
             criteriaObj.and("stageName").regex(request.getLevelKeyword());
         }
         //or模糊查询
-        if (request.getDocument() != null && !"".equals(request.getDocument())) {
+        if (StringUtils.isNotBlank(request.getDocument())) {
             criteriaObj.orOperator(
                     Criteria.where("doc.title").regex(request.getDocument()),
                     Criteria.where("doc.details").regex(request.getDocument())
@@ -260,7 +263,7 @@ public class CopilotService {
         }
 
         //匹配查询
-        if (request.getUploader() != null && !"".equals(request.getUploader())) {
+        if (StringUtils.isNotBlank(request.getUploader())) {
             criteriaObj.and("uploader").is(request.getUploader());
         }
 

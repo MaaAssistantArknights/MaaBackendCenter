@@ -10,15 +10,15 @@ import lombok.Data;
 @Data
 public class CopilotQueriesRequest {
     private String id;
-    private Integer page;
-    private Integer limit;
+    private int page;
+    private int limit;
     private String levelKeyword;
     private String operator;
     private String content;
     private String uploader;
     private String document;
     private String uploaderId;
-    private Boolean desc;
+    private boolean desc;
     private String orderBy;
     private String language;
     private String rating;
