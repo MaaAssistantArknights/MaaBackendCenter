@@ -1,6 +1,6 @@
 package plus.maa.backend.repository.entity;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
+
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import jakarta.validation.constraints.NotBlank;
@@ -96,7 +96,7 @@ public class Copilot implements Serializable {
         private int sill = 1;
         // 技能用法。可选，默认 0
         private int skillUsage;
-        private Requirements requirements;
+        private Requirements requirements = new Requirements();
 
 
         @Data
@@ -150,14 +150,16 @@ public class Copilot implements Serializable {
         // 部署干员的干员朝向 中英文皆可
         private String direction;
         // 修改技能用法。当 type 为 "技能用法" 时必选
-        private Integer skillUsage;
+        private int skillUsage;
 
         private int preDelay;
         private int postDelay;
         //maa:保留字段，暂未实现
-        private Long timeout;
+        private long timeout;
+
+        //描述
         private String doc;
-        private String docColor;
+        private String docColor = "Gray";
 
 
     }
@@ -169,9 +171,9 @@ public class Copilot implements Serializable {
     public static class Doc {
         @NotBlank(message = "作业标题不能为空")
         private String title;
-        private String titleColor;
+        private String titleColor = "Gray";
         private String details;
-        private String detailsColor;
+        private String detailsColor = "Gray";
 
     }
 }

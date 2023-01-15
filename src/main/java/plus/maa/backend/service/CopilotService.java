@@ -75,18 +75,18 @@ public class CopilotService {
     }
 
     /**
-     * 验证数值是否合法
+     * 验证数值是否合法并修正前端的冗余部分
      *
-     * @param copilotDto copilot
+     * @param copilotDTO copilot
      */
-    private void verifyCopilot(CopilotDTO copilotDto) {
+    private CopilotDTO verifyCorrectCopilot(CopilotDTO copilotDTO) {
 
-        if (copilotDto.getActions() != null) {
-            for (Copilot.Action action : copilotDto.getActions()) {
+        if (copilotDTO.getActions() != null) {
+            for (Copilot.Action action : copilotDTO.getActions()) {
                 String type = action.getType();
 
                 if ("SkillUsage".equals(type) || "技能用法".equals(type)) {
-                    if (action.getSkillUsage() == null) {
+                    if (action.getSkillUsage() == 0) {
                         throw new MaaResultException("当动作类型为技能用法时,技能用法该选项必选");
                     }
                 }
@@ -96,10 +96,13 @@ public class CopilotService {
                         throw new MaaResultException("干员位置的数据格式不符合规定");
                     }
                 }
-
             }
         }
 
+
+        //去除name的冗余部分
+        copilotDTO.getOpers().forEach(operator -> operator.setName(operator.getName().replaceAll("[\"“”\\\\]", "")));
+        return copilotDTO;
     }
 
 
@@ -124,14 +127,14 @@ public class CopilotService {
      * @return 返回_id
      */
     public MaaResult<String> upload(LoginUser user, String content) {
-        CopilotDTO copilotDto = contentToCopilotDto(content);
+        CopilotDTO copilotDTO = verifyCorrectCopilot(contentToCopilotDto(content));
+
+
         String id = ObjectId.next();
         Date date = new Date();
 
-        verifyCopilot(copilotDto);
-
-
-        Copilot copilot = CopilotConverter.INSTANCE.toCopilot(copilotDto);
+        //将其转换为数据库存储对象
+        Copilot copilot = CopilotConverter.INSTANCE.toCopilot(copilotDTO);
         copilot.setUploaderId(user.getMaaUser().getUserId())
                 .setUploader(user.getMaaUser().getUserName())
                 .setFirstUploadTime(date)
@@ -297,13 +300,13 @@ public class CopilotService {
      * @return null
      */
     public MaaResult<Void> update(LoginUser loginUser, String id, String content) {
-        CopilotDTO copilotDto = contentToCopilotDto(content);
+        CopilotDTO copilotDTO = verifyCorrectCopilot(contentToCopilotDto(content));
         Boolean owner = verifyOwner(loginUser, id);
-        verifyCopilot(copilotDto);
+
         if (owner) {
             Copilot rawCopilot = findById(id);
             rawCopilot.setUploadTime(new Date());
-            CopilotConverter.INSTANCE.updateCopilotFromDto(copilotDto, rawCopilot);
+            CopilotConverter.INSTANCE.updateCopilotFromDto(copilotDTO, rawCopilot);
             copilotRepository.save(rawCopilot);
             return MaaResult.success(null);
         } else {
