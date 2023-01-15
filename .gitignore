@@ -37,10 +37,13 @@ gen/
 logs/
 log
 temp/
-test/
+/test/
 
 application-dev.yml
 application-prod.yml
 
 # build systems
 .gradle
+
+# local db files
+/.data/
