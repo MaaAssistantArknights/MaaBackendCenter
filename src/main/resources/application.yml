@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: dev
+    active: template
   jackson:
     property-naming-strategy: SNAKE_CASE
     date-format: yyyy-MM-dd HH:mm:ss
@@ -19,6 +19,10 @@ maa-copilot:
     title: MAA Copilot Center API
     description: MAA Copilot Backend Center
     version: v1.0.0
+
+    #服务器域名 用于邮件发送html 以访问服务端资源
+    #http://localhost:8848
+    domain: https://api.prts.plus
 
 logging:
   file:
