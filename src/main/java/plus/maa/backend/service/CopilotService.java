@@ -22,7 +22,7 @@ import plus.maa.backend.controller.request.CopilotQueriesRequest;
 import plus.maa.backend.controller.response.*;
 import plus.maa.backend.repository.CopilotRepository;
 import plus.maa.backend.repository.entity.Copilot;
-import plus.maa.backend.service.model.CopilotTypeCheck;
+import plus.maa.backend.common.bo.CopilotTypeCheck;
 import plus.maa.backend.service.model.LoginUser;
 
 import java.util.*;

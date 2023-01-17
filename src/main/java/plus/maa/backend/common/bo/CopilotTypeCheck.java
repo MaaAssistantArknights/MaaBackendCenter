@@ -1,4 +1,4 @@
-package plus.maa.backend.service.model;
+package plus.maa.backend.common.bo;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -61,6 +61,7 @@ public class CopilotTypeCheck {
 
         /**
          * 检验数据格式 大小写敏感
+         *
          * @param type type
          * @return DirectionType
          */
@@ -103,6 +104,7 @@ public class CopilotTypeCheck {
 
         /**
          * 检验数据格式 大小写敏感
+         *
          * @param type type
          * @return ActionsType
          */

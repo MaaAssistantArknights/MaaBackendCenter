@@ -27,7 +27,7 @@
 
                                     <td style=" color: #333333; font-size: 15px; font-weight: 400; line-height: 1.4;   padding: 15px 5px;"
                                     >
-                                        ${content}
+                                        <#include "${content}">
                                     </td>
                                 </tr>
                                 </tbody>
@@ -43,7 +43,7 @@
 
                 <div>
                     ※此邮件为自动发送，请不要回复此邮件<br>
-                    MAA Team<br>
+                    ※MAA Team<br>
                     ·
                     <a style="color: #3777b0; text-decoration: none;"
                        href="https://maa.plus/" target="_blank">

@@ -21,7 +21,7 @@ public class EmailService {
     @Value("${maa-copilot.vcode.expire:600}")
     private int expire;
 
-    @Value("${maa-copilot.info.domain}:https://api.prts.plus")
+    @Value("${maa-copilot.info.domain}")
     private String domain;
 
     private final RedisCache redisCache;
@@ -38,7 +38,6 @@ public class EmailService {
         String vcode = RandomStringUtils.random(6, true, true).toUpperCase();
         EmailBusinessObject.builder()
                 .setEmail(email)
-                .setDomain(domain)
                 .sendVerificationCodeMessage(vcode);
         //存redis
         redisCache.setCache("vCodeEmail:" + email, vcode, expire);
@@ -62,7 +61,6 @@ public class EmailService {
         String uuid = UUID.randomUUID().toString().replaceAll("-", "");
         String url = domain + "/user/activateAccount?nonce=" + uuid;
         EmailBusinessObject.builder()
-                .setDomain(domain)
                 .setEmail(email)
                 .sendActivateUrlMessage(url);
         //存redis
