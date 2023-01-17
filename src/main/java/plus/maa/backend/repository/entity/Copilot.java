@@ -144,21 +144,22 @@ public class Copilot implements Serializable {
         private int cooling = -1;
         @NotBlank(message = "干员或干员组名不能为空")
         private String name;
+
         // 部署干员的位置。
-        @NotBlank(message = "干员位置不能为空")
         private Integer[] location;
         // 部署干员的干员朝向 中英文皆可
-        private String direction;
+        private String direction = "None";
         // 修改技能用法。当 type 为 "技能用法" 时必选
         private int skillUsage;
-
+        //前置延时
         private int preDelay;
+        //后置延时
         private int postDelay;
         //maa:保留字段，暂未实现
         private long timeout;
 
         //描述
-        private String doc;
+        private String doc = "";
         private String docColor = "Gray";
 
 
@@ -170,9 +171,9 @@ public class Copilot implements Serializable {
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public static class Doc {
         @NotBlank(message = "作业标题不能为空")
-        private String title;
+        private String title = "";
         private String titleColor = "Gray";
-        private String details;
+        private String details = "";
         private String detailsColor = "Gray";
 
     }
