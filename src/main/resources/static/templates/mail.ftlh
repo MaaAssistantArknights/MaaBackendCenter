@@ -9,10 +9,7 @@
         <tr>
             <td style="padding: 25px 0;">
                 <!-- https://api.prts.plus/images/logo.png -->
-                <img src="https://api.prts.plus/images/logo.png"
-                     width="200" height="200"
-                     alt="logo"
-                >
+                <#include "logo.ftlh">
             </td>
         </tr>
         <tr>
@@ -30,7 +27,7 @@
 
                                     <td style=" color: #333333; font-size: 15px; font-weight: 400; line-height: 1.4;   padding: 15px 5px;"
                                     >
-                                        {0}
+                                        ${content}
                                     </td>
                                 </tr>
                                 </tbody>

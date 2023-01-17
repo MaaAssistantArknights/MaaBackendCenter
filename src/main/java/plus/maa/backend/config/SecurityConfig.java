@@ -32,7 +32,6 @@ public class SecurityConfig {
             "/v3/api-docs/**",
             "/test/**",
             "/version",
-            "/images/logo.png",
             "/"
     };
 
