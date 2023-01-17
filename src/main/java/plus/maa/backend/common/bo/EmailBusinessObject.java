@@ -26,7 +26,7 @@ import java.util.List;
 public class EmailBusinessObject {
 
     // 默认邮件模板
-    private static final String DEFAULT_MAIL_TEMPLATE = "mail.fthl";
+    private static final String DEFAULT_MAIL_TEMPLATE = "mail.ftlh";
 
     private static final String DEFAULT_TITLE_PREFIX = "Maa Backend Center";
 
