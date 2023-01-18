@@ -11,6 +11,12 @@ spring:
       auto-index-creation: true
   freemarker:
     check-template-location: false
+  # 缓存配置，使用caffeine缓存框架，缓存时长为5分钟，最大缓存数量500
+  cache:
+    cache-names: arkLevel
+    type: caffeine
+    caffeine:
+      spec: maximumSize=500,expireAfterWrite=300s
 server:
   # 8848钛金接口.jpg
   port: 8848

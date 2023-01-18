@@ -325,9 +325,6 @@ public class CopilotService {
         info.setOperators(operStrList);
 
         ArkLevelInfo levelInfo = levelService.findByLevelId(copilot.getStageName());
-        if (levelInfo == null) {
-            levelInfo = levelService.findByStageId(copilot.getStageName());
-        }
         info.setLevel(levelInfo);
         info.setAvailable(true);
         info.setNotEnoughRating(true);

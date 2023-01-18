@@ -12,6 +12,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -85,14 +86,9 @@ public class ArkLevelService {
                 .collect(Collectors.toList());
     }
 
-    //TODO 增加缓存
+    @Cacheable("arkLevel")
     public ArkLevelInfo findByLevelId(String levelId) {
         ArkLevel level = arkLevelRepo.findByLevelId(levelId);
-        return ArkLevelConverter.INSTANCE.convert(level);
-    }
-
-    public ArkLevelInfo findByStageId(String stageId) {
-        ArkLevel level = arkLevelRepo.findByStageId(stageId);
         return ArkLevelConverter.INSTANCE.convert(level);
     }
 
