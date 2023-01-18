@@ -5,4 +5,5 @@ public class Info {
     private String title;
     private String description;
     private String version;
+    private String domain;
 }

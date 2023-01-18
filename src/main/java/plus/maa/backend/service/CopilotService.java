@@ -22,6 +22,7 @@ import plus.maa.backend.controller.request.CopilotQueriesRequest;
 import plus.maa.backend.controller.response.*;
 import plus.maa.backend.repository.CopilotRepository;
 import plus.maa.backend.repository.entity.Copilot;
+import plus.maa.backend.common.bo.CopilotTypeCheck;
 import plus.maa.backend.service.model.LoginUser;
 
 import java.util.*;
@@ -82,27 +83,11 @@ public class CopilotService {
      */
     private CopilotDTO verifyCorrectCopilot(CopilotDTO copilotDTO) {
 
-        if (copilotDTO.getActions() != null) {
-            for (Copilot.Action action : copilotDTO.getActions()) {
-                String type = action.getType();
-
-                if ("SkillUsage".equals(type) || "技能用法".equals(type)) {
-                    if (action.getSkillUsage() == 0) {
-                        throw new MaaResultException("当动作类型为技能用法时,技能用法该选项必选");
-                    }
-                }
-
-                if (action.getLocation() != null) {
-                    if (action.getLocation().length > 2) {
-                        throw new MaaResultException("干员位置的数据格式不符合规定");
-                    }
-                }
-            }
-        }
-
+        CopilotTypeCheck.copilotTypeCheck(copilotDTO);
 
         //去除name的冗余部分
         copilotDTO.getOpers().forEach(operator -> operator.setName(operator.getName().replaceAll("[\"“”]", "")));
+        copilotDTO.getActions().forEach(action -> action.setName(action.getName().replaceAll("[\"“”]", "")));
         return copilotDTO;
     }
 

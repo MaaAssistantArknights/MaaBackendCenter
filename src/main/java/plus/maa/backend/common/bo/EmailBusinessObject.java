@@ -9,10 +9,11 @@ import lombok.extern.slf4j.Slf4j;
 import plus.maa.backend.common.utils.FreeMarkerUtils;
 
 import java.io.File;
-import java.text.MessageFormat;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -27,6 +28,8 @@ public class EmailBusinessObject {
 
     // 默认邮件模板
     private static final String DEFAULT_MAIL_TEMPLATE = "mail.ftlh";
+
+    private static final String DEFAULT_MAIL_INCLUDE_HTML_TEMPLATE = "mail-includeHtml.ftlh";
 
     private static final String DEFAULT_TITLE_PREFIX = "Maa Backend Center";
 
@@ -118,21 +121,8 @@ public class EmailBusinessObject {
         try {
             MailUtil.send(this.emailList
                     , this.title + "  验证码"
-                    , defaultMailTemplates(
-                            MessageFormat.format(
-                                    """
-                                                <h1 style=" font-size: 28px; margin: 0; padding: 0; color: #5c5c5c">
-                                                     Maa Backend Center
-                                                </h1>
-                                                <h2 style="padding-bottom: 3%; color: #5c5c5c; margin: 1% 0 0 0">
-                                                     验证你的账户
-                                                </h2>
-                                                <h1 style=" color: #333333; font-size: 28px; font-weight: 400; line-height: 1.4; margin: 0; padding-bottom: 4%">
-                                                     {0}
-                                                </h1>
-                                                <p style="font-size: 10px">为了确认您输入的邮箱地址，请输入以上验证码 有效期10分钟</p>
-                                            """
-                                    , code)
+                    , defaultMailIncludeHtmlTemplates(
+                            "mail-vCode.ftlh", code
                     )
                     , this.isHtml
             );
@@ -147,22 +137,8 @@ public class EmailBusinessObject {
         try {
             MailUtil.send(this.emailList
                     , this.title + "  账户激活"
-                    , defaultMailTemplates(
-                            MessageFormat.format(
-                                    """
-                                                 <h1 style=" font-size: 28px; margin: 0; padding: 0; color: #5c5c5c">
-                                                    Maa Backend Center
-                                                 </h1>
-                                                 <h1 style=" color: #333333; font-size: 28px; font-weight: 400; line-height: 1.4; margin: 0; padding: 4% 0">
-                                                     <a href="{0}">
-                                                        <button style="font-size: 30px; color:#ffffff; border:0;  background-color: transparent; opacity: 100%;border-radius: 5px;padding: 1% 4%;background: linear-gradient(to bottom, rgba(255,255,255,0.15) 0%, rgba(0,0,0,0.15) 100%), radial-gradient(at top center, rgba(255,255,255,0.40) 0%, rgba(0,0,0,0.40) 120%) #989898;background-blend-mode: multiply,multiply;">
-                                                            验证你的账户
-                                                        </button>
-                                                     </a>
-                                                 </h1>
-                                                 <p style="font-size: 10px">为了确认您输入的邮箱地址，请点击以上链接 有效期10分钟</p>
-                                            """
-                                    , url)
+                    , defaultMailIncludeHtmlTemplates(
+                            "mail-activateUrl.ftlh", url
                     )
                     , this.isHtml
             );
@@ -182,11 +158,15 @@ public class EmailBusinessObject {
         return parseMessages(content, DEFAULT_MAIL_TEMPLATE);
     }
 
+    private String defaultMailIncludeHtmlTemplates(String content, String obj) {
+        return parseMessages(content, obj, DEFAULT_MAIL_INCLUDE_HTML_TEMPLATE);
+    }
+
 
     /**
      * 将ftl文件转换为String对象
      *
-     * @param content      邮件动态内容
+     * @param content      自定义内容
      * @param templateName ftlh路径
      * @return String
      */
@@ -194,4 +174,16 @@ public class EmailBusinessObject {
         return FreeMarkerUtils.parseData(Collections.singletonMap("content", content), templateName);
     }
 
+
+    /**
+     * 将ftl文件转换为String对象
+     *
+     * @param content      邮件内嵌ftlh路径
+     * @param obj          内嵌邮件中的动态内容
+     * @param templateName ftlh路径
+     * @return String
+     */
+    private String parseMessages(String content, String obj, String templateName) {
+        return FreeMarkerUtils.parseData(Map.of("content", content, "obj", obj), templateName);
+    }
 }
