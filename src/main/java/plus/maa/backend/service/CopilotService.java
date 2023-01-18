@@ -216,7 +216,10 @@ public class CopilotService {
 
         //匹配模糊查询
         if (StringUtils.isNotBlank(request.getLevelKeyword())) {
-            andQueries.add(Criteria.where("stageName").regex(request.getLevelKeyword()));
+            ArkLevelInfo levelInfo = levelService.findCatOneOrCatTwoOrCatThreeOrNameOrStageId(request.getLevelKeyword());
+            if (levelInfo != null){
+                andQueries.add(Criteria.where("stageName").regex(levelInfo.getStageId()));
+            }
         }
         //or模糊查询
         if (StringUtils.isNotBlank(request.getDocument())) {
