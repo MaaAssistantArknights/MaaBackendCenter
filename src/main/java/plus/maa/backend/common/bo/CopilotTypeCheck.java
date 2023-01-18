@@ -15,6 +15,7 @@ public class CopilotTypeCheck {
 
     /**
      * 数据校验
+     * 如果数据不符合规范 则禁止传入 以防脏数据或导致作业无法顺利完成任务
      *
      * @param copilotDTO 上传内容
      */
@@ -25,18 +26,28 @@ public class CopilotTypeCheck {
                 ActionsType actionsType = ActionsType.checkActionsType(actions.getType());
                 DirectionType directionType = DirectionType.checkDirectionType(actions.getDirection());
                 String actionName = actions.getName();
+                Integer[] location = actions.getLocation();
+                final String EXCEPTION_MESSAGE_PREFIX = "错误干员或干员组[" + actionName + "]:\n";
+
                 if (actionsType == ActionsType.SKILLUSAGE) {
                     if (actions.getSkillUsage() == 0) {
-                        throw new MaaResultException("错误干员或干员组[" + actionName + "]:\n当动作类型为技能用法时,技能用法该选项必选");
+                        throw new MaaResultException(EXCEPTION_MESSAGE_PREFIX + "当动作类型为技能用法时,技能用法该选项必选");
                     }
                 }
 
-                if (actions.getLocation() != null && actions.getLocation().length != 2) {
-                    throw new MaaResultException("错误干员或干员组[" + actionName + "]:\n干员位置的数据格式不符合规定");
+                if (location != null) {
+                    if (location.length != 2) {
+                        throw new MaaResultException(EXCEPTION_MESSAGE_PREFIX + "干员位置的数据格式不符合规定");
+                    }
+                    if (location[0] > 9 || location[0] < 0) {
+                        throw new MaaResultException(EXCEPTION_MESSAGE_PREFIX + "干员位置X 坐标超出地图范围 (0-9)");
+                    }
+                    if (location[1] > 6 || location[1] < 0) {
+                        throw new MaaResultException(EXCEPTION_MESSAGE_PREFIX + "干员位置Y 坐标超出地图范围 (0-6)");
+                    }
                 }
-
-                if (actionsType == ActionsType.DEPLOY && (directionType == DirectionType.NONE || actions.getLocation().length != 2)) {
-                    throw new MaaResultException("错误干员或干员组[" + actionName + "]:\n当动作类型为部署时,干员位置或干员朝向不可为空");
+                if (actionsType == ActionsType.DEPLOY && (directionType == DirectionType.NONE || location == null)) {
+                    throw new MaaResultException(EXCEPTION_MESSAGE_PREFIX + "当动作类型为部署时,干员位置或干员朝向不可为空");
                 }
 
             }
@@ -109,7 +120,6 @@ public class CopilotTypeCheck {
          * @return ActionsType
          */
         public static ActionsType checkActionsType(String type) {
-            //如果数据不符合规范 则禁止传入
             ActionsType actionsType = switch (type) {
                 case "Deploy", "部署" -> DEPLOY;
                 case "Skill", "技能" -> SKILL;
