@@ -185,7 +185,8 @@ public class CopilotService {
      * @param request 模糊查询
      * @return CopilotPageInfo
      */
-    public MaaResult<CopilotPageInfo> queriesCopilot(CopilotQueriesRequest request) {
+
+    public MaaResult<CopilotPageInfo> queriesCopilot(LoginUser user,CopilotQueriesRequest request) {
         String orderBy = "id";
         Sort.Order sortOrder = new Sort.Order(Sort.Direction.ASC, orderBy);
         int page = 1;
@@ -250,8 +251,10 @@ public class CopilotService {
         }
 
         //匹配查询
-        if (StringUtils.isNotBlank(request.getUploader())) {
-            andQueries.add(Criteria.where("uploader").is(request.getUploaderId()));
+        if (StringUtils.isNotBlank(request.getUploaderId()) && "me".equals(request.getUploaderId())) {
+            String userId = user.getMaaUser().getUserId();
+            if (!ObjectUtils.isEmpty(userId))
+                andQueries.add(Criteria.where("uploader").is(userId));
         }
 
         //封装查询
@@ -316,6 +319,7 @@ public class CopilotService {
      */
     public MaaResult<Void> rates(CopilotQueriesRequest request) {
         // TODO: 评分相关
+    
         return MaaResult.success(null);
     }
 
