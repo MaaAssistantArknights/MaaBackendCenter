@@ -7,6 +7,7 @@ import plus.maa.backend.repository.entity.ArkLevel;
 import plus.maa.backend.repository.entity.ArkLevelSha;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * @author john180
@@ -24,7 +25,7 @@ public interface ArkLevelRepository extends MongoRepository<ArkLevel, String> {
                 ]
             }
             """)
-    ArkLevel findByLevelId(String levelId);
+    Stream<ArkLevel> findByLevelId(String levelId);
 
     /**
      * 用于前端查询 关卡名、关卡类型、关卡编号
@@ -45,5 +46,5 @@ public interface ArkLevelRepository extends MongoRepository<ArkLevel, String> {
                 ]
             }
             """)
-    ArkLevel queryLevel(String stageId);
+    Stream<ArkLevel> queryLevel(String stageId);
 }

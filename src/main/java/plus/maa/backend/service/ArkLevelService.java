@@ -88,13 +88,13 @@ public class ArkLevelService {
 
     @Cacheable("arkLevel")
     public ArkLevelInfo findByLevelId(String levelId) {
-        ArkLevel level = arkLevelRepo.findByLevelId(levelId);
+        ArkLevel level = arkLevelRepo.findByLevelId(levelId).findAny().orElse(null);
         return ArkLevelConverter.INSTANCE.convert(level);
     }
 
 
     public ArkLevelInfo queryLevel(String levelId) {
-        ArkLevel level = arkLevelRepo.queryLevel(levelId);
+        ArkLevel level = arkLevelRepo.queryLevel(levelId).findAny().orElse(null);
         return ArkLevelConverter.INSTANCE.convert(level);
     }
 
