@@ -214,6 +214,8 @@ public class UserService {
      * @return 成功响应
      */
     public MaaResult<Void> sendEmailCode(LoginUser loginUser) {
+        Assert.state(Objects.equals(loginUser.getMaaUser().getStatus(), 0),
+                     "用户已经激活，无法再次发送验证码");
         String email = loginUser.getEmail();
         emailService.sendVCode(email);
         return MaaResult.success(null);
