@@ -1,5 +1,6 @@
 package plus.maa.backend.handler;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -90,6 +91,14 @@ public class GlobalExceptionHandler {
         logWarn(request);
         log.warn("请求方式错误", e);
         return MaaResult.fail(405, String.format("请求方法不正确:%s", e.getMessage()));
+    }
+    
+    /**
+     * 处理由 {@link org.springframework.util.Assert} 工具产生的异常
+     */
+    @ExceptionHandler({ IllegalArgumentException.class, IllegalStateException.class })
+    public MaaResult<String> illegalArgumentOrStateExceptionHandler(RuntimeException e) {
+        return MaaResult.fail(HttpStatus.BAD_REQUEST.value(), e.getMessage());        
     }
 
     /**

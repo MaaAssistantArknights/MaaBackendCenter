@@ -1,15 +1,16 @@
 package plus.maa.backend.service;
 
-import lombok.RequiredArgsConstructor;
+import java.util.UUID;
+
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import plus.maa.backend.common.bo.EmailBusinessObject;
-import plus.maa.backend.controller.response.MaaResultException;
-import plus.maa.backend.repository.RedisCache;
+import org.springframework.util.Assert;
 
-import java.util.Objects;
-import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import plus.maa.backend.common.bo.EmailBusinessObject;
+import plus.maa.backend.repository.RedisCache;
 
 /**
  * @author LoMu
@@ -43,13 +44,10 @@ public class EmailService {
         redisCache.setCache("vCodeEmail:" + email, vcode, expire);
     }
 
-    public boolean verifyVCode(String email, String vcode) {
+    public void verifyVCode(String email, String vcode) {
         String cacheVCode = redisCache.getCache("vCodeEmail:" + email, String.class);
-        if (!Objects.equals(cacheVCode, vcode.toUpperCase())) {
-            throw new MaaResultException("验证码错误！");
-        }
+        Assert.state(StringUtils.equalsIgnoreCase(cacheVCode, vcode), "验证码错误");
         redisCache.removeCache("vCodeEmail:" + email);
-        return true;
     }
 
 

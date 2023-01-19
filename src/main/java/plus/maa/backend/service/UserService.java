@@ -1,12 +1,10 @@
 package plus.maa.backend.service;
 
-import cn.hutool.core.date.DateField;
-import cn.hutool.core.date.DateTime;
-import cn.hutool.jwt.JWT;
-import cn.hutool.jwt.JWTPayload;
-import cn.hutool.jwt.JWTUtil;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,26 +14,28 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
+
+import cn.hutool.core.date.DateField;
+import cn.hutool.core.date.DateTime;
+import cn.hutool.jwt.JWTPayload;
+import cn.hutool.jwt.JWTUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import plus.maa.backend.common.MaaStatusCode;
 import plus.maa.backend.common.utils.converter.MaaUserConverter;
 import plus.maa.backend.controller.request.*;
-import plus.maa.backend.controller.response.MaaLoginRsp;
-import plus.maa.backend.controller.response.MaaResult;
-import plus.maa.backend.controller.response.MaaResultException;
-import plus.maa.backend.controller.response.MaaUserInfo;
+import plus.maa.backend.controller.response.*;
 import plus.maa.backend.repository.RedisCache;
 import plus.maa.backend.repository.UserRepository;
 import plus.maa.backend.repository.entity.MaaUser;
 import plus.maa.backend.service.model.LoginUser;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-
 /**
  * @author AnselYuki
  */
+@Slf4j
 @Setter
 @Service
 @RequiredArgsConstructor
@@ -50,12 +50,6 @@ public class UserService {
     private String secret;
     @Value("${maa-copilot.jwt.expire}")
     private int expire;
-
-    private LoginUser getLoginUserByToken(String token) {
-        JWT jwt = JWTUtil.parseToken(token);
-        String redisKey = buildUserCacheKey(jwt.getPayload("userId").toString());
-        return redisCache.getCache(redisKey, LoginUser.class);
-    }
 
     /**
      * 登录方法
@@ -186,9 +180,16 @@ public class UserService {
      * @return 用户信息封装
      */
     public MaaResult<Void> activateUser(LoginUser loginUser, ActivateDTO activateDTO) {
+        if (Objects.equals(loginUser.getMaaUser().getStatus(), 1)) {
+            return MaaResult.success();
+        }
         String email = loginUser.getMaaUser().getEmail();
-        return emailService.verifyVCode(email, activateDTO.getToken()) ? MaaResult.success(null) :
-                MaaResult.fail(MaaStatusCode.MAA_ACTIVE_ERROR);
+        emailService.verifyVCode(email, activateDTO.getToken());
+        MaaUser user = loginUser.getMaaUser();
+        user.setStatus(1);
+        userRepository.save(user);
+        redisCache.setCache(buildUserCacheKey(user.getUserId()), loginUser);
+        return MaaResult.success();
     }
 
     /**
@@ -262,16 +263,24 @@ public class UserService {
     public void activateAccount(EmailActivateReq activateDTO) {
         String uuid = activateDTO.getNonce();
         String email = redisCache.getCache("UUID:" + uuid, String.class);
-        if (Objects.isNull(email)) {
-            throw new MaaResultException("链接已过期");
-        }
+        Assert.notNull(email, "链接已过期");
         MaaUser user = userRepository.findByEmail(email);
-
-        //激活账户
+        if (Objects.equals(user.getStatus(), 1)) {
+            redisCache.removeCache("UUID:" + uuid);
+            return;
+        }
+        // 激活账户
         user.setStatus(1);
         userRepository.save(user);
-        //清除缓存
+        // 清除缓存
         redisCache.removeCache("UUID:" + uuid);
+        // 更新登陆信息
+        String redisKey = buildUserCacheKey(user.getUserId());
+        LoginUser loginUser = redisCache.getCache(redisKey, LoginUser.class);
+        if (loginUser != null) {
+            loginUser.getMaaUser().setStatus(1);
+            redisCache.setCache(redisKey, loginUser);
+        }
     }
     
     private static String buildUserCacheKey(String userId) {
