@@ -1,7 +1,5 @@
 package plus.maa.backend.handler;
 
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -12,6 +10,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
+
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaResultException;
 
@@ -59,8 +60,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public MaaResult<String> methodArgumentNotValidException(MethodArgumentNotValidException e) {
         FieldError fieldError = e.getBindingResult().getFieldError();
-        assert fieldError != null;
-        return MaaResult.fail(400, String.format("参数校验错误:%s", fieldError.getDefaultMessage()));
+        if (fieldError != null) {
+            return MaaResult.fail(400, String.format("参数校验错误:%s", fieldError.getDefaultMessage()));
+        }
+        return MaaResult.fail(400, String.format("参数校验错误:%s", e.getMessage()));
     }
 
     /**

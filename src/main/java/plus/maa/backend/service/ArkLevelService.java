@@ -1,33 +1,5 @@
 package plus.maa.backend.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import okhttp3.*;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectInserter;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
-import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
-import plus.maa.backend.common.utils.converter.ArkLevelConverter;
-import plus.maa.backend.controller.response.ArkLevelInfo;
-import plus.maa.backend.repository.ArkLevelRepository;
-import plus.maa.backend.repository.GithubRepository;
-import plus.maa.backend.repository.RedisCache;
-import plus.maa.backend.repository.entity.ArkLevel;
-import plus.maa.backend.repository.entity.ArkLevelSha;
-import plus.maa.backend.repository.entity.gamedata.ArkTilePos;
-import plus.maa.backend.repository.entity.github.GithubCommit;
-import plus.maa.backend.repository.entity.github.GithubTree;
-import plus.maa.backend.repository.entity.github.GithubTrees;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -40,6 +12,36 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectInserter;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import okhttp3.*;
+import plus.maa.backend.common.utils.converter.ArkLevelConverter;
+import plus.maa.backend.controller.response.ArkLevelInfo;
+import plus.maa.backend.repository.ArkLevelRepository;
+import plus.maa.backend.repository.GithubRepository;
+import plus.maa.backend.repository.RedisCache;
+import plus.maa.backend.repository.entity.ArkLevel;
+import plus.maa.backend.repository.entity.ArkLevelSha;
+import plus.maa.backend.repository.entity.gamedata.ArkTilePos;
+import plus.maa.backend.repository.entity.github.GithubCommit;
+import plus.maa.backend.repository.entity.github.GithubTree;
+import plus.maa.backend.repository.entity.github.GithubTrees;
 
 /**
  * @author dragove

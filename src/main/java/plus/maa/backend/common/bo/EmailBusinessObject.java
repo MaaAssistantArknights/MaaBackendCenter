@@ -1,19 +1,15 @@
 package plus.maa.backend.common.bo;
 
 
+import java.io.File;
+import java.util.*;
+
 import cn.hutool.extra.mail.MailUtil;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import plus.maa.backend.common.utils.FreeMarkerUtils;
-
-import java.io.File;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 
 /**
@@ -106,6 +102,7 @@ public class EmailBusinessObject {
      */
     public void sendCustomStaticTemplatesFiles(String content, String templateName, File... files) {
         try {
+            log.info("send email to: {}, templateName: {}, content: {}", emailList, templateName, content);
             MailUtil.send(emailList, title, parseMessages(content, templateName), isHtml, files);
         } catch (Exception ex) {
             throw new RuntimeException(ex);

@@ -1,13 +1,12 @@
 package plus.maa.backend.controller.response;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
+import java.util.Date;
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import plus.maa.backend.repository.entity.Copilot;
-
-import java.util.Date;
-import java.util.List;
 
 @Data
 @NoArgsConstructor

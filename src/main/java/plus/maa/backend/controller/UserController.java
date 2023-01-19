@@ -1,15 +1,17 @@
 package plus.maa.backend.controller;
 
+import java.io.IOException;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.CurrentUser;
 import plus.maa.backend.controller.request.*;
 import plus.maa.backend.controller.response.MaaLoginRsp;
@@ -19,8 +21,6 @@ import plus.maa.backend.service.EmailService;
 import plus.maa.backend.service.UserService;
 import plus.maa.backend.service.model.LoginUser;
 
-import java.io.IOException;
-
 /**
  * 用户相关接口
  * <a href="https://github.com/MaaAssistantArknights/maa-copilot-frontend/blob/dev/src/apis/auth.ts">前端api约定文件</a>
@@ -28,7 +28,6 @@ import java.io.IOException;
  * @author AnselYuki
  */
 @Data
-@Slf4j
 @Tag(name = "CopilotUser")
 @RequestMapping("/user")
 @Validated
