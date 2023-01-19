@@ -5,7 +5,6 @@ import cn.hutool.core.date.DateTime;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTPayload;
 import cn.hutool.jwt.JWTUtil;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -29,7 +28,6 @@ import plus.maa.backend.repository.UserRepository;
 import plus.maa.backend.repository.entity.MaaUser;
 import plus.maa.backend.service.model.LoginUser;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -189,7 +187,7 @@ public class UserService {
      */
     public MaaResult<Void> activateUser(LoginUser loginUser, ActivateDTO activateDTO) {
         String email = loginUser.getMaaUser().getEmail();
-        return emailService.verifyVCode(email, activateDTO.getNonce()) ? MaaResult.success(null) :
+        return emailService.verifyVCode(email, activateDTO.getToken()) ? MaaResult.success(null) :
                 MaaResult.fail(MaaStatusCode.MAA_ACTIVE_ERROR);
     }
 
@@ -260,10 +258,8 @@ public class UserService {
      * 激活账户
      *
      * @param activateDTO  uuid
-     * @param httpResponse 跳转页面
-     * @return null
      */
-    public MaaResult<Void> activateAccount(ActivateDTO activateDTO, HttpServletResponse httpResponse) {
+    public void activateAccount(EmailActivateReq activateDTO) {
         String uuid = activateDTO.getNonce();
         String email = redisCache.getCache("UUID:" + uuid, String.class);
         if (Objects.isNull(email)) {
@@ -273,17 +269,9 @@ public class UserService {
 
         //激活账户
         user.setStatus(1);
-
         userRepository.save(user);
         //清除缓存
         redisCache.removeCache("UUID:" + uuid);
-        //激活成功 跳转页面
-        try {
-            httpResponse.sendRedirect("https://prts.plus/");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return MaaResult.success(null);
     }
     
     private static String buildUserCacheKey(String userId) {

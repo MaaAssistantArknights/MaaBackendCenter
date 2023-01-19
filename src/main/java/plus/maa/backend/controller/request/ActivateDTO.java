@@ -15,5 +15,5 @@ import lombok.experimental.Accessors;
 @AllArgsConstructor
 public class ActivateDTO {
     @NotBlank(message = "激活码不能为空")
-    private String nonce;
+    private String token;
 }

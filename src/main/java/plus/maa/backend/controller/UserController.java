@@ -19,6 +19,8 @@ import plus.maa.backend.service.EmailService;
 import plus.maa.backend.service.UserService;
 import plus.maa.backend.service.model.LoginUser;
 
+import java.io.IOException;
+
 /**
  * 用户相关接口
  * <a href="https://github.com/MaaAssistantArknights/maa-copilot-frontend/blob/dev/src/apis/auth.ts">前端api约定文件</a>
@@ -147,7 +149,14 @@ public class UserController {
     }
 
     @GetMapping("/activateAccount")
-    public MaaResult<Void> activateAccount(ActivateDTO activateDTO, HttpServletResponse response) {
-        return userService.activateAccount(activateDTO, response);
+    public MaaResult<Void> activateAccount(EmailActivateReq activateDTO, HttpServletResponse response) {
+        userService.activateAccount(activateDTO);
+        //激活成功 跳转页面
+        try {
+            response.sendRedirect("https://prts.plus/");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return MaaResult.success();
     }
 }
