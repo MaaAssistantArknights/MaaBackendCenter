@@ -26,20 +26,19 @@ public class SecurityConfig {
     private static final String[] URL_WHITELIST = {
             "/user/login",
             "/user/register",
-            "/arknights/level",
-            "/swagger-ui.html",
-            "/swagger-ui/**",
-            "/v3/api-docs/**",
-            "/test/**",
-            "/version",
-            "/"
     };
 
     private static final String[] URL_PERMIT_ALL = {
+            "/",
+            "/version",
             "/user/password/reset_request",
             "/user/password/reset",
+            "/swagger-ui.html",
+            "/v3/api-docs/**",
+            "/swagger-ui/**",
+            "/arknights/level",
             "/copilot/query",
-            "/copilot/get/**"
+            "/copilot/get/**",
     };
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter;
