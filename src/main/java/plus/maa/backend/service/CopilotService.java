@@ -86,6 +86,7 @@ public class CopilotService {
         CopilotTypeCheck.copilotTypeCheck(copilotDTO);
 
         //去除name的冗余部分
+        copilotDTO.getGroups().forEach(groups -> groups.getOpers().forEach(opers -> opers.setName(opers.getName().replaceAll("[\"“”]", ""))));
         copilotDTO.getOpers().forEach(operator -> operator.setName(operator.getName().replaceAll("[\"“”]", "")));
         copilotDTO.getActions().forEach(action -> action.setName(action.getName().replaceAll("[\"“”]", "")));
         return copilotDTO;
@@ -215,7 +216,10 @@ public class CopilotService {
 
         //匹配模糊查询
         if (StringUtils.isNotBlank(request.getLevelKeyword())) {
-            andQueries.add(Criteria.where("stageName").regex(request.getLevelKeyword()));
+            ArkLevelInfo levelInfo = levelService.queryLevel(request.getLevelKeyword());
+            if (levelInfo != null) {
+                andQueries.add(Criteria.where("stageName").regex(levelInfo.getStageId()));
+            }
         }
         //or模糊查询
         if (StringUtils.isNotBlank(request.getDocument())) {
@@ -321,6 +325,18 @@ public class CopilotService {
         List<String> operStrList = copilot.getOpers().stream()
                 .map(o -> String.format("%s::%s", o.getName(), o.getSill()))
                 .toList();
+
+        if (copilot.getGroups() != null) {
+            List<String> operators = new ArrayList<>();
+            for (Copilot.Groups group : copilot.getGroups()) {
+                for (Copilot.OperationGroup oper : group.getOpers()) {
+                    String format = String.format("%s::%s", oper.getName(), oper.getSill());
+                    operators.add(format);
+                }
+                group.setOperators(operators);
+            }
+        }
+
         info.setOpers(operStrList);
         info.setOperators(operStrList);
 

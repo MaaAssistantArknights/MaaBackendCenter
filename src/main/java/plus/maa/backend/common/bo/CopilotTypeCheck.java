@@ -21,33 +21,45 @@ public class CopilotTypeCheck {
      */
     public static void copilotTypeCheck(CopilotDTO copilotDTO) {
 
+
+        if (copilotDTO.getGroups() != null){
+            for (Copilot.Groups group : copilotDTO.getGroups()) {
+                String name = group.getName();
+                final String EXCEPTION_GROUP_PREFIX = "干员组[" + name + "]:\n";
+                if (group.getOpers()  == null){
+                    throw  new MaaResultException(EXCEPTION_GROUP_PREFIX + "干员不可为空");
+                }
+            }
+        }
+
         if (copilotDTO.getActions() != null) {
             for (Copilot.Action actions : copilotDTO.getActions()) {
                 ActionsType actionsType = ActionsType.checkActionsType(actions.getType());
                 DirectionType directionType = DirectionType.checkDirectionType(actions.getDirection());
                 String actionName = actions.getName();
                 Integer[] location = actions.getLocation();
-                final String EXCEPTION_MESSAGE_PREFIX = "错误干员或干员组[" + actionName + "]:\n";
+                final String EXCEPTION_ACTION_PREFIX = "错误干员或干员组[" + actionName + "]:\n";
+
 
                 if (actionsType == ActionsType.SKILLUSAGE) {
                     if (actions.getSkillUsage() == 0) {
-                        throw new MaaResultException(EXCEPTION_MESSAGE_PREFIX + "当动作类型为技能用法时,技能用法该选项必选");
+                        throw new MaaResultException(EXCEPTION_ACTION_PREFIX + "当动作类型为技能用法时,技能用法该选项必选");
                     }
                 }
 
                 if (location != null) {
                     if (location.length != 2) {
-                        throw new MaaResultException(EXCEPTION_MESSAGE_PREFIX + "干员位置的数据格式不符合规定");
+                        throw new MaaResultException(EXCEPTION_ACTION_PREFIX + "干员位置的数据格式不符合规定");
                     }
                     if (location[0] > 9 || location[0] < 0) {
-                        throw new MaaResultException(EXCEPTION_MESSAGE_PREFIX + "干员位置X 坐标超出地图范围 (0-9)");
+                        throw new MaaResultException(EXCEPTION_ACTION_PREFIX + "干员位置X 坐标超出地图范围 (0-9)");
                     }
                     if (location[1] > 6 || location[1] < 0) {
-                        throw new MaaResultException(EXCEPTION_MESSAGE_PREFIX + "干员位置Y 坐标超出地图范围 (0-6)");
+                        throw new MaaResultException(EXCEPTION_ACTION_PREFIX + "干员位置Y 坐标超出地图范围 (0-6)");
                     }
                 }
                 if (actionsType == ActionsType.DEPLOY && (directionType == DirectionType.NONE || location == null)) {
-                    throw new MaaResultException(EXCEPTION_MESSAGE_PREFIX + "当动作类型为部署时,干员位置或干员朝向不可为空");
+                    throw new MaaResultException(EXCEPTION_ACTION_PREFIX + "当动作类型为部署时,干员位置或干员朝向不可为空");
                 }
 
             }

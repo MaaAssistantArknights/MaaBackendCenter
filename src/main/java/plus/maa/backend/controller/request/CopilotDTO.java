@@ -1,5 +1,7 @@
 package plus.maa.backend.controller.request;
 
+
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,12 +20,14 @@ import java.util.List;
 public class CopilotDTO {
 
     //关卡名
+    @NotBlank(message = "关卡名不能为空")
     private String stageName;
 
     //难度
     private int difficulty;
 
     //版本号(文档中说明:最低要求 maa 版本号，必选。保留字段)
+    @NotBlank(message = "最低要求 maa 版本不可为空")
     private String minimumRequired;
 
     //指定干员

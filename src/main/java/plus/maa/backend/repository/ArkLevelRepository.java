@@ -25,4 +25,25 @@ public interface ArkLevelRepository extends MongoRepository<ArkLevel, String> {
             }
             """)
     ArkLevel findByLevelId(String levelId);
+
+    /**
+     * 用于前端查询 关卡名、关卡类型、关卡编号
+     *
+     * @param stageId stageId
+     * @return ArkLevel
+     */
+    @Query("""
+            {
+                "$or": [
+              
+                    {"stageId":{$regex: ?0 }},
+                    {"catThree": {$regex: ?0 }},
+                    {"catTwo":  {$regex: ?0 }},
+                    {"catOne": {$regex: ?0 }},
+                    {"name": {$regex: ?0 }}
+                 
+                ]
+            }
+            """)
+    ArkLevel queryLevel(String stageId);
 }

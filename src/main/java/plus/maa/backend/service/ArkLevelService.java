@@ -92,6 +92,12 @@ public class ArkLevelService {
         return ArkLevelConverter.INSTANCE.convert(level);
     }
 
+
+    public ArkLevelInfo queryLevel(String levelId) {
+        ArkLevel level = arkLevelRepo.queryLevel(levelId);
+        return ArkLevelConverter.INSTANCE.convert(level);
+    }
+
     /**
      * 地图数据更新任务
      */
