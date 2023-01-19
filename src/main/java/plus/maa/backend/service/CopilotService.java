@@ -329,9 +329,11 @@ public class CopilotService {
         if (copilot.getGroups() != null) {
             List<String> operators = new ArrayList<>();
             for (Copilot.Groups group : copilot.getGroups()) {
-                for (Copilot.OperationGroup oper : group.getOpers()) {
-                    String format = String.format("%s::%s", oper.getName(), oper.getSill());
-                    operators.add(format);
+                if (group.getOpers() != null) {
+                    for (Copilot.OperationGroup oper : group.getOpers()) {
+                        String format = String.format("%s::%s", oper.getName(), oper.getSill());
+                        operators.add(format);
+                    }
                 }
                 group.setOperators(operators);
             }
