@@ -79,6 +79,7 @@ public class ArkLevelService {
     private final ObjectMapper mapper = new ObjectMapper();
     private final OkHttpClient okHttpClient;
 
+    @Cacheable("arkLevels")
     public List<ArkLevelInfo> getArkLevelInfos() {
         return arkLevelRepo.findAll()
                 .stream()
@@ -280,38 +281,38 @@ public class ArkLevelService {
         log.info("[LEVEL]已发现{}份地图数据", jsons.size());
 
         List<String> shaList = arkLevelRepo.findAllShaBy().stream().map(ArkLevelSha::getSha).toList();
-        ObjectInserter inserter = git.getRepository().newObjectInserter();
+        try (ObjectInserter inserter = git.getRepository().newObjectInserter()) {
 
-        int errorCount = 0;
-        int handleCount = 0;
-        for (File ignored : jsons) {
-            try {
-                byte[] bytes = Files.readAllBytes(file.toPath());
-                String sha = inserter.idFor(Constants.OBJ_BLOB, bytes).name();
-                if (shaList.contains(sha)) {
-                    continue;
-                }
-                ArkTilePos tilePos = mapper.readValue(bytes, ArkTilePos.class);
-                ArkLevel level = parserService.parseLevel(tilePos, sha);
-                if (level == null) {
+            int errorCount = 0;
+            int handleCount = 0;
+            for (File ignored : jsons) {
+                try {
+                    byte[] bytes = Files.readAllBytes(file.toPath());
+                    String sha = inserter.idFor(Constants.OBJ_BLOB, bytes).name();
+                    if (shaList.contains(sha)) {
+                        continue;
+                    }
+                    ArkTilePos tilePos = mapper.readValue(bytes, ArkTilePos.class);
+                    ArkLevel level = parserService.parseLevel(tilePos, sha);
+                    if (level == null) {
+                        errorCount++;
+                        log.info("[LEVEL]地图数据解析失败:" + file.getPath());
+                        continue;
+                    }
+                    arkLevelRepo.save(level);
+                    handleCount++;
+                } catch (IOException e) {
                     errorCount++;
-                    log.info("[LEVEL]地图数据解析失败:" + file.getPath());
-                    continue;
+                    e.printStackTrace();
                 }
-                arkLevelRepo.save(level);
-                handleCount++;
-            } catch (IOException e) {
-                errorCount++;
-                e.printStackTrace();
             }
+            log.info("[LEVEL]{}份地图数据更新成功", handleCount);
+            if (errorCount > 0) {
+                log.warn("[LEVEL]{}份地图数据更新失败", errorCount);
+                return;
+            }
+            redisCache.setCacheLevelCommit(lastCommit);
         }
-        log.info("[LEVEL]{}份地图数据更新成功", handleCount);
-        if (errorCount > 0) {
-            log.warn("[LEVEL]{}份地图数据更新失败", errorCount);
-            return;
-        }
-
-        redisCache.setCacheLevelCommit(lastCommit);
     }
 
     private Git getGitRepository() {
