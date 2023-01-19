@@ -4,6 +4,7 @@ package plus.maa.backend.service;
 import java.util.*;
 
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -186,7 +187,12 @@ public class CopilotService {
      * @return CopilotPageInfo
      */
 
-    public MaaResult<CopilotPageInfo> queriesCopilot(LoginUser user,CopilotQueriesRequest request) {
+    //如果是查最新数据或指定搜索 就不缓存
+    @Cacheable(value = "copilotPage",
+            condition = "#request.levelKeyword != null && ''.equals(#request.levelKeyword) " +
+                    "|| #request.operator != null && ''.equals(#request.operator)" +
+                    "||  #request.orderBy != null && ('hot'.equals(#request.orderBy) || 'views'.equals(#request.orderBy))")
+    public MaaResult<CopilotPageInfo> queriesCopilot(LoginUser user, CopilotQueriesRequest request) {
         String orderBy = "id";
         Sort.Order sortOrder = new Sort.Order(Sort.Direction.ASC, orderBy);
         int page = 1;
@@ -319,7 +325,7 @@ public class CopilotService {
      */
     public MaaResult<Void> rates(CopilotQueriesRequest request) {
         // TODO: 评分相关
-    
+
         return MaaResult.success(null);
     }
 
