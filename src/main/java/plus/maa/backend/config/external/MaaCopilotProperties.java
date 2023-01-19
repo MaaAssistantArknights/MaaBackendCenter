@@ -11,4 +11,5 @@ public class MaaCopilotProperties {
     private Vcode vcode;
     private Cache cache;
     private ArkLevelGit arkLevelGit;
+    private TaskCron taskCron;
 }

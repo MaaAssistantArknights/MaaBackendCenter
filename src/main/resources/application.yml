@@ -21,17 +21,6 @@ server:
   # 8848钛金接口.jpg
   port: 8848
 
-maa-copilot:
-  info:
-    name: MaaBackendCenter
-    title: MAA Copilot Center API
-    description: MAA Copilot Backend Center
-    version: v1.0.0
-
-    #服务器域名 用于邮件发送html 以访问服务端资源
-    #http://localhost:8848
-    domain: https://api.prts.plus
-
 logging:
   file:
     name: ./logs/latest.log
