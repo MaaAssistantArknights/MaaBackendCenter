@@ -111,7 +111,7 @@ public class Copilot implements Serializable {
         private int sill = 1;
         // 技能用法。可选，默认 0
         private int skillUsage;
-        Requirements requirements = new Requirements();
+        private Requirements requirements = new Requirements();
 
 
         @Data
