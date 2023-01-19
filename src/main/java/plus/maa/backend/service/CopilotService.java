@@ -1,10 +1,8 @@
 package plus.maa.backend.service;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.*;
+
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -14,7 +12,15 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import plus.maa.backend.common.bo.CopilotTypeCheck;
 import plus.maa.backend.common.utils.converter.CopilotConverter;
 import plus.maa.backend.controller.request.CopilotCUDRequest;
 import plus.maa.backend.controller.request.CopilotDTO;
@@ -22,10 +28,7 @@ import plus.maa.backend.controller.request.CopilotQueriesRequest;
 import plus.maa.backend.controller.response.*;
 import plus.maa.backend.repository.CopilotRepository;
 import plus.maa.backend.repository.entity.Copilot;
-import plus.maa.backend.common.bo.CopilotTypeCheck;
 import plus.maa.backend.service.model.LoginUser;
-
-import java.util.*;
 
 /**
  * @author LoMu
@@ -120,6 +123,7 @@ public class CopilotService {
      * @return 返回_id
      */
     public MaaResult<String> upload(LoginUser user, String content) {
+        Assert.state(Objects.equals(user.getMaaUser().getStatus(), 1), "用户尚未激活，无法上传作业");
         CopilotDTO copilotDTO = verifyCorrectCopilot(parseToCopilotDto(content));
         Date date = new Date();
 
