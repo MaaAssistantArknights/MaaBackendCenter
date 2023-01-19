@@ -1,6 +1,7 @@
 package plus.maa.backend.repository.entity;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import jakarta.validation.constraints.NotBlank;
@@ -11,7 +12,6 @@ import lombok.experimental.Accessors;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
-import plus.maa.backend.controller.response.ArkLevelInfo;
 
 import java.io.Serializable;
 
@@ -58,7 +58,8 @@ public class Copilot implements Serializable {
     //评级比率 十分之一代表半颗星
     private double ratingRatio;
 
-    private int ratingType;
+    //表示对此评分的用户
+
 
     private boolean isNotEnoughRating;
 
@@ -80,10 +81,13 @@ public class Copilot implements Serializable {
     //描述
     private Doc doc;
 
-    private ArkLevelInfo arkLevel;
-
     private Date firstUploadTime;
     private Date uploadTime;
+
+    @JsonIgnore
+    private boolean delete;
+    @JsonIgnore
+    private Date deleteTime;
 
     @Data
     @NoArgsConstructor
