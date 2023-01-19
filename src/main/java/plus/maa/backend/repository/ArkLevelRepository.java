@@ -45,5 +45,5 @@ public interface ArkLevelRepository extends MongoRepository<ArkLevel, String> {
                 ]
             }
             """)
-    ArkLevel findCatOneOrCatTwoOrCatThreeOrNameOrStageId(String stageId);
+    ArkLevel queryLevel(String stageId);
 }

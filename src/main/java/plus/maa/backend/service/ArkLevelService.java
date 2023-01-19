@@ -92,9 +92,9 @@ public class ArkLevelService {
         return ArkLevelConverter.INSTANCE.convert(level);
     }
 
-   
-    public ArkLevelInfo findCatOneOrCatTwoOrCatThreeOrNameOrStageId(String levelId) {
-        ArkLevel level = arkLevelRepo.findCatOneOrCatTwoOrCatThreeOrNameOrStageId(levelId);
+
+    public ArkLevelInfo queryLevel(String levelId) {
+        ArkLevel level = arkLevelRepo.queryLevel(levelId);
         return ArkLevelConverter.INSTANCE.convert(level);
     }
 
