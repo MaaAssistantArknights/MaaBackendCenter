@@ -158,9 +158,9 @@ public class CopilotTypeCheck {
         DISLIKE(2),
         NONE(0);
 
-        private final int display;
+        private final Integer display;
 
-        RatingType(int display) {
+        RatingType(Integer display) {
             this.display = display;
         }
 

@@ -50,7 +50,7 @@ public class Copilot implements Serializable {
     private int views;
 
     //热度
-    private int hotScore;
+    private double hotScore;
 
 
     //难度

@@ -25,13 +25,17 @@ import plus.maa.backend.controller.request.CopilotRatingReq;
 import plus.maa.backend.controller.response.*;
 import plus.maa.backend.repository.CopilotRatingRepository;
 import plus.maa.backend.repository.CopilotRepository;
+import plus.maa.backend.repository.RedisCache;
 import plus.maa.backend.repository.TableLogicDelete;
 import plus.maa.backend.repository.entity.Copilot;
 import plus.maa.backend.common.bo.CopilotTypeCheck;
 import plus.maa.backend.repository.entity.CopilotRating;
 import plus.maa.backend.service.model.LoginUser;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author LoMu
@@ -45,6 +49,8 @@ public class CopilotService {
     private final MongoTemplate mongoTemplate;
     private final ObjectMapper mapper;
     private final ArkLevelService levelService;
+
+    private final RedisCache redisCache;
 
     private final TableLogicDelete tableLogicDelete;
 
@@ -178,15 +184,19 @@ public class CopilotService {
      */
     public MaaResult<CopilotInfo> getCopilotById(HttpServletRequest request, LoginUser user, String id) {
         String userId = getUserId(request, user);
-        //增加一次views
+
+        //限views
+        if (redisCache.getCache("views:" + userId, String.class) == null) {
+            Query query = Query.query(Criteria.where("id").is(id).and("delete").is(false));
+            Update update = new Update();
+            //增加一次views
+            update.inc("views");
+            mongoTemplate.updateFirst(query, update, Copilot.class);
+            redisCache.setCache("views:" + userId, "1", 60, TimeUnit.MINUTES);
+        }
         Copilot copilot = findById(id);
-
-        Query query = Query.query(Criteria.where("id").is(id).and("delete").is(false));
-        Update update = new Update();
-        update.inc("views");
-        mongoTemplate.updateFirst(query, update, Copilot.class);
-
         CopilotInfo info = formatCopilot(userId, copilot);
+
         return MaaResult.success(info);
     }
 
@@ -220,7 +230,11 @@ public class CopilotService {
             limit = request.getLimit();
         }
         if (StringUtils.isNotBlank(request.getOrderBy())) {
-            orderBy = request.getOrderBy();
+            if ("hot".equals(request.getOrderBy())) {
+                orderBy = "hotScore";
+            } else {
+                orderBy = request.getOrderBy();
+            }
         }
         if (request.isDesc()) {
             sortOrder = new Sort.Order(Sort.Direction.DESC, orderBy);
@@ -339,35 +353,65 @@ public class CopilotService {
      */
     public MaaResult<String> rates(HttpServletRequest httpServletRequest, LoginUser loginUser, CopilotRatingReq request) {
         String userId = getUserId(httpServletRequest, loginUser);
-        String rating = request.getRating();
-        CopilotTypeCheck.RatingType.ratingTypeCheck(rating);
+        String rating = CopilotTypeCheck.RatingType.ratingTypeCheck(request.getRating()).getDisplay().toString();
+        if ("0".equals(rating)) throw new MaaResultException("rating cannot be is None");
 
         Query query = Query.query(Criteria.where("copilotId").is(request.getId()));
         Update update = new Update();
-        CopilotRating copilotRating = mongoTemplate.findOne(query, CopilotRating.class);
-        boolean existUserId = false;
 
+        //查询指定作业评分
+        CopilotRating copilotRating = mongoTemplate.findOne(query, CopilotRating.class);
         if (copilotRating == null) throw new MaaResultException("server error: Rating is null");
 
+        boolean existUserId = false;
+        int likeCount = 0;
+
+        List<CopilotRating.RatingUser> ratingUsers = copilotRating.getRatingUsers();
         //查看是否已评分 如果已评分则进行更新
-        for (CopilotRating.RatingUser ratingUser : copilotRating.getRatingUsers()) {
+        for (CopilotRating.RatingUser ratingUser : ratingUsers) {
             if (userId.equals(ratingUser.getUserId())) {
                 existUserId = true;
                 ratingUser.setRating(rating);
-                mongoTemplate.save(copilotRating);
-                break;
+
             }
+            if ("1".equals(ratingUser.getRating())) likeCount++;
         }
+        if ("1".equals(rating)) likeCount++;
+
         //不存在评分 则添加新的评分
+
+        CopilotRating.RatingUser ratingUser ;
         if (!existUserId) {
-            update.addToSet("ratingUsers", new CopilotRating.RatingUser(userId, rating));
+            ratingUser = new CopilotRating.RatingUser(userId, rating);
+            ratingUsers.add(ratingUser);
+            update.addToSet("ratingUsers", ratingUser);
             mongoTemplate.updateFirst(query, update, CopilotRating.class);
         }
 
-        //TODO 计算评分相关
+
+        //计算评分相关
+        int ratingCount = copilotRating.getRatingUsers().size();
+        double rawRatingLevel = (double) likeCount / ratingCount;
+        BigDecimal bigDecimal = new BigDecimal(rawRatingLevel);
+        double ratingLevel = bigDecimal.setScale(1, RoundingMode.HALF_UP).doubleValue();
+
+        //更新数据
+        copilotRating.setRatingUsers(ratingUsers);
+        copilotRating.setRatingLevel((int) (ratingLevel * 10));
+        copilotRating.setRatingRatio(ratingLevel);
+        mongoTemplate.save(copilotRating);
+        //暂时
+        double hotScore = rawRatingLevel + likeCount;
+        //更新热度
+        if (copilotRepository.findById(request.getId()).isPresent()) {
+            Copilot copilot = copilotRepository.findById(request.getId()).get();
+            copilot.setHotScore(hotScore);
+            mongoTemplate.save(copilot);
+        }
 
         return MaaResult.success("评分成功");
     }
+
 
     /**
      * 将数据库内容转换为前端所需格式<br>
@@ -410,7 +454,8 @@ public class CopilotService {
         }
         info.setRatingType(ratingType.getDisplay());
 
-
+        info.setRatingRatio(copilotRating.getRatingRatio());
+        info.setRatingLevel(copilotRating.getRatingLevel());
         info.setLevel(levelInfo);
         info.setAvailable(true);
 
@@ -428,17 +473,17 @@ public class CopilotService {
 
 
     /**
-     *   获取用户唯一标识符<br/>
-     *   如果未登录获取ip <br/>
-     *   如果已登录获取id
+     * 获取用户唯一标识符<br/>
+     * 如果未登录获取ip <br/>
+     * 如果已登录获取id
      *
-     * @param request  HttpServletRequest
-     * @param loginUser  LoginUser
+     * @param request   HttpServletRequest
+     * @param loginUser LoginUser
      * @return 用户标识符
      */
     private String getUserId(HttpServletRequest request, LoginUser loginUser) {
         String id = request.getRemoteAddr();
-        //反向代理
+        //TODO  此处更换为调用IPUtil工具类
         if (request.getHeader("x-forwarded-for") != null) {
             id = request.getHeader("x-forwarded-for");
         }
