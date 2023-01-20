@@ -30,9 +30,6 @@ public interface CopilotConverter {
     @Mapping(target = "hotScore", ignore = true)
     @Mapping(target = "uploaderId", ignore = true)
     @Mapping(target = "uploadTime", ignore = true)
-    @Mapping(target = "ratingRatio", ignore = true)
-    @Mapping(target = "ratingLevel", ignore = true)
-    @Mapping(target = "notEnoughRating", ignore = true)
     @Mapping(target = "firstUploadTime", ignore = true)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateCopilotFromDto(CopilotDTO copilotDTO, @MappingTarget Copilot copilot);
@@ -43,9 +40,6 @@ public interface CopilotConverter {
     @Mapping(target = "uploader", ignore = true)
     @Mapping(target = "uploaderId", ignore = true)
     @Mapping(target = "uploadTime", ignore = true)
-    @Mapping(target = "ratingRatio", ignore = true)
-    @Mapping(target = "ratingLevel", ignore = true)
-    @Mapping(target = "notEnoughRating", ignore = true)
     @Mapping(target = "firstUploadTime", ignore = true)
     Copilot toCopilot(CopilotDTO copilotDto);
 

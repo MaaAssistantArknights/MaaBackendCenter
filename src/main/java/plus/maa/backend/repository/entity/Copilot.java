@@ -52,16 +52,6 @@ public class Copilot implements Serializable {
     //热度
     private int hotScore;
 
-    //评级
-    private int ratingLevel;
-
-    //评级比率 十分之一代表半颗星
-    private double ratingRatio;
-
-    //表示对此评分的用户
-
-
-    private boolean isNotEnoughRating;
 
     //难度
     private int difficulty;

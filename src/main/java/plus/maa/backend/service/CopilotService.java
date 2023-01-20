@@ -1,8 +1,11 @@
 package plus.maa.backend.service;
 
 
-import java.util.*;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
@@ -13,23 +16,22 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import plus.maa.backend.common.bo.CopilotTypeCheck;
 import plus.maa.backend.common.utils.converter.CopilotConverter;
 import plus.maa.backend.controller.request.CopilotCUDRequest;
 import plus.maa.backend.controller.request.CopilotDTO;
 import plus.maa.backend.controller.request.CopilotQueriesRequest;
+import plus.maa.backend.controller.request.CopilotRatingReq;
 import plus.maa.backend.controller.response.*;
+import plus.maa.backend.repository.CopilotRatingRepository;
 import plus.maa.backend.repository.CopilotRepository;
+import plus.maa.backend.repository.TableLogicDelete;
 import plus.maa.backend.repository.entity.Copilot;
+import plus.maa.backend.common.bo.CopilotTypeCheck;
+import plus.maa.backend.repository.entity.CopilotRating;
 import plus.maa.backend.service.model.LoginUser;
+
+import java.util.*;
 
 /**
  * @author LoMu
@@ -43,6 +45,10 @@ public class CopilotService {
     private final MongoTemplate mongoTemplate;
     private final ObjectMapper mapper;
     private final ArkLevelService levelService;
+
+    private final TableLogicDelete tableLogicDelete;
+
+    private final CopilotRatingRepository copilotRatingRepository;
 
 
     /**
@@ -124,7 +130,6 @@ public class CopilotService {
      * @return 返回_id
      */
     public MaaResult<String> upload(LoginUser user, String content) {
-        Assert.state(Objects.equals(user.getMaaUser().getStatus(), 1), "用户尚未激活，无法上传作业");
         CopilotDTO copilotDTO = verifyCorrectCopilot(parseToCopilotDto(content));
         Date date = new Date();
 
@@ -134,9 +139,12 @@ public class CopilotService {
                 .setUploader(user.getMaaUser().getUserName())
                 .setFirstUploadTime(date)
                 .setUploadTime(date);
+        CopilotRating copilotRating = new CopilotRating();
 
         try {
             String id = copilotRepository.insert(copilot).getId();
+            copilotRating.setCopilotId(id);
+            copilotRatingRepository.insert(copilotRating);
             return MaaResult.success(id);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
@@ -153,7 +161,8 @@ public class CopilotService {
         String operationId = request.getId();
 
         if (verifyOwner(user, operationId)) {
-            copilotRepository.deleteById(operationId);
+            tableLogicDelete.deleteCopilotById(operationId);
+
             return MaaResult.success(null);
         } else {
             throw new MaaResultException("无法删除他人作业");
@@ -167,15 +176,17 @@ public class CopilotService {
      * @param id copilot _id
      * @return copilotInfo
      */
-    public MaaResult<CopilotInfo> getCopilotById(String id) {
+    public MaaResult<CopilotInfo> getCopilotById(HttpServletRequest request, LoginUser user, String id) {
+        String userId = getUserId(request, user);
         //增加一次views
         Copilot copilot = findById(id);
-        Query query = Query.query(Criteria.where("id").is(id));
+
+        Query query = Query.query(Criteria.where("id").is(id).and("delete").is(false));
         Update update = new Update();
         update.inc("views");
         mongoTemplate.updateFirst(query, update, Copilot.class);
 
-        CopilotInfo info = formatCopilot(copilot);
+        CopilotInfo info = formatCopilot(userId, copilot);
         return MaaResult.success(info);
     }
 
@@ -191,8 +202,10 @@ public class CopilotService {
     @Cacheable(value = "copilotPage",
             condition = "#request.levelKeyword != null && ''.equals(#request.levelKeyword) " +
                     "|| #request.operator != null && ''.equals(#request.operator)" +
-                    "||  #request.orderBy != null && ('hot'.equals(#request.orderBy) || 'views'.equals(#request.orderBy))")
-    public MaaResult<CopilotPageInfo> queriesCopilot(LoginUser user, CopilotQueriesRequest request) {
+                    "|| #request.orderBy != null && ('hot'.equals(#request.orderBy) || 'views'.equals(#request.orderBy)) " +
+                    "|| #request.uploaderId != null && ''.equals(#request.uploaderId)")
+    public MaaResult<CopilotPageInfo> queriesCopilot(HttpServletRequest httpServletRequest, LoginUser user, CopilotQueriesRequest request) {
+        String userId = getUserId(httpServletRequest, user);
         String orderBy = "id";
         Sort.Order sortOrder = new Sort.Order(Sort.Direction.ASC, orderBy);
         int page = 1;
@@ -224,6 +237,7 @@ public class CopilotService {
         Set<Criteria> andQueries = new HashSet<>();
         Set<Criteria> norQueries = new HashSet<>();
         Set<Criteria> orQueries = new HashSet<>();
+        andQueries.add(Criteria.where("delete").is(false));
 
         //匹配模糊查询
         if (StringUtils.isNotBlank(request.getLevelKeyword())) {
@@ -258,9 +272,9 @@ public class CopilotService {
 
         //匹配查询
         if (StringUtils.isNotBlank(request.getUploaderId()) && "me".equals(request.getUploaderId())) {
-            String userId = user.getMaaUser().getUserId();
-            if (!ObjectUtils.isEmpty(userId))
-                andQueries.add(Criteria.where("uploader").is(userId));
+            String Id = user.getMaaUser().getUserId();
+            if (!ObjectUtils.isEmpty(Id))
+                andQueries.add(Criteria.where("uploader").is(Id));
         }
 
         //封装查询
@@ -275,7 +289,7 @@ public class CopilotService {
         //分页排序查询
         List<Copilot> copilots = mongoTemplate.find(queryObj.with(pageable), Copilot.class);
         //填充前端所需信息
-        List<CopilotInfo> infos = copilots.stream().map(this::formatCopilot).toList();
+        List<CopilotInfo> infos = copilots.stream().map(copilot -> formatCopilot(userId, copilot)).toList();
 
         //计算页面
         int pageNumber = (int) Math.ceil((double) count / limit);
@@ -323,23 +337,50 @@ public class CopilotService {
      * @param request 评分
      * @return null
      */
-    public MaaResult<Void> rates(CopilotQueriesRequest request) {
-        // TODO: 评分相关
+    public MaaResult<String> rates(HttpServletRequest httpServletRequest, LoginUser loginUser, CopilotRatingReq request) {
+        String userId = getUserId(httpServletRequest, loginUser);
+        String rating = request.getRating();
+        CopilotTypeCheck.RatingType.ratingTypeCheck(rating);
 
-        return MaaResult.success(null);
+        Query query = Query.query(Criteria.where("copilotId").is(request.getId()));
+        Update update = new Update();
+        CopilotRating copilotRating = mongoTemplate.findOne(query, CopilotRating.class);
+        boolean existUserId = false;
+
+        if (copilotRating == null) throw new MaaResultException("server error: Rating is null");
+
+        //查看是否已评分 如果已评分则进行更新
+        for (CopilotRating.RatingUser ratingUser : copilotRating.getRatingUsers()) {
+            if (userId.equals(ratingUser.getUserId())) {
+                existUserId = true;
+                ratingUser.setRating(rating);
+                mongoTemplate.save(copilotRating);
+                break;
+            }
+        }
+        //不存在评分 则添加新的评分
+        if (!existUserId) {
+            update.addToSet("ratingUsers", new CopilotRating.RatingUser(userId, rating));
+            mongoTemplate.updateFirst(query, update, CopilotRating.class);
+        }
+
+        //TODO 计算评分相关
+
+        return MaaResult.success("评分成功");
     }
 
     /**
      * 将数据库内容转换为前端所需格式<br>
      * TODO 当前仅为简单转换，具体细节待定
      */
-    private CopilotInfo formatCopilot(Copilot copilot) {
+    private CopilotInfo formatCopilot(String userId, Copilot copilot) {
         CopilotInfo info = CopilotConverter.INSTANCE.toCopilotInfo(copilot);
         //设置干员信息
         List<String> operStrList = copilot.getOpers().stream()
                 .map(o -> String.format("%s::%s", o.getName(), o.getSill()))
                 .toList();
 
+        //设置干员组干员信息
         if (copilot.getGroups() != null) {
             List<String> operators = new ArrayList<>();
             for (Copilot.Groups group : copilot.getGroups()) {
@@ -357,15 +398,54 @@ public class CopilotService {
         info.setOperators(operStrList);
 
         ArkLevelInfo levelInfo = levelService.findByLevelId(copilot.getStageName());
+        CopilotRating copilotRating = copilotRatingRepository.findByCopilotId(copilot.getId());
+        CopilotTypeCheck.RatingType ratingType = CopilotTypeCheck.RatingType.ratingTypeCheck(null);
+        //判断评分中是否有当前用户评分记录 有则获取其评分并将其转换为 0 ~ 2  0 = NONE 1 = LIKE  2 = DISLIKE
+        for (CopilotRating.RatingUser ratingUser : copilotRating.getRatingUsers()) {
+            if (Objects.equals(userId, ratingUser.getUserId())) {
+                ratingType = CopilotTypeCheck.RatingType.ratingTypeCheck(ratingUser.getRating());
+                info.setRatingType(ratingType.getDisplay());
+                break;
+            }
+        }
+        info.setRatingType(ratingType.getDisplay());
+
+
         info.setLevel(levelInfo);
         info.setAvailable(true);
-        info.setNotEnoughRating(true);
-        info.setRatingType(0);
+
+        //评分数少于一定数量
+        info.setNotEnoughRating(copilotRating.getRatingUsers().size() > 5);
+
+
         try {
             info.setContent(mapper.writeValueAsString(copilot));
         } catch (JsonProcessingException e) {
             log.error("json序列化失败", e);
         }
         return info;
+    }
+
+
+    /**
+     *   获取用户唯一标识符<br/>
+     *   如果未登录获取ip <br/>
+     *   如果已登录获取id
+     *
+     * @param request  HttpServletRequest
+     * @param loginUser  LoginUser
+     * @return 用户标识符
+     */
+    private String getUserId(HttpServletRequest request, LoginUser loginUser) {
+        String id = request.getRemoteAddr();
+        //反向代理
+        if (request.getHeader("x-forwarded-for") != null) {
+            id = request.getHeader("x-forwarded-for");
+        }
+        //账户已登录? 获取userId
+        if (!ObjectUtils.isEmpty(loginUser)) {
+            id = loginUser.getMaaUser().getUserId();
+        }
+        return id;
     }
 }

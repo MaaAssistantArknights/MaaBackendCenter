@@ -2,6 +2,7 @@ package plus.maa.backend.common.bo;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.apache.commons.lang3.StringUtils;
 import plus.maa.backend.controller.request.CopilotDTO;
 import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.repository.entity.Copilot;
@@ -22,12 +23,12 @@ public class CopilotTypeCheck {
     public static void copilotTypeCheck(CopilotDTO copilotDTO) {
 
 
-        if (copilotDTO.getGroups() != null){
+        if (copilotDTO.getGroups() != null) {
             for (Copilot.Groups group : copilotDTO.getGroups()) {
                 String name = group.getName();
                 final String EXCEPTION_GROUP_PREFIX = "干员组[" + name + "]:\n";
-                if (group.getOpers()  == null){
-                    throw  new MaaResultException(EXCEPTION_GROUP_PREFIX + "干员不可为空");
+                if (group.getOpers() == null) {
+                    throw new MaaResultException(EXCEPTION_GROUP_PREFIX + "干员不可为空");
                 }
             }
         }
@@ -150,4 +151,28 @@ public class CopilotTypeCheck {
             return actionsType;
         }
     }
+
+    @Getter
+    public enum RatingType {
+        LIKE(1),
+        DISLIKE(2),
+        NONE(0);
+
+        private final int display;
+
+        RatingType(int display) {
+            this.display = display;
+        }
+
+        public static RatingType ratingTypeCheck(String type) {
+            if (StringUtils.isBlank(type)) type = "None";
+            return switch (type) {
+                case "Like" -> LIKE;
+                case "Dislike" -> DISLIKE;
+                case "None" -> NONE;
+                default -> NONE;
+            };
+        }
+    }
+
 }

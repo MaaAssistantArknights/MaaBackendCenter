@@ -24,8 +24,20 @@ import java.util.List;
 public class CopilotRating {
     @Id
     private String id;
+
+    //作业id
+    @Indexed
     private String copilotId;
+    //评分用户
     private List<RatingUser> ratingUsers = new ArrayList<>();
+
+    //评级
+    private int ratingLevel;
+
+    //评级比率 十分之一代表半颗星
+    private double ratingRatio;
+
+
     @JsonIgnore
     private boolean delete;
     @JsonIgnore

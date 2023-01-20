@@ -10,5 +10,4 @@ import lombok.NoArgsConstructor;
 public class CopilotCUDRequest {
     private String content;
     private String id;
-    private String rating;
 }

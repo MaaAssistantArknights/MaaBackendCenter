@@ -33,6 +33,7 @@ public class TableLogicDelete {
         if (ObjectUtils.isEmpty(copilotRating)) throw new RuntimeException("copilot rating is null");
         copilotRating.setDelete(true);
         copilotRating.setDeleteTime(date);
+        copilotRatingRepository.save(copilotRating);
 
     }
 }
