@@ -36,7 +36,12 @@ maa-copilot:
     json-path: resource/Arknights-Tile-Pos/
   task-cron:
     ark-level: "-"
-
+  register:
+    limiter:
+      white-list: 127.0.0.1
+      enable: true
+      # 单位：分钟
+      time: 45
 springdoc:
   swagger-ui:
     # 开启Swagger UI界面

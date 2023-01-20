@@ -40,6 +40,7 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
     //springdoc相关依赖没有被自动管理，必须保留版本号
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.0.2'
 
