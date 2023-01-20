@@ -7,6 +7,8 @@ import plus.maa.backend.controller.response.MaaResultException;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
 /**
  * @author dragove
@@ -17,6 +19,7 @@ public class FreeMarkerUtils {
     private static final Configuration cfg = new Configuration(Configuration.VERSION_2_3_32);
     static {
         cfg.setClassForTemplateLoading(FreeMarkerUtils.class, "/static/templates");
+        cfg.setEncoding(Locale.CHINA, StandardCharsets.UTF_8.name());
     }
 
     public static String parseData(Object dataModel, String templateName) {
