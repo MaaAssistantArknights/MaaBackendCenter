@@ -2,17 +2,23 @@ package plus.maa.backend.config;
 
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import plus.maa.backend.handler.AccessLimitInterceptHandlerImpl;
 
 /**
  * @author AnselYuki
  */
 @SpringBootConfiguration
 public class CorsConfig implements WebMvcConfigurer {
+
+
+
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         // 设置允许跨域的路径
-        registry.addMapping("/**")
+        registry
+                .addMapping("/**")
                 // 设置允许跨域请求的域名
                 .allowedOriginPatterns("*")
                 // 是否允许cookie
@@ -23,5 +29,12 @@ public class CorsConfig implements WebMvcConfigurer {
                 .allowedHeaders("*")
                 // 跨域允许时间
                 .maxAge(3600);
+    }
+
+
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new AccessLimitInterceptHandlerImpl());
     }
 }
