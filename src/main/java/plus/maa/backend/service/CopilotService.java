@@ -50,6 +50,8 @@ public class CopilotService {
     private final ObjectMapper mapper;
     private final ArkLevelService levelService;
 
+    private final HttpServletRequest request;
+
     private final RedisCache redisCache;
 
     private final TableLogicDelete tableLogicDelete;
@@ -182,8 +184,8 @@ public class CopilotService {
      * @param id copilot _id
      * @return copilotInfo
      */
-    public MaaResult<CopilotInfo> getCopilotById(HttpServletRequest request, LoginUser user, String id) {
-        String userId = getUserId(request, user);
+    public MaaResult<CopilotInfo> getCopilotById(LoginUser user, String id) {
+        String userId = getUserId(user);
 
         //限views
         if (redisCache.getCache("views:" + userId, String.class) == null) {
@@ -204,6 +206,7 @@ public class CopilotService {
     /**
      * 分页查询
      *
+     * @param user    获取已登录用户自己的作业数据
      * @param request 模糊查询
      * @return CopilotPageInfo
      */
@@ -214,8 +217,8 @@ public class CopilotService {
                     "|| #request.operator != null && ''.equals(#request.operator)" +
                     "|| #request.orderBy != null && ('hot'.equals(#request.orderBy) || 'views'.equals(#request.orderBy)) " +
                     "|| #request.uploaderId != null && ''.equals(#request.uploaderId)")
-    public MaaResult<CopilotPageInfo> queriesCopilot(HttpServletRequest httpServletRequest, LoginUser user, CopilotQueriesRequest request) {
-        String userId = getUserId(httpServletRequest, user);
+    public MaaResult<CopilotPageInfo> queriesCopilot(LoginUser user, CopilotQueriesRequest request) {
+        String userId = getUserId(user);
         String orderBy = "id";
         Sort.Order sortOrder = new Sort.Order(Sort.Direction.ASC, orderBy);
         int page = 1;
@@ -325,11 +328,12 @@ public class CopilotService {
     /**
      * 增量更新
      *
-     * @param id      作业_id
-     * @param content json
+     * @param copilotCUDRequest 作业_id  content
      * @return null
      */
-    public MaaResult<Void> update(LoginUser loginUser, String id, String content) {
+    public MaaResult<Void> update(LoginUser loginUser, CopilotCUDRequest copilotCUDRequest) {
+        String content = copilotCUDRequest.getContent();
+        String id = copilotCUDRequest.getId();
         CopilotDTO copilotDTO = verifyCorrectCopilot(parseToCopilotDto(content));
         Boolean owner = verifyOwner(loginUser, id);
 
@@ -348,11 +352,12 @@ public class CopilotService {
     /**
      * 评分相关
      *
-     * @param request 评分
+     * @param request   评分
+     * @param loginUser 用于已登录用户作出评分
      * @return null
      */
-    public MaaResult<String> rates(HttpServletRequest httpServletRequest, LoginUser loginUser, CopilotRatingReq request) {
-        String userId = getUserId(httpServletRequest, loginUser);
+    public MaaResult<String> rates(LoginUser loginUser, CopilotRatingReq request) {
+        String userId = getUserId(loginUser);
         String rating = CopilotTypeCheck.RatingType.ratingTypeCheck(request.getRating()).getDisplay().toString();
         if ("0".equals(rating)) throw new MaaResultException("rating cannot be is None");
 
@@ -380,7 +385,7 @@ public class CopilotService {
 
         //不存在评分 则添加新的评分
 
-        CopilotRating.RatingUser ratingUser ;
+        CopilotRating.RatingUser ratingUser;
         if (!existUserId) {
             ratingUser = new CopilotRating.RatingUser(userId, rating);
             ratingUsers.add(ratingUser);
@@ -477,13 +482,12 @@ public class CopilotService {
      * 如果未登录获取ip <br/>
      * 如果已登录获取id
      *
-     * @param request   HttpServletRequest
      * @param loginUser LoginUser
      * @return 用户标识符
      */
-    private String getUserId(HttpServletRequest request, LoginUser loginUser) {
-        String id = request.getRemoteAddr();
+    private String getUserId(LoginUser loginUser) {
         //TODO  此处更换为调用IPUtil工具类
+        String id = request.getRemoteAddr();
         if (request.getHeader("x-forwarded-for") != null) {
             id = request.getHeader("x-forwarded-for");
         }

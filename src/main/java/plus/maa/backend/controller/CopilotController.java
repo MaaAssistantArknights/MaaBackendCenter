@@ -1,6 +1,5 @@
 package plus.maa.backend.controller;
 
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.bind.annotation.*;
@@ -41,25 +40,25 @@ public class CopilotController {
     }
 
     @GetMapping("/get/{id}")
-    public MaaResult<CopilotInfo> getCopilotById(HttpServletRequest request, @CurrentUser LoginUser user, @PathVariable("id") String id) {
-        return copilotService.getCopilotById(request, user, id);
+    public MaaResult<CopilotInfo> getCopilotById(@CurrentUser LoginUser user, @PathVariable("id") String id) {
+        return copilotService.getCopilotById(user, id);
     }
 
 
     @GetMapping("/query")
-    public MaaResult<CopilotPageInfo> queriesCopilot(HttpServletRequest request, @CurrentUser LoginUser loginUser, CopilotQueriesRequest copilotQueriesRequest) {
-        return copilotService.queriesCopilot(request, loginUser, copilotQueriesRequest);
+    public MaaResult<CopilotPageInfo> queriesCopilot(@CurrentUser LoginUser loginUser, CopilotQueriesRequest copilotQueriesRequest) {
+        return copilotService.queriesCopilot(loginUser, copilotQueriesRequest);
     }
 
     @PostMapping("/update")
-    public MaaResult<Void> updateCopilot(HttpServletRequest request, @CurrentUser LoginUser loginUser, @RequestBody CopilotCUDRequest copilotCUDRequest) {
+    public MaaResult<Void> updateCopilot(@CurrentUser LoginUser loginUser, @RequestBody CopilotCUDRequest copilotCUDRequest) {
         if (ObjectUtils.isEmpty(loginUser)) throw new MaaResultException("请先登录账号");
-        return copilotService.update(loginUser, request.getRequestId(), copilotCUDRequest.getContent());
+        return copilotService.update(loginUser, copilotCUDRequest);
     }
 
     @PostMapping("/rating")
-    public MaaResult<String> ratesCopilotOperation(HttpServletRequest request, @CurrentUser LoginUser loginUser, @RequestBody CopilotRatingReq copilotRatingReq) {
-        return copilotService.rates(request, loginUser, copilotRatingReq);
+    public MaaResult<String> ratesCopilotOperation(@CurrentUser LoginUser loginUser, @RequestBody CopilotRatingReq copilotRatingReq) {
+        return copilotService.rates(loginUser, copilotRatingReq);
     }
 
 }
