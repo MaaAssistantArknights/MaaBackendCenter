@@ -91,15 +91,15 @@ public class AccessLimitInterceptHandlerImpl implements HandlerInterceptor {
                 } else {
                     // 请求过于频繁
                     logger.info(key + " 请求过于频繁");
-                    MaaResult<Void> result = MaaResult.fail(HttpStatus.BAD_REQUEST.value(), "请求过于频繁");
+                    MaaResult<Void> result = MaaResult.fail(HttpStatus.TOO_MANY_REQUESTS.value(), "请求过于频繁");
                     String json = new ObjectMapper().writeValueAsString(result);
-                    WebUtils.renderString(response, json , HttpStatus.BAD_REQUEST.value());
+                    WebUtils.renderString(response, json , HttpStatus.TOO_MANY_REQUESTS.value());
                     return false;
                 }
             }
         } catch (Exception e) {
             logger.error("API请求限流拦截异常，异常原因：", e);
-            //throw new ParameterException(e);
+            //throw new Exception("");
         }
         return true;
     }
