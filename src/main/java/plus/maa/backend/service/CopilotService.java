@@ -28,14 +28,15 @@ import plus.maa.backend.repository.CopilotRepository;
 import plus.maa.backend.repository.RedisCache;
 import plus.maa.backend.repository.TableLogicDelete;
 import plus.maa.backend.repository.entity.Copilot;
-import plus.maa.backend.common.bo.CopilotTypeCheck;
 import plus.maa.backend.repository.entity.CopilotRating;
 import plus.maa.backend.service.model.LoginUser;
+import plus.maa.backend.service.model.RatingType;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+
 
 /**
  * @author LoMu
@@ -99,9 +100,7 @@ public class CopilotService {
      *
      * @param copilotDTO copilotDTO
      */
-    private CopilotDTO verifyCorrectCopilot(CopilotDTO copilotDTO) {
-
-        CopilotTypeCheck.copilotTypeCheck(copilotDTO);
+    private CopilotDTO CorrectCopilot(CopilotDTO copilotDTO) {
 
         //去除name的冗余部分
         copilotDTO.getGroups().forEach(groups -> groups.getOpers().forEach(opers -> opers.setName(opers.getName().replaceAll("[\"“”]", ""))));
@@ -138,7 +137,7 @@ public class CopilotService {
      * @return 返回_id
      */
     public MaaResult<String> upload(LoginUser user, String content) {
-        CopilotDTO copilotDTO = verifyCorrectCopilot(parseToCopilotDto(content));
+        CopilotDTO copilotDTO = CorrectCopilot(parseToCopilotDto(content));
         Date date = new Date();
 
         //将其转换为数据库存储对象
@@ -334,7 +333,7 @@ public class CopilotService {
     public MaaResult<Void> update(LoginUser loginUser, CopilotCUDRequest copilotCUDRequest) {
         String content = copilotCUDRequest.getContent();
         String id = copilotCUDRequest.getId();
-        CopilotDTO copilotDTO = verifyCorrectCopilot(parseToCopilotDto(content));
+        CopilotDTO copilotDTO = CorrectCopilot(parseToCopilotDto(content));
         Boolean owner = verifyOwner(loginUser, id);
 
         if (owner) {
@@ -357,10 +356,12 @@ public class CopilotService {
      * @return null
      */
     public MaaResult<String> rates(LoginUser loginUser, CopilotRatingReq request) {
-        String userId = getUserId(loginUser);
-        String rating = CopilotTypeCheck.RatingType.ratingTypeCheck(request.getRating()).getDisplay().toString();
-        if ("0".equals(rating)) throw new MaaResultException("rating cannot be is None");
+        //不为空
+        if (StringUtils.isBlank(request.getRating())) throw new MaaResultException("rating cannot be is null");
 
+        String userId = getUserId(loginUser);
+        String rating = request.getRating();
+        //获取评分表
         Query query = Query.query(Criteria.where("copilotId").is(request.getId()));
         Update update = new Update();
 
@@ -369,9 +370,10 @@ public class CopilotService {
         if (copilotRating == null) throw new MaaResultException("server error: Rating is null");
 
         boolean existUserId = false;
+        //点赞数
         int likeCount = 0;
-
         List<CopilotRating.RatingUser> ratingUsers = copilotRating.getRatingUsers();
+
         //查看是否已评分 如果已评分则进行更新
         for (CopilotRating.RatingUser ratingUser : ratingUsers) {
             if (userId.equals(ratingUser.getUserId())) {
@@ -379,12 +381,12 @@ public class CopilotService {
                 ratingUser.setRating(rating);
 
             }
-            if ("1".equals(ratingUser.getRating())) likeCount++;
+            if ("Like".equals(ratingUser.getRating())) likeCount++;
         }
-        if ("1".equals(rating)) likeCount++;
+        if ("Like".equals(rating)) likeCount++;
+
 
         //不存在评分 则添加新的评分
-
         CopilotRating.RatingUser ratingUser;
         if (!existUserId) {
             ratingUser = new CopilotRating.RatingUser(userId, rating);
@@ -448,16 +450,14 @@ public class CopilotService {
 
         ArkLevelInfo levelInfo = levelService.findByLevelId(copilot.getStageName());
         CopilotRating copilotRating = copilotRatingRepository.findByCopilotId(copilot.getId());
-        CopilotTypeCheck.RatingType ratingType = CopilotTypeCheck.RatingType.ratingTypeCheck(null);
-        //判断评分中是否有当前用户评分记录 有则获取其评分并将其转换为 0 ~ 2  0 = NONE 1 = LIKE  2 = DISLIKE
+        //判断评分中是否有当前用户评分记录 有则获取其评分并将其转换为  0 = None 1 = LIKE  2 = DISLIKE
         for (CopilotRating.RatingUser ratingUser : copilotRating.getRatingUsers()) {
             if (Objects.equals(userId, ratingUser.getUserId())) {
-                ratingType = CopilotTypeCheck.RatingType.ratingTypeCheck(ratingUser.getRating());
-                info.setRatingType(ratingType.getDisplay());
+                int rating = RatingType.fromRatingType(ratingUser.getRating()).getDisplay();
+                info.setRatingType(rating);
                 break;
             }
         }
-        info.setRatingType(ratingType.getDisplay());
 
         info.setRatingRatio(copilotRating.getRatingRatio());
         info.setRatingLevel(copilotRating.getRatingLevel());

@@ -1,16 +1,15 @@
 package plus.maa.backend.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.util.ObjectUtils;
 import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.CurrentUser;
+import plus.maa.backend.common.annotation.JsonSchema;
 import plus.maa.backend.controller.request.CopilotCUDRequest;
 import plus.maa.backend.controller.request.CopilotQueriesRequest;
 import plus.maa.backend.controller.request.CopilotRatingReq;
 import plus.maa.backend.controller.response.CopilotInfo;
 import plus.maa.backend.controller.response.CopilotPageInfo;
 import plus.maa.backend.controller.response.MaaResult;
-import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.service.CopilotService;
 import plus.maa.backend.service.model.LoginUser;
 
@@ -25,17 +24,17 @@ import plus.maa.backend.service.model.LoginUser;
 public class CopilotController {
     private final CopilotService copilotService;
 
+    @JsonSchema
     @PostMapping("/upload")
-    public MaaResult<String> uploadCopilot(@CurrentUser LoginUser loginUser,
-                                           @RequestBody CopilotCUDRequest request) {
-        if (ObjectUtils.isEmpty(loginUser)) throw new MaaResultException("请先登录账号");
+    public MaaResult<String> uploadCopilot(
+            @CurrentUser LoginUser loginUser,
+            @RequestBody CopilotCUDRequest request) {
         return copilotService.upload(loginUser, request.getContent());
     }
 
     @PostMapping("/delete")
     public MaaResult<Void> deleteCopilot(@CurrentUser LoginUser loginUser,
                                          @RequestBody CopilotCUDRequest request) {
-        if (ObjectUtils.isEmpty(loginUser)) throw new MaaResultException("请先登录账号");
         return copilotService.delete(loginUser, request);
     }
 
@@ -50,9 +49,9 @@ public class CopilotController {
         return copilotService.queriesCopilot(loginUser, copilotQueriesRequest);
     }
 
+    @JsonSchema
     @PostMapping("/update")
     public MaaResult<Void> updateCopilot(@CurrentUser LoginUser loginUser, @RequestBody CopilotCUDRequest copilotCUDRequest) {
-        if (ObjectUtils.isEmpty(loginUser)) throw new MaaResultException("请先登录账号");
         return copilotService.update(loginUser, copilotCUDRequest);
     }
 
