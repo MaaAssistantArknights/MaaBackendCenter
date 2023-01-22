@@ -186,7 +186,7 @@ public class CopilotService {
     public MaaResult<CopilotInfo> getCopilotById(LoginUser user, String id) {
         String userId = getUserId(user);
 
-        //限views
+        //60分钟内限制同一个用户对访问量的增加
         if (redisCache.getCache("views:" + userId, String.class) == null) {
             Query query = Query.query(Criteria.where("id").is(id).and("delete").is(false));
             Update update = new Update();
@@ -367,6 +367,7 @@ public class CopilotService {
 
         //查询指定作业评分
         CopilotRating copilotRating = mongoTemplate.findOne(query, CopilotRating.class);
+        //如果是早期创建的作业表可能无法做出评分
         if (copilotRating == null) throw new MaaResultException("server error: Rating is null");
 
         boolean existUserId = false;
@@ -374,17 +375,19 @@ public class CopilotService {
         int likeCount = 0;
         List<CopilotRating.RatingUser> ratingUsers = copilotRating.getRatingUsers();
 
-        //查看是否已评分 如果已评分则进行更新
+        //查看是否已评分 如果已评分则进行更新 如果做出相同的评分则直接返回
         for (CopilotRating.RatingUser ratingUser : ratingUsers) {
             if (userId.equals(ratingUser.getUserId())) {
+                if (ratingUser.getRating().equals(rating))
+                    return MaaResult.success("评分成功");
                 existUserId = true;
                 ratingUser.setRating(rating);
 
             }
             if ("Like".equals(ratingUser.getRating())) likeCount++;
         }
+        //如果新添加的评分是like
         if ("Like".equals(rating)) likeCount++;
-
 
         //不存在评分 则添加新的评分
         CopilotRating.RatingUser ratingUser;
@@ -400,6 +403,7 @@ public class CopilotService {
         int ratingCount = copilotRating.getRatingUsers().size();
         double rawRatingLevel = (double) likeCount / ratingCount;
         BigDecimal bigDecimal = new BigDecimal(rawRatingLevel);
+        //只取一位小数点
         double ratingLevel = bigDecimal.setScale(1, RoundingMode.HALF_UP).doubleValue();
 
         //更新数据
@@ -407,7 +411,7 @@ public class CopilotService {
         copilotRating.setRatingLevel((int) (ratingLevel * 10));
         copilotRating.setRatingRatio(ratingLevel);
         mongoTemplate.save(copilotRating);
-        //暂时
+        // TODO 计算热度 (暂时)
         double hotScore = rawRatingLevel + likeCount;
         //更新热度
         if (copilotRepository.findById(request.getId()).isPresent()) {
@@ -450,6 +454,7 @@ public class CopilotService {
 
         ArkLevelInfo levelInfo = levelService.findByLevelId(copilot.getStageName());
         CopilotRating copilotRating = copilotRatingRepository.findByCopilotId(copilot.getId());
+
         //判断评分中是否有当前用户评分记录 有则获取其评分并将其转换为  0 = None 1 = LIKE  2 = DISLIKE
         for (CopilotRating.RatingUser ratingUser : copilotRating.getRatingUsers()) {
             if (Objects.equals(userId, ratingUser.getUserId())) {

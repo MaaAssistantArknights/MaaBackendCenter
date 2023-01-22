@@ -45,11 +45,13 @@ public class JsonSchemaAop {
      * 数据校验
      *
      * @param joinPoint  形参
-     * @param jsonSchema 校验
+     * @param jsonSchema 注解
      */
     @Before("pt() && @annotation(jsonSchema)")
     public void before(JoinPoint joinPoint, JsonSchema jsonSchema) {
-        //获取 CopilotCUDRequest位于形参的位置
+        final String COPILOT_SCHEMA_JSON = "static/templates/maa-copilot-schema.json";
+
+        //获取 CopilotCUDRequest形参的index
         int index = jsonSchema.index();
         CopilotCUDRequest request = (CopilotCUDRequest) joinPoint.getArgs()[index];
         String json = null;
@@ -59,14 +61,15 @@ public class JsonSchemaAop {
             } catch (JsonProcessingException e) {
                 log.error("json序列化失败", e);
             }
-            try (InputStream inputStream = new ClassPathResource("static/templates/maa-copilot-schema.json").getInputStream()) {
+            //获取json schema json路径并验证
+            try (InputStream inputStream = new ClassPathResource(COPILOT_SCHEMA_JSON).getInputStream()) {
                 JSONObject jsonObject = new JSONObject(new JSONTokener(inputStream));
                 Schema schema = SchemaLoader.load(jsonObject);
                 schema.validate(json);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             } catch (ValidationException e) {
-                throw new MaaResultException("数据不符合规范，请输入前端作业编辑器进行操作");
+                throw new MaaResultException("数据不符合规范，请前往前端作业编辑器进行操作");
             }
 
         }
