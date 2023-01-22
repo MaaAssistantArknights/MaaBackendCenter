@@ -35,7 +35,7 @@ public class Copilot implements Serializable {
     private String id;
 
     //关卡名
-
+    @Indexed
     private String stageName;
 
 
@@ -43,7 +43,8 @@ public class Copilot implements Serializable {
     private String uploader;
 
     //上传者id
-    @Indexed
+
+    @JsonIgnore
     private String uploaderId;
 
     //查看次数

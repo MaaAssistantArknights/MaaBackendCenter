@@ -23,7 +23,7 @@ public class CopilotTypeCheck {
     public static void copilotTypeCheck(CopilotDTO copilotDTO) {
 
 
-        if (copilotDTO.getGroups() != null) {
+     /*   if (copilotDTO.getGroups() != null) {
             for (Copilot.Groups group : copilotDTO.getGroups()) {
                 String name = group.getName();
                 final String EXCEPTION_GROUP_PREFIX = "干员组[" + name + "]:\n";
@@ -31,7 +31,7 @@ public class CopilotTypeCheck {
                     throw new MaaResultException(EXCEPTION_GROUP_PREFIX + "干员不可为空");
                 }
             }
-        }
+        }*/
 
         if (copilotDTO.getActions() != null) {
             for (Copilot.Action actions : copilotDTO.getActions()) {
@@ -51,12 +51,6 @@ public class CopilotTypeCheck {
                 if (location != null) {
                     if (location.length != 2) {
                         throw new MaaResultException(EXCEPTION_ACTION_PREFIX + "干员位置的数据格式不符合规定");
-                    }
-                    if (location[0] > 9 || location[0] < 0) {
-                        throw new MaaResultException(EXCEPTION_ACTION_PREFIX + "干员位置X 坐标超出地图范围 (0-9)");
-                    }
-                    if (location[1] > 6 || location[1] < 0) {
-                        throw new MaaResultException(EXCEPTION_ACTION_PREFIX + "干员位置Y 坐标超出地图范围 (0-6)");
                     }
                 }
                 if (actionsType == ActionsType.DEPLOY && (directionType == DirectionType.NONE || location == null)) {
@@ -169,7 +163,6 @@ public class CopilotTypeCheck {
             return switch (type) {
                 case "Like" -> LIKE;
                 case "Dislike" -> DISLIKE;
-                case "None" -> NONE;
                 default -> NONE;
             };
         }
