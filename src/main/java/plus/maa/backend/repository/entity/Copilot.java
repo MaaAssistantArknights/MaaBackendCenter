@@ -43,8 +43,6 @@ public class Copilot implements Serializable {
     private String uploader;
 
     //上传者id
-
-    @JsonIgnore
     private String uploaderId;
 
     //查看次数

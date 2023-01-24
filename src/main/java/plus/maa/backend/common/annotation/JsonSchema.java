@@ -13,5 +13,4 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface JsonSchema {
-    int index() default 1;
 }

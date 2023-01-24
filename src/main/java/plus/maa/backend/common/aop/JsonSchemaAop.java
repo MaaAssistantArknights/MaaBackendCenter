@@ -1,8 +1,6 @@
 package plus.maa.backend.common.aop;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
@@ -15,14 +13,16 @@ import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import plus.maa.backend.common.annotation.JsonSchema;
 import plus.maa.backend.controller.request.CopilotCUDRequest;
+import plus.maa.backend.controller.request.CopilotRatingReq;
 import plus.maa.backend.controller.response.MaaResultException;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Objects;
+
 
 /**
  * @author LoMu
@@ -34,8 +34,6 @@ import java.util.Objects;
 @Slf4j
 @RequiredArgsConstructor
 public class JsonSchemaAop {
-
-    private final ObjectMapper mapper;
 
     @Pointcut("@annotation(plus.maa.backend.common.annotation.JsonSchema)")
     public void pt() {
@@ -50,28 +48,30 @@ public class JsonSchemaAop {
     @Before("pt() && @annotation(jsonSchema)")
     public void before(JoinPoint joinPoint, JsonSchema jsonSchema) {
         final String COPILOT_SCHEMA_JSON = "static/templates/maa-copilot-schema.json";
-
+        String content = null;
         //获取 CopilotCUDRequest形参的index
-        int index = jsonSchema.index();
-        CopilotCUDRequest request = (CopilotCUDRequest) joinPoint.getArgs()[index];
-        String json = null;
-        if (!Objects.isNull(request)) {
-            try {
-                json = mapper.writeValueAsString(request.getContent());
-            } catch (JsonProcessingException e) {
-                log.error("json序列化失败", e);
+        for (Object arg : joinPoint.getArgs()) {
+            if (arg instanceof CopilotCUDRequest) {
+                content = ((CopilotCUDRequest) arg).getContent();
             }
-            //获取json schema json路径并验证
-            try (InputStream inputStream = new ClassPathResource(COPILOT_SCHEMA_JSON).getInputStream()) {
-                JSONObject jsonObject = new JSONObject(new JSONTokener(inputStream));
-                Schema schema = SchemaLoader.load(jsonObject);
-                schema.validate(json);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            } catch (ValidationException e) {
-                throw new MaaResultException("数据不符合规范，请前往前端作业编辑器进行操作");
+            if (arg instanceof CopilotRatingReq) {
+                content = ((CopilotRatingReq) arg).getRating();
             }
-
         }
+        if (content == null) return;
+
+
+        //获取json schema json路径并验证
+        try (InputStream inputStream = new ClassPathResource(COPILOT_SCHEMA_JSON).getInputStream()) {
+            JSONObject json = new JSONObject(content);
+            JSONObject jsonObject = new JSONObject(new JSONTokener(inputStream));
+            Schema schema = SchemaLoader.load(jsonObject);
+            schema.validate(json);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (ValidationException e) {
+            throw new MaaResultException(HttpStatus.BAD_REQUEST.value(), "数据不符合规范，请前往前端作业编辑器进行操作");
+        }
+
     }
 }

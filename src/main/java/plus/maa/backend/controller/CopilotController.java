@@ -55,6 +55,7 @@ public class CopilotController {
         return copilotService.update(loginUser, copilotCUDRequest);
     }
 
+    @JsonSchema
     @PostMapping("/rating")
     public MaaResult<String> ratesCopilotOperation(@CurrentUser LoginUser loginUser, @RequestBody CopilotRatingReq copilotRatingReq) {
         return copilotService.rates(loginUser, copilotRatingReq);
