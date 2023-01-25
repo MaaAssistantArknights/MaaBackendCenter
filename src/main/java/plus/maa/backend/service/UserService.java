@@ -2,6 +2,7 @@ package plus.maa.backend.service;
 
 import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateTime;
+import cn.hutool.core.lang.Assert;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTPayload;
 import cn.hutool.jwt.JWTUtil;
@@ -219,6 +220,8 @@ public class UserService {
      * @return 成功响应
      */
     public MaaResult<Void> sendEmailCode(LoginUser loginUser) {
+        Assert.state(Objects.equals(loginUser.getMaaUser().getStatus(), 0),
+                "用户已经激活，无法再次发送验证码");
         String email = loginUser.getEmail();
         emailService.sendVCode(email);
         return MaaResult.success(null);
@@ -268,12 +271,11 @@ public class UserService {
     public void activateAccount(EmailActivateReq activateDTO) {
         String uuid = activateDTO.getNonce();
         String email = redisCache.getCache("UUID:" + uuid, String.class);
-        if (Objects.isNull(email)) {
-            throw new MaaResultException("链接已过期");
-        }
+        Assert.notNull(email, "链接已过期");
         MaaUser user = userRepository.findByEmail(email);
 
         if (Objects.equals(user.getStatus(), 1)) {
+            redisCache.removeCache("UUID:" + uuid);
             return;
         }
         //激活账户
