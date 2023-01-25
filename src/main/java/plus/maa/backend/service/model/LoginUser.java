@@ -33,6 +33,11 @@ public class LoginUser implements UserDetails {
 
     private List<SimpleGrantedAuthority> authorities;
 
+    public void setPermissions(Set<String> permissions) {
+        this.authorities = permissions.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
+        this.permissions = permissions;
+    }
+
     public LoginUser(MaaUser user) {
         maaUser = user;
     }
@@ -45,9 +50,6 @@ public class LoginUser implements UserDetails {
     @Override
     @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        if (authorities != null) return authorities;
-
-        authorities = permissions.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
         return authorities;
     }
 

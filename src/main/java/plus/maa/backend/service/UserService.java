@@ -24,10 +24,10 @@ import plus.maa.backend.controller.response.MaaLoginRsp;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.controller.response.MaaUserInfo;
+import plus.maa.backend.service.model.LoginUser;
 import plus.maa.backend.repository.RedisCache;
 import plus.maa.backend.repository.UserRepository;
 import plus.maa.backend.repository.entity.MaaUser;
-import plus.maa.backend.service.model.LoginUser;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -185,10 +185,16 @@ public class UserService {
      * @return 用户信息封装
      */
     public MaaResult<Void> activateUser(LoginUser loginUser, ActivateDTO activateDTO) {
+        if (Objects.equals(loginUser.getMaaUser().getStatus(), 1)) {
+            return MaaResult.success();
+        }
         String email = loginUser.getMaaUser().getEmail();
-        updateLoginUserPermissions(1, loginUser.getMaaUser().getUserId());
-        return emailService.verifyVCode(email, activateDTO.getToken()) ? MaaResult.success(null) :
-                MaaResult.fail(MaaStatusCode.MAA_ACTIVE_ERROR);
+        emailService.verifyVCode(email, activateDTO.getToken());
+        MaaUser user = loginUser.getMaaUser();
+        user.setStatus(1);
+        userRepository.save(user);
+        updateLoginUserPermissions(1, user.getUserId());
+        return MaaResult.success();
     }
 
     /**
@@ -266,6 +272,10 @@ public class UserService {
             throw new MaaResultException("链接已过期");
         }
         MaaUser user = userRepository.findByEmail(email);
+
+        if (Objects.equals(user.getStatus(), 1)) {
+            return;
+        }
         //激活账户
         user.setStatus(1);
         userRepository.save(user);
@@ -279,7 +289,7 @@ public class UserService {
      * 更新用户权限
      *
      * @param permissions 权限值
-     * @param userId userId
+     * @param userId      userId
      */
     private void updateLoginUserPermissions(int permissions, String userId) {
         LoginUser loginUser = (LoginUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
