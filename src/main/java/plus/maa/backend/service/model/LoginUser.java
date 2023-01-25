@@ -5,10 +5,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import plus.maa.backend.repository.entity.MaaUser;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author AnselYuki
@@ -20,14 +24,31 @@ public class LoginUser implements UserDetails {
     private MaaUser maaUser;
     private String token = "";
 
+    private Set<String> permissions;
+
+    public LoginUser(MaaUser maaUser, Set<String> permissions) {
+        this.maaUser = maaUser;
+        this.permissions = permissions;
+    }
+
+    private List<SimpleGrantedAuthority> authorities;
+
     public LoginUser(MaaUser user) {
         maaUser = user;
     }
 
+    /**
+     * 权限信息
+     *
+     * @return List<SimpleGrantedAuthority>
+     */
     @Override
     @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return null;
+        if (authorities != null) return authorities;
+
+        authorities = permissions.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
+        return authorities;
     }
 
     @Override

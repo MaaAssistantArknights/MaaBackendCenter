@@ -31,6 +31,7 @@ public class SecurityConfig {
     private static final String[] URL_PERMIT_ALL = {
             "/",
             "/version",
+            "/user/activateAccount",
             "/user/password/reset_request",
             "/user/password/reset",
             "/swagger-ui.html",
@@ -39,6 +40,13 @@ public class SecurityConfig {
             "/arknights/level",
             "/copilot/query",
             "/copilot/get/**",
+    };
+
+    //添加需要权限1才能访问的接口
+    private static final String[] URL_AUTHENTICATION_1 = {
+            "/copilot/delete",
+            "/copilot/update",
+            "/copilot/upload"
     };
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter;
@@ -67,7 +75,12 @@ public class SecurityConfig {
             try {
                 authorize.requestMatchers(URL_WHITELIST).anonymous()
                         .requestMatchers(URL_PERMIT_ALL).permitAll()
+                        //权限 0 未激活 1 激活  等等.. (拥有权限1必然拥有权限0 拥有权限2必然拥有权限1、0)
+                        //指定接口需要指定权限才能访问 如果不开启RBAC注释掉这一段即可
+                        .requestMatchers(URL_AUTHENTICATION_1).hasAuthority("1")
+
                         .anyRequest().authenticated();
+
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

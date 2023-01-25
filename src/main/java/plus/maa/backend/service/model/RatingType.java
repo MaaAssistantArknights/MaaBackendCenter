@@ -20,6 +20,12 @@ public enum RatingType {
         this.display = display;
     }
 
+    /**
+     * 将rating转换为  0 = NONE 1 = LIKE 2 = DISLIKE
+     *
+     * @param type rating
+     * @return type
+     */
     public static RatingType fromRatingType(String type) {
         return switch (type) {
             case "Like" -> LIKE;

@@ -275,7 +275,7 @@ public class CopilotService {
             oper = oper.replaceAll("[“\"”]", "");
             String[] operators = oper.split(",");
             for (String operator : operators) {
-                if ("~".equals(operator.substring(0, 1))) {
+                if (operator.startsWith("~")) {
                     String exclude = operator.substring(1);
                     //排除查询指定干员
                     norQueries.add(Criteria.where("opers.name").regex(exclude));
@@ -356,9 +356,6 @@ public class CopilotService {
      * @return null
      */
     public MaaResult<String> rates(LoginUser loginUser, CopilotRatingReq request) {
-        //不为空
-        if (StringUtils.isBlank(request.getRating())) throw new MaaResultException("rating cannot be is null");
-
         String userId = getUserId(loginUser);
         String rating = request.getRating();
         //获取评分表
