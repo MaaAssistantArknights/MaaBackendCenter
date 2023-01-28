@@ -30,6 +30,7 @@ import plus.maa.backend.repository.TableLogicDelete;
 import plus.maa.backend.repository.entity.Copilot;
 import plus.maa.backend.repository.entity.CopilotRating;
 import plus.maa.backend.service.model.LoginUser;
+import plus.maa.backend.service.model.RatingCache;
 import plus.maa.backend.service.model.RatingType;
 
 import java.math.BigDecimal;
@@ -146,12 +147,10 @@ public class CopilotService {
                 .setUploader(user.getMaaUser().getUserName())
                 .setFirstUploadTime(date)
                 .setUploadTime(date);
-        CopilotRating copilotRating = new CopilotRating();
 
         try {
             String id = copilotRepository.insert(copilot).getId();
-            copilotRating.setCopilotId(id);
-            copilotRatingRepository.insert(copilotRating);
+            copilotRatingRepository.insert(new CopilotRating(id));
             return MaaResult.success(id);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
@@ -187,13 +186,21 @@ public class CopilotService {
         String userId = getUserId(user);
 
         //60分钟内限制同一个用户对访问量的增加
-        if (redisCache.getCache("views:" + userId, String.class) == null) {
+        RatingCache cache = redisCache.getCache("views:" + userId, RatingCache.class);
+        if (Objects.isNull(cache) || !cache.getCache().contains(id)) {
             Query query = Query.query(Criteria.where("id").is(id).and("delete").is(false));
             Update update = new Update();
             //增加一次views
             update.inc("views");
             mongoTemplate.updateFirst(query, update, Copilot.class);
-            redisCache.setCache("views:" + userId, "1", 60, TimeUnit.MINUTES);
+            if (Objects.isNull(cache)) {
+                redisCache.setCache("views:" + userId, new RatingCache(List.of(id)));
+            } else {
+                redisCache.updateCache("views:" + userId, RatingCache.class, cache, updateCache -> {
+                    updateCache.getCache().add(id);
+                    return updateCache;
+                }, 60, TimeUnit.MINUTES);
+            }
         }
         Copilot copilot = findById(id);
         CopilotInfo info = formatCopilot(userId, copilot);
@@ -420,6 +427,20 @@ public class CopilotService {
         return MaaResult.success("评分成功");
     }
 
+    /**
+     * 重构当前已存在的数据库<br/>
+     * 生成评分表..
+     *
+     * @return null
+     */
+    public MaaResult<Void> refactorExistingDatabase() {
+        List<Copilot> all = copilotRepository.findAll();
+        List<Copilot> notExistRatingTable = all.stream().filter(a -> !copilotRatingRepository.existsCopilotRatingByCopilotId(a.getId())).toList();
+        notExistRatingTable.forEach(copilot -> copilotRatingRepository.insert(new CopilotRating(copilot.getId())));
+        //转换数据存储类型
+        copilotRepository.saveAll(all);
+        return MaaResult.success(null);
+    }
 
     /**
      * 将数据库内容转换为前端所需格式<br>

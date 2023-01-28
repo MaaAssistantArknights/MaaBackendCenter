@@ -46,7 +46,7 @@ public class Copilot implements Serializable {
     private String uploaderId;
 
     //查看次数
-    private int views;
+    private Long views = 0L;
 
     //热度
     private double hotScore;

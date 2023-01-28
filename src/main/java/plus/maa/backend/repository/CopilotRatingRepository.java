@@ -12,4 +12,6 @@ import plus.maa.backend.repository.entity.CopilotRating;
 public interface CopilotRatingRepository extends MongoRepository<CopilotRating, String> {
 
     CopilotRating findByCopilotId(String copilotId);
+
+    boolean existsCopilotRatingByCopilotId(String copilotId);
 }

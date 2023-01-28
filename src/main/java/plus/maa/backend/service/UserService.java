@@ -288,7 +288,7 @@ public class UserService {
     }
 
     /**
-     * 更新用户权限
+     * 实时更新用户权限
      *
      * @param permissions 权限值
      * @param userId      userId

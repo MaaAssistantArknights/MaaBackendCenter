@@ -61,4 +61,9 @@ public class CopilotController {
         return copilotService.rates(loginUser, copilotRatingReq);
     }
 
+    @GetMapping("/refactorExistingDatabase")
+    public MaaResult<Void> refactorExistingDatabase() {
+        return copilotService.refactorExistingDatabase();
+    }
+
 }

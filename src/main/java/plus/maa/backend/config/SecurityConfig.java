@@ -40,6 +40,7 @@ public class SecurityConfig {
             "/arknights/level",
             "/copilot/query",
             "/copilot/get/**",
+            "/copilot/rating"
     };
 
     //添加需要权限1才能访问的接口
@@ -47,6 +48,10 @@ public class SecurityConfig {
             "/copilot/delete",
             "/copilot/update",
             "/copilot/upload"
+    };
+
+    private static final String[] URL_AUTHNTICATION_2 = {
+            "/copilot/refactorExistingDatabase"
     };
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter;
@@ -78,6 +83,8 @@ public class SecurityConfig {
                         //权限 0 未激活 1 激活  等等.. (拥有权限1必然拥有权限0 拥有权限2必然拥有权限1、0)
                         //指定接口需要指定权限才能访问 如果不开启RBAC注释掉这一段即可
                         .requestMatchers(URL_AUTHENTICATION_1).hasAuthority("1")
+                        //此处用于管理员操作接口
+                        .requestMatchers(URL_AUTHNTICATION_2).hasAuthority("2")
 
                         .anyRequest().authenticated();
 

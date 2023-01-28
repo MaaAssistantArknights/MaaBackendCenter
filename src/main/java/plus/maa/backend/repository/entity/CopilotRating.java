@@ -37,6 +37,9 @@ public class CopilotRating {
     //评级比率 十分之一代表半颗星
     private double ratingRatio;
 
+    public CopilotRating(String copilotId) {
+        this.copilotId = copilotId;
+    }
 
     @JsonIgnore
     private boolean delete;

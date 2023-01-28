@@ -1,6 +1,8 @@
 package plus.maa.backend.common.aop;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
@@ -34,6 +36,9 @@ import java.io.InputStream;
 @Slf4j
 @RequiredArgsConstructor
 public class JsonSchemaAop {
+    private final ObjectMapper mapper;
+    private static final String COPILOT_SCHEMA_JSON = "static/templates/maa-copilot-schema.json";
+    private static final String RATING_SCHEMA_JSON = "static/templates/maa-rating-schema.json";
 
     @Pointcut("@annotation(plus.maa.backend.common.annotation.JsonSchema)")
     public void pt() {
@@ -47,22 +52,28 @@ public class JsonSchemaAop {
      */
     @Before("pt() && @annotation(jsonSchema)")
     public void before(JoinPoint joinPoint, JsonSchema jsonSchema) {
-        final String COPILOT_SCHEMA_JSON = "static/templates/maa-copilot-schema.json";
+        String schema_json = null;
         String content = null;
         //获取 CopilotCUDRequest形参的index
         for (Object arg : joinPoint.getArgs()) {
             if (arg instanceof CopilotCUDRequest) {
                 content = ((CopilotCUDRequest) arg).getContent();
+                schema_json = COPILOT_SCHEMA_JSON;
             }
             if (arg instanceof CopilotRatingReq) {
-                content = ((CopilotRatingReq) arg).getRating();
+                try {
+                    schema_json = RATING_SCHEMA_JSON;
+                    content = mapper.writeValueAsString(arg);
+                } catch (JsonProcessingException e) {
+                    log.error("json解析失败",e);
+                }
             }
         }
         if (content == null) return;
 
 
         //获取json schema json路径并验证
-        try (InputStream inputStream = new ClassPathResource(COPILOT_SCHEMA_JSON).getInputStream()) {
+        try (InputStream inputStream = new ClassPathResource(schema_json).getInputStream()) {
             JSONObject json = new JSONObject(content);
             JSONObject jsonObject = new JSONObject(new JSONTokener(inputStream));
             Schema schema = SchemaLoader.load(jsonObject);
