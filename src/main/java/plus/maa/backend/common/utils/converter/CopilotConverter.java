@@ -25,6 +25,7 @@ public interface CopilotConverter {
      * @param copilot    从数据库中查出的原始值
      */
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "copilotId", ignore = true)
     @Mapping(target = "views", ignore = true)
     @Mapping(target = "uploader", ignore = true)
     @Mapping(target = "hotScore", ignore = true)
@@ -51,6 +52,4 @@ public interface CopilotConverter {
     @Mapping(source = "doc.title", target = "title")
     @Mapping(source = "doc.details", target = "detail")
     CopilotInfo toCopilotInfo(Copilot copilot);
-
-
 }
