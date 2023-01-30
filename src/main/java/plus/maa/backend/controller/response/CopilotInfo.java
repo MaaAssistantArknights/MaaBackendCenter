@@ -1,18 +1,19 @@
 package plus.maa.backend.controller.response;
 
-import java.util.Date;
-import java.util.List;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import plus.maa.backend.repository.entity.Copilot;
+
+import java.util.Date;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class CopilotInfo {
     private String id;
+    private Long copilotId;
     private String minimumRequired;
 
     private Date uploadTime;

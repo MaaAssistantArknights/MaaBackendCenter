@@ -3,6 +3,7 @@ package plus.maa.backend.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +38,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -59,7 +61,17 @@ public class CopilotService {
     private final TableLogicDelete tableLogicDelete;
 
     private final CopilotRatingRepository copilotRatingRepository;
+    private final AtomicLong copilotId = new AtomicLong(20000);
 
+    @PostConstruct
+    public void init() {
+        //初始化copilotId, 从数据库中获取最大的copilotId
+        //如果数据库中没有数据, 则从20000开始
+        copilotRepository.findFirstByOrderByCopilotIdDesc().ifPresent(last ->
+                copilotId.set(last.getCopilotId() + 1));
+
+        log.info("作业自增ID初始化完成: {}", copilotId.get());
+    }
 
     /**
      * 根据_id获取Copilot
@@ -68,12 +80,15 @@ public class CopilotService {
      * @return Copilot
      */
     private Copilot findById(String id) {
-        Optional<Copilot> optional = copilotRepository.findById(id);
-
         Copilot copilot;
-        if (optional.isPresent()) {
-            copilot = optional.get();
+        //如果id为纯数字, 则使用copilotId查询
+        if (StringUtils.isNumeric(id)) {
+            copilot = copilotRepository.findByCopilotId(Long.parseLong(id)).orElse(null);
         } else {
+            copilot = copilotRepository.findById(id).orElse(null);
+        }
+
+        if (copilot == null) {
             throw new MaaResultException("作业id不存在");
         }
         return copilot;
@@ -140,9 +155,11 @@ public class CopilotService {
     public MaaResult<String> upload(LoginUser user, String content) {
         CopilotDTO copilotDTO = CorrectCopilot(parseToCopilotDto(content));
         Date date = new Date();
-
         //将其转换为数据库存储对象
         Copilot copilot = CopilotConverter.INSTANCE.toCopilot(copilotDTO);
+        //设置copilotId
+        copilot.setCopilotId(copilotId.getAndIncrement());
+
         copilot.setUploaderId(user.getMaaUser().getUserId())
                 .setUploader(user.getMaaUser().getUserName())
                 .setFirstUploadTime(date)
@@ -184,27 +201,31 @@ public class CopilotService {
      */
     public MaaResult<CopilotInfo> getCopilotById(LoginUser user, String id) {
         String userId = getUserId(user);
-
+        //根据ID获取作业, 如作业不存在则抛出异常返回
+        Copilot copilot = findById(id);
+        //如果使用数字ID查询, 则将其转换为MongoId
+        final String saveId = StringUtils.isNumeric(id) ? copilot.getId() : id;
+        if (Objects.isNull(saveId)) {
+            throw new MaaResultException("作业数据异常");
+        }
         //60分钟内限制同一个用户对访问量的增加
         RatingCache cache = redisCache.getCache("views:" + userId, RatingCache.class);
-        if (Objects.isNull(cache) || !cache.getCache().contains(id)) {
-            Query query = Query.query(Criteria.where("id").is(id).and("delete").is(false));
+        if (Objects.isNull(cache) || !cache.getCache().contains(saveId)) {
+            Query query = Query.query(Criteria.where("id").is(saveId).and("delete").is(false));
             Update update = new Update();
             //增加一次views
             update.inc("views");
             mongoTemplate.updateFirst(query, update, Copilot.class);
             if (Objects.isNull(cache)) {
-                redisCache.setCache("views:" + userId, new RatingCache(List.of(id)));
+                redisCache.setCache("views:" + userId, new RatingCache(List.of(saveId)));
             } else {
                 redisCache.updateCache("views:" + userId, RatingCache.class, cache, updateCache -> {
-                    updateCache.getCache().add(id);
+                    updateCache.getCache().add(saveId);
                     return updateCache;
                 }, 60, TimeUnit.MINUTES);
             }
         }
-        Copilot copilot = findById(id);
         CopilotInfo info = formatCopilot(userId, copilot);
-
         return MaaResult.success(info);
     }
 

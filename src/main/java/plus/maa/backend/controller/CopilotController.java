@@ -39,7 +39,8 @@ public class CopilotController {
     }
 
     @GetMapping("/get/{id}")
-    public MaaResult<CopilotInfo> getCopilotById(@CurrentUser LoginUser user, @PathVariable("id") String id) {
+    public MaaResult<CopilotInfo> getCopilotById(@CurrentUser LoginUser user,
+                                                 @PathVariable("id") String id) {
         return copilotService.getCopilotById(user, id);
     }
 

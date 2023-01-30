@@ -14,7 +14,6 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
-
 import java.util.Date;
 import java.util.List;
 
@@ -29,15 +28,15 @@ import java.util.List;
 @Accessors(chain = true)
 @Document("maa_copilot")
 public class Copilot implements Serializable {
-
     @Id
     //作业id
     private String id;
-
+    //自增数字ID
+    @Indexed(unique = true)
+    private Long copilotId;
     //关卡名
     @Indexed
     private String stageName;
-
 
     //上传者
     private String uploader;
