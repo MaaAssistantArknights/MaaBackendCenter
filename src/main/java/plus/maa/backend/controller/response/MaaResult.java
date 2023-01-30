@@ -12,6 +12,10 @@ public record MaaResult<T>(int statusCode, String message, T data) {
         return success(null, data);
     }
 
+    public static <T> MaaResult<T> success() {
+        return success(null, null);
+    }
+
     public static <T> MaaResult<T> success(String msg, T data) {
         return new MaaResult<>(200, msg, data);
     }

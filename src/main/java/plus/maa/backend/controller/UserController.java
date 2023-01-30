@@ -1,15 +1,17 @@
 package plus.maa.backend.controller;
 
+import java.io.IOException;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.CurrentUser;
 import plus.maa.backend.controller.request.*;
 import plus.maa.backend.controller.response.MaaLoginRsp;
@@ -26,7 +28,6 @@ import plus.maa.backend.service.model.LoginUser;
  * @author AnselYuki
  */
 @Data
-@Slf4j
 @Tag(name = "CopilotUser")
 @RequestMapping("/user")
 @Validated
@@ -147,7 +148,14 @@ public class UserController {
     }
 
     @GetMapping("/activateAccount")
-    public MaaResult<Void> activateAccount(ActivateDTO activateDTO, HttpServletResponse response) {
-        return userService.activateAccount(activateDTO, response);
+    public MaaResult<Void> activateAccount(EmailActivateReq activateDTO, HttpServletResponse response) {
+        userService.activateAccount(activateDTO);
+        //激活成功 跳转页面
+        try {
+            response.sendRedirect("https://prts.plus/");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return MaaResult.success();
     }
 }

@@ -1,32 +1,5 @@
 package plus.maa.backend.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import okhttp3.*;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectInserter;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
-import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
-import plus.maa.backend.common.utils.converter.ArkLevelConverter;
-import plus.maa.backend.controller.response.ArkLevelInfo;
-import plus.maa.backend.repository.ArkLevelRepository;
-import plus.maa.backend.repository.GithubRepository;
-import plus.maa.backend.repository.RedisCache;
-import plus.maa.backend.repository.entity.ArkLevel;
-import plus.maa.backend.repository.entity.ArkLevelSha;
-import plus.maa.backend.repository.entity.gamedata.ArkTilePos;
-import plus.maa.backend.repository.entity.github.GithubCommit;
-import plus.maa.backend.repository.entity.github.GithubTree;
-import plus.maa.backend.repository.entity.github.GithubTrees;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -39,6 +12,36 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectInserter;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import okhttp3.*;
+import plus.maa.backend.common.utils.converter.ArkLevelConverter;
+import plus.maa.backend.controller.response.ArkLevelInfo;
+import plus.maa.backend.repository.ArkLevelRepository;
+import plus.maa.backend.repository.GithubRepository;
+import plus.maa.backend.repository.RedisCache;
+import plus.maa.backend.repository.entity.ArkLevel;
+import plus.maa.backend.repository.entity.ArkLevelSha;
+import plus.maa.backend.repository.entity.gamedata.ArkTilePos;
+import plus.maa.backend.repository.entity.github.GithubCommit;
+import plus.maa.backend.repository.entity.github.GithubTree;
+import plus.maa.backend.repository.entity.github.GithubTrees;
 
 /**
  * @author dragove
@@ -78,6 +81,7 @@ public class ArkLevelService {
     private final ObjectMapper mapper = new ObjectMapper();
     private final OkHttpClient okHttpClient;
 
+    @Cacheable("arkLevels")
     public List<ArkLevelInfo> getArkLevelInfos() {
         return arkLevelRepo.findAll()
                 .stream()
@@ -85,14 +89,15 @@ public class ArkLevelService {
                 .collect(Collectors.toList());
     }
 
-    //TODO 增加缓存
+    @Cacheable("arkLevel")
     public ArkLevelInfo findByLevelId(String levelId) {
-        ArkLevel level = arkLevelRepo.findByLevelId(levelId);
+        ArkLevel level = arkLevelRepo.findByLevelId(levelId).findAny().orElse(null);
         return ArkLevelConverter.INSTANCE.convert(level);
     }
 
-    public ArkLevelInfo findByStageId(String stageId) {
-        ArkLevel level = arkLevelRepo.findByStageId(stageId);
+
+    public ArkLevelInfo queryLevel(String levelId) {
+        ArkLevel level = arkLevelRepo.queryLevel(levelId).findAny().orElse(null);
         return ArkLevelConverter.INSTANCE.convert(level);
     }
 
@@ -278,38 +283,38 @@ public class ArkLevelService {
         log.info("[LEVEL]已发现{}份地图数据", jsons.size());
 
         List<String> shaList = arkLevelRepo.findAllShaBy().stream().map(ArkLevelSha::getSha).toList();
-        ObjectInserter inserter = git.getRepository().newObjectInserter();
+        try (ObjectInserter inserter = git.getRepository().newObjectInserter()) {
 
-        int errorCount = 0;
-        int handleCount = 0;
-        for (File ignored : jsons) {
-            try {
-                byte[] bytes = Files.readAllBytes(file.toPath());
-                String sha = inserter.idFor(Constants.OBJ_BLOB, bytes).name();
-                if (shaList.contains(sha)) {
-                    continue;
-                }
-                ArkTilePos tilePos = mapper.readValue(bytes, ArkTilePos.class);
-                ArkLevel level = parserService.parseLevel(tilePos, sha);
-                if (level == null) {
+            int errorCount = 0;
+            int handleCount = 0;
+            for (File ignored : jsons) {
+                try {
+                    byte[] bytes = Files.readAllBytes(file.toPath());
+                    String sha = inserter.idFor(Constants.OBJ_BLOB, bytes).name();
+                    if (shaList.contains(sha)) {
+                        continue;
+                    }
+                    ArkTilePos tilePos = mapper.readValue(bytes, ArkTilePos.class);
+                    ArkLevel level = parserService.parseLevel(tilePos, sha);
+                    if (level == null) {
+                        errorCount++;
+                        log.info("[LEVEL]地图数据解析失败:" + file.getPath());
+                        continue;
+                    }
+                    arkLevelRepo.save(level);
+                    handleCount++;
+                } catch (IOException e) {
                     errorCount++;
-                    log.info("[LEVEL]地图数据解析失败:" + file.getPath());
-                    continue;
+                    e.printStackTrace();
                 }
-                arkLevelRepo.save(level);
-                handleCount++;
-            } catch (IOException e) {
-                errorCount++;
-                e.printStackTrace();
             }
+            log.info("[LEVEL]{}份地图数据更新成功", handleCount);
+            if (errorCount > 0) {
+                log.warn("[LEVEL]{}份地图数据更新失败", errorCount);
+                return;
+            }
+            redisCache.setCacheLevelCommit(lastCommit);
         }
-        log.info("[LEVEL]{}份地图数据更新成功", handleCount);
-        if (errorCount > 0) {
-            log.warn("[LEVEL]{}份地图数据更新失败", errorCount);
-            return;
-        }
-
-        redisCache.setCacheLevelCommit(lastCommit);
     }
 
     private Git getGitRepository() {

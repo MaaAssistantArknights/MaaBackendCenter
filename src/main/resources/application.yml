@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: dev
+    active: template
   jackson:
     property-naming-strategy: SNAKE_CASE
     date-format: yyyy-MM-dd HH:mm:ss
@@ -9,16 +9,17 @@ spring:
     mongodb:
       # 打开自动索引生成（否则数据库内唯一索引不生效
       auto-index-creation: true
+  freemarker:
+    check-template-location: false
+  # 缓存配置，使用caffeine缓存框架，缓存时长为5分钟，最大缓存数量500
+  cache:
+    cache-names: arkLevel, arkLevels
+    type: caffeine
+    caffeine:
+      spec: maximumSize=500,expireAfterWrite=300s
 server:
   # 8848钛金接口.jpg
   port: 8848
-
-maa-copilot:
-  info:
-    name: MaaBackendCenter
-    title: MAA Copilot Center API
-    description: MAA Copilot Backend Center
-    version: v1.0.0
 
 logging:
   file:

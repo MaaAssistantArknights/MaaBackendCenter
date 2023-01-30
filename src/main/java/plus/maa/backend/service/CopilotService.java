@@ -1,10 +1,8 @@
 package plus.maa.backend.service;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.*;
+
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -14,7 +12,15 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import plus.maa.backend.common.bo.CopilotTypeCheck;
 import plus.maa.backend.common.utils.converter.CopilotConverter;
 import plus.maa.backend.controller.request.CopilotCUDRequest;
 import plus.maa.backend.controller.request.CopilotDTO;
@@ -23,8 +29,6 @@ import plus.maa.backend.controller.response.*;
 import plus.maa.backend.repository.CopilotRepository;
 import plus.maa.backend.repository.entity.Copilot;
 import plus.maa.backend.service.model.LoginUser;
-
-import java.util.*;
 
 /**
  * @author LoMu
@@ -82,27 +86,12 @@ public class CopilotService {
      */
     private CopilotDTO verifyCorrectCopilot(CopilotDTO copilotDTO) {
 
-        if (copilotDTO.getActions() != null) {
-            for (Copilot.Action action : copilotDTO.getActions()) {
-                String type = action.getType();
-
-                if ("SkillUsage".equals(type) || "技能用法".equals(type)) {
-                    if (action.getSkillUsage() == 0) {
-                        throw new MaaResultException("当动作类型为技能用法时,技能用法该选项必选");
-                    }
-                }
-
-                if (action.getLocation() != null) {
-                    if (action.getLocation().length > 2) {
-                        throw new MaaResultException("干员位置的数据格式不符合规定");
-                    }
-                }
-            }
-        }
-
+        CopilotTypeCheck.copilotTypeCheck(copilotDTO);
 
         //去除name的冗余部分
+        copilotDTO.getGroups().forEach(groups -> groups.getOpers().forEach(opers -> opers.setName(opers.getName().replaceAll("[\"“”]", ""))));
         copilotDTO.getOpers().forEach(operator -> operator.setName(operator.getName().replaceAll("[\"“”]", "")));
+        copilotDTO.getActions().forEach(action -> action.setName(action.getName().replaceAll("[\"“”]", "")));
         return copilotDTO;
     }
 
@@ -134,6 +123,7 @@ public class CopilotService {
      * @return 返回_id
      */
     public MaaResult<String> upload(LoginUser user, String content) {
+        Assert.state(Objects.equals(user.getMaaUser().getStatus(), 1), "用户尚未激活，无法上传作业");
         CopilotDTO copilotDTO = verifyCorrectCopilot(parseToCopilotDto(content));
         Date date = new Date();
 
@@ -230,7 +220,10 @@ public class CopilotService {
 
         //匹配模糊查询
         if (StringUtils.isNotBlank(request.getLevelKeyword())) {
-            andQueries.add(Criteria.where("stageName").regex(request.getLevelKeyword()));
+            ArkLevelInfo levelInfo = levelService.queryLevel(request.getLevelKeyword());
+            if (levelInfo != null) {
+                andQueries.add(Criteria.where("stageName").regex(levelInfo.getStageId()));
+            }
         }
         //or模糊查询
         if (StringUtils.isNotBlank(request.getDocument())) {
@@ -336,13 +329,24 @@ public class CopilotService {
         List<String> operStrList = copilot.getOpers().stream()
                 .map(o -> String.format("%s::%s", o.getName(), o.getSill()))
                 .toList();
+
+        if (copilot.getGroups() != null) {
+            List<String> operators = new ArrayList<>();
+            for (Copilot.Groups group : copilot.getGroups()) {
+                if (group.getOpers() != null) {
+                    for (Copilot.OperationGroup oper : group.getOpers()) {
+                        String format = String.format("%s::%s", oper.getName(), oper.getSill());
+                        operators.add(format);
+                    }
+                }
+                group.setOperators(operators);
+            }
+        }
+
         info.setOpers(operStrList);
         info.setOperators(operStrList);
 
         ArkLevelInfo levelInfo = levelService.findByLevelId(copilot.getStageName());
-        if (levelInfo == null) {
-            levelInfo = levelService.findByStageId(copilot.getStageName());
-        }
         info.setLevel(levelInfo);
         info.setAvailable(true);
         info.setNotEnoughRating(true);

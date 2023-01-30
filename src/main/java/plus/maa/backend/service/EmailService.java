@@ -1,15 +1,16 @@
 package plus.maa.backend.service;
 
-import lombok.RequiredArgsConstructor;
+import java.util.UUID;
+
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import plus.maa.backend.common.bo.EmailBusinessObject;
-import plus.maa.backend.controller.response.MaaResultException;
-import plus.maa.backend.repository.RedisCache;
+import org.springframework.util.Assert;
 
-import java.util.Objects;
-import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import plus.maa.backend.common.bo.EmailBusinessObject;
+import plus.maa.backend.repository.RedisCache;
 
 /**
  * @author LoMu
@@ -20,6 +21,9 @@ import java.util.UUID;
 public class EmailService {
     @Value("${maa-copilot.vcode.expire:600}")
     private int expire;
+
+    @Value("${maa-copilot.info.domain}")
+    private String domain;
 
     private final RedisCache redisCache;
 
@@ -40,14 +44,12 @@ public class EmailService {
         redisCache.setCache("vCodeEmail:" + email, vcode, expire);
     }
 
-    public boolean verifyVCode(String email, String vcode) {
+    public void verifyVCode(String email, String vcode) {
         String cacheVCode = redisCache.getCache("vCodeEmail:" + email, String.class);
-        if (!Objects.equals(cacheVCode, vcode.toUpperCase())) {
-            throw new MaaResultException("验证码错误！");
-        }
+        Assert.state(StringUtils.equalsIgnoreCase(cacheVCode, vcode), "验证码错误");
         redisCache.removeCache("vCodeEmail:" + email);
-        return true;
     }
+
 
     /**
      * @param email 发送激活验证邮箱
@@ -55,7 +57,7 @@ public class EmailService {
     public void sendActivateUrl(String email) {
         //生成uuid作为唯一标识符
         String uuid = UUID.randomUUID().toString().replaceAll("-", "");
-        String url = "https://api.prts.plus/user/activateAccount?nonce=" + uuid;
+        String url = domain + "/user/activateAccount?nonce=" + uuid;
         EmailBusinessObject.builder()
                 .setEmail(email)
                 .sendActivateUrlMessage(url);

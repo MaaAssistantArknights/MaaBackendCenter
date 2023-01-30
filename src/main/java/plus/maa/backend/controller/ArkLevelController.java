@@ -1,20 +1,18 @@
 package plus.maa.backend.controller;
 
+import java.util.List;
+
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-import plus.maa.backend.common.annotation.AccessLimit;
+
 import plus.maa.backend.controller.response.ArkLevelInfo;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.service.ArkLevelService;
 
-import java.util.List;
-
 /**
  * @author john180
  */
-@Slf4j
 @RestController
 @RequiredArgsConstructor
 public class ArkLevelController {
@@ -25,9 +23,4 @@ public class ArkLevelController {
         return MaaResult.success(arkLevelService.getArkLevelInfos());
     }
 
-    @GetMapping("/test")
-    @AccessLimit(times = 2,second=100)
-    public MaaResult getLevels111() {
-        return MaaResult.success("122321",null);
-    }
 }

@@ -9,10 +9,7 @@
         <tr>
             <td style="padding: 25px 0;">
                 <!-- https://api.prts.plus/images/logo.png -->
-                <img src="https://api.prts.plus/images/logo.png"
-                     width="200" height="200"
-                     alt="logo"
-                >
+                <#include "logo.ftlh">
             </td>
         </tr>
         <tr>
@@ -30,7 +27,7 @@
 
                                     <td style=" color: #333333; font-size: 15px; font-weight: 400; line-height: 1.4;   padding: 15px 5px;"
                                     >
-                                        {0}
+                                        ${content}
                                     </td>
                                 </tr>
                                 </tbody>
@@ -46,9 +43,7 @@
 
                 <div>
                     ※此邮件为自动发送，请不要回复此邮件<br>
-                    ※如果您没有进行相关操作而受到了此邮件<br>
-                    可能是他人输入了错误的邮箱地址，请删除此邮件<br>
-
+                    MAA Team<br>
                     ·
                     <a style="color: #3777b0; text-decoration: none;"
                        href="https://maa.plus/" target="_blank">
