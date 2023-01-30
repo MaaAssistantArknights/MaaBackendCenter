@@ -4,6 +4,7 @@ package plus.maa.backend.common.bo;
 import java.io.File;
 import java.util.*;
 
+import cn.hutool.extra.mail.MailAccount;
 import cn.hutool.extra.mail.MailUtil;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -25,9 +26,13 @@ public class EmailBusinessObject {
     // 默认邮件模板
     private static final String DEFAULT_MAIL_TEMPLATE = "mail.ftlh";
 
+
     private static final String DEFAULT_MAIL_INCLUDE_HTML_TEMPLATE = "mail-includeHtml.ftlh";
 
     private static final String DEFAULT_TITLE_PREFIX = "Maa Backend Center";
+
+    //发件人信息
+    private MailAccount mailAccount;
 
     private List<String> emailList = new ArrayList<>();
 
@@ -103,7 +108,7 @@ public class EmailBusinessObject {
     public void sendCustomStaticTemplatesFiles(String content, String templateName, File... files) {
         try {
             log.info("send email to: {}, templateName: {}, content: {}", emailList, templateName, content);
-            MailUtil.send(emailList, title, parseMessages(content, templateName), isHtml, files);
+            send(this.mailAccount, emailList, title, parseMessages(content, templateName), isHtml, files);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -116,7 +121,7 @@ public class EmailBusinessObject {
     public void sendVerificationCodeMessage(String code) {
 
         try {
-            MailUtil.send(this.emailList
+            send(this.mailAccount, this.emailList
                     , this.title + "  验证码"
                     , defaultMailIncludeHtmlTemplates(
                             "mail-vCode.ftlh", code
@@ -132,7 +137,7 @@ public class EmailBusinessObject {
     public void sendActivateUrlMessage(String url) {
 
         try {
-            MailUtil.send(this.emailList
+            send(this.mailAccount, this.emailList
                     , this.title + "  账户激活"
                     , defaultMailIncludeHtmlTemplates(
                             "mail-activateUrl.ftlh", url
@@ -182,5 +187,19 @@ public class EmailBusinessObject {
      */
     private String parseMessages(String content, String obj, String templateName) {
         return FreeMarkerUtils.parseData(Map.of("content", content, "obj", obj), templateName);
+    }
+
+    /**
+     * 发送邮件给多人
+     *
+     * @param mailAccount 邮件帐户信息
+     * @param tos         收件人列表
+     * @param subject     标题
+     * @param content     正文
+     * @param isHtml      是否为HTML格式
+     * @param files       附件列表
+     */
+    private void send(MailAccount mailAccount, Collection<String> tos, String subject, String content, boolean isHtml, File... files) {
+        MailUtil.send(mailAccount, tos, null, null, subject, content, null, isHtml, files);
     }
 }
