@@ -36,6 +36,10 @@ public class EmailService {
     private String user;
     @Value("${maa-copilot.mail.pass}")
     private String pass;
+    @Value("${maa-copilot.mail.starttls}")
+    private boolean starttls;
+    @Value("${maa-copilot.mail.ssl}")
+    private boolean ssl;
 
 
     private final RedisCache redisCache;
@@ -54,8 +58,8 @@ public class EmailService {
                 .setFrom(from)
                 .setUser(user)
                 .setPass(pass)
-                .setSslEnable(true)
-                .setStarttlsEnable(true);
+                .setSslEnable(ssl)
+                .setStarttlsEnable(starttls);
         return mailAccount;
     }
 

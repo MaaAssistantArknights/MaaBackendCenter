@@ -47,6 +47,8 @@ maa-copilot:
     user: 2842775752
     # 密码(拿到的授权码)
     pass: 123456789
+    starttls: true
+    ssl: false
 
 
 
