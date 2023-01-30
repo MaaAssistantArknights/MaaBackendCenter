@@ -10,6 +10,9 @@ import plus.maa.backend.repository.UserRepository;
 import plus.maa.backend.repository.entity.MaaUser;
 import plus.maa.backend.service.model.LoginUser;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * @author AnselYuki
  */
@@ -31,7 +34,14 @@ public class UserDetailServiceImpl implements UserDetailsService {
         if (user == null) {
             throw new UsernameNotFoundException("用户不存在");
         }
+
+        Integer status = user.getStatus();
+        Set<String> authorities = new HashSet<>();
+
+        for (int i = 0; i <= status; i++) {
+            authorities.add(Integer.toString(i));
+        }
         //数据封装成UserDetails返回
-        return new LoginUser(user);
+        return new LoginUser(user, authorities);
     }
 }

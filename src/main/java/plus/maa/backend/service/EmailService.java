@@ -2,6 +2,7 @@ package plus.maa.backend.service;
 
 import java.util.UUID;
 
+import cn.hutool.extra.mail.MailAccount;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,7 +26,39 @@ public class EmailService {
     @Value("${maa-copilot.info.domain}")
     private String domain;
 
+    @Value("${maa-copilot.mail.host}")
+    private String host;
+    @Value("${maa-copilot.mail.port}")
+    private Integer port;
+    @Value("${maa-copilot.mail.from}")
+    private String from;
+    @Value("${maa-copilot.mail.user}")
+    private String user;
+    @Value("${maa-copilot.mail.pass}")
+    private String pass;
+
+
     private final RedisCache redisCache;
+
+
+    /**
+     * 装配发件人信息
+     *
+     * @return mailAccount
+     */
+    private MailAccount getMailAccount() {
+        MailAccount mailAccount = new MailAccount();
+        mailAccount
+                .setHost(host)
+                .setPort(port)
+                .setFrom(from)
+                .setUser(user)
+                .setPass(pass)
+                .setSslEnable(true)
+                .setStarttlsEnable(true);
+        return mailAccount;
+    }
+
 
     /**
      * 发送验证码
@@ -38,6 +71,7 @@ public class EmailService {
         //6位随机数验证码
         String vcode = RandomStringUtils.random(6, true, true).toUpperCase();
         EmailBusinessObject.builder()
+                .setMailAccount(getMailAccount())
                 .setEmail(email)
                 .sendVerificationCodeMessage(vcode);
         //存redis
@@ -59,6 +93,7 @@ public class EmailService {
         String uuid = UUID.randomUUID().toString().replaceAll("-", "");
         String url = domain + "/user/activateAccount?nonce=" + uuid;
         EmailBusinessObject.builder()
+                .setMailAccount(getMailAccount())
                 .setEmail(email)
                 .sendActivateUrlMessage(url);
         //存redis

@@ -1,13 +1,29 @@
+#已弃用
+#已弃用
+#已弃用
+#已弃用
+#已弃用
+#已弃用
+#已弃用
+#已弃用
+#已弃用
+#已弃用
+#已弃用
+#已弃用
+#已弃用
+#已弃用
+#已弃用
+#已弃用
 # 邮件服务器的SMTP地址
 host = smtp.qq.com
 # 邮件服务器的SMTP的端口 (qq为465,测试用的qq)
 port = 465
 # 发件人（必须正确，否则发送失败）
-from = 2842777777@qq.com
+from = 1
 # 用户名(foxmail和qq为发件人邮箱前缀 阿里云邮箱的user是邮箱的完整地址，即xxx@aliyun.com)
-user = 2842777777
+user = 2
 # 密码(拿到的授权码)
-pass =
+pass = 3
 # 使用STARTTLS安全链接
 startttlsEnable = true
 

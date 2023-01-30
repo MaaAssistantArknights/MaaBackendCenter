@@ -21,7 +21,6 @@ public class CopilotQueriesRequest {
     private boolean desc;
     private String orderBy;
     private String language;
-    private String rating;
 
 
     //params参数 没有这一段spring将无法set参数
