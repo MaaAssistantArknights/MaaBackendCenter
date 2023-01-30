@@ -2,10 +2,10 @@ package plus.maa.backend.controller;
 
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import lombok.RequiredArgsConstructor;
 import plus.maa.backend.controller.response.ArkLevelInfo;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.service.ArkLevelService;
@@ -22,4 +22,5 @@ public class ArkLevelController {
     public MaaResult<List<ArkLevelInfo>> getLevels() {
         return MaaResult.success(arkLevelService.getArkLevelInfos());
     }
+
 }
