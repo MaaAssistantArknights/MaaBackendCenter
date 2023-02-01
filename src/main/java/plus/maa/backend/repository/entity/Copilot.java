@@ -4,7 +4,6 @@ package plus.maa.backend.repository.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -152,7 +151,7 @@ public class Copilot implements Serializable {
         private int costChanges;
         //默认 -1
         private int cooling = -1;
-        @NotBlank(message = "干员或干员组名不能为空")
+
         private String name;
 
         // 部署干员的位置。
@@ -180,7 +179,7 @@ public class Copilot implements Serializable {
     @AllArgsConstructor
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public static class Doc {
-        @NotBlank(message = "作业标题不能为空")
+
         private String title;
         private String titleColor = "Gray";
         private String details = "";
