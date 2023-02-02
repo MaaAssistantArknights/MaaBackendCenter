@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -245,12 +246,11 @@ public class CopilotService {
      */
 
     //如果是查最新数据或指定搜索 就不缓存
-    // FIXME 缓存在线上存在问题
-//    @Cacheable(value = "copilotPage",
-//            condition = "#request.levelKeyword != null && ''.equals(#request.levelKeyword) " +
-//                    "|| #request.operator != null && ''.equals(#request.operator)" +
-//                    "|| #request.orderBy != null && ('hot'.equals(#request.orderBy) || 'views'.equals(#request.orderBy)) " +
-//                    "|| #request.uploaderId != null && ''.equals(#request.uploaderId)")
+    @Cacheable(value = "copilotPage",
+            condition = "#request.levelKeyword != null && ''.equals(#request.levelKeyword) " +
+                    "|| #request.operator != null && ''.equals(#request.operator)" +
+                    "|| #request.orderBy != null && ('hot'.equals(#request.orderBy) || 'views'.equals(#request.orderBy)) " +
+                    "|| #request.uploaderId != null && ''.equals(#request.uploaderId)")
     public MaaResult<CopilotPageInfo> queriesCopilot(LoginUser user, CopilotQueriesRequest request) {
         String userId = getUserId(user);
         String orderBy = "id";
