@@ -67,8 +67,10 @@ public class CopilotService {
     public void init() {
         //初始化copilotId, 从数据库中获取最大的copilotId
         //如果数据库中没有数据, 则从20000开始
-        copilotRepository.findFirstByOrderByCopilotIdDesc().ifPresent(last ->
-                copilotId.set(last.getCopilotId() + 1));
+        copilotRepository.findFirstByOrderByCopilotIdDesc()
+                .map(Copilot::getCopilotId)
+                .ifPresent(last ->
+                        copilotId.set(last + 1));
 
         log.info("作业自增ID初始化完成: {}", copilotId.get());
     }
