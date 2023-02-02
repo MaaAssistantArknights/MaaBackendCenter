@@ -50,7 +50,7 @@ public class SecurityConfig {
             "/copilot/upload"
     };
 
-    private static final String[] URL_AUTHNTICATION_2 = {
+    private static final String[] URL_AUTHENTICATION_2 = {
             "/copilot/refactorExistingDatabase"
     };
     private final AuthenticationConfiguration authenticationConfiguration;
@@ -84,7 +84,7 @@ public class SecurityConfig {
                         //指定接口需要指定权限才能访问 如果不开启RBAC注释掉这一段即可
                         .requestMatchers(URL_AUTHENTICATION_1).hasAuthority("1")
                         //此处用于管理员操作接口
-                        .requestMatchers(URL_AUTHNTICATION_2).hasAuthority("2")
+                        .requestMatchers(URL_AUTHENTICATION_2).hasAuthority("2")
 
                         .anyRequest().authenticated();
 
