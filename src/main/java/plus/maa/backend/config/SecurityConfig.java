@@ -76,8 +76,7 @@ public class SecurityConfig {
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 
         //允许匿名访问的接口，如果是测试想要方便点就把这段全注释掉
-        http.authorizeHttpRequests(authorize -> {
-            try {
+        http.authorizeHttpRequests(authorize ->
                 authorize.requestMatchers(URL_WHITELIST).anonymous()
                         .requestMatchers(URL_PERMIT_ALL).permitAll()
                         //权限 0 未激活 1 激活  等等.. (拥有权限1必然拥有权限0 拥有权限2必然拥有权限1、0)
@@ -85,13 +84,7 @@ public class SecurityConfig {
                         .requestMatchers(URL_AUTHENTICATION_1).hasAuthority("1")
                         //此处用于管理员操作接口
                         .requestMatchers(URL_AUTHENTICATION_2).hasAuthority("2")
-
-                        .anyRequest().authenticated();
-
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
+                        .anyRequest().authenticated());
 
         //添加过滤器
         http.addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class);
