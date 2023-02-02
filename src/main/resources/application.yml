@@ -13,7 +13,7 @@ spring:
     check-template-location: false
   # 缓存配置，使用caffeine缓存框架，缓存时长为5分钟，最大缓存数量500
   cache:
-    cache-names: arkLevel, arkLevels ,copilotPage
+    cache-names: arkLevel, arkLevels, copilotPage
     type: caffeine
     caffeine:
       spec: maximumSize=500,expireAfterWrite=300s
