@@ -121,7 +121,12 @@ public class CopilotService {
         //去除name的冗余部分
         copilotDTO.getGroups().forEach(groups -> groups.getOpers().forEach(opers -> opers.setName(opers.getName().replaceAll("[\"“”]", ""))));
         copilotDTO.getOpers().forEach(operator -> operator.setName(operator.getName().replaceAll("[\"“”]", "")));
-        copilotDTO.getActions().forEach(action -> action.setName(action.getName().replaceAll("[\"“”]", "")));
+
+        //actions name 不是必须
+        copilotDTO.getActions().forEach(action -> {
+            if (action.getName() == null) return;
+            action.setName(action.getName().replaceAll("[\"“”]", ""));
+        });
         return copilotDTO;
     }
 
