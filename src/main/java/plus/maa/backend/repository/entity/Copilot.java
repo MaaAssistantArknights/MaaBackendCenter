@@ -80,7 +80,7 @@ public class Copilot implements Serializable {
     @NoArgsConstructor
     @AllArgsConstructor
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-    public static class OperationGroup {
+    public static class OperationGroup implements Serializable {
         // 干员名
         private String name;
         //技能序号。可选，默认 1
@@ -95,7 +95,7 @@ public class Copilot implements Serializable {
     @NoArgsConstructor
     @AllArgsConstructor
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-    public static class Operators {
+    public static class Operators implements Serializable {
         // 干员名
         private String name;
         //技能序号。可选，默认 1
@@ -109,7 +109,7 @@ public class Copilot implements Serializable {
         @NoArgsConstructor
         @AllArgsConstructor
         @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-        public static class Requirements {
+        public static class Requirements implements Serializable {
             // 精英化等级。可选，默认为 0, 不要求精英化等级
             private int elite;
             // 干员等级。可选，默认为 0
@@ -129,7 +129,7 @@ public class Copilot implements Serializable {
     @NoArgsConstructor
     @AllArgsConstructor
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-    public static class Groups {
+    public static class Groups implements Serializable {
         // 群组名
         private String name;
 
@@ -143,7 +143,7 @@ public class Copilot implements Serializable {
     @NoArgsConstructor
     @AllArgsConstructor
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-    public static class Action {
+    public static class Action implements Serializable {
         // 操作类型，可选，默认 "Deploy"
         private String type = "Deploy";
         private int kills;
@@ -178,7 +178,7 @@ public class Copilot implements Serializable {
     @NoArgsConstructor
     @AllArgsConstructor
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-    public static class Doc {
+    public static class Doc implements Serializable {
 
         private String title;
         private String titleColor = "Gray";

@@ -5,13 +5,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import plus.maa.backend.repository.entity.Copilot;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CopilotInfo {
+public class CopilotInfo implements Serializable {
     private String id;
     private Long copilotId;
     private String minimumRequired;
