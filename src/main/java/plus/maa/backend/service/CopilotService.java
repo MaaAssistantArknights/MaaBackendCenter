@@ -518,8 +518,9 @@ public class CopilotService {
         //评分数少于一定数量
         info.setNotEnoughRating(copilotRating.getRatingUsers().size() > 5);
 
-
         try {
+            //兼容客户端, 将作业ID替换为数字ID
+            copilot.setId(Long.toString(copilot.getCopilotId()));
             info.setContent(mapper.writeValueAsString(copilot));
         } catch (JsonProcessingException e) {
             log.error("json序列化失败", e);

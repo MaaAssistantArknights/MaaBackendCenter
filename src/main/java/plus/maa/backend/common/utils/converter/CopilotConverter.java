@@ -44,6 +44,7 @@ public interface CopilotConverter {
     @Mapping(target = "firstUploadTime", ignore = true)
     Copilot toCopilot(CopilotDTO copilotDto);
 
+    @Mapping(target = "id", source = "copilotId")
     @Mapping(target = "level", ignore = true)
     @Mapping(target = "content", ignore = true)
     @Mapping(target = "available", ignore = true)
