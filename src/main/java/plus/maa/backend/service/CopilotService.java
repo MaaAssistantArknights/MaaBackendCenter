@@ -245,8 +245,11 @@ public class CopilotService {
                 request.isDesc() ? Sort.Direction.DESC : Sort.Direction.ASC,
                 Optional.ofNullable(request.getOrderBy())
                         .filter(StringUtils::isNotBlank)
-                        .map(ob -> Objects.equals(request.getOrderBy(), "hot") ? "hotScore" : request.getOrderBy())
-                        .orElse("copilotId"));
+                        .map(ob -> switch (ob) {
+                            case "hot" -> "hotScore";
+                            case "id" -> "copilotId";
+                            default -> request.getOrderBy();
+                        }).orElse("copilotId"));
         int page = 1;
         int limit = 10;
         boolean hasNext = false;
