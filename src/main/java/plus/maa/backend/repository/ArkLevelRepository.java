@@ -1,18 +1,17 @@
 package plus.maa.backend.repository;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.data.mongodb.repository.Query;
-import org.springframework.stereotype.Repository;
-import plus.maa.backend.repository.entity.ArkLevel;
-import plus.maa.backend.repository.entity.ArkLevelSha;
-
 import java.util.List;
 import java.util.stream.Stream;
+
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
+
+import plus.maa.backend.repository.entity.ArkLevel;
+import plus.maa.backend.repository.entity.ArkLevelSha;
 
 /**
  * @author john180
  */
-@Repository
 public interface ArkLevelRepository extends MongoRepository<ArkLevel, String> {
     List<ArkLevelSha> findAllShaBy();
 

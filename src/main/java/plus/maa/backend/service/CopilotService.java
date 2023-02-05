@@ -1,12 +1,11 @@
 package plus.maa.backend.service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PostConstruct;
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
@@ -18,32 +17,27 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import plus.maa.backend.common.utils.converter.CopilotConverter;
-import plus.maa.backend.controller.request.CopilotCUDRequest;
-import plus.maa.backend.controller.request.CopilotDTO;
-import plus.maa.backend.controller.request.CopilotQueriesRequest;
-import plus.maa.backend.controller.request.CopilotRatingReq;
+import plus.maa.backend.controller.request.*;
 import plus.maa.backend.controller.response.*;
-import plus.maa.backend.repository.CopilotRatingRepository;
-import plus.maa.backend.repository.CopilotRepository;
-import plus.maa.backend.repository.RedisCache;
-import plus.maa.backend.repository.TableLogicDelete;
+import plus.maa.backend.repository.*;
 import plus.maa.backend.repository.entity.Copilot;
 import plus.maa.backend.repository.entity.CopilotRating;
 import plus.maa.backend.service.model.LoginUser;
 import plus.maa.backend.service.model.RatingCache;
 import plus.maa.backend.service.model.RatingType;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
-
 /**
  * @author LoMu
- * Date  2022-12-25 19:57
+ *         Date 2022-12-25 19:57
  */
 @Slf4j
 @Service
@@ -65,12 +59,11 @@ public class CopilotService {
 
     @PostConstruct
     public void init() {
-        //初始化copilotId, 从数据库中获取最大的copilotId
-        //如果数据库中没有数据, 则从20000开始
+        // 初始化copilotId, 从数据库中获取最大的copilotId
+        // 如果数据库中没有数据, 则从20000开始
         copilotRepository.findFirstByOrderByCopilotIdDesc()
                 .map(Copilot::getCopilotId)
-                .ifPresent(last ->
-                        copilotId.set(last + 1));
+                .ifPresent(last -> copilotId.set(last + 1));
 
         log.info("作业自增ID初始化完成: {}", copilotId.get());
     }
@@ -83,7 +76,7 @@ public class CopilotService {
      */
     private Copilot findById(String id) {
         Copilot copilot;
-        //如果id为纯数字, 则使用copilotId查询
+        // 如果id为纯数字, 则使用copilotId查询
         if (StringUtils.isNumeric(id)) {
             copilot = copilotRepository.findByCopilotId(Long.parseLong(id)).orElse(null);
         } else {
@@ -120,18 +113,19 @@ public class CopilotService {
      */
     private CopilotDTO CorrectCopilot(CopilotDTO copilotDTO) {
 
-        //去除name的冗余部分
-        copilotDTO.getGroups().forEach(groups -> groups.getOpers().forEach(opers -> opers.setName(opers.getName().replaceAll("[\"“”]", ""))));
+        // 去除name的冗余部分
+        copilotDTO.getGroups().forEach(
+                groups -> groups.getOpers().forEach(opers -> opers.setName(opers.getName().replaceAll("[\"“”]", ""))));
         copilotDTO.getOpers().forEach(operator -> operator.setName(operator.getName().replaceAll("[\"“”]", "")));
 
-        //actions name 不是必须
+        // actions name 不是必须
         copilotDTO.getActions().forEach(action -> {
-            if (action.getName() == null) return;
+            if (action.getName() == null)
+                return;
             action.setName(action.getName().replaceAll("[\"“”]", ""));
         });
         return copilotDTO;
     }
-
 
     /**
      * 将content解析为CopilotDTO
@@ -159,12 +153,12 @@ public class CopilotService {
      * @param content 前端编辑json作业内容
      * @return 返回_id
      */
-    public MaaResult<String> upload(LoginUser user, String content) {
+    public MaaResult<Long> upload(LoginUser user, String content) {
         CopilotDTO copilotDTO = CorrectCopilot(parseToCopilotDto(content));
         Date date = new Date();
-        //将其转换为数据库存储对象
+        // 将其转换为数据库存储对象
         Copilot copilot = CopilotConverter.INSTANCE.toCopilot(copilotDTO);
-        //设置copilotId
+        // 设置copilotId
         copilot.setCopilotId(copilotId.getAndIncrement());
 
         copilot.setUploaderId(user.getMaaUser().getUserId())
@@ -172,13 +166,9 @@ public class CopilotService {
                 .setFirstUploadTime(date)
                 .setUploadTime(date);
 
-        try {
-            String id = copilotRepository.insert(copilot).getId();
-            copilotRatingRepository.insert(new CopilotRating(id));
-            return MaaResult.success(id);
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
+        copilotRepository.insert(copilot);
+        copilotRatingRepository.insert(new CopilotRating(copilot.getCopilotId()));
+        return MaaResult.success(copilot.getCopilotId());
     }
 
     /**
@@ -208,19 +198,19 @@ public class CopilotService {
      */
     public MaaResult<CopilotInfo> getCopilotById(LoginUser user, String id) {
         String userId = getUserId(user);
-        //根据ID获取作业, 如作业不存在则抛出异常返回
+        // 根据ID获取作业, 如作业不存在则抛出异常返回
         Copilot copilot = findById(id);
-        //如果使用数字ID查询, 则将其转换为MongoId
+        // 如果使用数字ID查询, 则将其转换为MongoId
         final String saveId = StringUtils.isNumeric(id) ? copilot.getId() : id;
         if (Objects.isNull(saveId)) {
             throw new MaaResultException("作业数据异常");
         }
-        //60分钟内限制同一个用户对访问量的增加
+        // 60分钟内限制同一个用户对访问量的增加
         RatingCache cache = redisCache.getCache("views:" + userId, RatingCache.class);
         if (Objects.isNull(cache) || !cache.getCache().contains(saveId)) {
             Query query = Query.query(Criteria.where("id").is(saveId).and("delete").is(false));
             Update update = new Update();
-            //增加一次views
+            // 增加一次views
             update.inc("views");
             mongoTemplate.updateFirst(query, update, Copilot.class);
             if (Objects.isNull(cache)) {
@@ -236,7 +226,6 @@ public class CopilotService {
         return MaaResult.success(info);
     }
 
-
     /**
      * 分页查询
      *
@@ -245,44 +234,34 @@ public class CopilotService {
      * @return CopilotPageInfo
      */
 
-    //如果是查最新数据或指定搜索 就不缓存
-    @Cacheable(value = "copilotPage",
-            condition = "#request.levelKeyword != null && ''.equals(#request.levelKeyword) " +
-                    "|| #request.operator != null && ''.equals(#request.operator)" +
-                    "|| #request.orderBy != null && ('hot'.equals(#request.orderBy) || 'views'.equals(#request.orderBy)) " +
-                    "|| #request.uploaderId != null && ''.equals(#request.uploaderId)")
+    // 如果是查最新数据或指定搜索 就不缓存
+    @Cacheable(value = "copilotPage", condition = "#request.levelKeyword != null && ''.equals(#request.levelKeyword) " +
+            "|| #request.operator != null && ''.equals(#request.operator)" +
+            "|| #request.orderBy != null && ('hot'.equals(#request.orderBy) || 'views'.equals(#request.orderBy)) " +
+            "|| #request.uploaderId != null && ''.equals(#request.uploaderId)")
     public MaaResult<CopilotPageInfo> queriesCopilot(LoginUser user, CopilotQueriesRequest request) {
         String userId = getUserId(user);
-        String orderBy = "id";
-        Sort.Order sortOrder = new Sort.Order(Sort.Direction.ASC, orderBy);
+        Sort.Order sortOrder = new Sort.Order(
+                request.isDesc() ? Sort.Direction.DESC : Sort.Direction.ASC,
+                Optional.ofNullable(request.getOrderBy())
+                        .filter(StringUtils::isNotBlank)
+                        .map(ob -> Objects.equals(request.getOrderBy(), "hot") ? "hotScore" : request.getOrderBy())
+                        .orElse("copilotId"));
         int page = 1;
         int limit = 10;
         boolean hasNext = false;
 
-        //判断是否有值 无值则为默认
+        // 判断是否有值 无值则为默认
         if (request.getPage() > 0) {
             page = request.getPage();
         }
         if (request.getLimit() > 0) {
             limit = request.getLimit();
         }
-        if (StringUtils.isNotBlank(request.getOrderBy())) {
-            if ("hot".equals(request.getOrderBy())) {
-                orderBy = "hotScore";
-            } else {
-                orderBy = request.getOrderBy();
-            }
-        }
-        if (request.isDesc()) {
-            sortOrder = new Sort.Order(Sort.Direction.DESC, orderBy);
-        }
 
-        Pageable pageable = PageRequest.of(
-                page - 1, limit
-                , Sort.by(sortOrder));
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(sortOrder));
 
-
-        //模糊查询
+        // 模糊查询
         Query queryObj = new Query();
         Criteria criteriaObj = new Criteria();
         Set<Criteria> andQueries = new HashSet<>();
@@ -290,21 +269,21 @@ public class CopilotService {
         Set<Criteria> orQueries = new HashSet<>();
         andQueries.add(Criteria.where("delete").is(false));
 
-        //匹配模糊查询
+        // 匹配模糊查询
         if (StringUtils.isNotBlank(request.getLevelKeyword())) {
             ArkLevelInfo levelInfo = levelService.queryLevel(request.getLevelKeyword());
             if (levelInfo != null) {
                 andQueries.add(Criteria.where("stageName").regex(levelInfo.getStageId()));
             }
         }
-        //or模糊查询
+        // or模糊查询
         if (StringUtils.isNotBlank(request.getDocument())) {
             orQueries.add(Criteria.where("doc.title").regex(request.getDocument()));
             orQueries.add(Criteria.where("doc.details").regex(request.getDocument()));
         }
 
-        //operator 包含或排除干员查询
-        //排除~开头的 查询非~开头
+        // operator 包含或排除干员查询
+        // 排除~开头的 查询非~开头
         String oper = request.getOperator();
         if (!ObjectUtils.isEmpty(oper)) {
             oper = oper.replaceAll("[“\"”]", "");
@@ -312,45 +291,48 @@ public class CopilotService {
             for (String operator : operators) {
                 if (operator.startsWith("~")) {
                     String exclude = operator.substring(1);
-                    //排除查询指定干员
+                    // 排除查询指定干员
                     norQueries.add(Criteria.where("opers.name").regex(exclude));
                 } else {
-                    //模糊匹配查询指定干员
+                    // 模糊匹配查询指定干员
                     andQueries.add(Criteria.where("opers.name").regex(operator));
                 }
             }
         }
 
-        //匹配查询
+        // 匹配查询
         if (StringUtils.isNotBlank(request.getUploaderId()) && "me".equals(request.getUploaderId())) {
             String Id = user.getMaaUser().getUserId();
             if (!ObjectUtils.isEmpty(Id))
                 andQueries.add(Criteria.where("uploader").is(Id));
         }
 
-        //封装查询
-        if (andQueries.size() > 0) criteriaObj.andOperator(andQueries);
-        if (norQueries.size() > 0) criteriaObj.norOperator(norQueries);
-        if (orQueries.size() > 0) criteriaObj.orOperator(orQueries);
+        // 封装查询
+        if (andQueries.size() > 0)
+            criteriaObj.andOperator(andQueries);
+        if (norQueries.size() > 0)
+            criteriaObj.norOperator(norQueries);
+        if (orQueries.size() > 0)
+            criteriaObj.orOperator(orQueries);
         queryObj.addCriteria(criteriaObj);
 
-        //查询总数
+        // 查询总数
         long count = mongoTemplate.count(queryObj, Copilot.class);
 
-        //分页排序查询
+        // 分页排序查询
         List<Copilot> copilots = mongoTemplate.find(queryObj.with(pageable), Copilot.class);
-        //填充前端所需信息
+        // 填充前端所需信息
         List<CopilotInfo> infos = copilots.stream().map(copilot -> formatCopilot(userId, copilot)).toList();
 
-        //计算页面
+        // 计算页面
         int pageNumber = (int) Math.ceil((double) count / limit);
 
-        //判断是否存在下一页
+        // 判断是否存在下一页
         if (count - (long) page * limit > 0) {
             hasNext = true;
         }
 
-        //封装数据
+        // 封装数据
         CopilotPageInfo copilotPageInfo = new CopilotPageInfo();
         copilotPageInfo.setTotal(count)
                 .setHasNext(hasNext)
@@ -362,7 +344,7 @@ public class CopilotService {
     /**
      * 增量更新
      *
-     * @param copilotCUDRequest 作业_id  content
+     * @param copilotCUDRequest 作业_id content
      * @return null
      */
     public MaaResult<Void> update(LoginUser loginUser, CopilotCUDRequest copilotCUDRequest) {
@@ -382,7 +364,6 @@ public class CopilotService {
         }
     }
 
-
     /**
      * 评分相关
      *
@@ -393,21 +374,22 @@ public class CopilotService {
     public MaaResult<String> rates(LoginUser loginUser, CopilotRatingReq request) {
         String userId = getUserId(loginUser);
         String rating = request.getRating();
-        //获取评分表
+        // 获取评分表
         Query query = Query.query(Criteria.where("copilotId").is(request.getId()));
         Update update = new Update();
 
-        //查询指定作业评分
+        // 查询指定作业评分
         CopilotRating copilotRating = mongoTemplate.findOne(query, CopilotRating.class);
-        //如果是早期创建的作业表可能无法做出评分
-        if (copilotRating == null) throw new MaaResultException("server error: Rating is null");
+        // 如果是早期创建的作业表可能无法做出评分
+        if (copilotRating == null)
+            throw new MaaResultException("server error: Rating is null");
 
         boolean existUserId = false;
-        //点赞数
+        // 点赞数
         int likeCount = 0;
         List<CopilotRating.RatingUser> ratingUsers = copilotRating.getRatingUsers();
 
-        //查看是否已评分 如果已评分则进行更新 如果做出相同的评分则直接返回
+        // 查看是否已评分 如果已评分则进行更新 如果做出相同的评分则直接返回
         for (CopilotRating.RatingUser ratingUser : ratingUsers) {
             if (userId.equals(ratingUser.getUserId())) {
                 if (ratingUser.getRating().equals(rating))
@@ -416,12 +398,14 @@ public class CopilotService {
                 ratingUser.setRating(rating);
 
             }
-            if ("Like".equals(ratingUser.getRating())) likeCount++;
+            if ("Like".equals(ratingUser.getRating()))
+                likeCount++;
         }
-        //如果新添加的评分是like
-        if ("Like".equals(rating)) likeCount++;
+        // 如果新添加的评分是like
+        if ("Like".equals(rating))
+            likeCount++;
 
-        //不存在评分 则添加新的评分
+        // 不存在评分 则添加新的评分
         CopilotRating.RatingUser ratingUser;
         if (!existUserId) {
             ratingUser = new CopilotRating.RatingUser(userId, rating);
@@ -430,27 +414,25 @@ public class CopilotService {
             mongoTemplate.updateFirst(query, update, CopilotRating.class);
         }
 
-
-        //计算评分相关
+        // 计算评分相关
         int ratingCount = copilotRating.getRatingUsers().size();
         double rawRatingLevel = (double) likeCount / ratingCount;
         BigDecimal bigDecimal = new BigDecimal(rawRatingLevel);
-        //只取一位小数点
+        // 只取一位小数点
         double ratingLevel = bigDecimal.setScale(1, RoundingMode.HALF_UP).doubleValue();
 
-        //更新数据
+        // 更新数据
         copilotRating.setRatingUsers(ratingUsers);
         copilotRating.setRatingLevel((int) (ratingLevel * 10));
         copilotRating.setRatingRatio(ratingLevel);
         mongoTemplate.save(copilotRating);
         // TODO 计算热度 (暂时)
         double hotScore = rawRatingLevel + likeCount;
-        //更新热度
-        if (copilotRepository.findById(request.getId()).isPresent()) {
-            Copilot copilot = copilotRepository.findById(request.getId()).get();
+        // 更新热度
+        copilotRepository.findByCopilotId(request.getId()).ifPresent(copilot -> {
             copilot.setHotScore(hotScore);
             mongoTemplate.save(copilot);
-        }
+        });
 
         return MaaResult.success("评分成功");
     }
@@ -463,9 +445,11 @@ public class CopilotService {
      */
     public MaaResult<Void> refactorExistingDatabase() {
         List<Copilot> all = copilotRepository.findAll();
-        List<Copilot> notExistRatingTable = all.stream().filter(a -> !copilotRatingRepository.existsCopilotRatingByCopilotId(a.getId())).toList();
-        notExistRatingTable.forEach(copilot -> copilotRatingRepository.insert(new CopilotRating(copilot.getId())));
-        //转换数据存储类型
+        List<Copilot> notExistRatingTable = all.stream()
+                .filter(a -> !copilotRatingRepository.existsCopilotRatingByCopilotId(a.getId())).toList();
+        notExistRatingTable
+                .forEach(copilot -> copilotRatingRepository.insert(new CopilotRating(copilot.getCopilotId())));
+        // 转换数据存储类型
         copilotRepository.saveAll(all);
         return MaaResult.success(null);
     }
@@ -476,12 +460,12 @@ public class CopilotService {
      */
     private CopilotInfo formatCopilot(String userId, Copilot copilot) {
         CopilotInfo info = CopilotConverter.INSTANCE.toCopilotInfo(copilot);
-        //设置干员信息
+        // 设置干员信息
         List<String> operStrList = copilot.getOpers().stream()
                 .map(o -> String.format("%s::%s", o.getName(), o.getSill()))
                 .toList();
 
-        //设置干员组干员信息
+        // 设置干员组干员信息
         if (copilot.getGroups() != null) {
             List<String> operators = new ArrayList<>();
             for (Copilot.Groups group : copilot.getGroups()) {
@@ -499,27 +483,30 @@ public class CopilotService {
         info.setOperators(operStrList);
 
         ArkLevelInfo levelInfo = levelService.findByLevelId(copilot.getStageName());
-        CopilotRating copilotRating = copilotRatingRepository.findByCopilotId(copilot.getId());
+        Optional<CopilotRating> copilotRating = copilotRatingRepository.findByCopilotId(copilot.getCopilotId());
 
-        //判断评分中是否有当前用户评分记录 有则获取其评分并将其转换为  0 = None 1 = LIKE  2 = DISLIKE
-        for (CopilotRating.RatingUser ratingUser : copilotRating.getRatingUsers()) {
-            if (Objects.equals(userId, ratingUser.getUserId())) {
-                int rating = RatingType.fromRatingType(ratingUser.getRating()).getDisplay();
-                info.setRatingType(rating);
-                break;
-            }
-        }
+        // 判断评分中是否有当前用户评分记录 有则获取其评分并将其转换为 0 = None 1 = LIKE 2 = DISLIKE
+        copilotRating.map(cr -> {
+            info.setRatingRatio(cr.getRatingRatio());
+            info.setRatingLevel(cr.getRatingLevel());
+            return cr.getRatingUsers();
+        }).ifPresent(rus -> {
+            // 评分数少于一定数量
+            info.setNotEnoughRating(rus.size() > 5);
+            rus.stream()
+                    .filter(ru -> Objects.equals(userId, ru.getUserId()))
+                    .findFirst()
+                    .ifPresent(fst -> {
+                        int rating = RatingType.fromRatingType(fst.getRating()).getDisplay();
+                        info.setRatingType(rating);
+                    });
+        });
 
-        info.setRatingRatio(copilotRating.getRatingRatio());
-        info.setRatingLevel(copilotRating.getRatingLevel());
         info.setLevel(levelInfo);
         info.setAvailable(true);
 
-        //评分数少于一定数量
-        info.setNotEnoughRating(copilotRating.getRatingUsers().size() > 5);
-
         try {
-            //兼容客户端, 将作业ID替换为数字ID
+            // 兼容客户端, 将作业ID替换为数字ID
             copilot.setId(Long.toString(copilot.getCopilotId()));
             info.setContent(mapper.writeValueAsString(copilot));
         } catch (JsonProcessingException e) {
@@ -527,7 +514,6 @@ public class CopilotService {
         }
         return info;
     }
-
 
     /**
      * 获取用户唯一标识符<br/>
@@ -538,12 +524,12 @@ public class CopilotService {
      * @return 用户标识符
      */
     private String getUserId(LoginUser loginUser) {
-        //TODO  此处更换为调用IPUtil工具类
+        // TODO 此处更换为调用IPUtil工具类
         String id = request.getRemoteAddr();
         if (request.getHeader("x-forwarded-for") != null) {
             id = request.getHeader("x-forwarded-for");
         }
-        //账户已登录? 获取userId
+        // 账户已登录? 获取userId
         if (!ObjectUtils.isEmpty(loginUser)) {
             id = loginUser.getMaaUser().getUserId();
         }

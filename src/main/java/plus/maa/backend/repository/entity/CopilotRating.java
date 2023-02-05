@@ -1,16 +1,18 @@
 package plus.maa.backend.repository.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * @author LoMu
@@ -27,7 +29,7 @@ public class CopilotRating {
 
     //作业id
     @Indexed
-    private String copilotId;
+    private Long copilotId;
     //评分用户
     private List<RatingUser> ratingUsers = new ArrayList<>();
 
@@ -37,7 +39,7 @@ public class CopilotRating {
     //评级比率 十分之一代表半颗星
     private double ratingRatio;
 
-    public CopilotRating(String copilotId) {
+    public CopilotRating(Long copilotId) {
         this.copilotId = copilotId;
     }
 

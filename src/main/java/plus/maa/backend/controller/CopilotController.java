@@ -1,7 +1,8 @@
 package plus.maa.backend.controller;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import lombok.RequiredArgsConstructor;
 import plus.maa.backend.common.annotation.CurrentUser;
 import plus.maa.backend.common.annotation.JsonSchema;
 import plus.maa.backend.controller.request.CopilotCUDRequest;
@@ -26,7 +27,7 @@ public class CopilotController {
 
     @JsonSchema
     @PostMapping("/upload")
-    public MaaResult<String> uploadCopilot(
+    public MaaResult<Long> uploadCopilot(
             @CurrentUser LoginUser loginUser,
             @RequestBody CopilotCUDRequest request) {
         return copilotService.upload(loginUser, request.getContent());

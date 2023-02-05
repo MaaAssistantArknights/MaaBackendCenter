@@ -10,7 +10,7 @@ import lombok.Data;
 @Data
 public class CopilotRatingReq {
     @NotBlank(message = "评分作业id不能为空")
-    private String id;
+    private Long id;
     @NotBlank(message = "评分不能为空")
     private String rating;
 }
