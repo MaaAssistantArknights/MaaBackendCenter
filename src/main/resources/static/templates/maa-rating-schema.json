@@ -6,7 +6,7 @@
       "type": "string",
       "enum": [
         "Like",
-        "DisLike",
+        "Dislike",
         "None"
       ]
     }

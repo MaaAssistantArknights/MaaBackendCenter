@@ -25,6 +25,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import plus.maa.backend.common.utils.IpUtil;
 import plus.maa.backend.common.utils.converter.CopilotConverter;
 import plus.maa.backend.controller.request.*;
 import plus.maa.backend.controller.response.*;
@@ -37,7 +38,7 @@ import plus.maa.backend.service.model.RatingType;
 
 /**
  * @author LoMu
- *         Date 2022-12-25 19:57
+ * Date 2022-12-25 19:57
  */
 @Slf4j
 @Service
@@ -390,6 +391,7 @@ public class CopilotService {
         boolean existUserId = false;
         // 点赞数
         int likeCount = 0;
+        int disLikeCount = 0;
         List<CopilotRating.RatingUser> ratingUsers = copilotRating.getRatingUsers();
 
         // 查看是否已评分 如果已评分则进行更新 如果做出相同的评分则直接返回
@@ -403,10 +405,14 @@ public class CopilotService {
             }
             if ("Like".equals(ratingUser.getRating()))
                 likeCount++;
+            if ("Dislike".equals(ratingUser.getRating()))
+                disLikeCount++;
         }
         // 如果新添加的评分是like
         if ("Like".equals(rating))
             likeCount++;
+        if ("Dislike".equals(rating))
+            disLikeCount++;
 
         // 不存在评分 则添加新的评分
         CopilotRating.RatingUser ratingUser;
@@ -430,7 +436,7 @@ public class CopilotService {
         copilotRating.setRatingRatio(ratingLevel);
         mongoTemplate.save(copilotRating);
         // TODO 计算热度 (暂时)
-        double hotScore = rawRatingLevel + likeCount;
+        double hotScore = rawRatingLevel + (likeCount - disLikeCount);
         // 更新热度
         copilotRepository.findByCopilotId(request.getId()).ifPresent(copilot -> {
             copilot.setHotScore(hotScore);
@@ -529,14 +535,11 @@ public class CopilotService {
      * @return 用户标识符
      */
     private String getUserId(LoginUser loginUser) {
-        // TODO 此处更换为调用IPUtil工具类
-        String id = request.getRemoteAddr();
-        if (request.getHeader("x-forwarded-for") != null) {
-            id = request.getHeader("x-forwarded-for");
-        }
-        // 账户已登录? 获取userId
+        String id;
         if (!ObjectUtils.isEmpty(loginUser)) {
             id = loginUser.getMaaUser().getUserId();
+        } else {
+            id = IpUtil.getIpAddr(request);
         }
         return id;
     }
