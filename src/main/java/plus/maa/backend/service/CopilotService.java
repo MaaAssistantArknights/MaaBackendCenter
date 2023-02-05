@@ -505,12 +505,14 @@ public class CopilotService {
         info.setLevel(levelInfo);
         info.setAvailable(true);
 
-        try {
-            // 兼容客户端, 将作业ID替换为数字ID
-            copilot.setId(Long.toString(copilot.getCopilotId()));
-            info.setContent(mapper.writeValueAsString(copilot));
-        } catch (JsonProcessingException e) {
-            log.error("json序列化失败", e);
+        if (copilot.getCopilotId() != null) {
+            try {
+                // 兼容客户端, 将作业ID替换为数字ID
+                copilot.setId(Long.toString(copilot.getCopilotId()));
+                info.setContent(mapper.writeValueAsString(copilot));
+            } catch (JsonProcessingException e) {
+                log.error("json序列化失败", e);
+            }
         }
         return info;
     }
