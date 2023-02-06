@@ -3,6 +3,7 @@ package plus.maa.backend.repository;
 import java.util.Date;
 import java.util.Optional;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
@@ -21,7 +22,12 @@ public class TableLogicDelete {
     private final CopilotRepository copilotRepository;
 
     public void deleteCopilotById(String id) {
-        Optional<Copilot> byId = copilotRepository.findById(id);
+        Optional<Copilot> byId;
+        if (StringUtils.isNumeric(id)) {
+            byId = copilotRepository.findByCopilotId(Long.parseLong(id));
+        } else {
+            byId = copilotRepository.findById(id);
+        }
         if (byId.isEmpty())
             throw new MaaResultException("copilot Id不存在");
         Date date = new Date();
