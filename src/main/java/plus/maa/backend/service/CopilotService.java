@@ -430,7 +430,7 @@ public class CopilotService {
     public MaaResult<Void> refactorExistingDatabase() {
         List<Copilot> all = copilotRepository.findAll();
         List<Copilot> notExistRatingTable = all.stream()
-                .filter(a -> !copilotRatingRepository.existsCopilotRatingByCopilotId(a.getId())).toList();
+                .filter(a -> !copilotRatingRepository.existsCopilotRatingByCopilotId(a.getCopilotId())).toList();
         notExistRatingTable
                 .forEach(copilot -> copilotRatingRepository.insert(new CopilotRating(copilot.getCopilotId())));
         // 转换数据存储类型

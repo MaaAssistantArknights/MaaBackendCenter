@@ -14,5 +14,5 @@ public interface CopilotRatingRepository extends MongoRepository<CopilotRating, 
 
     Optional<CopilotRating> findByCopilotId(Long copilotId);
 
-    boolean existsCopilotRatingByCopilotId(String copilotId);
+    boolean existsCopilotRatingByCopilotId(Long copilotId);
 }
