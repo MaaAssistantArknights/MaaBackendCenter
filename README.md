@@ -39,7 +39,7 @@
 7. 修改配置文件 `application-prod.yml`
 8. 运行项目 `java -jar MaaBackendCenter-1.0-SNAPSHOT.jar --spring.config.location=./application-prod.yml`
 
-## native 编译
+## native 编译（请使用native分支）
 
 1. 安装 [GraalVM](https://github.com/graalvm/graalvm-ce-builds/releases)
    Java17，并配置好环境变量，部分功能需要正确配置 `JAVA_HOME` 变量为 GraalVM 安装目录才能正常使用
