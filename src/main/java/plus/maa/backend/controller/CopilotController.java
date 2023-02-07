@@ -41,25 +41,28 @@ public class CopilotController {
 
     @GetMapping("/get/{id}")
     public MaaResult<CopilotInfo> getCopilotById(@CurrentUser LoginUser user,
-                                                 @PathVariable("id") String id) {
+                                                 @PathVariable("id") Long id) {
         return copilotService.getCopilotById(user, id);
     }
 
 
     @GetMapping("/query")
-    public MaaResult<CopilotPageInfo> queriesCopilot(@CurrentUser LoginUser loginUser, CopilotQueriesRequest copilotQueriesRequest) {
+    public MaaResult<CopilotPageInfo> queriesCopilot(@CurrentUser LoginUser loginUser,
+                                                     CopilotQueriesRequest copilotQueriesRequest) {
         return copilotService.queriesCopilot(loginUser, copilotQueriesRequest);
     }
 
     @JsonSchema
     @PostMapping("/update")
-    public MaaResult<Void> updateCopilot(@CurrentUser LoginUser loginUser, @RequestBody CopilotCUDRequest copilotCUDRequest) {
+    public MaaResult<Void> updateCopilot(@CurrentUser LoginUser loginUser,
+                                         @RequestBody CopilotCUDRequest copilotCUDRequest) {
         return copilotService.update(loginUser, copilotCUDRequest);
     }
 
     @JsonSchema
     @PostMapping("/rating")
-    public MaaResult<String> ratesCopilotOperation(@CurrentUser LoginUser loginUser, @RequestBody CopilotRatingReq copilotRatingReq) {
+    public MaaResult<String> ratesCopilotOperation(@CurrentUser LoginUser loginUser,
+                                                   @RequestBody CopilotRatingReq copilotRatingReq) {
         return copilotService.rates(loginUser, copilotRatingReq);
     }
 
