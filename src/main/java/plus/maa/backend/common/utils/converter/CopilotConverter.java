@@ -5,6 +5,9 @@ import org.mapstruct.factory.Mappers;
 import plus.maa.backend.controller.request.CopilotDTO;
 import plus.maa.backend.controller.response.CopilotInfo;
 import plus.maa.backend.repository.entity.Copilot;
+import plus.maa.backend.repository.entity.MaaUser;
+
+import java.util.Date;
 
 
 /**
@@ -24,6 +27,8 @@ public interface CopilotConverter {
      * @param copilotDTO 更新值
      * @param copilot    从数据库中查出的原始值
      */
+    @Mapping(target = "deleteTime", ignore = true)
+    @Mapping(target = "delete", constant = "false")
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "copilotId", ignore = true)
     @Mapping(target = "views", ignore = true)
@@ -36,14 +41,20 @@ public interface CopilotConverter {
     void updateCopilotFromDto(CopilotDTO copilotDTO, @MappingTarget Copilot copilot);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "views", ignore = true)
-    @Mapping(target = "hotScore", ignore = true)
-    @Mapping(target = "uploader", ignore = true)
-    @Mapping(target = "uploaderId", ignore = true)
-    @Mapping(target = "uploadTime", ignore = true)
-    @Mapping(target = "firstUploadTime", ignore = true)
-    Copilot toCopilot(CopilotDTO copilotDto);
+    @Mapping(target = "deleteTime", ignore = true)
+    @Mapping(target = "views", constant = "0L")
+    @Mapping(target = "hotScore", constant = "0")
+    @Mapping(target = "delete", constant = "false")
+    @Mapping(target = "uploadTime", source = "now")
+    @Mapping(target = "firstUploadTime", source = "now")
+    @Mapping(target = "uploaderId", source = "maaUser.userId")
+    @Mapping(target = "uploader", source = "maaUser.userName")
+    Copilot toCopilot(CopilotDTO copilotDto, MaaUser maaUser, Date now, Long copilotId);
 
+    @Mapping(target = "ratingType", ignore = true)
+    @Mapping(target = "ratingRatio", ignore = true)
+    @Mapping(target = "ratingLevel", ignore = true)
+    @Mapping(target = "notEnoughRating", ignore = true)
     @Mapping(target = "id", source = "copilotId")
     @Mapping(target = "level", ignore = true)
     @Mapping(target = "content", ignore = true)

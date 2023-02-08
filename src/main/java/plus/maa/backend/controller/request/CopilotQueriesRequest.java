@@ -15,7 +15,6 @@ public class CopilotQueriesRequest {
     private String levelKeyword;
     private String operator;
     private String content;
-    private String uploader;
     private String document;
     private String uploaderId;
     private boolean desc;

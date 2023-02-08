@@ -1,29 +1,27 @@
 package plus.maa.backend.handler;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.micrometer.common.util.StringUtils;
-import jakarta.annotation.Resource;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import java.lang.reflect.Method;
+import java.util.concurrent.TimeUnit;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.micrometer.common.util.StringUtils;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import plus.maa.backend.common.annotation.AccessLimit;
 import plus.maa.backend.common.utils.IpUtil;
 import plus.maa.backend.common.utils.SpringUtil;
 import plus.maa.backend.common.utils.WebUtils;
 import plus.maa.backend.controller.response.MaaResult;
-import plus.maa.backend.repository.RedisCache;
-
-import java.lang.reflect.Method;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Baip1995
@@ -33,11 +31,8 @@ public class AccessLimitInterceptHandlerImpl implements HandlerInterceptor {
 
     private static final Logger logger = LoggerFactory.getLogger(AccessLimitInterceptHandlerImpl.class);
 
-
-
-
-    //@Resource
-    //private RedisCache redisCache;
+    // @Resource
+    // private RedisCache redisCache;
     /**
      * 接口调用前检查对方ip是否频繁调用接口
      *
@@ -48,7 +43,8 @@ public class AccessLimitInterceptHandlerImpl implements HandlerInterceptor {
      * @throws Exception
      */
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+            throws Exception {
         try {
             // handler是否为 HandleMethod 实例
             if (handler instanceof HandlerMethod) {
@@ -60,7 +56,8 @@ public class AccessLimitInterceptHandlerImpl implements HandlerInterceptor {
                 if (!method.isAnnotationPresent(AccessLimit.class)) {
                     return true;
                 }
-                StringRedisTemplate  stringRedisTemplate = SpringUtil.getApplicationContext().getBean(StringRedisTemplate.class);
+                StringRedisTemplate stringRedisTemplate = SpringUtil.getApplicationContext()
+                        .getBean(StringRedisTemplate.class);
 
                 // 获取注解上的内容
                 AccessLimit accessLimit = method.getAnnotation(AccessLimit.class);
@@ -93,26 +90,27 @@ public class AccessLimitInterceptHandlerImpl implements HandlerInterceptor {
                     logger.info(key + " 请求过于频繁");
                     MaaResult<Void> result = MaaResult.fail(HttpStatus.TOO_MANY_REQUESTS.value(), "请求过于频繁");
                     String json = new ObjectMapper().writeValueAsString(result);
-                    WebUtils.renderString(response, json , HttpStatus.TOO_MANY_REQUESTS.value());
+                    WebUtils.renderString(response, json, HttpStatus.TOO_MANY_REQUESTS.value());
                     return false;
                 }
             }
         } catch (Exception e) {
             logger.error("API请求限流拦截异常，异常原因：", e);
-            //throw new Exception("");
+            // throw new Exception("");
         }
         return true;
     }
 
     @Override
-    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler,
+            ModelAndView modelAndView) throws Exception {
 
     }
 
     @Override
-    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex)
+            throws Exception {
 
     }
-
 
 }

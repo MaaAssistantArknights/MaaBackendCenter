@@ -149,21 +149,9 @@ public class EmailBusinessObject {
         }
     }
 
-
-    /**
-     * 默认邮件模板
-     *
-     * @param content 自定义html内容
-     * @return 封装邮件模板内容
-     */
-    private String defaultMailTemplates(String content) {
-        return parseMessages(content, DEFAULT_MAIL_TEMPLATE);
-    }
-
     private String defaultMailIncludeHtmlTemplates(String content, String obj) {
         return parseMessages(content, obj, DEFAULT_MAIL_INCLUDE_HTML_TEMPLATE);
     }
-
 
     /**
      * 将ftl文件转换为String对象
