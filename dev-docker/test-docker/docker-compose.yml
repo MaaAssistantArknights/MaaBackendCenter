@@ -1,0 +1,35 @@
+# native docker
+services:
+  redis:
+    image: redis:latest
+    restart: always
+    volumes:
+      - redis_data:/data
+    networks:
+      - maa
+  mongo:
+    image: mongo:latest
+    volumes:
+      - mongo_data:/data/db
+    restart: always
+    networks:
+      - maa
+  maa_backend:
+    image: dragove/maa-backend-center:latest
+    container_name: maa-backend
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongo/MaaBackend
+      - SPRING_DATA_REDIS_URI=redis://redis/1
+    ports:
+      - "8848:8848"
+    restart: always
+    networks:
+      - maa
+    depends_on:
+      - redis
+      - mongo
+networks:
+  maa:
+volumes:
+  redis_data:
+  mongo_data:
