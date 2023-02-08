@@ -1,0 +1,17 @@
+# Systemd >235
+[Unit]
+Description=MAABackendCenter
+After=network.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+# 工作目录
+WorkingDirectory=/opt/maa
+# 记得更改 JAR 名
+ExecStart=/usr/bin/java -jar MaaBackendCenter.jar --spring.profiles.active=prod
+RuntimeDirectory=maa
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target
