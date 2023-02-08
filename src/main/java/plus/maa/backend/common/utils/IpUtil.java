@@ -1,9 +1,9 @@
 package plus.maa.backend.common.utils;
 
-import jakarta.servlet.http.HttpServletRequest;
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @Author leaves
@@ -31,10 +31,9 @@ public class IpUtil {
                 InetAddress inet = null;
                 try {
                     inet = InetAddress.getLocalHost();
-                } catch (UnknownHostException e) {
-                    e.printStackTrace();
+                    ip = inet.getHostAddress();
+                } catch (UnknownHostException ignored) {
                 }
-                ip = inet.getHostAddress();
             }
         }
         // 对于通过多个代理的情况，第一个IP为客户端真实IP,多个IP按照','分割
