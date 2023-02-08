@@ -40,7 +40,7 @@ import plus.maa.backend.service.model.RatingType;
 
 /**
  * @author LoMu
- * Date 2022-12-25 19:57
+ *         Date 2022-12-25 19:57
  */
 @Slf4j
 @Service
@@ -111,17 +111,14 @@ public class CopilotService {
     private CopilotDTO correctCopilot(CopilotDTO copilotDTO) {
 
         // 去除name的冗余部分
-        copilotDTO.getGroups().forEach(group ->
-                group.getOpers().forEach(oper ->
-                        oper.setName(oper.getName().replaceAll("[\"“”]", ""))));
-        copilotDTO.getOpers().forEach(operator ->
-                operator.setName(operator.getName().replaceAll("[\"“”]", "")));
+        copilotDTO.getGroups().forEach(
+                group -> group.getOpers().forEach(oper -> oper.setName(oper.getName().replaceAll("[\"“”]", ""))));
+        copilotDTO.getOpers().forEach(operator -> operator.setName(operator.getName().replaceAll("[\"“”]", "")));
 
         // actions name 不是必须
-        copilotDTO.getActions().forEach(action ->
-                action.setName(Optional.ofNullable(action.getName())
-                        .map(name -> name.replaceAll("[\"“”]", ""))
-                        .orElse(null)));
+        copilotDTO.getActions().forEach(action -> action.setName(Optional.ofNullable(action.getName())
+                .map(name -> name.replaceAll("[\"“”]", ""))
+                .orElse(null)));
         return copilotDTO;
     }
 
@@ -150,10 +147,9 @@ public class CopilotService {
     public MaaResult<Long> upload(LoginUser user, String content) {
         CopilotDTO copilotDTO = correctCopilot(parseToCopilotDto(content));
         // 将其转换为数据库存储对象
-        Copilot copilot =
-                CopilotConverter.INSTANCE.toCopilot(
-                        copilotDTO, user.getMaaUser(),
-                        new Date(), copilotId.getAndIncrement());
+        Copilot copilot = CopilotConverter.INSTANCE.toCopilot(
+                copilotDTO, user.getMaaUser(),
+                new Date(), copilotId.getAndIncrement());
         copilotRepository.insert(copilot);
         copilotRatingRepository.insert(new CopilotRating(copilot.getCopilotId()));
         return MaaResult.success(copilot.getCopilotId());
@@ -179,7 +175,8 @@ public class CopilotService {
         return MaaResult.success(copilotOPtional.map(copilot -> {
             // 60分钟内限制同一个用户对访问量的增加
             RatingCache cache = redisCache.getCache("views:" + userId, RatingCache.class);
-            if (Objects.isNull(cache) || !cache.getCopilotIds().contains(id)) {
+            if (Objects.isNull(cache) || Objects.isNull(cache.getCopilotIds()) ||
+                    !cache.getCopilotIds().contains(id)) {
                 Query query = Query.query(Criteria.where("copilotId").is(id).and("delete").is(false));
                 Update update = new Update();
                 // 增加一次views
