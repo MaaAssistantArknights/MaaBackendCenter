@@ -1,20 +1,22 @@
 package plus.maa.backend.repository.entity;
 
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
+import java.io.Serializable;
+import java.util.Date;
+import java.util.List;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.io.Serializable;
-import java.util.Date;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.Accessors;
 
 /**
  * @author LoMu
@@ -84,7 +86,7 @@ public class Copilot implements Serializable {
         // 干员名
         private String name;
         //技能序号。可选，默认 1
-        private int sill = 1;
+        private int skill = 1;
         // 技能用法。可选，默认 0
         private int skillUsage;
 
@@ -99,7 +101,7 @@ public class Copilot implements Serializable {
         // 干员名
         private String name;
         //技能序号。可选，默认 1
-        private int sill = 1;
+        private int skill = 1;
         // 技能用法。可选，默认 0
         private int skillUsage;
         private Requirements requirements = new Requirements();

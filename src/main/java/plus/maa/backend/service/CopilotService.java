@@ -1,12 +1,11 @@
 package plus.maa.backend.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Sets;
-import jakarta.annotation.PostConstruct;
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
@@ -19,28 +18,25 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Sets;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import plus.maa.backend.common.utils.IpUtil;
 import plus.maa.backend.common.utils.converter.CopilotConverter;
-import plus.maa.backend.controller.request.CopilotCUDRequest;
-import plus.maa.backend.controller.request.CopilotDTO;
-import plus.maa.backend.controller.request.CopilotQueriesRequest;
-import plus.maa.backend.controller.request.CopilotRatingReq;
+import plus.maa.backend.controller.request.*;
 import plus.maa.backend.controller.response.*;
-import plus.maa.backend.repository.CopilotRatingRepository;
-import plus.maa.backend.repository.CopilotRepository;
-import plus.maa.backend.repository.RedisCache;
-import plus.maa.backend.repository.TableLogicDelete;
+import plus.maa.backend.repository.*;
 import plus.maa.backend.repository.entity.Copilot;
 import plus.maa.backend.repository.entity.CopilotRating;
 import plus.maa.backend.service.model.LoginUser;
 import plus.maa.backend.service.model.RatingCache;
 import plus.maa.backend.service.model.RatingType;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author LoMu
@@ -445,7 +441,7 @@ public class CopilotService {
         CopilotInfo info = CopilotConverter.INSTANCE.toCopilotInfo(copilot);
         // 设置干员信息
         List<String> operStrList = copilot.getOpers().stream()
-                .map(o -> String.format("%s::%s", o.getName(), o.getSill()))
+                .map(o -> String.format("%s::%s", o.getName(), o.getSkill()))
                 .toList();
 
         // 设置干员组干员信息
@@ -454,7 +450,7 @@ public class CopilotService {
             for (Copilot.Groups group : copilot.getGroups()) {
                 if (group.getOpers() != null) {
                     for (Copilot.OperationGroup oper : group.getOpers()) {
-                        String format = String.format("%s::%s", oper.getName(), oper.getSill());
+                        String format = String.format("%s::%s", oper.getName(), oper.getSkill());
                         operators.add(format);
                     }
                 }
@@ -475,7 +471,7 @@ public class CopilotService {
             return cr.getRatingUsers();
         }).ifPresent(rus -> {
             // 评分数少于一定数量
-            info.setNotEnoughRating(rus.size() > 5);
+            info.setNotEnoughRating(rus.size() <= 5);
             rus.stream()
                     .filter(ru -> Objects.equals(userId, ru.getUserId()))
                     .findFirst()
