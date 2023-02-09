@@ -149,7 +149,8 @@ public class CopilotService {
         // 将其转换为数据库存储对象
         Copilot copilot = CopilotConverter.INSTANCE.toCopilot(
                 copilotDTO, user.getMaaUser(),
-                new Date(), copilotId.getAndIncrement());
+                new Date(), copilotId.getAndIncrement(),
+                content);
         copilotRepository.insert(copilot);
         copilotRatingRepository.insert(new CopilotRating(copilot.getCopilotId()));
         return MaaResult.success(copilot.getCopilotId());
@@ -328,7 +329,7 @@ public class CopilotService {
         verifyOwner(loginUser, id);
         Copilot rawCopilot = findById(id);
         rawCopilot.setUploadTime(new Date());
-        CopilotConverter.INSTANCE.updateCopilotFromDto(copilotDTO, rawCopilot);
+        CopilotConverter.INSTANCE.updateCopilotFromDto(copilotDTO, content, rawCopilot);
         copilotRepository.save(rawCopilot);
         return MaaResult.success(null);
     }
@@ -484,7 +485,9 @@ public class CopilotService {
         try {
             // 兼容客户端, 将作业ID替换为数字ID
             copilot.setId(Long.toString(copilot.getCopilotId()));
-            info.setContent(mapper.writeValueAsString(copilot));
+            if (StringUtils.isEmpty(info.getContent())) {
+                info.setContent(mapper.writeValueAsString(copilot));
+            }
         } catch (JsonProcessingException e) {
             log.error("json序列化失败", e);
         }

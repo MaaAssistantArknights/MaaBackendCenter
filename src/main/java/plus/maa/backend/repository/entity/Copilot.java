@@ -73,6 +73,9 @@ public class Copilot implements Serializable {
     private Date firstUploadTime;
     private Date uploadTime;
 
+    // 原始数据
+    private String content;
+
     @JsonIgnore
     private boolean delete;
     @JsonIgnore

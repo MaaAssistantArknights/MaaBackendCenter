@@ -38,7 +38,7 @@ public interface CopilotConverter {
     @Mapping(target = "uploadTime", ignore = true)
     @Mapping(target = "firstUploadTime", ignore = true)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    void updateCopilotFromDto(CopilotDTO copilotDTO, @MappingTarget Copilot copilot);
+    void updateCopilotFromDto(CopilotDTO copilotDTO, String content, @MappingTarget Copilot copilot);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "deleteTime", ignore = true)
@@ -49,7 +49,7 @@ public interface CopilotConverter {
     @Mapping(target = "firstUploadTime", source = "now")
     @Mapping(target = "uploaderId", source = "maaUser.userId")
     @Mapping(target = "uploader", source = "maaUser.userName")
-    Copilot toCopilot(CopilotDTO copilotDto, MaaUser maaUser, Date now, Long copilotId);
+    Copilot toCopilot(CopilotDTO copilotDto, MaaUser maaUser, Date now, Long copilotId, String content);
 
     @Mapping(target = "ratingType", ignore = true)
     @Mapping(target = "ratingRatio", ignore = true)
@@ -57,7 +57,6 @@ public interface CopilotConverter {
     @Mapping(target = "notEnoughRating", ignore = true)
     @Mapping(target = "id", source = "copilotId")
     @Mapping(target = "level", ignore = true)
-    @Mapping(target = "content", ignore = true)
     @Mapping(target = "available", ignore = true)
     @Mapping(target = "opers", ignore = true)
     @Mapping(target = "operators", ignore = true)
