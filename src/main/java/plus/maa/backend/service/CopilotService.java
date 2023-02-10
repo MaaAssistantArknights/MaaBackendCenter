@@ -172,8 +172,8 @@ public class CopilotService {
     public MaaResult<CopilotInfo> getCopilotById(LoginUser user, Long id) {
         String userId = getUserId(user);
         // 根据ID获取作业, 如作业不存在则抛出异常返回
-        Optional<Copilot> copilotOPtional = copilotRepository.findByCopilotId(id);
-        return MaaResult.success(copilotOPtional.map(copilot -> {
+        Optional<Copilot> copilotOptional = copilotRepository.findByCopilotId(id);
+        return MaaResult.success(copilotOptional.map(copilot -> {
             // 60分钟内限制同一个用户对访问量的增加
             RatingCache cache = redisCache.getCache("views:" + userId, RatingCache.class);
             if (Objects.isNull(cache) || Objects.isNull(cache.getCopilotIds()) ||

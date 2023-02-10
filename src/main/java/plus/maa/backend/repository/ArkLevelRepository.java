@@ -43,5 +43,5 @@ public interface ArkLevelRepository extends MongoRepository<ArkLevel, String> {
                 ]
             }
             """)
-    Stream<ArkLevel> queryLevel(String stageId);
+    Stream<ArkLevel> queryLevelByKeyword(String keyword);
 }

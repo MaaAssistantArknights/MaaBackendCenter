@@ -96,8 +96,8 @@ public class ArkLevelService {
     }
 
 
-    public ArkLevelInfo queryLevel(String levelId) {
-        ArkLevel level = arkLevelRepo.queryLevel(levelId).findAny().orElse(null);
+    public ArkLevelInfo queryLevel(String keyword) {
+        ArkLevel level = arkLevelRepo.queryLevelByKeyword(keyword).findAny().orElse(null);
         return ArkLevelConverter.INSTANCE.convert(level);
     }
 
