@@ -117,14 +117,28 @@ public class CopilotService {
     private CopilotDTO correctCopilot(CopilotDTO copilotDTO) {
 
         // 去除name的冗余部分
-        copilotDTO.getGroups().forEach(
-                group -> group.getOpers().forEach(oper -> oper.setName(oper.getName().replaceAll("[\"“”]", ""))));
-        copilotDTO.getOpers().forEach(operator -> operator.setName(operator.getName().replaceAll("[\"“”]", "")));
+        // todo 优化空处理代码美观程度
+        if (copilotDTO.getGroups() != null) {
+            copilotDTO.getGroups().forEach(
+                    group -> {
+                        if (group.getOpers() != null) {
+                            group.getOpers().forEach(oper -> oper.setName(oper.getName() == null ?
+                                    null : oper.getName().replaceAll("[\"“”]", "")));
+                        }
+                    }
+            );
+        }
+        if (copilotDTO.getOpers() != null) {
+            copilotDTO.getOpers().forEach(operator ->
+                    operator.setName(operator.getName() == null ?
+                            null : operator.getName().replaceAll("[\"“”]", "")));
+        }
 
         // actions name 不是必须
-        copilotDTO.getActions().forEach(action -> action.setName(Optional.ofNullable(action.getName())
-                .map(name -> name.replaceAll("[\"“”]", ""))
-                .orElse(null)));
+        if (copilotDTO.getActions() != null) {
+            copilotDTO.getActions().forEach(action -> action.setName(action.getName() == null ?
+                    null : action.getName().replaceAll("[\"“”]", "")));
+        }
         // 使用stageId存储作业关卡信息
         ArkLevelInfo level = levelService.findByLevelIdFuzzy(copilotDTO.getStageName());
         if (level != null) {
