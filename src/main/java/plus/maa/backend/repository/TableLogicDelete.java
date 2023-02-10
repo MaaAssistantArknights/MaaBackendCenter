@@ -36,12 +36,12 @@ public class TableLogicDelete {
         copilot.setDeleteTime(date);
         copilotRepository.save(copilot);
 
-        Optional<CopilotRating> copilotRating = copilotRatingRepository.findByCopilotId(Long.valueOf(id));
-        copilotRating.ifPresent(rating -> {
-            rating.setDelete(true);
-            rating.setDeleteTime(date);
-            copilotRatingRepository.save(rating);
-        });
+        CopilotRating copilotRating = copilotRatingRepository.findByCopilotId(Long.valueOf(id));
+        if (copilotRating != null) {
+            copilotRating.setDelete(true);
+            copilotRating.setDeleteTime(date);
+            copilotRatingRepository.save(copilotRating);
+        }
 
     }
 }

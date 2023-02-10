@@ -1,11 +1,13 @@
 package plus.maa.backend.service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
@@ -18,29 +20,33 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Sets;
-
-import jakarta.annotation.PostConstruct;
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import plus.maa.backend.common.utils.IpUtil;
 import plus.maa.backend.common.utils.converter.CopilotConverter;
-import plus.maa.backend.controller.request.*;
+import plus.maa.backend.controller.request.CopilotCUDRequest;
+import plus.maa.backend.controller.request.CopilotDTO;
+import plus.maa.backend.controller.request.CopilotQueriesRequest;
+import plus.maa.backend.controller.request.CopilotRatingReq;
 import plus.maa.backend.controller.response.*;
-import plus.maa.backend.repository.*;
+import plus.maa.backend.repository.CopilotRatingRepository;
+import plus.maa.backend.repository.CopilotRepository;
+import plus.maa.backend.repository.RedisCache;
+import plus.maa.backend.repository.TableLogicDelete;
 import plus.maa.backend.repository.entity.Copilot;
 import plus.maa.backend.repository.entity.CopilotRating;
 import plus.maa.backend.service.model.LoginUser;
 import plus.maa.backend.service.model.RatingCache;
 import plus.maa.backend.service.model.RatingType;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+
 /**
  * @author LoMu
- *         Date 2022-12-25 19:57
+ * Date 2022-12-25 19:57
  */
 @Slf4j
 @Service
@@ -58,7 +64,7 @@ public class CopilotService {
     private final TableLogicDelete tableLogicDelete;
 
     private final CopilotRatingRepository copilotRatingRepository;
-    private final AtomicLong copilotId = new AtomicLong(20000);
+    private final AtomicLong copilotIncrementId = new AtomicLong(20000);
 
     @PostConstruct
     public void init() {
@@ -66,9 +72,9 @@ public class CopilotService {
         // 如果数据库中没有数据, 则从20000开始
         copilotRepository.findFirstByOrderByCopilotIdDesc()
                 .map(Copilot::getCopilotId)
-                .ifPresent(last -> copilotId.set(last + 1));
+                .ifPresent(last -> copilotIncrementId.set(last + 1));
 
-        log.info("作业自增ID初始化完成: {}", copilotId.get());
+        log.info("作业自增ID初始化完成: {}", copilotIncrementId.get());
     }
 
     /**
@@ -119,6 +125,11 @@ public class CopilotService {
         copilotDTO.getActions().forEach(action -> action.setName(Optional.ofNullable(action.getName())
                 .map(name -> name.replaceAll("[\"“”]", ""))
                 .orElse(null)));
+        // 使用stageId存储作业关卡信息
+        ArkLevelInfo level = levelService.findByLevelIdFuzzy(copilotDTO.getStageName());
+        if (level != null) {
+            copilotDTO.setStageName(level.getStageId());
+        }
         return copilotDTO;
     }
 
@@ -149,7 +160,7 @@ public class CopilotService {
         // 将其转换为数据库存储对象
         Copilot copilot = CopilotConverter.INSTANCE.toCopilot(
                 copilotDTO, user.getMaaUser(),
-                new Date(), copilotId.getAndIncrement(),
+                new Date(), copilotIncrementId.getAndIncrement(),
                 content);
         copilotRepository.insert(copilot);
         copilotRatingRepository.insert(new CopilotRating(copilot.getCopilotId()));
@@ -193,7 +204,9 @@ public class CopilotService {
                             }, 60, TimeUnit.MINUTES);
                 }
             }
-            return formatCopilot(userId, copilot);
+            ArkLevelInfo level = levelService.findByLevelIdFuzzy(copilot.getStageName());
+            CopilotRating rating = copilotRatingRepository.findByCopilotId(copilot.getCopilotId());
+            return formatCopilot(userId, copilot, level, rating);
         }).orElse(null));
     }
 
@@ -238,7 +251,7 @@ public class CopilotService {
 
         // 匹配模糊查询
         if (StringUtils.isNotBlank(request.getLevelKeyword())) {
-            ArkLevelInfo levelInfo = levelService.queryLevel(request.getLevelKeyword());
+            ArkLevelInfo levelInfo = levelService.queryLevelByKeyword(request.getLevelKeyword());
             if (levelInfo != null) {
                 andQueries.add(Criteria.where("stageName").regex(levelInfo.getStageId()));
             }
@@ -297,8 +310,17 @@ public class CopilotService {
         // 分页排序查询
         List<Copilot> copilots = mongoTemplate.find(queryObj.with(pageable), Copilot.class);
         // 填充前端所需信息
-        List<CopilotInfo> infos = copilots.stream().map(copilot -> formatCopilot(userId, copilot)).toList();
-
+        Set<String> stageIds = copilots.stream().map(Copilot::getStageName).collect(Collectors.toSet());
+        Set<Long> copilotIds = copilots.stream().map(Copilot::getCopilotId).collect(Collectors.toSet());
+        List<ArkLevelInfo> levels = levelService.findByStageIds(stageIds);
+        Map<String, ArkLevelInfo> levelByStageId = Maps.uniqueIndex(levels, ArkLevelInfo::getStageId);
+        List<CopilotRating> ratings = copilotRatingRepository.findByCopilotIdIn(copilotIds);
+        Map<Long, CopilotRating> ratingByCopilotId = Maps.uniqueIndex(ratings, CopilotRating::getCopilotId);
+        List<CopilotInfo> infos = copilots.stream().map(copilot ->
+                        formatCopilot(userId, copilot,
+                                levelByStageId.get(copilot.getStageName()),
+                                ratingByCopilotId.get(copilot.getCopilotId())))
+                .toList();
         // 计算页面
         int pageNumber = (int) Math.ceil((double) count / limit);
 
@@ -384,9 +406,8 @@ public class CopilotService {
         }
 
         // 不存在评分 则添加新的评分
-        CopilotRating.RatingUser ratingUser;
         if (!existUserId) {
-            ratingUser = new CopilotRating.RatingUser(userId, rating);
+            CopilotRating.RatingUser ratingUser = new CopilotRating.RatingUser(userId, rating);
             ratingUsers.add(ratingUser);
             update.addToSet("ratingUsers", ratingUser);
             mongoTemplate.updateFirst(query, update, CopilotRating.class);
@@ -435,7 +456,7 @@ public class CopilotService {
     /**
      * 将数据库内容转换为前端所需格式<br>
      */
-    private CopilotInfo formatCopilot(String userId, Copilot copilot) {
+    private CopilotInfo formatCopilot(String userId, Copilot copilot, ArkLevelInfo levelInfo, CopilotRating rating) {
         CopilotInfo info = CopilotConverter.INSTANCE.toCopilotInfo(copilot);
         // 设置干员信息
         List<String> operStrList = copilot.getOpers().stream()
@@ -459,8 +480,7 @@ public class CopilotService {
         info.setOpers(operStrList);
         info.setOperators(operStrList);
 
-        ArkLevelInfo levelInfo = levelService.findByLevelId(copilot.getStageName());
-        Optional<CopilotRating> copilotRating = copilotRatingRepository.findByCopilotId(copilot.getCopilotId());
+        Optional<CopilotRating> copilotRating = Optional.ofNullable(rating);
 
         // 判断评分中是否有当前用户评分记录 有则获取其评分并将其转换为 0 = None 1 = LIKE 2 = DISLIKE
         copilotRating.map(cr -> {
@@ -473,12 +493,17 @@ public class CopilotService {
             rus.stream()
                     .filter(ru -> Objects.equals(userId, ru.getUserId()))
                     .findFirst()
-                    .ifPresent(fst -> {
-                        int rating = RatingType.fromRatingType(fst.getRating()).getDisplay();
-                        info.setRatingType(rating);
-                    });
+                    .ifPresent(fst ->
+                            info.setRatingType(RatingType.fromRatingType(fst.getRating()).getDisplay())
+                    );
         });
 
+        if (levelInfo == null) {
+            levelInfo = levelService.findByLevelIdFuzzy(copilot.getStageName());
+            if (levelInfo != null) {
+                updateStageName(copilot.getCopilotId(), levelInfo.getStageId());
+            }
+        }
         info.setLevel(levelInfo);
         info.setAvailable(true);
 
@@ -492,6 +517,13 @@ public class CopilotService {
             log.error("json序列化失败", e);
         }
         return info;
+    }
+
+    private void updateStageName(Long copilotId, String stageId) {
+        copilotRepository.findByCopilotId(copilotId).ifPresent(c -> {
+            c.setStageName(stageId);
+            copilotRepository.save(c);
+        });
     }
 
     /**

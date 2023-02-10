@@ -6,9 +6,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -90,15 +88,20 @@ public class ArkLevelService {
     }
 
     @Cacheable("arkLevel")
-    public ArkLevelInfo findByLevelId(String levelId) {
-        ArkLevel level = arkLevelRepo.findByLevelId(levelId).findAny().orElse(null);
+    public ArkLevelInfo findByLevelIdFuzzy(String levelId) {
+        ArkLevel level = arkLevelRepo.findByLevelIdFuzzy(levelId).findAny().orElse(null);
         return ArkLevelConverter.INSTANCE.convert(level);
     }
 
 
-    public ArkLevelInfo queryLevel(String keyword) {
+    public ArkLevelInfo queryLevelByKeyword(String keyword) {
         ArkLevel level = arkLevelRepo.queryLevelByKeyword(keyword).findAny().orElse(null);
         return ArkLevelConverter.INSTANCE.convert(level);
+    }
+
+    public List<ArkLevelInfo> findByStageIds(Collection<String> stageIds) {
+        List<ArkLevel> arkLevels = arkLevelRepo.findByStageIdIn(stageIds);
+        return ArkLevelConverter.INSTANCE.convert(arkLevels);
     }
 
     /**

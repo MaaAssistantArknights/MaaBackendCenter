@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
@@ -21,6 +22,7 @@ public class ArkLevel {
     @Id
     private String id;
     private String levelId;
+    @Indexed
     private String stageId;
     //文件版本, 用于判断是否需要更新
     private String sha;

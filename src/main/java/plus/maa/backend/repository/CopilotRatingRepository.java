@@ -1,10 +1,10 @@
 package plus.maa.backend.repository;
 
-import java.util.Optional;
-
 import org.springframework.data.mongodb.repository.MongoRepository;
-
 import plus.maa.backend.repository.entity.CopilotRating;
+
+import java.util.Collection;
+import java.util.List;
 
 /**
  * @author LoMu
@@ -12,7 +12,10 @@ import plus.maa.backend.repository.entity.CopilotRating;
  */
 public interface CopilotRatingRepository extends MongoRepository<CopilotRating, String> {
 
-    Optional<CopilotRating> findByCopilotId(Long copilotId);
+    CopilotRating findByCopilotId(Long copilotId);
 
     boolean existsCopilotRatingByCopilotId(Long copilotId);
+
+    List<CopilotRating> findByCopilotIdIn(Collection<Long> copilotIds);
+
 }

@@ -1,5 +1,6 @@
 package plus.maa.backend.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -24,13 +25,10 @@ public interface ArkLevelRepository extends MongoRepository<ArkLevel, String> {
                 ]
             }
             """)
-    Stream<ArkLevel> findByLevelId(String levelId);
+    Stream<ArkLevel> findByLevelIdFuzzy(String levelId);
 
     /**
      * 用于前端查询 关卡名、关卡类型、关卡编号
-     *
-     * @param stageId stageId
-     * @return ArkLevel
      */
     @Query("""
             {
@@ -44,4 +42,10 @@ public interface ArkLevelRepository extends MongoRepository<ArkLevel, String> {
             }
             """)
     Stream<ArkLevel> queryLevelByKeyword(String keyword);
+
+    /**
+     * 根据stageId列表查询
+     */
+    List<ArkLevel> findByStageIdIn(Collection<String> stageIds);
+
 }
