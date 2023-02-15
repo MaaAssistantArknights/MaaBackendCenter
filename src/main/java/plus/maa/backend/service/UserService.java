@@ -288,13 +288,19 @@ public class UserService {
     }
 
     /**
-     * 实时更新用户权限
+     * 实时更新用户权限(更新redis缓存中的用户权限)
      *
      * @param permissions 权限值
      * @param userId      userId
      */
     private void updateLoginUserPermissions(int permissions, String userId) {
-        LoginUser loginUser = (LoginUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        LoginUser loginUser;
+        //用户为登录 直接返回
+        try {
+            loginUser = (LoginUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        } catch (ClassCastException e) {
+            return;
+        }
         String cacheId = buildUserCacheKey(userId);
 
         redisCache.updateCache(cacheId, LoginUser.class, loginUser, cacheUser -> {
