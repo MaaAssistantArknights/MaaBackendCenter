@@ -11,6 +11,12 @@ spring:
       host: localhost
 
 maa-copilot:
+  backup:
+    dir: ./copilotbak
+    uri: git@github.com:dragove/maa-copilot-store.git
+    disabled: true
+    userName: copilot
+    email: copilot@maa.plus
   info:
     title: MAA Copilot Center API
     description: MAA Copilot Backend Center
@@ -37,6 +43,7 @@ maa-copilot:
     json-path: resource/Arknights-Tile-Pos/
   task-cron:
     ark-level: "-"
+    copilot-update: "-"
   mail:
     # 邮件服务器的SMTP地址
     host: smtp.qq.com
