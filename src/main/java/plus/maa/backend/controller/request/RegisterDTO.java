@@ -21,4 +21,5 @@ public class RegisterDTO {
     private String userName;
     @Length(min = 8, max = 32, message = "密码长度必须在8-32位之间")
     private String password;
+    private String registrationToken;
 }
