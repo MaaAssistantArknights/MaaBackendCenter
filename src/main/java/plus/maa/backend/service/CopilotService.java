@@ -9,7 +9,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -218,9 +217,8 @@ public class CopilotService {
                             }, 60, TimeUnit.MINUTES);
                 }
             }
-            ArkLevelInfo level = levelService.findByLevelIdFuzzy(copilot.getStageName());
             CopilotRating rating = copilotRatingRepository.findByCopilotId(copilot.getCopilotId());
-            return formatCopilot(userId, copilot, level, rating);
+            return formatCopilot(userId, copilot, rating);
         }).orElse(null));
     }
 
@@ -231,12 +229,6 @@ public class CopilotService {
      * @param request 模糊查询
      * @return CopilotPageInfo
      */
-
-    // 如果是查最新数据或指定搜索 就不缓存
-    @Cacheable(value = "copilotPage", condition = "#request.levelKeyword != null && ''.equals(#request.levelKeyword) " +
-            "|| #request.operator != null && ''.equals(#request.operator)" +
-            "|| #request.orderBy != null && ('hot'.equals(#request.orderBy) || 'views'.equals(#request.orderBy)) " +
-            "|| #request.uploaderId != null && ''.equals(#request.uploaderId)")
     public MaaResult<CopilotPageInfo> queriesCopilot(LoginUser user, CopilotQueriesRequest request) {
         String userId = getUserId(user);
         Sort.Order sortOrder = new Sort.Order(
@@ -324,15 +316,11 @@ public class CopilotService {
         // 分页排序查询
         List<Copilot> copilots = mongoTemplate.find(queryObj.with(pageable), Copilot.class);
         // 填充前端所需信息
-        Set<String> stageIds = copilots.stream().map(Copilot::getStageName).collect(Collectors.toSet());
         Set<Long> copilotIds = copilots.stream().map(Copilot::getCopilotId).collect(Collectors.toSet());
-        List<ArkLevelInfo> levels = levelService.findByStageIds(stageIds);
-        Map<String, ArkLevelInfo> levelByStageId = Maps.uniqueIndex(levels, ArkLevelInfo::getStageId);
         List<CopilotRating> ratings = copilotRatingRepository.findByCopilotIdIn(copilotIds);
         Map<Long, CopilotRating> ratingByCopilotId = Maps.uniqueIndex(ratings, CopilotRating::getCopilotId);
         List<CopilotInfo> infos = copilots.stream().map(copilot ->
                         formatCopilot(userId, copilot,
-                                levelByStageId.get(copilot.getStageName()),
                                 ratingByCopilotId.get(copilot.getCopilotId())))
                 .toList();
         // 计算页面
@@ -380,14 +368,27 @@ public class CopilotService {
     public MaaResult<String> rates(LoginUser loginUser, CopilotRatingReq request) {
         String userId = getUserId(loginUser);
         String rating = request.getRating();
+
+        Assert.isTrue(copilotRepository.existsCopilotsByCopilotId(request.getId()), "作业id不存在");
+
+
+        //评分表不存在 创建评分表
+        if (!copilotRatingRepository.existsCopilotRatingByCopilotId(request.getId())) {
+            CopilotRating copilotRating = new CopilotRating(request.getId());
+            copilotRating.setRatingUsers(
+                    List.of(
+                            new CopilotRating.RatingUser(loginUser.getMaaUser().getUserId(), request.getRating())
+                    )
+            );
+            copilotRatingRepository.insert(copilotRating);
+        }
+
         // 获取评分表
         Query query = Query.query(Criteria.where("copilotId").is(request.getId()));
         Update update = new Update();
 
         // 查询指定作业评分
-        CopilotRating copilotRating = mongoTemplate.findOne(query, CopilotRating.class);
-        // 如果是早期创建的作业表可能无法做出评分
-        Assert.notNull(copilotRating, "Rating is null");
+        CopilotRating copilotRating = copilotRatingRepository.findByCopilotId(request.getId());
 
         boolean existUserId = false;
         // 点赞数
@@ -470,29 +471,9 @@ public class CopilotService {
     /**
      * 将数据库内容转换为前端所需格式<br>
      */
-    private CopilotInfo formatCopilot(String userId, Copilot copilot, ArkLevelInfo levelInfo, CopilotRating rating) {
+    private CopilotInfo formatCopilot(String userId, Copilot copilot, CopilotRating rating) {
         CopilotInfo info = CopilotConverter.INSTANCE.toCopilotInfo(copilot);
-        // 设置干员信息
-        List<String> operStrList = copilot.getOpers().stream()
-                .map(o -> String.format("%s::%s", o.getName(), o.getSkill()))
-                .toList();
 
-        // 设置干员组干员信息
-        if (copilot.getGroups() != null) {
-            List<String> operators = new ArrayList<>();
-            for (Copilot.Groups group : copilot.getGroups()) {
-                if (group.getOpers() != null) {
-                    for (Copilot.OperationGroup oper : group.getOpers()) {
-                        String format = String.format("%s::%s", oper.getName(), oper.getSkill());
-                        operators.add(format);
-                    }
-                }
-                group.setOperators(operators);
-            }
-        }
-
-        info.setOpers(operStrList);
-        info.setOperators(operStrList);
 
         Optional<CopilotRating> copilotRating = Optional.ofNullable(rating);
 
@@ -512,20 +493,28 @@ public class CopilotService {
                     );
         });
 
-        if (levelInfo == null) {
-            levelInfo = levelService.findByLevelIdFuzzy(copilot.getStageName());
-            if (levelInfo != null) {
-                updateStageName(copilot.getCopilotId(), levelInfo.getStageId());
-            }
-        }
-        info.setLevel(levelInfo);
         info.setAvailable(true);
 
         try {
             // 兼容客户端, 将作业ID替换为数字ID
             copilot.setId(Long.toString(copilot.getCopilotId()));
             if (StringUtils.isEmpty(info.getContent())) {
-                info.setContent(mapper.writeValueAsString(copilot));
+                // 设置干员组干员信息
+                if (copilot.getGroups() != null) {
+                    List<String> operators = new ArrayList<>();
+                    for (Copilot.Groups group : copilot.getGroups()) {
+                        if (group.getOpers() != null) {
+                            for (Copilot.OperationGroup oper : group.getOpers()) {
+                                String format = String.format("%s::%s", oper.getName(), oper.getSkill());
+                                operators.add(format);
+                            }
+                        }
+                        group.setOperators(operators);
+                    }
+                }
+                String content = mapper.writeValueAsString(copilot);
+                info.setContent(content);
+                updateContent(copilot.getCopilotId(), content);
             }
         } catch (JsonProcessingException e) {
             log.error("json序列化失败", e);
@@ -533,9 +522,9 @@ public class CopilotService {
         return info;
     }
 
-    private void updateStageName(Long copilotId, String stageId) {
+    private void updateContent(Long copilotId, String content) {
         copilotRepository.findByCopilotId(copilotId).ifPresent(c -> {
-            c.setStageName(stageId);
+            c.setContent(content);
             copilotRepository.save(c);
         });
     }
