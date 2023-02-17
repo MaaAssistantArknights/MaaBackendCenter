@@ -146,7 +146,7 @@ public class UserController {
      */
     @PostMapping("/sendRegistrationToken")
     public MaaResult<MaaRegistrationTokenRsp> sendRegistrationToken(@RequestBody SendRegistrationTokenDTO regDTO) {
-        //String token = userService.generateRegistrationToken(regDTO.getEmail());
+        //FIXME: 增加频率限制或者 captcha
         emailService.sendVCode(regDTO.getEmail());
         MaaRegistrationTokenRsp resp = new MaaRegistrationTokenRsp();
         resp.setMsg("code sent");

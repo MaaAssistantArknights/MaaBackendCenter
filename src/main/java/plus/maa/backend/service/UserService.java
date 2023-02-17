@@ -187,18 +187,6 @@ public class UserService {
     }
 
     /**
-     * 生成用户注册时使用的验证码
-     * 
-     * @param email 注册使用的邮箱
-     * @return 注册码
-     */
-    public String generateRegistrationToken(String email) {
-        String newToken = RandomStringUtils.random(6, true, true).toUpperCase();
-        redisCache.setCache("regCodeEmail:" + email, newToken, registrationCodeExpireInSecond);
-        return newToken;
-    }
-
-    /**
      * 通过传入的JwtToken来获取当前用户的信息
      *
      * @param loginUser   当前用户
