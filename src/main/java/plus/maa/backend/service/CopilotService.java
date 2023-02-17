@@ -368,14 +368,27 @@ public class CopilotService {
     public MaaResult<String> rates(LoginUser loginUser, CopilotRatingReq request) {
         String userId = getUserId(loginUser);
         String rating = request.getRating();
+
+        Assert.isTrue(copilotRepository.existsCopilotsByCopilotId(request.getId()), "作业id不存在");
+
+        //评分表不存在 创建评分表
+        if (!copilotRatingRepository.existsCopilotRatingByCopilotId(request.getId())) {
+            CopilotRating copilotRating = new CopilotRating(request.getId());
+            copilotRating.setRatingUsers(
+                    List.of(
+                            new CopilotRating.RatingUser(loginUser.getMaaUser().getUserId(), request.getRating())
+                    )
+            );
+            copilotRatingRepository.insert(copilotRating);
+        }
+
+
         // 获取评分表
         Query query = Query.query(Criteria.where("copilotId").is(request.getId()));
         Update update = new Update();
 
         // 查询指定作业评分
-        CopilotRating copilotRating = mongoTemplate.findOne(query, CopilotRating.class);
-        // 如果是早期创建的作业表可能无法做出评分
-        Assert.notNull(copilotRating, "Rating is null");
+        CopilotRating copilotRating = copilotRatingRepository.findByCopilotId(request.getId());
 
         boolean existUserId = false;
         // 点赞数
