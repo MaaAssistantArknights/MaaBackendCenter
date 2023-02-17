@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 import plus.maa.backend.config.external.MaaCopilotProperties;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaSystemInfo;
-import plus.maa.backend.service.EmailService;
+
 
 /**
  * @author AnselYuki
@@ -20,7 +20,6 @@ import plus.maa.backend.service.EmailService;
 @RequiredArgsConstructor
 public class SystemController {
     private final MaaCopilotProperties properties;
-    private final EmailService emailService;
 
     @GetMapping("/")
     @Operation(summary = "Tests if the server is ready.")
@@ -39,10 +38,5 @@ public class SystemController {
         return MaaResult.success(systemInfo);
     }
 
-    @GetMapping("test")
-    public String test123(){
-        emailService.sendVCode("2842775752@qq.com");
-        return "1";
-    }
 
 }

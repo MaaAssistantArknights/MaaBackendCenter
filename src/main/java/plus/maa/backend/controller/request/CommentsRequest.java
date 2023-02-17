@@ -16,8 +16,14 @@ import org.hibernate.validator.constraints.Length;
 @AllArgsConstructor
 public class CommentsRequest {
     @Length(min = 1, max = 100)
-    private String content;
+    private String message;
 
     @NotBlank(message = "作业id不可为空")
     private String copilotId;
+
+    //子评论(回复评论)
+    private String fromCommentsId;
+
+    //子子评论(回复回复评论)
+    private String fromSubCommentsId;
 }

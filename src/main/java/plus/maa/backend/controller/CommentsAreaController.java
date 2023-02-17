@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.CurrentUser;
 import plus.maa.backend.controller.request.CommentsRequest;
 import plus.maa.backend.controller.response.MaaResult;
-import plus.maa.backend.service.CommentsSectionService;
+import plus.maa.backend.service.CommentsAreaService;
 import plus.maa.backend.service.model.LoginUser;
 
 /**
@@ -16,13 +16,13 @@ import plus.maa.backend.service.model.LoginUser;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("comments")
-public class CommentsSectioController {
+public class CommentsAreaController {
 
-    private final CommentsSectionService commentsSectionService;
+    private final CommentsAreaService commentsAreaService;
 
-    @PostMapping("send")
+    @PostMapping("add")
     public MaaResult<String> sendComments(@CurrentUser LoginUser loginUser, @RequestBody CommentsRequest comments) {
-        return commentsSectionService.sendComments(loginUser, comments);
+        return commentsAreaService.addComments(loginUser, comments);
     }
 
     @GetMapping("query")
