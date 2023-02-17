@@ -371,7 +371,6 @@ public class CopilotService {
 
         Assert.isTrue(copilotRepository.existsCopilotsByCopilotId(request.getId()), "作业id不存在");
 
-
         //评分表不存在 创建评分表
         if (!copilotRatingRepository.existsCopilotRatingByCopilotId(request.getId())) {
             CopilotRating copilotRating = new CopilotRating(request.getId());
@@ -382,6 +381,7 @@ public class CopilotService {
             );
             copilotRatingRepository.insert(copilotRating);
         }
+
 
         // 获取评分表
         Query query = Query.query(Criteria.where("copilotId").is(request.getId()));
