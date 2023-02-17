@@ -174,7 +174,7 @@ public class UserService {
         user.setPassword(encode);
         user.setStatus(1);
         MaaUserInfo userInfo;
-        if (!emailService.verifyVCode2(user.getEmail(), registerDTO.getRegistrationToken(),true)) {
+        if (!emailService.verifyVCode2(user.getEmail(), registerDTO.getRegistrationToken(),false)) {
             throw new MaaResultException(MaaStatusCode.MAA_REGISTRATION_CODE_NOT_FOUND);
         }
         try {

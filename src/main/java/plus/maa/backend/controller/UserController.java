@@ -16,7 +16,6 @@ import plus.maa.backend.common.annotation.CurrentUser;
 import plus.maa.backend.config.external.MaaCopilotProperties;
 import plus.maa.backend.controller.request.*;
 import plus.maa.backend.controller.response.MaaLoginRsp;
-import plus.maa.backend.controller.response.MaaRegistrationTokenRsp;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaUserInfo;
 import plus.maa.backend.service.EmailService;
@@ -145,12 +144,10 @@ public class UserController {
      * 
      */
     @PostMapping("/sendRegistrationToken")
-    public MaaResult<MaaRegistrationTokenRsp> sendRegistrationToken(@RequestBody SendRegistrationTokenDTO regDTO) {
+    public MaaResult<Void> sendRegistrationToken(@RequestBody SendRegistrationTokenDTO regDTO) {
         //FIXME: 增加频率限制或者 captcha
         emailService.sendVCode(regDTO.getEmail());
-        MaaRegistrationTokenRsp resp = new MaaRegistrationTokenRsp();
-        resp.setMsg("code sent");
-        return MaaResult.success(resp);
+        return new MaaResult<>(204,null,null);
     }
 
     /**
@@ -169,7 +166,7 @@ public class UserController {
         userService.activateAccount(activateDTO);
         // 激活成功 跳转页面
         try {
-            response.sendRedirect(properties.getInfo().getFrontendDomain() + "/");
+            response.sendRedirect(properties.getInfo().getFrontendDomain());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
