@@ -12,11 +12,11 @@ spring:
 
 maa-copilot:
   backup:
-    dir: ./copilotbak
+    dir: /home/dove/copilotBak
     uri: git@github.com:dragove/maa-copilot-store.git
     disabled: true
-    userName: copilot
-    email: copilot@maa.plus
+    username: dragove
+    email: dragove@qq.com
   info:
     title: MAA Copilot Center API
     description: MAA Copilot Backend Center
