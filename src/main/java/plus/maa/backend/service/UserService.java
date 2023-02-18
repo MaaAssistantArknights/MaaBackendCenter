@@ -8,6 +8,8 @@ import cn.hutool.jwt.JWTPayload;
 import cn.hutool.jwt.JWTUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,6 +39,7 @@ import java.util.*;
  * @author AnselYuki
  */
 @Setter
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -50,6 +53,8 @@ public class UserService {
     private String secret;
     @Value("${maa-copilot.jwt.expire}")
     private int expire;
+    @Value("${maa-copilot.vcode.expire:600}")
+    private int registrationCodeExpireInSecond;
 
     private LoginUser getLoginUserByToken(String token) {
         JWT jwt = JWTUtil.parseToken(token);
@@ -64,22 +69,22 @@ public class UserService {
      * @return 携带了token的封装类
      */
     public MaaResult<MaaLoginRsp> login(LoginDTO loginDTO) {
-        //使用 AuthenticationManager 中的 authenticate 进行用户认证
-        UsernamePasswordAuthenticationToken authenticationToken =
-                new UsernamePasswordAuthenticationToken(loginDTO.getEmail(), loginDTO.getPassword());
+        // 使用 AuthenticationManager 中的 authenticate 进行用户认证
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                loginDTO.getEmail(), loginDTO.getPassword());
         Authentication authenticate;
         authenticate = authenticationManager.authenticate(authenticationToken);
-        //若认证失败，给出相应提示
+        // 若认证失败，给出相应提示
         if (Objects.isNull(authenticate)) {
             throw new MaaResultException("登陆失败");
         }
-        //若认证成功，使用UserID生成一个JwtToken,Token存入ResponseResult返回
+        // 若认证成功，使用UserID生成一个JwtToken,Token存入ResponseResult返回
         LoginUser principal = (LoginUser) authenticate.getPrincipal();
         String userId = String.valueOf(principal.getMaaUser().getUserId());
         String token = RandomStringUtils.random(16, true, true);
         DateTime now = DateTime.now();
         DateTime newTime = now.offsetNew(DateField.SECOND, expire);
-        //签发JwtToken，从上到下为设置签发时间，过期时间与生效时间
+        // 签发JwtToken，从上到下为设置签发时间，过期时间与生效时间
         Map<String, Object> payload = new HashMap<>(4) {
             {
                 put(JWTPayload.ISSUED_AT, now.getTime());
@@ -90,7 +95,7 @@ public class UserService {
             }
         };
 
-        //把完整的用户信息存入Redis，UserID作为Key
+        // 把完整的用户信息存入Redis，UserID作为Key
         String cacheKey = buildUserCacheKey(userId);
         redisCache.updateCache(cacheKey, LoginUser.class, principal, cacheUser -> {
             String cacheToken = cacheUser.getToken();
@@ -124,12 +129,12 @@ public class UserService {
      */
     public MaaResult<Void> modifyPassword(LoginUser loginUser, String password) {
         MaaUser user = loginUser.getMaaUser();
-        //修改密码的逻辑
+        // 修改密码的逻辑
         String newPassword = new BCryptPasswordEncoder().encode(password);
         user.setPassword(newPassword);
         userRepository.save(user);
 
-        //以下更新jwt-token并重新签发jwt
+        // 以下更新jwt-token并重新签发jwt
         String newJwtToken = RandomStringUtils.random(16, true, true);
         DateTime now = DateTime.now();
         DateTime newTime = now.offsetNew(DateField.SECOND, expire);
@@ -143,7 +148,7 @@ public class UserService {
             }
         };
         String redisKey = buildUserCacheKey(user.getUserId());
-        //把更新后的MaaUser对象重新塞回去..
+        // 把更新后的MaaUser对象重新塞回去..
         loginUser.setMaaUser(user);
         redisCache.updateCache(redisKey, LoginUser.class, loginUser, cacheUser -> {
             cacheUser.setToken(newJwtToken);
@@ -151,7 +156,7 @@ public class UserService {
         }, expire);
 
         String newJwt = JWTUtil.createToken(payload, secret.getBytes());
-        //TODO 通知客户端更新jwt
+        // TODO 通知客户端更新jwt
 
         return MaaResult.success(null);
     }
@@ -167,14 +172,17 @@ public class UserService {
         MaaUser user = new MaaUser();
         BeanUtils.copyProperties(registerDTO, user);
         user.setPassword(encode);
+        user.setStatus(1);
         MaaUserInfo userInfo;
+        if (!emailService.verifyVCode2(user.getEmail(), registerDTO.getRegistrationToken(),false)) {
+            throw new MaaResultException(MaaStatusCode.MAA_REGISTRATION_CODE_NOT_FOUND);
+        }
         try {
             MaaUser save = userRepository.save(user);
             userInfo = new MaaUserInfo(save);
         } catch (DuplicateKeyException e) {
             return MaaResult.fail(10001, "用户已存在");
         }
-        emailService.sendActivateUrl(user.getEmail());
         return MaaResult.success(userInfo);
     }
 
@@ -234,7 +242,7 @@ public class UserService {
      * @return 成功响应
      */
     public MaaResult<Void> refreshToken(String token) {
-        //TODO 刷新JwtToken
+        // TODO 刷新JwtToken
         return null;
     }
 
@@ -278,12 +286,12 @@ public class UserService {
             redisCache.removeCache("UUID:" + uuid);
             return;
         }
-        //激活账户
+        // 激活账户
         user.setStatus(1);
         userRepository.save(user);
 
         updateLoginUserPermissions(1, user.getUserId());
-        //清除缓存
+        // 清除缓存
         redisCache.removeCache("UUID:" + uuid);
     }
 
@@ -295,7 +303,7 @@ public class UserService {
      */
     private void updateLoginUserPermissions(int permissions, String userId) {
         LoginUser loginUser;
-        //用户为登录 直接返回
+        // 用户为登录 直接返回
         try {
             loginUser = (LoginUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         } catch (ClassCastException e) {
@@ -306,7 +314,7 @@ public class UserService {
         redisCache.updateCache(cacheId, LoginUser.class, loginUser, cacheUser -> {
             Set<String> p = cacheUser.getPermissions();
 
-            //更新权限数据
+            // 更新权限数据
             cacheUser.getMaaUser().setStatus(permissions);
             for (int i = 0; i <= permissions; i++) {
                 p.add(Integer.toString(i));

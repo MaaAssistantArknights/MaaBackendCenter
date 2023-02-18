@@ -6,4 +6,5 @@ public class Info {
     private String description;
     private String version;
     private String domain;
+    private String frontendDomain;
 }

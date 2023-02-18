@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import plus.maa.backend.common.annotation.CurrentUser;
+import plus.maa.backend.config.external.MaaCopilotProperties;
 import plus.maa.backend.controller.request.*;
 import plus.maa.backend.controller.response.MaaLoginRsp;
 import plus.maa.backend.controller.response.MaaResult;
@@ -23,7 +24,8 @@ import plus.maa.backend.service.model.LoginUser;
 
 /**
  * 用户相关接口
- * <a href="https://github.com/MaaAssistantArknights/maa-copilot-frontend/blob/dev/src/apis/auth.ts">前端api约定文件</a>
+ * <a href=
+ * "https://github.com/MaaAssistantArknights/maa-copilot-frontend/blob/dev/src/apis/auth.ts">前端api约定文件</a>
  *
  * @author AnselYuki
  */
@@ -36,6 +38,7 @@ import plus.maa.backend.service.model.LoginUser;
 public class UserController {
     private final UserService userService;
     private final EmailService emailService;
+    private final MaaCopilotProperties properties;
     @Value("${maa-copilot.jwt.header}")
     private String header;
 
@@ -47,7 +50,7 @@ public class UserController {
      */
     @PostMapping("/activate")
     public MaaResult<Void> activate(@CurrentUser LoginUser user,
-                                    @Valid @RequestBody ActivateDTO activateDTO) {
+            @Valid @RequestBody ActivateDTO activateDTO) {
         return userService.activateUser(user, activateDTO);
     }
 
@@ -68,7 +71,7 @@ public class UserController {
      */
     @PostMapping("/update/password")
     public MaaResult<Void> updatePassword(@CurrentUser LoginUser user,
-                                          @RequestBody @Valid PasswordUpdateDTO updateDTO) {
+            @RequestBody @Valid PasswordUpdateDTO updateDTO) {
         return userService.modifyPassword(user, updateDTO.getNewPassword());
     }
 
@@ -80,11 +83,11 @@ public class UserController {
      */
     @PostMapping("/update/info")
     public MaaResult<Void> updateInfo(@CurrentUser LoginUser user,
-                                      @Valid @RequestBody UserInfoUpdateDTO updateDTO) {
+            @Valid @RequestBody UserInfoUpdateDTO updateDTO) {
         return userService.updateUserInfo(user, updateDTO);
     }
 
-    //TODO 邮件重置密码需要在用户未登录的情况下使用，需要修改
+    // TODO 邮件重置密码需要在用户未登录的情况下使用，需要修改
 
     /**
      * 邮箱重设密码
@@ -94,7 +97,7 @@ public class UserController {
      */
     @PostMapping("/password/reset")
     public MaaResult<Void> passwordReset(@RequestBody @Valid PasswordResetDTO passwordResetDTO) {
-        //校验用户邮箱是否存在
+        // 校验用户邮箱是否存在
         userService.checkUserExistByEmail(passwordResetDTO.getEmail());
         return userService.modifyPasswordByActiveCode(passwordResetDTO);
     }
@@ -107,7 +110,7 @@ public class UserController {
      */
     @PostMapping("/password/reset_request")
     public MaaResult<Void> passwordResetRequest(@RequestBody @Valid PasswordResetVCodeDTO passwordResetVCodeDTO) {
-        //校验用户邮箱是否存在
+        // 校验用户邮箱是否存在
         userService.checkUserExistByEmail(passwordResetVCodeDTO.getEmail());
         emailService.sendVCode(passwordResetVCodeDTO.getEmail());
         return MaaResult.success(null);
@@ -137,6 +140,17 @@ public class UserController {
     }
 
     /**
+     * 获得注册时的验证码
+     * 
+     */
+    @PostMapping("/sendRegistrationToken")
+    public MaaResult<Void> sendRegistrationToken(@RequestBody SendRegistrationTokenDTO regDTO) {
+        //FIXME: 增加频率限制或者 captcha
+        emailService.sendVCode(regDTO.getEmail());
+        return new MaaResult<>(204,null,null);
+    }
+
+    /**
      * 用户登录
      *
      * @param user 登录参数
@@ -150,9 +164,9 @@ public class UserController {
     @GetMapping("/activateAccount")
     public MaaResult<Void> activateAccount(EmailActivateReq activateDTO, HttpServletResponse response) {
         userService.activateAccount(activateDTO);
-        //激活成功 跳转页面
+        // 激活成功 跳转页面
         try {
-            response.sendRedirect("https://prts.plus/");
+            response.sendRedirect(properties.getInfo().getFrontendDomain());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
