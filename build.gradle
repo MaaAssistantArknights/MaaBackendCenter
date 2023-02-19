@@ -41,6 +41,7 @@ dependencies {
     implementation 'cn.hutool:hutool-all:5.8.11'
     implementation 'org.mapstruct:mapstruct:1.5.3.Final'
     implementation 'org.eclipse.jgit:org.eclipse.jgit:6.4.0.202211300538-r'
+    implementation 'org.eclipse.jgit:org.eclipse.jgit.ssh.apache:6.4.0.202211300538-r'
     implementation 'org.freemarker:freemarker:2.3.32'
     implementation 'com.github.ben-manes.caffeine:caffeine:3.1.2'
     implementation 'com.github.erosb:everit-json-schema:1.14.1'

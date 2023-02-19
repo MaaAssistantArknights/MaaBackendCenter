@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
 
 /**
  * @author LoMu
- * Date 2022-12-25 19:57
+ *         Date 2022-12-25 19:57
  */
 @Slf4j
 @Service
@@ -121,22 +121,20 @@ public class CopilotService {
             copilotDTO.getGroups().forEach(
                     group -> {
                         if (group.getOpers() != null) {
-                            group.getOpers().forEach(oper -> oper.setName(oper.getName() == null ?
-                                    null : oper.getName().replaceAll("[\"“”]", "")));
+                            group.getOpers().forEach(oper -> oper
+                                    .setName(oper.getName() == null ? null : oper.getName().replaceAll("[\"“”]", "")));
                         }
-                    }
-            );
+                    });
         }
         if (copilotDTO.getOpers() != null) {
-            copilotDTO.getOpers().forEach(operator ->
-                    operator.setName(operator.getName() == null ?
-                            null : operator.getName().replaceAll("[\"“”]", "")));
+            copilotDTO.getOpers().forEach(operator -> operator
+                    .setName(operator.getName() == null ? null : operator.getName().replaceAll("[\"“”]", "")));
         }
 
         // actions name 不是必须
         if (copilotDTO.getActions() != null) {
-            copilotDTO.getActions().forEach(action -> action.setName(action.getName() == null ?
-                    null : action.getName().replaceAll("[\"“”]", "")));
+            copilotDTO.getActions().forEach(action -> action
+                    .setName(action.getName() == null ? null : action.getName().replaceAll("[\"“”]", "")));
         }
         // 使用stageId存储作业关卡信息
         ArkLevelInfo level = levelService.findByLevelIdFuzzy(copilotDTO.getStageName());
@@ -319,9 +317,8 @@ public class CopilotService {
         Set<Long> copilotIds = copilots.stream().map(Copilot::getCopilotId).collect(Collectors.toSet());
         List<CopilotRating> ratings = copilotRatingRepository.findByCopilotIdIn(copilotIds);
         Map<Long, CopilotRating> ratingByCopilotId = Maps.uniqueIndex(ratings, CopilotRating::getCopilotId);
-        List<CopilotInfo> infos = copilots.stream().map(copilot ->
-                        formatCopilot(userId, copilot,
-                                ratingByCopilotId.get(copilot.getCopilotId())))
+        List<CopilotInfo> infos = copilots.stream().map(copilot -> formatCopilot(userId, copilot,
+                ratingByCopilotId.get(copilot.getCopilotId())))
                 .toList();
         // 计算页面
         int pageNumber = (int) Math.ceil((double) count / limit);
@@ -474,7 +471,6 @@ public class CopilotService {
     private CopilotInfo formatCopilot(String userId, Copilot copilot, CopilotRating rating) {
         CopilotInfo info = CopilotConverter.INSTANCE.toCopilotInfo(copilot);
 
-
         Optional<CopilotRating> copilotRating = Optional.ofNullable(rating);
 
         // 判断评分中是否有当前用户评分记录 有则获取其评分并将其转换为 0 = None 1 = LIKE 2 = DISLIKE
@@ -488,9 +484,7 @@ public class CopilotService {
             rus.stream()
                     .filter(ru -> Objects.equals(userId, ru.getUserId()))
                     .findFirst()
-                    .ifPresent(fst ->
-                            info.setRatingType(RatingType.fromRatingType(fst.getRating()).getDisplay())
-                    );
+                    .ifPresent(fst -> info.setRatingType(RatingType.fromRatingType(fst.getRating()).getDisplay()));
         });
 
         info.setAvailable(true);
