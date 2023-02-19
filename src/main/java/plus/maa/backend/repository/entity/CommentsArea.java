@@ -6,6 +6,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -17,7 +18,7 @@ import java.util.List;
 @Data
 @Accessors(chain = true)
 @Document("maa_comments_area")
-public class CommentsArea {
+public class CommentsArea implements Serializable {
 
     @Id
     private String id;
@@ -27,8 +28,6 @@ public class CommentsArea {
 
     //评论用户及信息
     private List<CommentsInfo> commentsInfos = new ArrayList<>();
-    //子评论
-    private List<SubCommentsInfo> subCommentsInfos = new ArrayList<>();
 
 
     @Data
@@ -37,32 +36,11 @@ public class CommentsArea {
 
         private String commentsId;
 
-        private String uploader;
-        private String uploaderId;
-
-        //评论内容
-        private String message;
-
-        //赞 踩
-        private List<CopilotRating.RatingUser> ratingUsers;
-
-
-        private Date createTime = new Date();
-
-        private Date updateTime = new Date();
-
-        private Boolean delete = false;
-
-        private Date deleteTime;
-
-    }
-
-    @Data
-    @Accessors(chain = true)
-    public static class SubCommentsInfo {
-        private String commentsId;
+        //回复某个评论
         private String fromCommentsId;
+        //回复某个评论的评论
         private String fromSubCommentsId;
+
         private String uploader;
         private String uploaderId;
 
@@ -70,7 +48,7 @@ public class CommentsArea {
         private String message;
 
         //赞 踩
-        private List<CopilotRating.RatingUser> ratingUsers;
+        private List<CopilotRating.RatingUser> ratingUser = new ArrayList<>();
 
         private Date createTime = new Date();
 
@@ -81,6 +59,7 @@ public class CommentsArea {
         private Date deleteTime;
 
     }
+
 
 }
 

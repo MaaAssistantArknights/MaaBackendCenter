@@ -47,7 +47,9 @@ public class SecurityConfig {
     private static final String[] URL_AUTHENTICATION_1 = {
             "/copilot/delete",
             "/copilot/update",
-            "/copilot/upload"
+            "/copilot/upload",
+            "/comments/add",
+            "/comments/delete"
     };
 
     private static final String[] URL_AUTHENTICATION_2 = {

@@ -14,8 +14,8 @@ import org.hibernate.validator.constraints.Length;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CommentsRequest {
-    @Length(min = 1, max = 100)
+public class CommentsAddDto {
+    @Length(min = 1, max = 100, message = "发送消息内容超长，请简答。")
     private String message;
 
     @NotBlank(message = "作业id不可为空")
