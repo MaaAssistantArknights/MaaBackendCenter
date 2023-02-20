@@ -13,8 +13,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CommentsRatingDTO {
-    @NotBlank(message = "作业id不能为空")
-    private String copilotId;
     @NotBlank(message = "评分id不可为空")
     private String commentsId;
     @NotBlank(message = "评分不能为空")

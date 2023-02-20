@@ -26,39 +26,27 @@ public class CommentsArea implements Serializable {
     @Indexed
     private Long copilotId;
 
-    //评论用户及信息
-    private List<CommentsInfo> commentsInfos = new ArrayList<>();
+    private String fromCommentsId;
 
+    private String uploader;
 
-    @Data
-    @Accessors(chain = true)
-    public static class CommentsInfo {
+    private String uploaderId;
 
-        private String commentsId;
+    //评论内容
+    private String message;
 
-        //回复某个评论
-        private String fromCommentsId;
-        //回复某个评论的评论
-        private String fromSubCommentsId;
+    //赞 踩
+    private List<CopilotRating.RatingUser> ratingUser = new ArrayList<>();
 
-        private String uploader;
-        private String uploaderId;
+    private Long likeCount;
 
-        //评论内容
-        private String message;
+    private Date uploadTime = new Date();
 
-        //赞 踩
-        private List<CopilotRating.RatingUser> ratingUser = new ArrayList<>();
+    private boolean delete;
 
-        private Date createTime = new Date();
+    private Date deleteTime;
 
-        private Date updateTime = new Date();
-
-        private Boolean delete = false;
-
-        private Date deleteTime;
-
-    }
+    private String mainCommentsId;
 
 
 }

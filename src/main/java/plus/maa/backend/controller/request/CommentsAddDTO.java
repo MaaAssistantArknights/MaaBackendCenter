@@ -14,7 +14,7 @@ import org.hibernate.validator.constraints.Length;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CommentsAddDto {
+public class CommentsAddDTO {
     @Length(min = 1, max = 100, message = "发送消息内容超长，请简答。")
     private String message;
 
@@ -24,6 +24,4 @@ public class CommentsAddDto {
     //子评论(回复评论)
     private String fromCommentsId;
 
-    //子子评论(回复回复评论)
-    private String fromSubCommentsId;
 }

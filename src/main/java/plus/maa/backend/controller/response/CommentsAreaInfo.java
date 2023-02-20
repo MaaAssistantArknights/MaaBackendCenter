@@ -3,8 +3,9 @@ package plus.maa.backend.controller.response;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.Accessors;
 
-import java.util.Date;
+import java.util.List;
 
 
 /**
@@ -15,9 +16,10 @@ import java.util.Date;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Accessors(chain = true)
 public class CommentsAreaInfo {
-    private String id;
-    private String copilotId;
-    private int like;
-    private Date uploadTime;
+    private Boolean hasNext;
+    private Integer page;
+    private Long total;
+    private List<CommentsInfo> data;
 }

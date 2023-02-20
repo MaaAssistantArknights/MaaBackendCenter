@@ -3,9 +3,11 @@ package plus.maa.backend.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.CurrentUser;
-import plus.maa.backend.controller.request.CommentsAddDto;
+import plus.maa.backend.controller.request.CommentsAddDTO;
 import plus.maa.backend.controller.request.CommentsDeleteDTO;
+import plus.maa.backend.controller.request.CommentsQueriesDTO;
 import plus.maa.backend.controller.request.CommentsRatingDTO;
+import plus.maa.backend.controller.response.CommentsAreaInfo;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.service.CommentsAreaService;
 import plus.maa.backend.service.model.LoginUser;
@@ -23,18 +25,18 @@ public class CommentsAreaController {
     private final CommentsAreaService commentsAreaService;
 
     @PostMapping("/add")
-    public MaaResult<String> sendComments(@CurrentUser LoginUser loginUser, @RequestBody CommentsAddDto comments) {
+    public MaaResult<String> sendComments(@CurrentUser LoginUser loginUser, @RequestBody CommentsAddDTO comments) {
         return commentsAreaService.addComments(loginUser, comments);
     }
 
     @GetMapping("/query")
-    public MaaResult<Void> queryCommentsArea() {
-        return null;
+    public MaaResult<CommentsAreaInfo> queriesCommentsArea(CommentsQueriesDTO commentsQueriesDTO) {
+        return commentsAreaService.queriesCommentsArea(commentsQueriesDTO);
     }
 
     @PostMapping("/delete")
     public MaaResult<String> deleteComments(@CurrentUser LoginUser loginUser, @RequestBody CommentsDeleteDTO comments) {
-        return commentsAreaService.deleteComments(loginUser, comments.getCopilotId(), comments.getCommentsId());
+        return commentsAreaService.deleteComments(loginUser, comments.getCommentsId());
     }
 
     @PostMapping("/rating")

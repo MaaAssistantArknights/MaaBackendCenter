@@ -2,7 +2,6 @@ package plus.maa.backend.repository;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
@@ -10,7 +9,6 @@ import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.Assert;
-import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.repository.entity.CommentsArea;
 import plus.maa.backend.repository.entity.Copilot;
 import plus.maa.backend.repository.entity.CopilotRating;
@@ -28,15 +26,18 @@ public class TableLogicDelete {
 
     public void deleteCopilotById(String id) {
         Optional<Copilot> byId;
+
         if (StringUtils.isNumeric(id)) {
             byId = copilotRepository.findByCopilotId(Long.parseLong(id));
         } else {
             byId = copilotRepository.findById(id);
         }
-        if (byId.isEmpty())
-            throw new MaaResultException("copilot Id不存在");
+        Assert.isTrue(byId.isPresent(), "作业表不存在");
+        Assert.isTrue(!byId.get().isDelete(), "作业表不存在");
+
         Date date = new Date();
         Copilot copilot = byId.get();
+
         copilot.setDelete(true);
         copilot.setDeleteTime(date);
         copilotRepository.save(copilot);
@@ -49,23 +50,28 @@ public class TableLogicDelete {
         }
     }
 
-    public void deleteCommentsId(Long copilotId, String commentsId) {
+    public void deleteCommentsId(String commentsId) {
         Date date = new Date();
-        Optional<CommentsArea> byId = commentsAreaRepository.findByCopilotId(copilotId);
+        Optional<CommentsArea> byId = commentsAreaRepository.findById(commentsId);
         Assert.isTrue(byId.isPresent(), "评论表不存在");
+        Assert.isTrue(!byId.get().isDelete(), "评论表不存在");
+
         CommentsArea commentsArea = byId.get();
-        List<CommentsArea.CommentsInfo> commentsInfos = commentsArea.getCommentsInfos();
+        commentsArea.setDelete(true);
+        commentsArea.setDeleteTime(date);
 
-
-        commentsInfos
-                .forEach(ci -> {
-                    if (Objects.equals(ci.getCommentsId(), commentsId)) {
-                        ci.setDelete(true);
-                        ci.setDeleteTime(date);
-                    }
-                });
-
-        commentsArea.setCommentsInfos(commentsInfos);
+        //删除所有回复
+        if (StringUtils.isBlank(commentsArea.getMainCommentsId())) {
+            Optional<List<CommentsArea>> optional = commentsAreaRepository.findByMainCommentsId(commentsArea.getId());
+            if (optional.isPresent()) {
+                List<CommentsArea> commentsAreaList = optional.get();
+                commentsAreaList.forEach(ca ->
+                        ca.setDeleteTime(date)
+                                .setDelete(true)
+                );
+                commentsAreaRepository.saveAll(commentsAreaList);
+            }
+        }
         commentsAreaRepository.save(commentsArea);
     }
 }
