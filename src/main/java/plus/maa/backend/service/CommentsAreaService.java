@@ -4,12 +4,10 @@ package plus.maa.backend.service;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import plus.maa.backend.common.utils.converter.CommentConverter;
@@ -43,7 +41,6 @@ public class CommentsAreaService {
 
     private final CopilotRepository copilotRepository;
 
-    private final MongoTemplate mongoTemplate;
 
     private final TableLogicDelete tableLogicDelete;
 
@@ -176,18 +173,11 @@ public class CommentsAreaService {
         boolean hasNext = false;
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(sortOrder));
 
-        Query query = new Query();
-        query.addCriteria(
-                Criteria.where("copilotId").is(request.getCopilotId())
-                        .and("delete").is(false)
-                        .and("mainCommentId").exists(false));
 
-        List<CommentsArea> rawCommentsAreaList = mongoTemplate.find(query.with(pageable), CommentsArea.class);
+        Page<CommentsArea> rawCommentsAreaList = commentsAreaRepository.findByCopilotIdAndDeleteAndMainCommentIdExists(request.getCopilotId(), false, false, pageable);
+        long count = rawCommentsAreaList.getTotalElements();
 
-        long count = mongoTemplate.count(query, CommentsArea.class);
-
-        // 计算页面
-        int pageNumber = (int) Math.ceil((double) count / limit);
+        int pageNumber = rawCommentsAreaList.getTotalPages();
 
         // 判断是否存在下一页
         if (count - (long) page * limit > 0) {
@@ -198,29 +188,23 @@ public class CommentsAreaService {
         List<CommentsInfo> commentsInfoList = new ArrayList<>();
 
         //获取主评论
-        List<CommentsArea> mainCommentsList = rawCommentsAreaList.stream()
+        rawCommentsAreaList.stream()
                 .filter(c ->
                         StringUtils.isBlank(c.getMainCommentId()))
-                .toList();
+                .forEach(mainComment -> {
+                    List<CommentsArea> commentsAreas = commentsAreaRepository.findByMainCommentId(mainComment.getId());
+                    List<SubCommentsInfo> subCommentsInfoList = commentsAreas.stream()
+                            .filter(subComment ->
+                                    StringUtils.isNoneBlank(subComment.getMainCommentId())
+                                            && Objects.equals(mainComment.getId(), subComment.getMainCommentId())
+                                            && !subComment.isDelete())
+                            .map(CommentConverter.INSTANCE::toSubCommentsInfo)
+                            .toList();
 
-        //获取主评论中的所有子评论 并将其封装
-        mainCommentsList.forEach(mainComment -> {
-            List<SubCommentsInfo> subCommentsInfoList = new ArrayList<>();
-            Optional<List<CommentsArea>> byMainCommentId = commentsAreaRepository.findByMainCommentId(mainComment.getId());
-
-            byMainCommentId.ifPresent(commentsAreas -> commentsAreas.stream()
-                    .filter(subComment ->
-                            StringUtils.isNoneBlank(subComment.getMainCommentId())
-                                    && Objects.equals(mainComment.getId(), subComment.getMainCommentId())
-                                    && !subComment.isDelete())
-                    .toList()
-                    .forEach(sc ->
-                            subCommentsInfoList.add(CommentConverter.INSTANCE.toSubCommentsInfo(sc))
-                    ));
-            CommentsInfo commentsInfo = CommentConverter.INSTANCE.toCommentsInfo(mainComment);
-            commentsInfo.setSubCommentsInfos(subCommentsInfoList);
-            commentsInfoList.add(commentsInfo);
-        });
+                    CommentsInfo commentsInfo = CommentConverter.INSTANCE.toCommentsInfo(mainComment);
+                    commentsInfo.setSubCommentsInfos(subCommentsInfoList);
+                    commentsInfoList.add(commentsInfo);
+                });
 
 
         CommentsAreaInfo commentsAreaInfo = new CommentsAreaInfo();

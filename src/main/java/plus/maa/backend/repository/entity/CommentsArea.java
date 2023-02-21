@@ -26,11 +26,13 @@ public class CommentsArea implements Serializable {
     @Indexed
     private Long copilotId;
 
+    //答复某个评论
     private String fromCommentId;
 
     private String uploader;
 
     private String uploaderId;
+    //答复用户名
     private String replyTo;
 
     //评论内容
@@ -47,8 +49,8 @@ public class CommentsArea implements Serializable {
 
     private Date deleteTime;
 
+    //其主评论id(如果自身为主评论则为null)
     private String mainCommentId;
-
 
 }
 

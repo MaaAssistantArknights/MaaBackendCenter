@@ -62,15 +62,12 @@ public class TableLogicDelete {
 
         //删除所有回复
         if (StringUtils.isBlank(commentsArea.getMainCommentId())) {
-            Optional<List<CommentsArea>> optional = commentsAreaRepository.findByMainCommentId(commentsArea.getId());
-            if (optional.isPresent()) {
-                List<CommentsArea> commentsAreaList = optional.get();
-                commentsAreaList.forEach(ca ->
-                        ca.setDeleteTime(date)
-                                .setDelete(true)
-                );
-                commentsAreaRepository.saveAll(commentsAreaList);
-            }
+            List<CommentsArea> commentsAreaList = commentsAreaRepository.findByMainCommentId(commentsArea.getId());
+            commentsAreaList.forEach(ca ->
+                    ca.setDeleteTime(date)
+                            .setDelete(true)
+            );
+            commentsAreaRepository.saveAll(commentsAreaList);
         }
         commentsAreaRepository.save(commentsArea);
     }
