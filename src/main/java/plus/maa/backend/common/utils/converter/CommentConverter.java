@@ -19,6 +19,7 @@ public interface CommentConverter {
 
     @Mapping(target = "like", source = "likeCount")
     @Mapping(target = "commentId", source = "id")
+    @Mapping(target = "subCommentsInfos", ignore = true)
     CommentsInfo toCommentsInfo(CommentsArea commentsArea);
 
 

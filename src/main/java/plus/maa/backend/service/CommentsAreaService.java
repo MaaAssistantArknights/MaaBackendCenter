@@ -81,7 +81,7 @@ public class CommentsAreaService {
                     rawCommentsArea.getMainCommentId() : rawCommentsArea.getId();
 
             fromCommentsId = StringUtils
-                    .isBlank(rawCommentsArea.getId()) ?
+                    .isNoneBlank(rawCommentsArea.getId()) ?
                     rawCommentsArea.getId() : null;
 
             replyTo = rawCommentsArea.getUploader();

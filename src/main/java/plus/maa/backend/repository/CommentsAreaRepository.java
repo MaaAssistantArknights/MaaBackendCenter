@@ -14,5 +14,5 @@ import java.util.Optional;
 
 @Repository
 public interface CommentsAreaRepository extends MongoRepository<CommentsArea, String> {
-    Optional<List<CommentsArea>> findByMainCommentsId(String commentsId);
+    Optional<List<CommentsArea>> findByMainCommentId(String commentsId);
 }

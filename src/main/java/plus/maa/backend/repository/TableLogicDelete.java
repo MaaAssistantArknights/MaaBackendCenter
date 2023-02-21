@@ -61,8 +61,8 @@ public class TableLogicDelete {
         commentsArea.setDeleteTime(date);
 
         //删除所有回复
-        if (StringUtils.isBlank(commentsArea.getMainCommentsId())) {
-            Optional<List<CommentsArea>> optional = commentsAreaRepository.findByMainCommentsId(commentsArea.getId());
+        if (StringUtils.isBlank(commentsArea.getMainCommentId())) {
+            Optional<List<CommentsArea>> optional = commentsAreaRepository.findByMainCommentId(commentsArea.getId());
             if (optional.isPresent()) {
                 List<CommentsArea> commentsAreaList = optional.get();
                 commentsAreaList.forEach(ca ->
