@@ -179,7 +179,8 @@ public class CommentsAreaService {
         Query query = new Query();
         query.addCriteria(
                 Criteria.where("copilotId").is(request.getCopilotId())
-                        .and("delete").is(false));
+                        .and("delete").is(false)
+                        .and("mainCommentId").exists(false));
 
         List<CommentsArea> rawCommentsAreaList = mongoTemplate.find(query.with(pageable), CommentsArea.class);
 
@@ -205,13 +206,17 @@ public class CommentsAreaService {
         //获取主评论中的所有子评论 并将其封装
         mainCommentsList.forEach(mainComment -> {
             List<SubCommentsInfo> subCommentsInfoList = new ArrayList<>();
-            rawCommentsAreaList.stream()
+            Optional<List<CommentsArea>> byMainCommentId = commentsAreaRepository.findByMainCommentId(mainComment.getId());
+
+            byMainCommentId.ifPresent(commentsAreas -> commentsAreas.stream()
                     .filter(subComment ->
                             StringUtils.isNoneBlank(subComment.getMainCommentId())
-                                    && Objects.equals(mainComment.getId(), subComment.getMainCommentId()))
-                    .toList().forEach(sc ->
+                                    && Objects.equals(mainComment.getId(), subComment.getMainCommentId())
+                                    && !subComment.isDelete())
+                    .toList()
+                    .forEach(sc ->
                             subCommentsInfoList.add(CommentConverter.INSTANCE.toSubCommentsInfo(sc))
-                    );
+                    ));
             CommentsInfo commentsInfo = CommentConverter.INSTANCE.toCommentsInfo(mainComment);
             commentsInfo.setSubCommentsInfos(subCommentsInfoList);
             commentsInfoList.add(commentsInfo);
