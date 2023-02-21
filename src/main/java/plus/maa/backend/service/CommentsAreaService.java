@@ -12,6 +12,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
+import plus.maa.backend.common.utils.converter.CommentConverter;
 import plus.maa.backend.controller.request.CommentsAddDTO;
 import plus.maa.backend.controller.request.CommentsQueriesDTO;
 import plus.maa.backend.controller.request.CommentsRatingDTO;
@@ -63,24 +64,38 @@ public class CommentsAreaService {
         Assert.isTrue(StringUtils.isNotBlank(message), "评论不可为空");
         Assert.isTrue(copilotRepository.existsCopilotsByCopilotId(copilotId), "作业表不存在");
 
-        CommentsArea rawCommentsArea = commentsAreaRepository.findById(commentsAddDTO.getFromCommentsId()).orElse(new CommentsArea());
 
-        String commentsId = StringUtils
-                .isNoneBlank(rawCommentsArea.getMainCommentsId()) ?
-                rawCommentsArea.getMainCommentsId() : rawCommentsArea.getId();
+        String replyTo = null;
+        String fromCommentsId = null;
+        String mainCommentsId = null;
 
-        String fromCommentsId = StringUtils
-                .isNoneBlank(rawCommentsArea.getId()) ?
-                rawCommentsArea.getId() : null;
+        if (StringUtils.isNoneBlank(commentsAddDTO.getFromCommentId())) {
+
+            Optional<CommentsArea> commentsAreaOptional = commentsAreaRepository.findById(commentsAddDTO.getFromCommentId());
+            Assert.isTrue(commentsAreaOptional.isPresent(), "回复的评论不存在");
+            CommentsArea rawCommentsArea = commentsAreaOptional.get();
+
+            //判断其回复的评论是主评论 还是子评论
+            mainCommentsId = StringUtils
+                    .isNoneBlank(rawCommentsArea.getMainCommentId()) ?
+                    rawCommentsArea.getMainCommentId() : rawCommentsArea.getId();
+
+            fromCommentsId = StringUtils
+                    .isBlank(rawCommentsArea.getId()) ?
+                    rawCommentsArea.getId() : null;
+
+            replyTo = rawCommentsArea.getUploader();
+        }
 
         //创建评论表
         CommentsArea commentsArea = new CommentsArea();
         commentsArea.setCopilotId(copilotId)
                 .setUploaderId(maaUser.getUserId())
                 .setUploader(maaUser.getUserName())
-                .setFromCommentsId(fromCommentsId)
-                .setMainCommentsId(commentsId)
-                .setMessage(message);
+                .setFromCommentId(fromCommentsId)
+                .setMainCommentId(mainCommentsId)
+                .setMessage(message)
+                .setReplyTo(replyTo);
         commentsAreaRepository.insert(commentsArea);
 
         return MaaResult.success("评论成功");
@@ -108,7 +123,7 @@ public class CommentsAreaService {
         String rating = commentsRatingDTO.getRating();
         boolean existRatingUser = false;
 
-        CommentsArea commentsArea = findCommentsById(commentsRatingDTO.getCommentsId());
+        CommentsArea commentsArea = findCommentsById(commentsRatingDTO.getCommentId());
         List<CopilotRating.RatingUser> ratingUserList = commentsArea.getRatingUser();
 
         //判断是否存在 如果已存在则修改评分
@@ -164,9 +179,9 @@ public class CommentsAreaService {
         Query query = new Query();
         query.addCriteria(
                 Criteria.where("copilotId").is(request.getCopilotId())
-                        .and("delete").is(true));
+                        .and("delete").is(false));
 
-        List<CommentsArea> commentsAreaList = mongoTemplate.find(query.with(pageable), CommentsArea.class);
+        List<CommentsArea> rawCommentsAreaList = mongoTemplate.find(query.with(pageable), CommentsArea.class);
 
         long count = mongoTemplate.count(query, CommentsArea.class);
 
@@ -178,18 +193,36 @@ public class CommentsAreaService {
             hasNext = true;
         }
 
-        CommentsAreaInfo commentsAreaInfo = new CommentsAreaInfo();
+
         List<CommentsInfo> commentsInfoList = new ArrayList<>();
-        List<SubCommentsInfo> subCommentsInfoList = new ArrayList<>();
+
+        //获取主评论
+        List<CommentsArea> mainCommentsList = rawCommentsAreaList.stream()
+                .filter(c ->
+                        StringUtils.isBlank(c.getMainCommentId()))
+                .toList();
+
+        //获取主评论中的所有子评论 并将其封装
+        mainCommentsList.forEach(mainComment -> {
+            List<SubCommentsInfo> subCommentsInfoList = new ArrayList<>();
+            rawCommentsAreaList.stream()
+                    .filter(subComment ->
+                            StringUtils.isNoneBlank(subComment.getMainCommentId())
+                                    && Objects.equals(mainComment.getId(), subComment.getMainCommentId()))
+                    .toList().forEach(sc ->
+                            subCommentsInfoList.add(CommentConverter.INSTANCE.toSubCommentsInfo(sc))
+                    );
+            CommentsInfo commentsInfo = CommentConverter.INSTANCE.toCommentsInfo(mainComment);
+            commentsInfo.setSubCommentsInfos(subCommentsInfoList);
+            commentsInfoList.add(commentsInfo);
+        });
 
 
-        commentsInfoList.add(new CommentsInfo().setSubCommentsInfos(subCommentsInfoList));
+        CommentsAreaInfo commentsAreaInfo = new CommentsAreaInfo();
         commentsAreaInfo.setHasNext(hasNext)
                 .setPage(pageNumber)
                 .setTotal(count)
                 .setData(commentsInfoList);
-
-        System.out.println(commentsAreaList);
         return MaaResult.success(commentsAreaInfo);
     }
 

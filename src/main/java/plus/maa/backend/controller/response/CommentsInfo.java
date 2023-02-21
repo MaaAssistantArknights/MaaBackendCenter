@@ -19,13 +19,13 @@ import java.util.List;
 @Accessors(chain = true)
 @AllArgsConstructor
 public class CommentsInfo {
-    private String commentsId;
+    private String commentId;
     private String uploader;
     private String uploaderId;
 
     //评论内容
     private String message;
     private Date uploadTime;
-    private int like;
+    private long like;
     private List<SubCommentsInfo> subCommentsInfos = new ArrayList<>();
 }

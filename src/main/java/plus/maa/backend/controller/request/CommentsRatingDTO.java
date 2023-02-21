@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CommentsRatingDTO {
     @NotBlank(message = "评分id不可为空")
-    private String commentsId;
+    private String commentId;
     @NotBlank(message = "评分不能为空")
     private String rating;
 }

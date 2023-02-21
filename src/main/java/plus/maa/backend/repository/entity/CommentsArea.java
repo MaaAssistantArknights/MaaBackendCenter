@@ -26,11 +26,12 @@ public class CommentsArea implements Serializable {
     @Indexed
     private Long copilotId;
 
-    private String fromCommentsId;
+    private String fromCommentId;
 
     private String uploader;
 
     private String uploaderId;
+    private String replyTo;
 
     //评论内容
     private String message;
@@ -38,7 +39,7 @@ public class CommentsArea implements Serializable {
     //赞 踩
     private List<CopilotRating.RatingUser> ratingUser = new ArrayList<>();
 
-    private Long likeCount;
+    private long likeCount;
 
     private Date uploadTime = new Date();
 
@@ -46,7 +47,7 @@ public class CommentsArea implements Serializable {
 
     private Date deleteTime;
 
-    private String mainCommentsId;
+    private String mainCommentId;
 
 
 }

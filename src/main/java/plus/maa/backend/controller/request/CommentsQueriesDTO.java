@@ -14,9 +14,17 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CommentsQueriesDTO {
-    private String copilotId;
+    private Long copilotId;
     private int page;
     private int limit;
     private boolean desc;
     private String orderBy;
+
+    public void setCopilot_id(Long copilotId) {
+        this.copilotId = copilotId;
+    }
+
+    public void setOrder_by(String orderBy) {
+        this.orderBy = orderBy;
+    }
 }

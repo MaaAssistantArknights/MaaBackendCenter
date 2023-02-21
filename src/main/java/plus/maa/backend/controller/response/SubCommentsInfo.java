@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SubCommentsInfo extends CommentsInfo {
-    private String fromCommentsId;
+    private String fromCommentId;
     private String replyTo;
-    private String mainCommentsId;
+    private String mainCommentId;
 }

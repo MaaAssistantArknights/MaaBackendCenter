@@ -40,7 +40,8 @@ public class SecurityConfig {
             "/arknights/level",
             "/copilot/query",
             "/copilot/get/**",
-            "/copilot/rating"
+            "/copilot/rating",
+            "/comments/query"
     };
 
     //添加需要权限1才能访问的接口

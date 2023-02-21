@@ -22,6 +22,6 @@ public class CommentsAddDTO {
     private String copilotId;
 
     //子评论(回复评论)
-    private String fromCommentsId;
+    private String fromCommentId;
 
 }

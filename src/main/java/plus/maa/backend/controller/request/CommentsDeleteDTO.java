@@ -15,5 +15,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CommentsDeleteDTO {
     @NotBlank(message = "评论id不可为空")
-    private String commentsId;
+    private String commentId;
 }

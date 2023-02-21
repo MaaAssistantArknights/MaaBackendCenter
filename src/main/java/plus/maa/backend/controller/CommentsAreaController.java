@@ -36,7 +36,7 @@ public class CommentsAreaController {
 
     @PostMapping("/delete")
     public MaaResult<String> deleteComments(@CurrentUser LoginUser loginUser, @RequestBody CommentsDeleteDTO comments) {
-        return commentsAreaService.deleteComments(loginUser, comments.getCommentsId());
+        return commentsAreaService.deleteComments(loginUser, comments.getCommentId());
     }
 
     @PostMapping("/rating")
