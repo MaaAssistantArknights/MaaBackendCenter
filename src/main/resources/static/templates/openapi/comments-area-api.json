@@ -1,0 +1,424 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "MaaCommentsArea",
+    "description": "",
+    "version": "1.0.0"
+  },
+  "tags": [
+    {
+      "name": "CommentsArea"
+    }
+  ],
+  "paths": {
+    "/comments/query": {
+      "get": {
+        "summary": "CommentQuery",
+        "x-apifox-folder": "CommentsArea",
+        "x-apifox-status": "testing",
+        "deprecated": false,
+        "description": "查询",
+        "tags": [
+          "CommentsArea"
+        ],
+        "parameters": [
+          {
+            "name": "copilot_id",
+            "in": "query",
+            "description": "查询指定作业的评论",
+            "required": false,
+            "example": "20000",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "desc",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "true/false",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "description": "热度排序或日期排序",
+            "required": false,
+            "example": "hot/date",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status_code": {
+                      "type": "integer"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "has_next": {
+                          "type": "boolean"
+                        },
+                        "page": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "comment_id": {
+                                "type": "string"
+                              },
+                              "uploader": {
+                                "type": "string"
+                              },
+                              "uploader_id": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              },
+                              "upload_time": {
+                                "type": "integer"
+                              },
+                              "like": {
+                                "type": "integer"
+                              },
+                              "sub_comments_infos": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "comment_id": {
+                                      "type": "string"
+                                    },
+                                    "uploader": {
+                                      "type": "string"
+                                    },
+                                    "uploader_id": {
+                                      "type": "string"
+                                    },
+                                    "message": {
+                                      "type": "string"
+                                    },
+                                    "upload_time": {
+                                      "type": "integer"
+                                    },
+                                    "like": {
+                                      "type": "integer"
+                                    },
+                                    "from_comment_id": {
+                                      "type": "string"
+                                    },
+                                    "reply_to": {
+                                      "type": "string"
+                                    },
+                                    "main_comment_id": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "comment_id",
+                                    "uploader",
+                                    "uploader_id",
+                                    "message",
+                                    "upload_time",
+                                    "like",
+                                    "from_comment_id",
+                                    "reply_to",
+                                    "main_comment_id"
+                                  ],
+                                  "x-apifox-orders": [
+                                    "comment_id",
+                                    "uploader",
+                                    "uploader_id",
+                                    "message",
+                                    "upload_time",
+                                    "like",
+                                    "from_comment_id",
+                                    "reply_to",
+                                    "main_comment_id"
+                                  ],
+                                  "x-apifox-ignore-properties": []
+                                }
+                              }
+                            },
+                            "x-apifox-orders": [
+                              "comment_id",
+                              "uploader",
+                              "uploader_id",
+                              "message",
+                              "upload_time",
+                              "like",
+                              "sub_comments_infos"
+                            ],
+                            "x-apifox-ignore-properties": []
+                          }
+                        }
+                      },
+                      "required": [
+                        "has_next",
+                        "page",
+                        "total",
+                        "data"
+                      ],
+                      "x-apifox-orders": [
+                        "has_next",
+                        "page",
+                        "total",
+                        "data"
+                      ],
+                      "x-apifox-ignore-properties": []
+                    }
+                  },
+                  "required": [
+                    "status_code",
+                    "data"
+                  ],
+                  "x-apifox-orders": [
+                    "status_code",
+                    "data"
+                  ],
+                  "x-apifox-ignore-properties": []
+                },
+                "examples": {
+                  "1": {
+                    "summary": "成功示例",
+                    "value": {
+                      "status_code": 200,
+                      "data": {
+                        "has_next": false,
+                        "page": 1,
+                        "total": 3,
+                        "data": [
+                          {
+                            "comment_id": "63f4b3beb3255943e7f6e7a2",
+                            "uploader": "2842775752@qq.com",
+                            "uploader_id": "63ecfc29ae86501dfbfbbc82",
+                            "message": "这是一条主评论",
+                            "upload_time": 1676981182259,
+                            "like": 0,
+                            "sub_comments_infos": [
+                              {
+                                "comment_id": "63f4b73d4591c73b0fcc78ea",
+                                "uploader": "2842775752@qq.com",
+                                "uploader_id": "63ecfc29ae86501dfbfbbc82",
+                                "message": "这是一条回复评论",
+                                "upload_time": 1676982077599,
+                                "like": 0,
+                                "from_comment_id": "63f4b3beb3255943e7f6e7a2",
+                                "reply_to": "2842775752@qq.com",
+                                "main_comment_id": "63f4b3beb3255943e7f6e7a2"
+                              },
+                              {
+                                "comment_id": "63f4b74d4591c73b0fcc78eb",
+                                "uploader": "2842775752@qq.com",
+                                "uploader_id": "63ecfc29ae86501dfbfbbc82",
+                                "message": "这是一条回复回复评论",
+                                "upload_time": 1676982093390,
+                                "like": 0,
+                                "from_comment_id": "63f4b73d4591c73b0fcc78ea",
+                                "reply_to": "2842775752@qq.com",
+                                "main_comment_id": "63f4b3beb3255943e7f6e7a2"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-run-in-apifox'": "https://www.apifox.cn/web/project/2119005/apis/api-62601645-run"
+      }
+    },
+    "/comments/add": {
+      "post": {
+        "summary": "CommentAdd",
+        "x-apifox-folder": "CommentsArea",
+        "x-apifox-status": "testing",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "CommentsArea"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "x-apifox-ignore-properties": [],
+                "x-apifox-orders": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "x-apifox-ignore-properties": [],
+                  "x-apifox-orders": []
+                }
+              }
+            }
+          }
+        },
+        "x-run-in-apifox'": "https://www.apifox.cn/web/project/2119005/apis/api-63269871-run"
+      }
+    },
+    "/comments/rating": {
+      "post": {
+        "summary": "CommentRating",
+        "x-apifox-folder": "CommentsArea",
+        "x-apifox-status": "developing",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "CommentsArea"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "comment_id": {
+                    "type": "string"
+                  },
+                  "rating": {
+                    "type": "string"
+                  }
+                },
+                "x-apifox-orders": [
+                  "comment_id",
+                  "rating"
+                ],
+                "required": [
+                  "comment_id",
+                  "rating"
+                ],
+                "x-apifox-ignore-properties": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "x-apifox-ignore-properties": [],
+                  "x-apifox-orders": []
+                }
+              }
+            }
+          }
+        },
+        "x-run-in-apifox'": "https://www.apifox.cn/web/project/2119005/apis/api-63287754-run"
+      }
+    },
+    "/comments/delete": {
+      "post": {
+        "summary": "delete",
+        "x-apifox-folder": "CommentsArea",
+        "x-apifox-status": "testing",
+        "deprecated": false,
+        "description": "逻辑删除",
+        "tags": [
+          "CommentsArea"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "comment_id": {
+                    "type": "string"
+                  }
+                },
+                "x-apifox-orders": [
+                  "comment_id"
+                ],
+                "required": [
+                  "comment_id"
+                ],
+                "x-apifox-ignore-properties": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "x-apifox-ignore-properties": [],
+                  "x-apifox-orders": []
+                }
+              }
+            }
+          }
+        },
+        "x-run-in-apifox'": "https://www.apifox.cn/web/project/2119005/apis/api-63911113-run"
+      }
+    }
+  },
+  "components": {
+    "schemas": {}
+  },
+  "servers": []
+}
