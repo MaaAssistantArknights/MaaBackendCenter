@@ -1,18 +1,5 @@
 package plus.maa.backend.filter;
 
-import java.io.IOException;
-import java.util.Objects;
-
-import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
-import org.springframework.web.filter.OncePerRequestFilter;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import cn.hutool.core.date.DateTime;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTUtil;
@@ -23,9 +10,22 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import plus.maa.backend.controller.response.MaaResult;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.CredentialsExpiredException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+import plus.maa.backend.config.external.MaaCopilotProperties;
 import plus.maa.backend.repository.RedisCache;
 import plus.maa.backend.service.model.LoginUser;
+
+import java.io.IOException;
+import java.util.Objects;
 
 /**
  * @author AnselYuki
@@ -35,73 +35,52 @@ import plus.maa.backend.service.model.LoginUser;
 @RequiredArgsConstructor
 public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
     private final RedisCache redisCache;
-    private final ObjectMapper objectMapper;
-    @Value("${maa-copilot.jwt.header}")
-    private String header;
-    @Value("${maa-copilot.jwt.secret}")
-    private String secret;
+    private final MaaCopilotProperties properties;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull FilterChain filterChain) throws IOException, ServletException {
-        String token = request.getHeader(header);
-        if (!StringUtils.hasText(token)) {
-            //未携带token，直接放行，交由后续过滤链处理
-            filterChain.doFilter(request, response);
-            return;
-        }
-        if (token.startsWith("Bearer ")) {
-            token = token.substring(7);
-        }
-        //解析token，用密钥验证token是否有效
-        String redisKey;
-        String jwtToken;
+    protected void doFilterInternal(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull FilterChain filterChain) throws IOException, ServletException {
         try {
-            if (!JWTUtil.verify(token, secret.getBytes())) {
-                handleError(response, "验证失败");
-                return;
-            }
-        } catch (Exception e) {
-            handleError(response, "验证失败");
-            return;
+            var token = extractToken(request);
+            var jwt = parseAndValidateJwt(token);
+            var user = retrieveAndValidateUser(jwt);
+            var authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+        } catch (AuthenticationException ex) {
+            logger.trace(ex.getMessage());
+        } catch (Exception ignored) {
+        } finally {
+            filterChain.doFilter(request, response);
         }
-        JWT jwt = JWTUtil.parseToken(token);
-        jwtToken = jwt.getPayload("token").toString();
-        DateTime now = DateTime.now();
-        DateTime notBefore = DateTime.of((Long) jwt.getPayload(RegisteredPayload.NOT_BEFORE));
-        DateTime expiresAt = DateTime.of((Long) jwt.getPayload(RegisteredPayload.EXPIRES_AT));
-        if (!now.isBefore(expiresAt)) {
-            handleError(response, "Token已过期");
-            return;
-        }
-        if (!now.isAfter(notBefore)) {
-            handleError(response, "Token还未生效");
-            return;
-        }
-        redisKey = "LOGIN:" + jwt.getPayload("userId");
-
-        //从redis中获取用户信息
-        LoginUser loginUser = redisCache.getCache(redisKey, LoginUser.class);
-        if (Objects.isNull(loginUser)) {
-            handleError(response, "验证失败");
-            return;
-        }
-        if (!Objects.equals(loginUser.getToken(), jwtToken)) {
-            handleError(response, "验证失败");
-            return;
-        }
-
-        //存入SecurityContext
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(loginUser, null, loginUser.getAuthorities());
-        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-        //放行请求
-        filterChain.doFilter(request, response);
     }
 
-    private void handleError(HttpServletResponse response, String message) throws IOException {
-        MaaResult<Void> result = new MaaResult<>(HttpServletResponse.SC_BAD_REQUEST, message, null);
-        response.setCharacterEncoding("UTF-8");
-        response.setContentType("application/json");
-        response.setStatus(result.statusCode());
-        response.getWriter().write(objectMapper.writeValueAsString(result));
+    @NotNull
+    private String extractToken(HttpServletRequest request) throws Exception {
+        if (SecurityContextHolder.getContext().getAuthentication() != null) throw new Exception("no need to auth");
+        var head = request.getHeader(properties.getJwt().getHeader());
+        if (head == null || !head.startsWith("Bearer ")) throw new Exception("token not found");
+        return head.substring(7);
+    }
+
+    @NotNull
+    private JWT parseAndValidateJwt(String token) throws BadCredentialsException {
+        if (!JWTUtil.verify(token, properties.getJwt().getSecret().getBytes()))
+            throw new BadCredentialsException("invalid token");
+        var jwt = JWTUtil.parseToken(token);
+        var now = DateTime.now();
+        var notBefore = DateTime.of((Long) jwt.getPayload(RegisteredPayload.NOT_BEFORE));
+        if (now.isBefore(notBefore)) throw new CredentialsExpiredException("haven't come into effect");
+        var expiresAt = DateTime.of((Long) jwt.getPayload(RegisteredPayload.EXPIRES_AT));
+        if (now.isAfter(expiresAt)) throw new CredentialsExpiredException("token expired");
+        return jwt;
+    }
+
+    @NotNull
+    private LoginUser retrieveAndValidateUser(JWT jwt) throws AuthenticationException {
+        var redisKey = "LOGIN:" + jwt.getPayload("userId");
+        var user = redisCache.getCache(redisKey, LoginUser.class);
+        if (user == null) throw new UsernameNotFoundException("user not found");
+        var jwtToken = jwt.getPayload("token").toString();
+        if (!Objects.equals(user.getToken(), jwtToken)) throw new BadCredentialsException("invalid token");
+        return user;
     }
 }

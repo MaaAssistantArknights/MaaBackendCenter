@@ -47,6 +47,8 @@ dependencies {
     implementation 'com.github.erosb:everit-json-schema:1.14.1'
     implementation 'com.google.guava:guava:31.1-jre'
 
+    testImplementation "org.mockito:mockito-core:3.+"
+
 }
 
 test {
