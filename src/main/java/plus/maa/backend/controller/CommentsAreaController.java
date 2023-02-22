@@ -1,5 +1,6 @@
 package plus.maa.backend.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.CurrentUser;
@@ -25,7 +26,7 @@ public class CommentsAreaController {
     private final CommentsAreaService commentsAreaService;
 
     @PostMapping("/add")
-    public MaaResult<String> sendComments(@CurrentUser LoginUser loginUser, @RequestBody CommentsAddDTO comments) {
+    public MaaResult<String> sendComments(@CurrentUser LoginUser loginUser, @Valid @RequestBody CommentsAddDTO comments) {
         return commentsAreaService.addComments(loginUser, comments);
     }
 
@@ -35,12 +36,12 @@ public class CommentsAreaController {
     }
 
     @PostMapping("/delete")
-    public MaaResult<String> deleteComments(@CurrentUser LoginUser loginUser, @RequestBody CommentsDeleteDTO comments) {
+    public MaaResult<String> deleteComments(@CurrentUser LoginUser loginUser, @Valid @RequestBody CommentsDeleteDTO comments) {
         return commentsAreaService.deleteComments(loginUser, comments.getCommentId());
     }
 
     @PostMapping("/rating")
-    public MaaResult<String> ratesComments(@CurrentUser LoginUser loginUser, @RequestBody CommentsRatingDTO commentsRatingDTO) {
+    public MaaResult<String> ratesComments(@CurrentUser LoginUser loginUser, @Valid @RequestBody CommentsRatingDTO commentsRatingDTO) {
         return commentsAreaService.rates(loginUser, commentsRatingDTO);
     }
 }

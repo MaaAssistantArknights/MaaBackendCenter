@@ -21,6 +21,7 @@ import plus.maa.backend.controller.response.SubCommentsInfo;
 import plus.maa.backend.repository.CommentsAreaRepository;
 import plus.maa.backend.repository.CopilotRepository;
 import plus.maa.backend.repository.TableLogicDelete;
+import plus.maa.backend.repository.UserRepository;
 import plus.maa.backend.repository.entity.CommentsArea;
 import plus.maa.backend.repository.entity.CopilotRating;
 import plus.maa.backend.repository.entity.MaaUser;
@@ -41,6 +42,7 @@ public class CommentsAreaService {
 
     private final CopilotRepository copilotRepository;
 
+    private final UserRepository userRepository;
 
     private final TableLogicDelete tableLogicDelete;
 
@@ -62,7 +64,6 @@ public class CommentsAreaService {
         Assert.isTrue(copilotRepository.existsCopilotsByCopilotId(copilotId), "作业表不存在");
 
 
-        String replyTo = null;
         String fromCommentsId = null;
         String mainCommentsId = null;
 
@@ -81,18 +82,15 @@ public class CommentsAreaService {
                     .isNoneBlank(rawCommentsArea.getId()) ?
                     rawCommentsArea.getId() : null;
 
-            replyTo = rawCommentsArea.getUploader();
         }
 
         //创建评论表
         CommentsArea commentsArea = new CommentsArea();
         commentsArea.setCopilotId(copilotId)
                 .setUploaderId(maaUser.getUserId())
-                .setUploader(maaUser.getUserName())
                 .setFromCommentId(fromCommentsId)
                 .setMainCommentId(mainCommentsId)
-                .setMessage(message)
-                .setReplyTo(replyTo);
+                .setMessage(message);
         commentsAreaRepository.insert(commentsArea);
 
         return MaaResult.success("评论成功");
@@ -192,16 +190,19 @@ public class CommentsAreaService {
                 .filter(c ->
                         StringUtils.isBlank(c.getMainCommentId()))
                 .forEach(mainComment -> {
-                    List<CommentsArea> commentsAreas = commentsAreaRepository.findByMainCommentId(mainComment.getId());
+                    List<CommentsArea> commentsAreas = commentsAreaRepository.findByMainCommentIdAndDeleteIsFalse(mainComment.getId());
                     List<SubCommentsInfo> subCommentsInfoList = commentsAreas.stream()
-                            .filter(subComment ->
-                                    StringUtils.isNoneBlank(subComment.getMainCommentId())
-                                            && Objects.equals(mainComment.getId(), subComment.getMainCommentId())
-                                            && !subComment.isDelete())
-                            .map(CommentConverter.INSTANCE::toSubCommentsInfo)
+                            //将其转换为subCommentsInfo 并封装实时查询用户名
+                            .map(c -> {
+                                SubCommentsInfo subCommentsInfo = CommentConverter.INSTANCE.toSubCommentsInfo(c);
+                                subCommentsInfo.setReplyTo(findCommentUploaderName(c.getFromCommentId()))
+                                        .setUploader(findUsername(c.getUploaderId()));
+                                return subCommentsInfo;
+                            })
                             .toList();
 
                     CommentsInfo commentsInfo = CommentConverter.INSTANCE.toCommentsInfo(mainComment);
+                    commentsInfo.setUploader(findUsername(commentsInfo.getUploaderId()));
                     commentsInfo.setSubCommentsInfos(subCommentsInfoList);
                     commentsInfoList.add(commentsInfo);
                 });
@@ -220,6 +221,24 @@ public class CommentsAreaService {
         Assert.isTrue(Objects.equals(user.getMaaUser().getUserId(), uploaderId), "您无法删除不属于您的评论");
     }
 
+    /**
+     * @param id 用户id
+     * @return 用户名
+     */
+
+    private String findUsername(String id) {
+        Optional<MaaUser> byId = userRepository.findById(id);
+        return byId.isPresent() ? byId.get().getUserName() : "账号已注销";
+    }
+
+    /**
+     * @param id 评论id
+     * @return 评论用户名
+     */
+    private String findCommentUploaderName(String id) {
+        Optional<CommentsArea> byId = commentsAreaRepository.findById(id);
+        return byId.map(commentsArea -> findUsername(commentsArea.getUploaderId())).orElse("遁入虚空的评论");
+    }
 
     private CommentsArea findCommentsById(String commentsId) {
         Optional<CommentsArea> commentsArea = commentsAreaRepository.findById(commentsId);

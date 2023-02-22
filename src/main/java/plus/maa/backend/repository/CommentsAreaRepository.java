@@ -15,6 +15,8 @@ import java.util.List;
 
 @Repository
 public interface CommentsAreaRepository extends MongoRepository<CommentsArea, String> {
+    List<CommentsArea> findByMainCommentIdAndDeleteIsFalse(String commentsId);
+
     List<CommentsArea> findByMainCommentId(String commentsId);
 
     Page<CommentsArea> findByCopilotIdAndDeleteAndMainCommentIdExists(

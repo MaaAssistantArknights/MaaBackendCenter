@@ -29,11 +29,8 @@ public class CommentsArea implements Serializable {
     //答复某个评论
     private String fromCommentId;
 
-    private String uploader;
 
     private String uploaderId;
-    //答复用户名
-    private String replyTo;
 
     //评论内容
     private String message;

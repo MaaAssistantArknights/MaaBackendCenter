@@ -20,10 +20,13 @@ public interface CommentConverter {
     @Mapping(target = "like", source = "likeCount")
     @Mapping(target = "commentId", source = "id")
     @Mapping(target = "subCommentsInfos", ignore = true)
+    @Mapping(target = "uploader", ignore = true)
     CommentsInfo toCommentsInfo(CommentsArea commentsArea);
 
 
     @Mapping(target = "like", source = "likeCount")
     @Mapping(target = "commentId", source = "id")
+    @Mapping(target = "replyTo", ignore = true)
+    @Mapping(target = "uploader", ignore = true)
     SubCommentsInfo toSubCommentsInfo(CommentsArea commentsArea);
 }
