@@ -11,11 +11,18 @@ spring:
       host: localhost
 
 maa-copilot:
+  backup:
+    dir: /home/dove/copilotBak
+    uri: git@github.com:dragove/maa-copilot-store.git
+    disabled: true
+    username: dragove
+    email: dragove@qq.com
   info:
     title: MAA Copilot Center API
     description: MAA Copilot Backend Center
     version: v1.0.0
     domain: https://prts.maa.plus
+    frontend-domain: https://prts.plus
   jwt:
     header: Authorization
     # 默认的JwtToken过期时间，以秒为单位
@@ -36,6 +43,7 @@ maa-copilot:
     json-path: resource/Arknights-Tile-Pos/
   task-cron:
     ark-level: "-"
+    copilot-update: "-"
   mail:
     # 邮件服务器的SMTP地址
     host: smtp.qq.com
