@@ -41,14 +41,17 @@ public class SecurityConfig {
             "/arknights/level",
             "/copilot/query",
             "/copilot/get/**",
-            "/copilot/rating"
+            "/copilot/rating",
+            "/comments/query"
     };
 
     //添加需要权限1才能访问的接口
     private static final String[] URL_AUTHENTICATION_1 = {
             "/copilot/delete",
             "/copilot/update",
-            "/copilot/upload"
+            "/copilot/upload",
+            "/comments/add",
+            "/comments/delete"
     };
 
     private static final String[] URL_AUTHENTICATION_2 = {
