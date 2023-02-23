@@ -15,7 +15,7 @@ import org.hibernate.validator.constraints.Length;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CommentsAddDTO {
-    @Length(min = 1, max = 150, message = "评论内容不可超过100字，请删减")
+    @Length(min = 1, max = 150, message = "评论内容不可超过150字，请删减")
     private String message;
 
     @NotBlank(message = "作业id不可为空")

@@ -18,6 +18,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import plus.maa.backend.common.annotation.JsonSchema;
+import plus.maa.backend.controller.request.CommentsRatingDTO;
 import plus.maa.backend.controller.request.CopilotCUDRequest;
 import plus.maa.backend.controller.request.CopilotRatingReq;
 import plus.maa.backend.controller.response.MaaResultException;
@@ -60,12 +61,12 @@ public class JsonSchemaAop {
                 content = ((CopilotCUDRequest) arg).getContent();
                 schema_json = COPILOT_SCHEMA_JSON;
             }
-            if (arg instanceof CopilotRatingReq) {
+            if (arg instanceof CopilotRatingReq || arg instanceof CommentsRatingDTO) {
                 try {
                     schema_json = RATING_SCHEMA_JSON;
                     content = mapper.writeValueAsString(arg);
                 } catch (JsonProcessingException e) {
-                    log.error("json解析失败",e);
+                    log.error("json解析失败", e);
                 }
             }
         }

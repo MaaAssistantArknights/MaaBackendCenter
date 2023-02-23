@@ -1,9 +1,11 @@
 package plus.maa.backend.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.CurrentUser;
+import plus.maa.backend.common.annotation.JsonSchema;
 import plus.maa.backend.controller.request.CommentsAddDTO;
 import plus.maa.backend.controller.request.CommentsDeleteDTO;
 import plus.maa.backend.controller.request.CommentsQueriesDTO;
@@ -20,6 +22,7 @@ import plus.maa.backend.service.model.LoginUser;
 
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "CommentArea")
 @RequestMapping("/comments")
 public class CommentsAreaController {
 
@@ -40,6 +43,7 @@ public class CommentsAreaController {
         return commentsAreaService.deleteComments(loginUser, comments.getCommentId());
     }
 
+    @JsonSchema
     @PostMapping("/rating")
     public MaaResult<String> ratesComments(@CurrentUser LoginUser loginUser, @Valid @RequestBody CommentsRatingDTO commentsRatingDTO) {
         return commentsAreaService.rates(loginUser, commentsRatingDTO);
