@@ -41,11 +41,12 @@ import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
  * @author LoMu
- *         Date 2022-12-25 19:57
+ * Date 2022-12-25 19:57
  */
 @Slf4j
 @Service
@@ -160,6 +161,12 @@ public class CopilotService {
         }
     }
 
+
+    private Pattern caseInsensitive(String s) {
+        return Pattern.compile(s, Pattern.CASE_INSENSITIVE);
+    }
+
+
     /**
      * 上传新的作业
      *
@@ -256,14 +263,16 @@ public class CopilotService {
         // 匹配模糊查询
         if (StringUtils.isNotBlank(request.getLevelKeyword())) {
             ArkLevelInfo levelInfo = levelService.queryLevelByKeyword(request.getLevelKeyword());
-            if (levelInfo != null) {
+            if (levelInfo != null && levelInfo.getStageId() != null) {
                 andQueries.add(Criteria.where("stageName").regex(levelInfo.getStageId()));
+            } else {
+                andQueries.add(Criteria.where("stageName").regex(caseInsensitive(request.getLevelKeyword())));
             }
         }
         // or模糊查询
         if (StringUtils.isNotBlank(request.getDocument())) {
-            orQueries.add(Criteria.where("doc.title").regex(request.getDocument()));
-            orQueries.add(Criteria.where("doc.details").regex(request.getDocument()));
+            orQueries.add(Criteria.where("doc.title").regex(caseInsensitive(request.getDocument())));
+            orQueries.add(Criteria.where("doc.details").regex(caseInsensitive(request.getDocument())));
         }
 
         // operator 包含或排除干员查询
@@ -307,7 +316,6 @@ public class CopilotService {
             criteriaObj.orOperator(orQueries);
         }
         queryObj.addCriteria(criteriaObj);
-
         // 查询总数
         long count = mongoTemplate.count(queryObj, Copilot.class);
 
@@ -318,7 +326,7 @@ public class CopilotService {
         List<CopilotRating> ratings = copilotRatingRepository.findByCopilotIdIn(copilotIds);
         Map<Long, CopilotRating> ratingByCopilotId = Maps.uniqueIndex(ratings, CopilotRating::getCopilotId);
         List<CopilotInfo> infos = copilots.stream().map(copilot -> formatCopilot(userId, copilot,
-                ratingByCopilotId.get(copilot.getCopilotId())))
+                        ratingByCopilotId.get(copilot.getCopilotId())))
                 .toList();
         // 计算页面
         int pageNumber = (int) Math.ceil((double) count / limit);
