@@ -33,11 +33,11 @@ public interface ArkLevelRepository extends MongoRepository<ArkLevel, String> {
     @Query("""
             {
                 "$or": [
-                    {"stageId": {$regex: ?0 }},
-                    {"catThree": {$regex: ?0 }},
-                    {"catTwo":  {$regex: ?0 }},
-                    {"catOne": {$regex: ?0 }},
-                    {"name": {$regex: ?0 }}
+                    {"stageId": {'$regex': ?0 ,'$options':'i'}},
+                    {"catThree": {'$regex': ?0 ,'$options':'i'}},
+                    {"catTwo":  {'$regex': ?0 ,'$options':'i'}},
+                    {"catOne": {'$regex': ?0 ,'$options':'i'}},
+                    {"name": {'$regex': ?0,'$options':'i' }}
                 ]
             }
             """)
