@@ -13,4 +13,5 @@ public class MaaCopilotProperties {
     private ArkLevelGit arkLevelGit;
     private TaskCron taskCron;
     private CopilotBackup backup;
+    private Mail mail;
 }

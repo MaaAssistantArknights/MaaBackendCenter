@@ -252,15 +252,17 @@ public class CopilotService {
 
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(sortOrder));
 
-        // 模糊查询
         Query queryObj = new Query();
         Criteria criteriaObj = new Criteria();
+
         Set<Criteria> andQueries = new HashSet<>();
         Set<Criteria> norQueries = new HashSet<>();
         Set<Criteria> orQueries = new HashSet<>();
+
         andQueries.add(Criteria.where("delete").is(false));
 
-        // 匹配模糊查询
+
+        //关卡名、关卡类型、关卡编号
         if (StringUtils.isNotBlank(request.getLevelKeyword())) {
             List<ArkLevelInfo> levelInfo = levelService.queryLevelByKeyword(request.getLevelKeyword());
             if (levelInfo.isEmpty()) {
@@ -270,14 +272,15 @@ public class CopilotService {
                         .map(ArkLevelInfo::getStageId).collect(Collectors.toSet())));
             }
         }
-        // or模糊查询
+
+        //标题、描述、神秘代码
         if (StringUtils.isNotBlank(request.getDocument())) {
             orQueries.add(Criteria.where("doc.title").regex(caseInsensitive(request.getDocument())));
             orQueries.add(Criteria.where("doc.details").regex(caseInsensitive(request.getDocument())));
         }
 
-        // operator 包含或排除干员查询
-        // 排除~开头的 查询非~开头
+
+        //包含或排除干员
         String oper = request.getOperator();
         if (StringUtils.isNotBlank(oper)) {
             oper = oper.replaceAll("[“\"”]", "");
@@ -294,7 +297,7 @@ public class CopilotService {
             }
         }
 
-        // 匹配查询
+        //查看自己
         if (StringUtils.isNotBlank(request.getUploaderId())) {
             if ("me".equals(request.getUploaderId())) {
                 String loginUserId = user.getMaaUser().getUserId();
@@ -402,9 +405,10 @@ public class CopilotService {
         int disLikeCount = 0;
         List<CopilotRating.RatingUser> ratingUsers = copilotRating.getRatingUsers();
 
-        // 查看是否已评分 如果已评分则进行更新 如果做出相同的评分则直接返回
+        // 查看是否已评分 如果已评分则进行更新
         for (CopilotRating.RatingUser ratingUser : ratingUsers) {
             if (userId.equals(ratingUser.getUserId())) {
+                //做出相同的评分则直接返回
                 if (ratingUser.getRating().equals(rating)) {
                     return MaaResult.success("评分成功");
                 }
@@ -435,7 +439,9 @@ public class CopilotService {
         }
 
         // 计算评分相关
-        int ratingCount = copilotRating.getRatingUsers().size();
+
+        //评分数量可能发生了变化 重新查询获取评分数量
+        int ratingCount = copilotRatingRepository.findByCopilotId(request.getId()).getRatingUsers().size();
         double rawRatingLevel = (double) likeCount / ratingCount;
         BigDecimal bigDecimal = new BigDecimal(rawRatingLevel);
         // 只取一位小数点
