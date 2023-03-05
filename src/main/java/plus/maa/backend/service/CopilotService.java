@@ -198,11 +198,11 @@ public class CopilotService {
     /**
      * 指定查询
      */
-    public MaaResult<CopilotInfo> getCopilotById(LoginUser user, Long id) {
+    public Optional<CopilotInfo> getCopilotById(LoginUser user, Long id) {
         String userId = getUserId(user);
         // 根据ID获取作业, 如作业不存在则抛出异常返回
         Optional<Copilot> copilotOptional = copilotRepository.findByCopilotId(id);
-        return MaaResult.success(copilotOptional.map(copilot -> {
+        return copilotOptional.map(copilot -> {
             // 60分钟内限制同一个用户对访问量的增加
             RatingCache cache = redisCache.getCache("views:" + userId, RatingCache.class);
             if (Objects.isNull(cache) || Objects.isNull(cache.getCopilotIds()) ||
@@ -224,7 +224,7 @@ public class CopilotService {
             }
             CopilotRating rating = copilotRatingRepository.findByCopilotId(copilot.getCopilotId());
             return formatCopilot(userId, copilot, rating);
-        }).orElse(null));
+        });
     }
 
     /**
@@ -262,11 +262,12 @@ public class CopilotService {
 
         // 匹配模糊查询
         if (StringUtils.isNotBlank(request.getLevelKeyword())) {
-            ArkLevelInfo levelInfo = levelService.queryLevelByKeyword(request.getLevelKeyword());
-            if (levelInfo != null && levelInfo.getStageId() != null) {
-                andQueries.add(Criteria.where("stageName").regex(levelInfo.getStageId()));
-            } else {
+            List<ArkLevelInfo> levelInfo = levelService.queryLevelByKeyword(request.getLevelKeyword());
+            if (levelInfo.isEmpty()) {
                 andQueries.add(Criteria.where("stageName").regex(caseInsensitive(request.getLevelKeyword())));
+            } else {
+                andQueries.add(Criteria.where("stageName").in(levelInfo.stream()
+                        .map(ArkLevelInfo::getStageId).collect(Collectors.toSet())));
             }
         }
         // or模糊查询

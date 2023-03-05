@@ -94,14 +94,9 @@ public class ArkLevelService {
     }
 
 
-    public ArkLevelInfo queryLevelByKeyword(String keyword) {
-        ArkLevel level = arkLevelRepo.queryLevelByKeyword(keyword).findAny().orElse(null);
-        return ArkLevelConverter.INSTANCE.convert(level);
-    }
-
-    public List<ArkLevelInfo> findByStageIds(Collection<String> stageIds) {
-        List<ArkLevel> arkLevels = arkLevelRepo.findByStageIdIn(stageIds);
-        return ArkLevelConverter.INSTANCE.convert(arkLevels);
+    public List<ArkLevelInfo> queryLevelByKeyword(String keyword) {
+        List<ArkLevel> levels = arkLevelRepo.queryLevelByKeyword(keyword).collect(Collectors.toList());
+        return ArkLevelConverter.INSTANCE.convert(levels);
     }
 
     /**

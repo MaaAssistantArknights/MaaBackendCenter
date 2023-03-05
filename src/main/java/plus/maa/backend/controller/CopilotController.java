@@ -1,8 +1,7 @@
 package plus.maa.backend.controller;
 
-import org.springframework.web.bind.annotation.*;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.CurrentUser;
 import plus.maa.backend.common.annotation.JsonSchema;
 import plus.maa.backend.controller.request.CopilotCUDRequest;
@@ -42,7 +41,8 @@ public class CopilotController {
     @GetMapping("/get/{id}")
     public MaaResult<CopilotInfo> getCopilotById(@CurrentUser LoginUser user,
                                                  @PathVariable("id") Long id) {
-        return copilotService.getCopilotById(user, id);
+        return copilotService.getCopilotById(user, id).map(MaaResult::success)
+                .orElse(MaaResult.fail(404, "数据不存在"));
     }
 
 
