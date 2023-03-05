@@ -12,11 +12,13 @@ import org.springframework.util.Assert;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import plus.maa.backend.common.bo.EmailBusinessObject;
+import plus.maa.backend.config.external.MaaCopilotProperties;
+import plus.maa.backend.config.external.Mail;
 import plus.maa.backend.repository.RedisCache;
 
 /**
  * @author LoMu
- *         Date 2022-12-24 11:05
+ * Date 2022-12-24 11:05
  */
 @Service
 @Slf4j
@@ -28,20 +30,8 @@ public class EmailService {
     @Value("${maa-copilot.info.domain}")
     private String domain;
 
-    @Value("${maa-copilot.mail.host}")
-    private String host;
-    @Value("${maa-copilot.mail.port}")
-    private Integer port;
-    @Value("${maa-copilot.mail.from}")
-    private String from;
-    @Value("${maa-copilot.mail.user}")
-    private String user;
-    @Value("${maa-copilot.mail.pass}")
-    private String pass;
-    @Value("${maa-copilot.mail.starttls}")
-    private boolean starttls;
-    @Value("${maa-copilot.mail.ssl}")
-    private boolean ssl;
+    private final MaaCopilotProperties maaCopilotProperties;
+
     @Value("${debug.email.no-send:false}")
     private boolean flagNoSend;
 
@@ -53,15 +43,17 @@ public class EmailService {
      * @return mailAccount
      */
     private MailAccount getMailAccount() {
+        Mail mail = maaCopilotProperties.getMail();
+
         MailAccount mailAccount = new MailAccount();
         mailAccount
-                .setHost(host)
-                .setPort(port)
-                .setFrom(from)
-                .setUser(user)
-                .setPass(pass)
-                .setSslEnable(ssl)
-                .setStarttlsEnable(starttls);
+                .setHost(mail.getHost())
+                .setPort(mail.getPort())
+                .setFrom(mail.getFrom())
+                .setUser(mail.getUser())
+                .setPass(mail.getPass())
+                .setSslEnable(mail.getSsl())
+                .setStarttlsEnable(mail.getStarttls());
         return mailAccount;
     }
 
@@ -96,15 +88,16 @@ public class EmailService {
 
     /**
      * 验证发到某个邮箱的验证码
-     * @param email 邮箱
-     * @param vcode 验证码
+     *
+     * @param email               邮箱
+     * @param vcode               验证码
      * @param clearVCodeOnSuccess 验证成功是否删除验证码
      * @return 是否一致
      */
-    public boolean verifyVCode2(String email, String vcode,boolean clearVCodeOnSuccess) {
+    public boolean verifyVCode2(String email, String vcode, boolean clearVCodeOnSuccess) {
         // FIXME:可能出现多线程数据争用问题，想办法用redis的一些方法直接比较完删除
         String cacheVCode = redisCache.getCache("vCodeEmail:" + email, String.class);
-        Boolean result= StringUtils.equalsIgnoreCase(cacheVCode, vcode);
+        boolean result = StringUtils.equalsIgnoreCase(cacheVCode, vcode);
         if (clearVCodeOnSuccess && result) {
             redisCache.removeCache("vCodeEmail:" + email);
         }
