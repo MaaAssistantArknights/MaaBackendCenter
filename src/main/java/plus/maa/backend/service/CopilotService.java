@@ -449,8 +449,9 @@ public class CopilotService {
         copilotRating.setRatingLevel((int) (ratingLevel * 10));
         copilotRating.setRatingRatio(ratingLevel);
         mongoTemplate.save(copilotRating);
-        // TODO 计算热度 (暂时)
-        double hotScore = rawRatingLevel + (likeCount - disLikeCount);
+
+        // TODO 计算热度 (暂时) 评分达到指定阈值 添加额外分数 使其排名更高
+        double hotScore = ratingCount > 5 ? rawRatingLevel + (likeCount - disLikeCount) + 10 : rawRatingLevel + (likeCount - disLikeCount);
         // 更新热度
         copilotRepository.findByCopilotId(request.getId()).ifPresent(copilot -> {
             copilot.setHotScore(hotScore);
