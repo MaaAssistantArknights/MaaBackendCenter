@@ -26,12 +26,10 @@ import plus.maa.backend.controller.request.CopilotDTO;
 import plus.maa.backend.controller.request.CopilotQueriesRequest;
 import plus.maa.backend.controller.request.CopilotRatingReq;
 import plus.maa.backend.controller.response.*;
-import plus.maa.backend.repository.CopilotRatingRepository;
-import plus.maa.backend.repository.CopilotRepository;
-import plus.maa.backend.repository.RedisCache;
-import plus.maa.backend.repository.TableLogicDelete;
+import plus.maa.backend.repository.*;
 import plus.maa.backend.repository.entity.Copilot;
 import plus.maa.backend.repository.entity.CopilotRating;
+import plus.maa.backend.repository.entity.MaaUser;
 import plus.maa.backend.service.model.LoginUser;
 import plus.maa.backend.service.model.RatingCache;
 import plus.maa.backend.service.model.RatingType;
@@ -63,6 +61,7 @@ public class CopilotService {
 
     private final TableLogicDelete tableLogicDelete;
 
+    private final UserRepository userRepository;
     private final CopilotRatingRepository copilotRatingRepository;
     private final AtomicLong copilotIncrementId = new AtomicLong(20000);
 
@@ -84,16 +83,9 @@ public class CopilotService {
      * @return Copilot
      */
     private Copilot findById(String id) {
-        Copilot copilot;
-        // 如果id为纯数字, 则使用copilotId查询
-        if (StringUtils.isNumeric(id)) {
-            copilot = copilotRepository.findByCopilotIdAndDeleteIsFalse(Long.parseLong(id)).orElse(null);
-        } else {
-            copilot = copilotRepository.findByIdAndDeleteIsFalse(id).orElse(null);
-        }
-
-        Assert.notNull(copilot, "作业不存在");
-        return copilot;
+        return StringUtils.isNumeric(id) ?
+                copilotRepository.findByCopilotIdAndDeleteIsFalse(Long.parseLong(id)).orElseThrow(() -> new MaaResultException("作业不存在"))
+                : copilotRepository.findByIdAndDeleteIsFalse(id).orElseThrow(() -> new MaaResultException("作业不存在"));
     }
 
     private Copilot findById(Long id) {
@@ -329,6 +321,8 @@ public class CopilotService {
 
         // 分页排序查询
         List<Copilot> copilots = mongoTemplate.find(queryObj.with(pageable), Copilot.class);
+
+
         // 填充前端所需信息
         Set<Long> copilotIds = copilots.stream().map(Copilot::getCopilotId).collect(Collectors.toSet());
         List<CopilotRating> ratings = copilotRatingRepository.findByCopilotIdIn(copilotIds);
@@ -336,6 +330,7 @@ public class CopilotService {
         List<CopilotInfo> infos = copilots.stream().map(copilot -> formatCopilot(userId, copilot,
                         ratingByCopilotId.get(copilot.getCopilotId())))
                 .toList();
+
         // 计算页面
         int pageNumber = (int) Math.ceil((double) count / limit);
 
@@ -483,7 +478,10 @@ public class CopilotService {
      * 将数据库内容转换为前端所需格式<br>
      */
     private CopilotInfo formatCopilot(String userId, Copilot copilot, CopilotRating rating) {
+        // TODO 此处会造成循环查询 尝试使用过findAllById查询 但是多个相同的用户id只会返回一个MaaUser
+        MaaUser maaUser = userRepository.findById(copilot.getUploaderId()).orElseGet(() -> new MaaUser().setUserName("用户已注销"));
         CopilotInfo info = CopilotConverter.INSTANCE.toCopilotInfo(copilot);
+        info.setUploader(maaUser.getUserName());
 
         Optional<CopilotRating> copilotRating = Optional.ofNullable(rating);
 
@@ -542,12 +540,9 @@ public class CopilotService {
      * @return 用户标识符
      */
     private String getUserId(LoginUser loginUser) {
-        String id;
-        if (!ObjectUtils.isEmpty(loginUser)) {
-            id = loginUser.getMaaUser().getUserId();
-        } else {
-            id = IpUtil.getIpAddr(request);
-        }
-        return id;
+        return ObjectUtils.isEmpty(loginUser) ?
+                IpUtil.getIpAddr(request)
+                : loginUser.getMaaUser().getUserId();
+
     }
 }

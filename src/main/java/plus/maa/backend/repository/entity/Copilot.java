@@ -39,8 +39,6 @@ public class Copilot implements Serializable {
     @Indexed
     private String stageName;
 
-    //上传者
-    private String uploader;
 
     //上传者id
     private String uploaderId;
