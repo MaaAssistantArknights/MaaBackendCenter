@@ -87,13 +87,17 @@ public class CopilotService {
         Copilot copilot;
         // 如果id为纯数字, 则使用copilotId查询
         if (StringUtils.isNumeric(id)) {
-            copilot = copilotRepository.findByCopilotId(Long.parseLong(id)).orElse(null);
+            copilot = copilotRepository.findByCopilotIdAndDeleteIsFalse(Long.parseLong(id)).orElse(null);
         } else {
-            copilot = copilotRepository.findById(id).orElse(null);
+            copilot = copilotRepository.findByIdAndDeleteIsFalse(id).orElse(null);
         }
 
         Assert.notNull(copilot, "作业不存在");
         return copilot;
+    }
+
+    private Copilot findById(Long id) {
+        return findById(id.toString());
     }
 
     /**
@@ -201,13 +205,13 @@ public class CopilotService {
     public Optional<CopilotInfo> getCopilotById(LoginUser user, Long id) {
         String userId = getUserId(user);
         // 根据ID获取作业, 如作业不存在则抛出异常返回
-        Optional<Copilot> copilotOptional = copilotRepository.findByCopilotId(id);
+        Optional<Copilot> copilotOptional = copilotRepository.findByCopilotIdAndDeleteIsFalse(id);
         return copilotOptional.map(copilot -> {
             // 60分钟内限制同一个用户对访问量的增加
             RatingCache cache = redisCache.getCache("views:" + userId, RatingCache.class);
             if (Objects.isNull(cache) || Objects.isNull(cache.getCopilotIds()) ||
                     !cache.getCopilotIds().contains(id)) {
-                Query query = Query.query(Criteria.where("copilotId").is(id).and("delete").is(false));
+                Query query = Query.query(Criteria.where("copilotId").is(id));
                 Update update = new Update();
                 // 增加一次views
                 update.inc("views");
@@ -453,10 +457,7 @@ public class CopilotService {
         // TODO 计算热度 (暂时) 评分达到指定阈值 添加额外分数 使其排名更高
         double hotScore = ratingCount > 5 ? rawRatingLevel + (likeCount - disLikeCount) + 10 : rawRatingLevel + (likeCount - disLikeCount);
         // 更新热度
-        copilotRepository.findByCopilotId(request.getId()).ifPresent(copilot -> {
-            copilot.setHotScore(hotScore);
-            mongoTemplate.save(copilot);
-        });
+        mongoTemplate.save(findById(request.getId()).setHotScore(hotScore));
 
         return MaaResult.success("评分成功");
     }
@@ -529,10 +530,7 @@ public class CopilotService {
     }
 
     private void updateContent(Long copilotId, String content) {
-        copilotRepository.findByCopilotId(copilotId).ifPresent(c -> {
-            c.setContent(content);
-            copilotRepository.save(c);
-        });
+        copilotRepository.save(findById(copilotId).setContent(content));
     }
 
     /**
