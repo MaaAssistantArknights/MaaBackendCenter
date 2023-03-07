@@ -385,7 +385,7 @@ public class CopilotService {
             CopilotRating copilotRating = new CopilotRating(request.getId());
             copilotRating.setRatingUsers(
                     List.of(
-                            new CopilotRating.RatingUser(loginUser.getMaaUser().getUserId(), request.getRating())
+                            new CopilotRating.RatingUser(userId, request.getRating())
                     )
             );
             copilotRatingRepository.insert(copilotRating);
@@ -400,9 +400,7 @@ public class CopilotService {
         CopilotRating copilotRating = copilotRatingRepository.findByCopilotId(request.getId());
 
         boolean existUserId = false;
-        // 点赞数
-        int likeCount = 0;
-        int disLikeCount = 0;
+
         List<CopilotRating.RatingUser> ratingUsers = copilotRating.getRatingUsers();
 
         // 查看是否已评分 如果已评分则进行更新
@@ -415,20 +413,10 @@ public class CopilotService {
                 existUserId = true;
                 ratingUser.setRating(rating);
             }
-            if ("Like".equals(ratingUser.getRating())) {
-                likeCount++;
-            }
-            if ("Dislike".equals(ratingUser.getRating())) {
-                disLikeCount++;
-            }
         }
-        // 如果新添加的评分是like
-        if ("Like".equals(rating)) {
-            likeCount++;
-        }
-        if ("Dislike".equals(rating)) {
-            disLikeCount++;
-        }
+
+        copilotRating.setRatingUsers(ratingUsers);
+        mongoTemplate.save(copilotRating);
 
         // 不存在评分 则添加新的评分
         if (!existUserId) {
@@ -438,15 +426,24 @@ public class CopilotService {
             mongoTemplate.updateFirst(query, update, CopilotRating.class);
         }
 
-        // 计算评分相关
 
-        //评分数量可能发生了变化 重新查询获取评分数量
-        int ratingCount = copilotRatingRepository.findByCopilotId(request.getId()).getRatingUsers().size();
-        double rawRatingLevel = (double) likeCount / ratingCount;
+        List<CopilotRating.RatingUser> newRatingUsers = copilotRatingRepository.findByCopilotId(request.getId()).getRatingUsers();
+        // 计算评分相关
+        long ratingCount = newRatingUsers.stream().filter(ratingUser ->
+                        Objects.equals(ratingUser.getRating(), "Like") || Objects.equals(ratingUser.getRating(), "Dislike"))
+                .count();
+
+        long likeCount = newRatingUsers.stream().filter(ratingUser ->
+                Objects.equals(ratingUser.getRating(), "Like")).count();
+
+        long disLikeCount = newRatingUsers.stream().filter(ratingUser ->
+                Objects.equals(ratingUser.getRating(), "Dislike")).count();
+
+
+        double rawRatingLevel = ratingCount != 0 ? (double) likeCount / ratingCount : 0;
         BigDecimal bigDecimal = new BigDecimal(rawRatingLevel);
         // 只取一位小数点
         double ratingLevel = bigDecimal.setScale(1, RoundingMode.HALF_UP).doubleValue();
-
         // 更新数据
         copilotRating.setRatingUsers(ratingUsers);
         copilotRating.setRatingLevel((int) (ratingLevel * 10));
@@ -510,16 +507,15 @@ public class CopilotService {
             if (StringUtils.isEmpty(info.getContent())) {
                 // 设置干员组干员信息
                 if (copilot.getGroups() != null) {
-                    List<String> operators = new ArrayList<>();
-                    for (Copilot.Groups group : copilot.getGroups()) {
-                        if (group.getOpers() != null) {
-                            for (Copilot.OperationGroup oper : group.getOpers()) {
-                                String format = String.format("%s::%s", oper.getName(), oper.getSkill());
-                                operators.add(format);
-                            }
-                        }
-                        group.setOperators(operators);
-                    }
+                    copilot.setGroups(
+                            copilot.getGroups().stream()
+                                    .peek(group -> {
+                                        List<String> strings = group.getOpers().stream()
+                                                .map(opera -> String.format("%s %s", opera.getName(), opera.getSkill()))
+                                                .toList();
+                                        group.setOperators(strings);
+                                    }).toList()
+                    );
                 }
                 String content = mapper.writeValueAsString(copilot);
                 info.setContent(content);
