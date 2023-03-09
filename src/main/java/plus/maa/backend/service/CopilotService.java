@@ -219,7 +219,8 @@ public class CopilotService {
                 }
             }
             CopilotRating rating = copilotRatingRepository.findByCopilotId(copilot.getCopilotId());
-            return formatCopilot(userId, copilot, rating);
+            Map<String, MaaUser> maaUser = userRepository.findByUsersId(List.of(copilot.getUploaderId()));
+            return formatCopilot(userId, copilot, rating, maaUser.get(copilot.getUploaderId()).getUserName());
         });
     }
 
@@ -244,7 +245,6 @@ public class CopilotService {
         // 判断是否有值 无值则为默认
         int page = request.getPage() > 0 ? request.getPage() : 1;
         int limit = request.getLimit() > 0 ? request.getLimit() : 10;
-        boolean hasNext = false;
 
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(sortOrder));
 
@@ -327,17 +327,18 @@ public class CopilotService {
         Set<Long> copilotIds = copilots.stream().map(Copilot::getCopilotId).collect(Collectors.toSet());
         List<CopilotRating> ratings = copilotRatingRepository.findByCopilotIdIn(copilotIds);
         Map<Long, CopilotRating> ratingByCopilotId = Maps.uniqueIndex(ratings, CopilotRating::getCopilotId);
+        Map<String, MaaUser> maaUsers = userRepository.findByUsersId(copilots.stream().map(Copilot::getUploaderId).toList());
         List<CopilotInfo> infos = copilots.stream().map(copilot -> formatCopilot(userId, copilot,
-                        ratingByCopilotId.get(copilot.getCopilotId())))
+                        ratingByCopilotId.get(copilot.getCopilotId()), maaUsers.get(copilot.getUploaderId()).getUserName()))
                 .toList();
+
 
         // 计算页面
         int pageNumber = (int) Math.ceil((double) count / limit);
 
         // 判断是否存在下一页
-        if (count - (long) page * limit > 0) {
-            hasNext = true;
-        }
+        boolean hasNext = count - (long) page * limit > 0;
+
 
         // 封装数据
         CopilotPageInfo copilotPageInfo = new CopilotPageInfo();
@@ -477,12 +478,8 @@ public class CopilotService {
     /**
      * 将数据库内容转换为前端所需格式<br>
      */
-    private CopilotInfo formatCopilot(String userId, Copilot copilot, CopilotRating rating) {
-        // TODO 此处会造成循环查询 尝试使用过findAllById查询 但是多个相同的用户id只会返回一个MaaUser
-        MaaUser maaUser = userRepository.findById(copilot.getUploaderId()).orElseGet(() -> new MaaUser().setUserName("用户已注销"));
-        CopilotInfo info = CopilotConverter.INSTANCE.toCopilotInfo(copilot);
-        info.setUploader(maaUser.getUserName());
-
+    private CopilotInfo formatCopilot(String userId, Copilot copilot, CopilotRating rating, String userName) {
+        CopilotInfo info = CopilotConverter.INSTANCE.toCopilotInfo(copilot, userName, copilot.getCopilotId());
         Optional<CopilotRating> copilotRating = Optional.ofNullable(rating);
 
         // 判断评分中是否有当前用户评分记录 有则获取其评分并将其转换为 0 = None 1 = LIKE 2 = DISLIKE
@@ -507,15 +504,13 @@ public class CopilotService {
             if (StringUtils.isEmpty(info.getContent())) {
                 // 设置干员组干员信息
                 if (copilot.getGroups() != null) {
-                    copilot.setGroups(
-                            copilot.getGroups().stream()
-                                    .peek(group -> {
-                                        List<String> strings = group.getOpers().stream()
-                                                .map(opera -> String.format("%s %s", opera.getName(), opera.getSkill()))
-                                                .toList();
-                                        group.setOperators(strings);
-                                    }).toList()
-                    );
+                    copilot.getGroups()
+                            .forEach(group -> {
+                                List<String> strings = group.getOpers().stream()
+                                        .map(opera -> String.format("%s %s", opera.getName(), opera.getSkill()))
+                                        .toList();
+                                group.setOperators(strings);
+                            });
                 }
                 String content = mapper.writeValueAsString(copilot);
                 info.setContent(content);

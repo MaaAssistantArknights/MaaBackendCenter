@@ -53,7 +53,8 @@ public interface CopilotConverter {
     @Mapping(target = "ratingRatio", ignore = true)
     @Mapping(target = "ratingLevel", ignore = true)
     @Mapping(target = "notEnoughRating", ignore = true)
-    @Mapping(target = "id", source = "copilotId")
     @Mapping(target = "available", ignore = true)
-    CopilotInfo toCopilotInfo(Copilot copilot);
+    @Mapping(target = "id", source = "copilotId")
+    @Mapping(target = "uploader", source = "userName")
+    CopilotInfo toCopilotInfo(Copilot copilot, String userName, Long copilotId);
 }
