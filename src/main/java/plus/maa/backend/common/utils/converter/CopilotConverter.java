@@ -32,7 +32,6 @@ public interface CopilotConverter {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "copilotId", ignore = true)
     @Mapping(target = "views", ignore = true)
-    @Mapping(target = "uploader", ignore = true)
     @Mapping(target = "hotScore", ignore = true)
     @Mapping(target = "uploaderId", ignore = true)
     @Mapping(target = "uploadTime", ignore = true)
@@ -48,14 +47,14 @@ public interface CopilotConverter {
     @Mapping(target = "uploadTime", source = "now")
     @Mapping(target = "firstUploadTime", source = "now")
     @Mapping(target = "uploaderId", source = "maaUser.userId")
-    @Mapping(target = "uploader", source = "maaUser.userName")
     Copilot toCopilot(CopilotDTO copilotDto, MaaUser maaUser, Date now, Long copilotId, String content);
 
     @Mapping(target = "ratingType", ignore = true)
     @Mapping(target = "ratingRatio", ignore = true)
     @Mapping(target = "ratingLevel", ignore = true)
     @Mapping(target = "notEnoughRating", ignore = true)
-    @Mapping(target = "id", source = "copilotId")
     @Mapping(target = "available", ignore = true)
-    CopilotInfo toCopilotInfo(Copilot copilot);
+    @Mapping(target = "id", source = "copilotId")
+    @Mapping(target = "uploader", source = "userName")
+    CopilotInfo toCopilotInfo(Copilot copilot, String userName, Long copilotId);
 }

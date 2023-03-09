@@ -6,6 +6,7 @@ import cn.hutool.extra.mail.MailAccount;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -64,6 +65,8 @@ public class EmailService {
      *
      * @param email 邮箱
      */
+
+    @Async
     public void sendVCode(String email) {
         // 6位随机数验证码
         String vcode = RandomStringUtils.random(6, true, true).toUpperCase();
@@ -80,6 +83,7 @@ public class EmailService {
         redisCache.setCache("vCodeEmail:" + email, vcode, expire);
     }
 
+    @Async
     public void verifyVCode(String email, String vcode) {
         String cacheVCode = redisCache.getCache("vCodeEmail:" + email, String.class);
         Assert.state(StringUtils.equalsIgnoreCase(cacheVCode, vcode), "验证码错误");
@@ -94,6 +98,7 @@ public class EmailService {
      * @param clearVCodeOnSuccess 验证成功是否删除验证码
      * @return 是否一致
      */
+
     public boolean verifyVCode2(String email, String vcode, boolean clearVCodeOnSuccess) {
         // FIXME:可能出现多线程数据争用问题，想办法用redis的一些方法直接比较完删除
         String cacheVCode = redisCache.getCache("vCodeEmail:" + email, String.class);
@@ -107,6 +112,7 @@ public class EmailService {
     /**
      * @param email 发送激活验证邮箱
      */
+    @Async
     public void sendActivateUrl(String email) {
         // 生成uuid作为唯一标识符
         String uuid = UUID.randomUUID().toString().replaceAll("-", "");
