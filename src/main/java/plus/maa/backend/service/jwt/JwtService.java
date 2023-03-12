@@ -2,16 +2,8 @@ package plus.maa.backend.service.jwt;
 
 import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateTime;
-import cn.hutool.core.exceptions.ValidateException;
-import cn.hutool.jwt.JWT;
-import cn.hutool.jwt.JWTUtil;
-import cn.hutool.jwt.JWTValidator;
-import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.CredentialsExpiredException;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import plus.maa.backend.config.external.Jwt;
@@ -24,10 +16,14 @@ import java.util.Collection;
  * 建议 AuthToken 使用无状态方案, RefreshToken 使用有状态方案
  */
 @Service
-@RequiredArgsConstructor
 public class JwtService {
+    private final Jwt jwtProperties;
+    private final byte[] key;
 
-    private final MaaCopilotProperties properties;
+    public JwtService(MaaCopilotProperties properties) {
+        jwtProperties = properties.getJwt();
+        key = jwtProperties.getSecret().getBytes();
+    }
 
     /**
      * 签发 AuthToken. 过期时间由配置的 {@link Jwt#getExpire()} 计算而来
@@ -39,17 +35,8 @@ public class JwtService {
      */
     public JwtAuthToken issueAuthToken(String subject, @Nullable String jwtId, Collection<? extends GrantedAuthority> authorities) {
         var now = DateTime.now();
-        var expiresAt = now.offsetNew(DateField.SECOND, (int) properties.getJwt().getExpire());
-        var jwt = JWT.create()
-                .setIssuedAt(now)
-                .setExpiresAt(expiresAt)
-                .setNotBefore(now)
-                .setSubject(subject)
-                .setJWTId(jwtId)
-                .setKey(properties.getJwt().getSecret().getBytes());
-        var token = JwtAuthToken.buildOn(jwt);
-        token.setAuthorities(authorities);
-        return token;
+        var expiresAt = now.offsetNew(DateField.SECOND, (int) jwtProperties.getExpire());
+        return new JwtAuthToken(subject, jwtId, now, expiresAt, now, authorities, key);
     }
 
     /**
@@ -57,12 +44,13 @@ public class JwtService {
      *
      * @param authToken jwt 字符串
      * @return JwtAuthToken
-     * @throws AuthenticationException 验证失败
+     * @throws JwtInvalidException jwt不符合要求
+     * @throws JwtExpiredException jwt未生效或者已过期
      */
     @NotNull
-    public JwtAuthToken verifyAndParseAuthToken(String authToken) throws AuthenticationException {
-        var jwt = verifyAndParseJwt(authToken);
-        var token = JwtAuthToken.baseOn(jwt);
+    public JwtAuthToken verifyAndParseAuthToken(String authToken) throws JwtInvalidException, JwtExpiredException {
+        var token = new JwtAuthToken(authToken, key);
+        token.validateDate(DateTime.now());
         token.setAuthenticated(true);
         return token;
     }
@@ -77,15 +65,8 @@ public class JwtService {
     @NotNull
     public JwtRefreshToken issueRefreshToken(String subject, @Nullable String jwtId) {
         var now = DateTime.now();
-        var expiresAt = now.offsetNew(DateField.SECOND, (int) properties.getJwt().getRefreshExpire());
-        var jwt = JWT.create()
-                .setIssuedAt(now)
-                .setExpiresAt(expiresAt)
-                .setNotBefore(now)
-                .setSubject(subject)
-                .setJWTId(jwtId)
-                .setKey(properties.getJwt().getSecret().getBytes());
-        return JwtRefreshToken.buildOn(jwt);
+        var expiresAt = now.offsetNew(DateField.SECOND, (int) jwtProperties.getRefreshExpire());
+        return new JwtRefreshToken(subject, jwtId, now, expiresAt, now, key);
     }
 
     /**
@@ -98,14 +79,7 @@ public class JwtService {
     @NotNull
     public JwtRefreshToken newRefreshToken(JwtRefreshToken old) {
         var now = DateTime.now();
-        var jwt = JWT.create()
-                .setIssuedAt(now)
-                .setExpiresAt(old.getExpiresAt())
-                .setNotBefore(now)
-                .setSubject(old.getSubject())
-                .setJWTId(old.getJwtId())
-                .setKey(properties.getJwt().getSecret().getBytes());
-        return JwtRefreshToken.buildOn(jwt);
+        return new JwtRefreshToken(old.getSubject(), old.getJwtId(), now, old.getExpiresAt(), now, key);
     }
 
     /**
@@ -113,32 +87,14 @@ public class JwtService {
      *
      * @param refreshToken jwt字符串
      * @return RefreshToken
-     * @throws AuthenticationException 验证失败
+     * @throws JwtInvalidException jwt不符合要求
+     * @throws JwtExpiredException jwt未生效或者已过期
      */
     @NotNull
-    public JwtRefreshToken verifyAndParseRefreshToken(String refreshToken) throws AuthenticationException {
-        var jwt = verifyAndParseJwt(refreshToken);
-        return JwtRefreshToken.baseOn(jwt);
+    public JwtRefreshToken verifyAndParseRefreshToken(String refreshToken) throws JwtInvalidException, JwtExpiredException {
+        var token = new JwtRefreshToken(refreshToken, key);
+        token.validateDate(DateTime.now());
+        return token;
     }
 
-    /**
-     * 验证并解析为 {@link JWT}. 该方法验证签名的正确性和时间的合法性。
-     *
-     * @param token jwt 字符串
-     * @return 生成的 JWT
-     * @throws AuthenticationException 验证失败
-     */
-    @NotNull
-    private JWT verifyAndParseJwt(String token) throws AuthenticationException {
-        if (!JWTUtil.verify(token, properties.getJwt().getSecret().getBytes()))
-            throw new BadCredentialsException("invalid token");
-
-        var jwt = JWTUtil.parseToken(token);
-        try {
-            JWTValidator.of(jwt).validateDate(DateTime.now());
-        } catch (ValidateException e) {
-            throw new CredentialsExpiredException("expired", e);
-        }
-        return jwt;
-    }
 }
