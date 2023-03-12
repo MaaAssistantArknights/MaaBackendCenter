@@ -9,5 +9,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CopilotCUDRequest {
     private String content;
-    private String id;
+    private Long id;
 }

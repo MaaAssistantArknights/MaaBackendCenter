@@ -30,22 +30,25 @@ public class CommentsAreaController {
 
     @PostMapping("/add")
     public MaaResult<String> sendComments(@CurrentUser LoginUser loginUser, @Valid @RequestBody CommentsAddDTO comments) {
-        return commentsAreaService.addComments(loginUser, comments);
+        commentsAreaService.addComments(loginUser, comments);
+        return MaaResult.success("评论成功");
     }
 
     @GetMapping("/query")
     public MaaResult<CommentsAreaInfo> queriesCommentsArea(CommentsQueriesDTO commentsQueriesDTO) {
-        return commentsAreaService.queriesCommentsArea(commentsQueriesDTO);
+        return MaaResult.success(commentsAreaService.queriesCommentsArea(commentsQueriesDTO));
     }
 
     @PostMapping("/delete")
     public MaaResult<String> deleteComments(@CurrentUser LoginUser loginUser, @Valid @RequestBody CommentsDeleteDTO comments) {
-        return commentsAreaService.deleteComments(loginUser, comments.getCommentId());
+        commentsAreaService.deleteComments(loginUser, comments.getCommentId());
+        return MaaResult.success("评论已删除");
     }
 
     @JsonSchema
     @PostMapping("/rating")
     public MaaResult<String> ratesComments(@CurrentUser LoginUser loginUser, @Valid @RequestBody CommentsRatingDTO commentsRatingDTO) {
-        return commentsAreaService.rates(loginUser, commentsRatingDTO);
+        commentsAreaService.rates(loginUser, commentsRatingDTO);
+        return MaaResult.success("成功");
     }
 }

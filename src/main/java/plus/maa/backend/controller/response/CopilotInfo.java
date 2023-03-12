@@ -23,5 +23,6 @@ public class CopilotInfo implements Serializable {
     private boolean isNotEnoughRating;
     private double ratingRatio;
     private int ratingType;
+    private long commentsCount;
     private String content;
 }

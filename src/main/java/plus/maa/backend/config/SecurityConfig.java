@@ -55,7 +55,6 @@ public class SecurityConfig {
     };
 
     private static final String[] URL_AUTHENTICATION_2 = {
-            "/copilot/refactorExistingDatabase"
     };
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter;

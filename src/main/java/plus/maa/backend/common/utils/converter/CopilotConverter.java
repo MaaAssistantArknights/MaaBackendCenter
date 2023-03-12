@@ -56,5 +56,6 @@ public interface CopilotConverter {
     @Mapping(target = "available", ignore = true)
     @Mapping(target = "id", source = "copilotId")
     @Mapping(target = "uploader", source = "userName")
-    CopilotInfo toCopilotInfo(Copilot copilot, String userName, Long copilotId);
+    @Mapping(target = "commentsCount", conditionExpression = "java(commentsCount != null)")
+    CopilotInfo toCopilotInfo(Copilot copilot, String userName, Long copilotId, Long commentsCount);
 }
