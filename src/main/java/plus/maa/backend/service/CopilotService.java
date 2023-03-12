@@ -25,8 +25,12 @@ import plus.maa.backend.controller.request.CopilotCUDRequest;
 import plus.maa.backend.controller.request.CopilotDTO;
 import plus.maa.backend.controller.request.CopilotQueriesRequest;
 import plus.maa.backend.controller.request.CopilotRatingReq;
-import plus.maa.backend.controller.response.*;
+import plus.maa.backend.controller.response.ArkLevelInfo;
+import plus.maa.backend.controller.response.CopilotInfo;
+import plus.maa.backend.controller.response.CopilotPageInfo;
+import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.repository.*;
+import plus.maa.backend.repository.entity.CommentsArea;
 import plus.maa.backend.repository.entity.Copilot;
 import plus.maa.backend.repository.entity.CopilotRating;
 import plus.maa.backend.repository.entity.MaaUser;
@@ -54,16 +58,12 @@ public class CopilotService {
     private final MongoTemplate mongoTemplate;
     private final ObjectMapper mapper;
     private final ArkLevelService levelService;
-
     private final HttpServletRequest request;
-
     private final RedisCache redisCache;
-
-    private final TableLogicDelete tableLogicDelete;
-
     private final UserRepository userRepository;
     private final CopilotRatingRepository copilotRatingRepository;
     private final AtomicLong copilotIncrementId = new AtomicLong(20000);
+    private final CommentsAreaRepository commentsAreaRepository;
 
     @PostConstruct
     public void init() {
@@ -74,34 +74,6 @@ public class CopilotService {
                 .ifPresent(last -> copilotIncrementId.set(last + 1));
 
         log.info("作业自增ID初始化完成: {}", copilotIncrementId.get());
-    }
-
-    /**
-     * 根据_id获取Copilot
-     *
-     * @param id _id
-     * @return Copilot
-     */
-    private Copilot findById(String id) {
-        return StringUtils.isNumeric(id) ?
-                copilotRepository.findByCopilotIdAndDeleteIsFalse(Long.parseLong(id)).orElseThrow(() -> new MaaResultException("作业不存在"))
-                : copilotRepository.findByIdAndDeleteIsFalse(id).orElseThrow(() -> new MaaResultException("作业不存在"));
-    }
-
-    private Copilot findById(Long id) {
-        return findById(id.toString());
-    }
-
-    /**
-     * 验证当前账户是否为作业创建者
-     *
-     * @param operationId 作业id
-     */
-    private void verifyOwner(LoginUser user, String operationId) {
-        Assert.hasText(operationId, "作业id不可为空");
-        String userId = user.getMaaUser().getUserId();
-        Copilot copilot = findById(operationId);
-        Assert.state(Objects.equals(copilot.getUploaderId(), userId), "您无法修改不属于您的作业");
     }
 
     /**
@@ -169,7 +141,7 @@ public class CopilotService {
      * @param content 前端编辑json作业内容
      * @return 返回_id
      */
-    public MaaResult<Long> upload(LoginUser user, String content) {
+    public Long upload(LoginUser user, String content) {
         CopilotDTO copilotDTO = correctCopilot(parseToCopilotDto(content));
         // 将其转换为数据库存储对象
         Copilot copilot = CopilotConverter.INSTANCE.toCopilot(
@@ -178,17 +150,18 @@ public class CopilotService {
                 content);
         copilotRepository.insert(copilot);
         copilotRatingRepository.insert(new CopilotRating(copilot.getCopilotId()));
-        return MaaResult.success(copilot.getCopilotId());
+        return copilot.getCopilotId();
     }
 
     /**
      * 根据作业id删除作业
      */
-    public MaaResult<Void> delete(LoginUser user, CopilotCUDRequest request) {
-        String operationId = request.getId();
-        verifyOwner(user, operationId);
-        tableLogicDelete.deleteCopilotById(operationId);
-        return MaaResult.success();
+    public void delete(LoginUser user, CopilotCUDRequest request) {
+        copilotRepository.findByCopilotId(request.getId()).ifPresent(copilot -> {
+            Assert.state(Objects.equals(copilot.getUploaderId(), user.getUserId()), "您无法修改不属于您的作业");
+            copilot.setDelete(true);
+            copilotRepository.save(copilot);
+        });
     }
 
     /**
@@ -220,7 +193,9 @@ public class CopilotService {
             }
             CopilotRating rating = copilotRatingRepository.findByCopilotId(copilot.getCopilotId());
             Map<String, MaaUser> maaUser = userRepository.findByUsersId(List.of(copilot.getUploaderId()));
-            return formatCopilot(userId, copilot, rating, maaUser.get(copilot.getUploaderId()).getUserName());
+
+            return formatCopilot(userId, copilot, rating, maaUser.get(copilot.getUploaderId()).getUserName(),
+                    commentsAreaRepository.countByCopilotIdAndDelete(copilot.getCopilotId(), false));
         });
     }
 
@@ -231,7 +206,7 @@ public class CopilotService {
      * @param request 模糊查询
      * @return CopilotPageInfo
      */
-    public MaaResult<CopilotPageInfo> queriesCopilot(LoginUser user, CopilotQueriesRequest request) {
+    public CopilotPageInfo queriesCopilot(LoginUser user, CopilotQueriesRequest request) {
         String userId = getUserId(user);
         Sort.Order sortOrder = new Sort.Order(
                 request.isDesc() ? Sort.Direction.DESC : Sort.Direction.ASC,
@@ -328,8 +303,13 @@ public class CopilotService {
         List<CopilotRating> ratings = copilotRatingRepository.findByCopilotIdIn(copilotIds);
         Map<Long, CopilotRating> ratingByCopilotId = Maps.uniqueIndex(ratings, CopilotRating::getCopilotId);
         Map<String, MaaUser> maaUsers = userRepository.findByUsersId(copilots.stream().map(Copilot::getUploaderId).toList());
-        List<CopilotInfo> infos = copilots.stream().map(copilot -> formatCopilot(userId, copilot,
-                        ratingByCopilotId.get(copilot.getCopilotId()), maaUsers.get(copilot.getUploaderId()).getUserName()))
+        Map<Long, Long> commentsCount = commentsAreaRepository.findByCopilotIdInAndDelete(copilotIds, false)
+                .collect(Collectors.groupingBy(CommentsArea::getCopilotId, Collectors.counting()));
+        List<CopilotInfo> infos = copilots.stream().map(copilot ->
+                        formatCopilot(userId, copilot,
+                                ratingByCopilotId.get(copilot.getCopilotId()),
+                                maaUsers.get(copilot.getUploaderId()).getUserName(),
+                                commentsCount.get(copilot.getCopilotId())))
                 .toList();
 
 
@@ -339,32 +319,29 @@ public class CopilotService {
         // 判断是否存在下一页
         boolean hasNext = count - (long) page * limit > 0;
 
-
         // 封装数据
-        CopilotPageInfo copilotPageInfo = new CopilotPageInfo();
-        copilotPageInfo.setTotal(count)
+        return new CopilotPageInfo()
+                .setTotal(count)
                 .setHasNext(hasNext)
                 .setData(infos)
                 .setPage(pageNumber);
-        return MaaResult.success(copilotPageInfo);
     }
 
     /**
      * 增量更新
      *
      * @param copilotCUDRequest 作业_id content
-     * @return null
      */
-    public MaaResult<Void> update(LoginUser loginUser, CopilotCUDRequest copilotCUDRequest) {
+    public void update(LoginUser loginUser, CopilotCUDRequest copilotCUDRequest) {
         String content = copilotCUDRequest.getContent();
-        String id = copilotCUDRequest.getId();
-        CopilotDTO copilotDTO = correctCopilot(parseToCopilotDto(content));
-        verifyOwner(loginUser, id);
-        Copilot rawCopilot = findById(id);
-        rawCopilot.setUploadTime(new Date());
-        CopilotConverter.INSTANCE.updateCopilotFromDto(copilotDTO, content, rawCopilot);
-        copilotRepository.save(rawCopilot);
-        return MaaResult.success(null);
+        Long id = copilotCUDRequest.getId();
+        copilotRepository.findByCopilotId(id).ifPresent(copilot -> {
+            CopilotDTO copilotDTO = correctCopilot(parseToCopilotDto(content));
+            Assert.state(Objects.equals(copilot.getUploaderId(), loginUser.getUserId()), "您无法修改不属于您的作业");
+            copilot.setUploadTime(new Date());
+            CopilotConverter.INSTANCE.updateCopilotFromDto(copilotDTO, content, copilot);
+            copilotRepository.save(copilot);
+        });
     }
 
     /**
@@ -372,9 +349,8 @@ public class CopilotService {
      *
      * @param request   评分
      * @param loginUser 用于已登录用户作出评分
-     * @return null
      */
-    public MaaResult<String> rates(LoginUser loginUser, CopilotRatingReq request) {
+    public void rates(LoginUser loginUser, CopilotRatingReq request) {
         String userId = getUserId(loginUser);
         String rating = request.getRating();
 
@@ -408,7 +384,7 @@ public class CopilotService {
             if (userId.equals(ratingUser.getUserId())) {
                 //做出相同的评分则直接返回
                 if (ratingUser.getRating().equals(rating)) {
-                    return MaaResult.success("评分成功");
+                    return;
                 }
                 existUserId = true;
                 ratingUser.setRating(rating);
@@ -453,33 +429,18 @@ public class CopilotService {
         // TODO 计算热度 (暂时) 评分达到指定阈值 添加额外分数 使其排名更高
         double hotScore = ratingCount > 5 ? rawRatingLevel + (likeCount - disLikeCount) + 10 : rawRatingLevel + (likeCount - disLikeCount);
         // 更新热度
-        mongoTemplate.save(findById(request.getId()).setHotScore(hotScore));
+        copilotRepository.findByCopilotId(request.getId()).ifPresent(copilot ->
+                copilotRepository.save(copilot.setHotScore(hotScore)));
 
-        return MaaResult.success("评分成功");
-    }
-
-    /**
-     * 重构当前已存在的数据库<br/>
-     * 生成评分表..
-     *
-     * @return null
-     */
-    public MaaResult<Void> refactorExistingDatabase() {
-        List<Copilot> all = copilotRepository.findAll();
-        List<Copilot> notExistRatingTable = all.stream()
-                .filter(a -> !copilotRatingRepository.existsCopilotRatingByCopilotId(a.getCopilotId())).toList();
-        notExistRatingTable
-                .forEach(copilot -> copilotRatingRepository.insert(new CopilotRating(copilot.getCopilotId())));
-        // 转换数据存储类型
-        copilotRepository.saveAll(all);
-        return MaaResult.success(null);
     }
 
     /**
      * 将数据库内容转换为前端所需格式<br>
      */
-    private CopilotInfo formatCopilot(String userId, Copilot copilot, CopilotRating rating, String userName) {
-        CopilotInfo info = CopilotConverter.INSTANCE.toCopilotInfo(copilot, userName, copilot.getCopilotId());
+    private CopilotInfo formatCopilot(String userId, Copilot copilot, CopilotRating rating, String userName,
+                                      Long commentsCount) {
+        CopilotInfo info = CopilotConverter.INSTANCE.toCopilotInfo(copilot, userName, copilot.getCopilotId(),
+                commentsCount);
         Optional<CopilotRating> copilotRating = Optional.ofNullable(rating);
 
         // 判断评分中是否有当前用户评分记录 有则获取其评分并将其转换为 0 = None 1 = LIKE 2 = DISLIKE
@@ -523,7 +484,8 @@ public class CopilotService {
     }
 
     private void updateContent(Long copilotId, String content) {
-        copilotRepository.save(findById(copilotId).setContent(content));
+        copilotRepository.findByCopilotId(copilotId).ifPresent(copilot ->
+                copilotRepository.save(copilot.setContent(content)));
     }
 
     /**
