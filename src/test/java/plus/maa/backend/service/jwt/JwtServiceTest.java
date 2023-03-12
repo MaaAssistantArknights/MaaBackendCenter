@@ -2,7 +2,6 @@ package plus.maa.backend.service.jwt;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.security.core.AuthenticationException;
 import plus.maa.backend.config.external.Jwt;
 import plus.maa.backend.config.external.MaaCopilotProperties;
 
@@ -20,7 +19,7 @@ class JwtServiceTest {
     }
 
     @Test
-    void authTokenCodec() {
+    void authTokenCodec() throws JwtExpiredException, JwtInvalidException {
         var service = createService();
         var subject = "some user id";
         var jwtId = "some jwt Id";
@@ -34,7 +33,7 @@ class JwtServiceTest {
     }
 
     @Test
-    void refreshTokenCodec() {
+    void refreshTokenCodec() throws JwtExpiredException, JwtInvalidException {
         var service = createService();
 
         var subject = "some user id";
@@ -53,9 +52,9 @@ class JwtServiceTest {
     void wrongTypeParseShouldFail() {
         var service = createService();
         var authToken = service.issueAuthToken("some user id", null, new ArrayList<>());
-        Assertions.assertThrows(AuthenticationException.class, () -> service.verifyAndParseRefreshToken(authToken.getValue()));
+        Assertions.assertThrows(JwtInvalidException.class, () -> service.verifyAndParseRefreshToken(authToken.getValue()));
         var refreshToken = service.issueRefreshToken("some user id", null);
-        Assertions.assertThrows(AuthenticationException.class, () -> service.verifyAndParseAuthToken(refreshToken.getValue()));
+        Assertions.assertThrows(JwtInvalidException.class, () -> service.verifyAndParseAuthToken(refreshToken.getValue()));
     }
 
 }

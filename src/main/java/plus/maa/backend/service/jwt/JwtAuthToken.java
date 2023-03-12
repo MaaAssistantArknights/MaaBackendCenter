@@ -2,13 +2,13 @@ package plus.maa.backend.service.jwt;
 
 import cn.hutool.jwt.JWT;
 import lombok.Getter;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.util.StringUtils;
 
 import java.util.Collection;
+import java.util.Date;
 
 /**
  * 基于 {@link JWT} 的 AuthToken. 本类实现了 {@link Authentication}， 可直接用于 Spring Security
@@ -23,33 +23,28 @@ public final class JwtAuthToken extends JwtToken implements Authentication {
     private static final String CLAIM_AUTHORITIES = "Authorities";
     private boolean authenticated = false;
 
-    private JwtAuthToken(JWT jwt) {
-        super(jwt);
+    /**
+     * 从 jwt 构建 token
+     *
+     * @param jwt jwt
+     * @param key 签名密钥
+     * @throws JwtInvalidException jwt 未通过签名验证或不符合要求
+     */
+    public JwtAuthToken(String jwt, byte[] key) throws JwtInvalidException {
+        super(jwt, TYPE, key);
     }
 
-    /**
-     * 在 jwt 基础上构建
-     *
-     * @param jwt 待修改的 jwt
-     * @return token
-     */
-    public static JwtAuthToken buildOn(JWT jwt) {
-        var token = new JwtAuthToken(jwt);
-        token.setType(TYPE);
-        return token;
-    }
-
-    /**
-     * 构建jwt的直接包装
-     *
-     * @param jwt 解析而来的 jwt
-     * @return token
-     * @throws BadCredentialsException jwt 验证失败
-     */
-    public static JwtAuthToken baseOn(JWT jwt) throws BadCredentialsException {
-        var token = new JwtAuthToken(jwt);
-        if (!TYPE.equals(token.getType())) throw new BadCredentialsException("invalid token");
-        return token;
+    public JwtAuthToken(
+            String sub,
+            String jti,
+            Date iat,
+            Date exp,
+            Date nbf,
+            Collection<? extends GrantedAuthority> authorities,
+            byte[] key
+    ) {
+        super(sub, jti, iat, exp, nbf, TYPE, key);
+        this.setAuthorities(authorities);
     }
 
 
