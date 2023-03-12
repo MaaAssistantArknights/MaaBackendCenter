@@ -14,7 +14,11 @@ public interface CopilotRepository extends MongoRepository<Copilot, String> {
 
     Optional<Copilot> findFirstByOrderByCopilotIdDesc();
 
+    Optional<Copilot> findByCopilotIdAndDeleteIsFalse(Long copilotId);
+
     Optional<Copilot> findByCopilotId(Long copilotId);
+
+    Optional<Copilot> findByIdAndDeleteIsFalse(String id);
 
     boolean existsCopilotsByCopilotId(Long copilotId);
 

@@ -5,16 +5,19 @@
 ## 开发技术栈
 
 - Java 17
-- SpringBoot 3.0.1
+- SpringBoot 3
     - spring-security
     - springdoc-openapi
 - MongoDB
 - Redis
 
-## 开发注意事项
+## 本地开发指南
 
-配置文件默认启用的`dev`配置文件，该文件不存在于仓库内，仅提供模板文件`application-template.yml`
-，请手动创建`application-dev.yml`，并按照自己的配置进行修改
+1. 下载安装 jdk 17 或者以上版本的 jdk，可以考虑从 [zuluJDK](https://www.azul.com/downloads/?version=java-17-lts&package=jdk) 或者 [libreicaJDK](https://bell-sw.com/pages/downloads/#/java-17-lts) 下载安装
+2. 你需要一个有redis和mongoDB的环境，如果你是windows用户，可以从 https://github.com/tporadowski/redis 中下载版本较旧的 redis 使用
+3. 使用你喜欢的 IDE 导入此项目，修改 /src/main/resources/application-template.yml 中的数据库配置以符合你自己配置的环境
+4. 运行 MainApplication 类里的 main 方法
+5. 首次运行建议修改 ArkLevelSyncTask 类的scheduled注解的参数，这样可以将明日方舟中的关卡数据同步到你本地的 mongodb 中，为了防止反复调用造成调试的麻烦，建议首次运行同步成功后再将代码修改回去
 
 ## 项目结构
 
@@ -37,9 +40,9 @@
 5. 获得编译后的 jar 文件 `cp ./build/libs/MaaBackendCenter-1.0-SNAPSHOT.jar .`
 6. 复制一份配置文件 `cp ./build/resources/main/application-template.yml ./application-prod.yml`
 7. 修改配置文件 `application-prod.yml`
-8. 运行项目 `java -jar MaaBackendCenter-1.0-SNAPSHOT.jar --spring.config.location=./application-prod.yml`
+8. 运行项目 `java -jar MaaBackendCenter-1.0-SNAPSHOT.jar --spring.profiles.active=prod`
 
-## native 编译（请使用native分支）
+## native 编译（暂时废弃，如果希望协助维护，请查看native分支）
 
 1. 安装 [GraalVM](https://github.com/graalvm/graalvm-ce-builds/releases)
    Java17，并配置好环境变量，部分功能需要正确配置 `JAVA_HOME` 变量为 GraalVM 安装目录才能正常使用
