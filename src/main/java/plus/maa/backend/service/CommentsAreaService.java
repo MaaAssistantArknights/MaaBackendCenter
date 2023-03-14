@@ -3,7 +3,6 @@ package plus.maa.backend.service;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -16,7 +15,6 @@ import plus.maa.backend.controller.request.CommentsQueriesDTO;
 import plus.maa.backend.controller.request.CommentsRatingDTO;
 import plus.maa.backend.controller.response.CommentsAreaInfo;
 import plus.maa.backend.controller.response.CommentsInfo;
-import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.SubCommentsInfo;
 import plus.maa.backend.repository.CommentsAreaRepository;
 import plus.maa.backend.repository.CopilotRepository;
@@ -27,7 +25,10 @@ import plus.maa.backend.repository.entity.CopilotRating;
 import plus.maa.backend.repository.entity.MaaUser;
 import plus.maa.backend.service.model.LoginUser;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 
 /**
@@ -53,9 +54,8 @@ public class CommentsAreaService {
      *
      * @param loginUser      登录用户
      * @param commentsAddDTO CommentsRequest
-     * @return 评论 成功/失败
      */
-    public MaaResult<String> addComments(LoginUser loginUser, CommentsAddDTO commentsAddDTO) {
+    public void addComments(LoginUser loginUser, CommentsAddDTO commentsAddDTO) {
         long copilotId = Long.parseLong(commentsAddDTO.getCopilotId());
         MaaUser maaUser = loginUser.getMaaUser();
         String message = commentsAddDTO.getMessage();
@@ -93,16 +93,14 @@ public class CommentsAreaService {
                 .setMessage(message);
         commentsAreaRepository.insert(commentsArea);
 
-        return MaaResult.success("评论成功");
     }
 
 
-    public MaaResult<String> deleteComments(LoginUser loginUser, String commentsId) {
+    public void deleteComments(LoginUser loginUser, String commentsId) {
         CommentsArea commentsArea = findCommentsById(commentsId);
         verifyOwner(loginUser, commentsArea.getUploaderId());
 
         tableLogicDelete.deleteCommentsId(commentsId);
-        return MaaResult.success("评论已删除");
     }
 
 
@@ -111,9 +109,8 @@ public class CommentsAreaService {
      *
      * @param loginUser         登录用户
      * @param commentsRatingDTO CommentsRatingDTO
-     * @return String
      */
-    public MaaResult<String> rates(LoginUser loginUser, CommentsRatingDTO commentsRatingDTO) {
+    public void rates(LoginUser loginUser, CommentsRatingDTO commentsRatingDTO) {
         String userId = loginUser.getMaaUser().getUserId();
         String rating = commentsRatingDTO.getRating();
         boolean existRatingUser = false;
@@ -144,7 +141,6 @@ public class CommentsAreaService {
 
 
         commentsAreaRepository.save(commentsArea);
-        return MaaResult.success("成功");
     }
 
 
@@ -154,7 +150,7 @@ public class CommentsAreaService {
      * @param request CommentsQueriesDTO
      * @return CommentsAreaInfo
      */
-    public MaaResult<CommentsAreaInfo> queriesCommentsArea(CommentsQueriesDTO request) {
+    public CommentsAreaInfo queriesCommentsArea(CommentsQueriesDTO request) {
         Sort.Order sortOrder = new Sort.Order(
                 request.isDesc() ? Sort.Direction.DESC : Sort.Direction.ASC,
                 Optional.ofNullable(request.getOrderBy())
@@ -208,12 +204,10 @@ public class CommentsAreaService {
                 });
 
 
-        CommentsAreaInfo commentsAreaInfo = new CommentsAreaInfo();
-        commentsAreaInfo.setHasNext(hasNext)
+        return new CommentsAreaInfo().setHasNext(hasNext)
                 .setPage(pageNumber)
                 .setTotal(count)
                 .setData(commentsInfoList);
-        return MaaResult.success(commentsAreaInfo);
     }
 
 

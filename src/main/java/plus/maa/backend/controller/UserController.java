@@ -1,17 +1,14 @@
 package plus.maa.backend.controller;
 
-import java.io.IOException;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
-
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.CurrentUser;
 import plus.maa.backend.config.external.MaaCopilotProperties;
 import plus.maa.backend.controller.request.*;
@@ -21,6 +18,8 @@ import plus.maa.backend.controller.response.MaaUserInfo;
 import plus.maa.backend.service.EmailService;
 import plus.maa.backend.service.UserService;
 import plus.maa.backend.service.model.LoginUser;
+
+import java.io.IOException;
 
 /**
  * 用户相关接口
@@ -50,8 +49,9 @@ public class UserController {
      */
     @PostMapping("/activate")
     public MaaResult<Void> activate(@CurrentUser LoginUser user,
-            @Valid @RequestBody ActivateDTO activateDTO) {
-        return userService.activateUser(user, activateDTO);
+                                    @Valid @RequestBody ActivateDTO activateDTO) {
+        userService.activateUser(user, activateDTO);
+        return MaaResult.success();
     }
 
     /**
@@ -61,7 +61,8 @@ public class UserController {
      */
     @PostMapping("/activate/request")
     public MaaResult<Void> activateRequest(@CurrentUser LoginUser user) {
-        return userService.sendEmailCode(user);
+        userService.sendEmailCode(user);
+        return MaaResult.success();
     }
 
     /**
@@ -71,8 +72,9 @@ public class UserController {
      */
     @PostMapping("/update/password")
     public MaaResult<Void> updatePassword(@CurrentUser LoginUser user,
-            @RequestBody @Valid PasswordUpdateDTO updateDTO) {
-        return userService.modifyPassword(user, updateDTO.getNewPassword());
+                                          @RequestBody @Valid PasswordUpdateDTO updateDTO) {
+        userService.modifyPassword(user, updateDTO.getNewPassword());
+        return MaaResult.success();
     }
 
     /**
@@ -83,8 +85,9 @@ public class UserController {
      */
     @PostMapping("/update/info")
     public MaaResult<Void> updateInfo(@CurrentUser LoginUser user,
-            @Valid @RequestBody UserInfoUpdateDTO updateDTO) {
-        return userService.updateUserInfo(user, updateDTO);
+                                      @Valid @RequestBody UserInfoUpdateDTO updateDTO) {
+        userService.updateUserInfo(user, updateDTO);
+        return MaaResult.success();
     }
 
     // TODO 邮件重置密码需要在用户未登录的情况下使用，需要修改
@@ -99,7 +102,8 @@ public class UserController {
     public MaaResult<Void> passwordReset(@RequestBody @Valid PasswordResetDTO passwordResetDTO) {
         // 校验用户邮箱是否存在
         userService.checkUserExistByEmail(passwordResetDTO.getEmail());
-        return userService.modifyPasswordByActiveCode(passwordResetDTO);
+        userService.modifyPasswordByActiveCode(passwordResetDTO);
+        return MaaResult.success();
     }
 
     /**
@@ -113,7 +117,7 @@ public class UserController {
         // 校验用户邮箱是否存在
         userService.checkUserExistByEmail(passwordResetVCodeDTO.getEmail());
         emailService.sendVCode(passwordResetVCodeDTO.getEmail());
-        return MaaResult.success(null);
+        return MaaResult.success();
     }
 
     /**
@@ -125,7 +129,8 @@ public class UserController {
     @PostMapping("/refresh")
     public MaaResult<Void> refresh(HttpServletRequest request) {
         String token = request.getHeader(header);
-        return userService.refreshToken(token);
+        userService.refreshToken(token);
+        return MaaResult.success();
     }
 
     /**
@@ -136,18 +141,17 @@ public class UserController {
      */
     @PostMapping("/register")
     public MaaResult<MaaUserInfo> register(@Valid @RequestBody RegisterDTO user) {
-        return userService.register(user);
+        return MaaResult.success(userService.register(user));
     }
 
     /**
      * 获得注册时的验证码
-     * 
      */
     @PostMapping("/sendRegistrationToken")
     public MaaResult<Void> sendRegistrationToken(@RequestBody SendRegistrationTokenDTO regDTO) {
         //FIXME: 增加频率限制或者 captcha
         emailService.sendVCode(regDTO.getEmail());
-        return new MaaResult<>(204,null,null);
+        return new MaaResult<>(204, null, null);
     }
 
     /**
@@ -158,7 +162,7 @@ public class UserController {
      */
     @PostMapping("/login")
     public MaaResult<MaaLoginRsp> login(@RequestBody @Valid LoginDTO user) {
-        return userService.login(user);
+        return MaaResult.success("登陆成功", userService.login(user));
     }
 
     @GetMapping("/activateAccount")

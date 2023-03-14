@@ -6,7 +6,9 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 import plus.maa.backend.repository.entity.CommentsArea;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * @author LoMu
@@ -25,5 +27,9 @@ public interface CommentsAreaRepository extends MongoRepository<CommentsArea, St
             boolean exists,
             Pageable pageable
     );
+
+    Stream<CommentsArea> findByCopilotIdInAndDelete(Collection<Long> copilotIds, boolean delete);
+
+    Long countByCopilotIdAndDelete(Long copilotId, boolean delete);
 
 }
