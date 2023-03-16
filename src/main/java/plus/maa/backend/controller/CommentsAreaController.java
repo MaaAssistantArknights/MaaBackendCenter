@@ -41,7 +41,7 @@ public class CommentsAreaController {
     }
 
     @GetMapping("/query")
-    @Operation(summary = "查询评论区")
+    @Operation(summary = "分页查询评论")
     @ApiResponse(description = "评论区信息")
     public MaaResult<CommentsAreaInfo> queriesCommentsArea(@Parameter(description = "评论区") CommentsQueriesDTO commentsQueriesDTO) {
         return MaaResult.success(commentsAreaService.queriesCommentsArea(commentsQueriesDTO));
