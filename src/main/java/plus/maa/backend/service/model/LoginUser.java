@@ -59,6 +59,10 @@ public class LoginUser implements UserDetails {
         return maaUser.getPassword();
     }
 
+    public String getUserId() {
+        return maaUser.getUserId();
+    }
+
     /**
      * Spring Security框架中的username即唯一身份标识（ID）
      * 效果同getEmail

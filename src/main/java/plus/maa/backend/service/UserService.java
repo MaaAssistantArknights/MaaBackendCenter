@@ -9,7 +9,6 @@ import cn.hutool.jwt.JWTUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,16 +23,18 @@ import plus.maa.backend.common.MaaStatusCode;
 import plus.maa.backend.common.utils.converter.MaaUserConverter;
 import plus.maa.backend.controller.request.*;
 import plus.maa.backend.controller.response.MaaLoginRsp;
-import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.controller.response.MaaUserInfo;
-import plus.maa.backend.service.model.LoginUser;
 import plus.maa.backend.repository.RedisCache;
 import plus.maa.backend.repository.UserRepository;
 import plus.maa.backend.repository.entity.MaaUser;
+import plus.maa.backend.service.model.LoginUser;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * @author AnselYuki
@@ -68,7 +69,7 @@ public class UserService {
      * @param loginDTO 登录参数
      * @return 携带了token的封装类
      */
-    public MaaResult<MaaLoginRsp> login(LoginDTO loginDTO) {
+    public MaaLoginRsp login(LoginDTO loginDTO) {
         // 使用 AuthenticationManager 中的 authenticate 进行用户认证
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                 loginDTO.getEmail(), loginDTO.getPassword());
@@ -117,7 +118,7 @@ public class UserService {
         rsp.setRefreshTokenValidBefore("");
         rsp.setUserInfo(MaaUserConverter.INSTANCE.convert(principal.getMaaUser()));
 
-        return MaaResult.success("登录成功", rsp);
+        return rsp;
     }
 
     /**
@@ -125,9 +126,8 @@ public class UserService {
      *
      * @param loginUser 当前用户
      * @param password  新密码
-     * @return 修改成功响应
      */
-    public MaaResult<Void> modifyPassword(LoginUser loginUser, String password) {
+    public void modifyPassword(LoginUser loginUser, String password) {
         MaaUser user = loginUser.getMaaUser();
         // 修改密码的逻辑
         String newPassword = new BCryptPasswordEncoder().encode(password);
@@ -158,7 +158,6 @@ public class UserService {
         String newJwt = JWTUtil.createToken(payload, secret.getBytes());
         // TODO 通知客户端更新jwt
 
-        return MaaResult.success(null);
     }
 
     /**
@@ -167,7 +166,7 @@ public class UserService {
      * @param registerDTO 传入用户参数
      * @return 返回注册成功的用户摘要（脱敏）
      */
-    public MaaResult<MaaUserInfo> register(RegisterDTO registerDTO) {
+    public MaaUserInfo register(RegisterDTO registerDTO) {
         String encode = new BCryptPasswordEncoder().encode(registerDTO.getPassword());
         MaaUser user = new MaaUser();
         BeanUtils.copyProperties(registerDTO, user);
@@ -181,9 +180,9 @@ public class UserService {
             MaaUser save = userRepository.save(user);
             userInfo = new MaaUserInfo(save);
         } catch (DuplicateKeyException e) {
-            return MaaResult.fail(10001, "用户已存在");
+            throw new MaaResultException(MaaStatusCode.MAA_USER_EXISTS);
         }
-        return MaaResult.success(userInfo);
+        return userInfo;
     }
 
     /**
@@ -191,11 +190,10 @@ public class UserService {
      *
      * @param loginUser   当前用户
      * @param activateDTO 邮箱激活码
-     * @return 用户信息封装
      */
-    public MaaResult<Void> activateUser(LoginUser loginUser, ActivateDTO activateDTO) {
+    public void activateUser(LoginUser loginUser, ActivateDTO activateDTO) {
         if (Objects.equals(loginUser.getMaaUser().getStatus(), 1)) {
-            return MaaResult.success();
+            return;
         }
         String email = loginUser.getMaaUser().getEmail();
         emailService.verifyVCode(email, activateDTO.getToken());
@@ -203,7 +201,6 @@ public class UserService {
         user.setStatus(1);
         userRepository.save(user);
         updateLoginUserPermissions(1, user.getUserId());
-        return MaaResult.success();
     }
 
     /**
@@ -211,53 +208,46 @@ public class UserService {
      *
      * @param loginUser 当前用户
      * @param updateDTO 更新参数
-     * @return 成功响应
      */
-    public MaaResult<Void> updateUserInfo(LoginUser loginUser, UserInfoUpdateDTO updateDTO) {
+    public void updateUserInfo(LoginUser loginUser, UserInfoUpdateDTO updateDTO) {
         MaaUser user = loginUser.getMaaUser();
         user.updateAttribute(updateDTO);
         userRepository.save(user);
         redisCache.setCache(buildUserCacheKey(user.getUserId()), loginUser);
-        return MaaResult.success(null);
     }
 
     /**
      * 发送验证码，用户信息从token中获取
      *
      * @param loginUser 当前用户
-     * @return 成功响应
      */
-    public MaaResult<Void> sendEmailCode(LoginUser loginUser) {
+    public void sendEmailCode(LoginUser loginUser) {
         Assert.state(Objects.equals(loginUser.getMaaUser().getStatus(), 0),
                 "用户已经激活，无法再次发送验证码");
         String email = loginUser.getEmail();
         emailService.sendVCode(email);
-        return MaaResult.success(null);
     }
 
     /**
      * 刷新token
      *
      * @param token token
-     * @return 成功响应
      */
-    public MaaResult<Void> refreshToken(String token) {
+    public void refreshToken(String token) {
         // TODO 刷新JwtToken
-        return null;
     }
 
     /**
      * 通过邮箱激活码更新密码
      *
      * @param passwordResetDTO 通过邮箱修改密码请求
-     * @return 成功响应
      */
-    public MaaResult<Void> modifyPasswordByActiveCode(PasswordResetDTO passwordResetDTO) {
+    public void modifyPasswordByActiveCode(PasswordResetDTO passwordResetDTO) {
         emailService.verifyVCode(passwordResetDTO.getEmail(), passwordResetDTO.getActiveCode());
         LoginUser loginUser = new LoginUser();
         MaaUser maaUser = userRepository.findByEmail(passwordResetDTO.getEmail());
         loginUser.setMaaUser(maaUser);
-        return modifyPassword(loginUser, passwordResetDTO.getPassword());
+        modifyPassword(loginUser, passwordResetDTO.getPassword());
     }
 
     /**

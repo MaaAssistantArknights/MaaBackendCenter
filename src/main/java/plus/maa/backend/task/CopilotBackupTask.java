@@ -44,7 +44,6 @@ public class CopilotBackupTask {
     private final ArkLevelService levelService;
 
     private Git git;
-    private PersonIdent committer;
     private static final File DEFAULT_SSH_DIR = new File(FS.DETECTED.userHome(), "/.ssh");
 
     private static final TransportConfigCallback sshCallback = transport -> {
@@ -53,8 +52,7 @@ public class CopilotBackupTask {
                     .setPreferredAuthentications("publickey")
                     .setHomeDirectory(FS.DETECTED.userHome())
                     .setSshDirectory(DEFAULT_SSH_DIR)
-                    .build(null)
-            );
+                    .build(null));
         }
     };
 
@@ -76,7 +74,6 @@ public class CopilotBackupTask {
         if (!repoDir.isDirectory()) {
             return;
         }
-        committer = new PersonIdent(backup.getUsername(), backup.getEmail());
         try (Stream<Path> fileList = Files.list(repoDir.toPath())) {
             if (fileList.findFirst().isEmpty()) {
                 // 不存在文件则初始化
@@ -171,6 +168,8 @@ public class CopilotBackupTask {
                 return;
             }
             git.add().addFilepattern(".").call();
+            CopilotBackup backup = config.getBackup();
+            PersonIdent committer = new PersonIdent(backup.getUsername(), backup.getEmail());
             git.commit().setCommitter(committer)
                     .setMessage(LocalDate.now().toString())
                     .call();

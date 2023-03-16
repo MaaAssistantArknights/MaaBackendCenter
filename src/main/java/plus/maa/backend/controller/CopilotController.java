@@ -29,13 +29,14 @@ public class CopilotController {
     public MaaResult<Long> uploadCopilot(
             @CurrentUser LoginUser loginUser,
             @RequestBody CopilotCUDRequest request) {
-        return copilotService.upload(loginUser, request.getContent());
+        return MaaResult.success(copilotService.upload(loginUser, request.getContent()));
     }
 
     @PostMapping("/delete")
     public MaaResult<Void> deleteCopilot(@CurrentUser LoginUser loginUser,
                                          @RequestBody CopilotCUDRequest request) {
-        return copilotService.delete(loginUser, request);
+        copilotService.delete(loginUser, request);
+        return MaaResult.success();
     }
 
     @GetMapping("/get/{id}")
@@ -49,26 +50,23 @@ public class CopilotController {
     @GetMapping("/query")
     public MaaResult<CopilotPageInfo> queriesCopilot(@CurrentUser LoginUser loginUser,
                                                      CopilotQueriesRequest copilotQueriesRequest) {
-        return copilotService.queriesCopilot(loginUser, copilotQueriesRequest);
+        return MaaResult.success(copilotService.queriesCopilot(loginUser, copilotQueriesRequest));
     }
 
     @JsonSchema
     @PostMapping("/update")
     public MaaResult<Void> updateCopilot(@CurrentUser LoginUser loginUser,
                                          @RequestBody CopilotCUDRequest copilotCUDRequest) {
-        return copilotService.update(loginUser, copilotCUDRequest);
+        copilotService.update(loginUser, copilotCUDRequest);
+        return MaaResult.success();
     }
 
     @JsonSchema
     @PostMapping("/rating")
     public MaaResult<String> ratesCopilotOperation(@CurrentUser LoginUser loginUser,
                                                    @RequestBody CopilotRatingReq copilotRatingReq) {
-        return copilotService.rates(loginUser, copilotRatingReq);
-    }
-
-    @GetMapping("/refactorExistingDatabase")
-    public MaaResult<Void> refactorExistingDatabase() {
-        return copilotService.refactorExistingDatabase();
+        copilotService.rates(loginUser, copilotRatingReq);
+        return MaaResult.success("评分成功");
     }
 
 }
