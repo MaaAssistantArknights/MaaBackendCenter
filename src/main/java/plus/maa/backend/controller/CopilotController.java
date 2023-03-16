@@ -1,5 +1,6 @@
 package plus.maa.backend.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.CurrentUser;
@@ -21,6 +22,7 @@ import plus.maa.backend.service.model.LoginUser;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/copilot")
+@Tag(name = "CopilotController", description = "作业本体管理")
 public class CopilotController {
     private final CopilotService copilotService;
 

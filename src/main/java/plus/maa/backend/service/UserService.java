@@ -73,8 +73,7 @@ public class UserService {
         // 使用 AuthenticationManager 中的 authenticate 进行用户认证
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                 loginDTO.getEmail(), loginDTO.getPassword());
-        Authentication authenticate;
-        authenticate = authenticationManager.authenticate(authenticationToken);
+        Authentication authenticate = authenticationManager.authenticate(authenticationToken);
         // 若认证失败，给出相应提示
         if (Objects.isNull(authenticate)) {
             throw new MaaResultException("登陆失败");
