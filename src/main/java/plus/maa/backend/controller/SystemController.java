@@ -14,7 +14,7 @@ import plus.maa.backend.controller.response.MaaSystemInfo;
 /**
  * @author AnselYuki
  */
-@Tag(name = "System")
+@Tag(name = "System", description = "系统管理")
 @RequestMapping("")
 @RestController
 @RequiredArgsConstructor
