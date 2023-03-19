@@ -1,6 +1,8 @@
 package plus.maa.backend.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -50,8 +52,9 @@ public class UserController {
      */
     @PostMapping("/activate")
     @Operation(summary = "激活token中的用户")
-    public MaaResult<Void> activate(@CurrentUser LoginUser user,
-                                    @Valid @RequestBody ActivateDTO activateDTO) {
+    @ApiResponse(description = "激活用户结果")
+    public MaaResult<Void> activate(@Parameter(description = "登录用户") @CurrentUser LoginUser user,
+                                    @Parameter(description = "激活用户请求") @Valid @RequestBody ActivateDTO activateDTO) {
         userService.activateUser(user, activateDTO);
         return MaaResult.success();
     }
@@ -63,7 +66,8 @@ public class UserController {
      */
     @PostMapping("/activate/request")
     @Operation(summary = "完成注册后发送邮箱激活码")
-    public MaaResult<Void> activateRequest(@CurrentUser LoginUser user) {
+    @ApiResponse(description = "激活码发送结果")
+    public MaaResult<Void> activateRequest(@Parameter(description = "登录用户") @CurrentUser LoginUser user) {
         userService.sendEmailCode(user);
         return MaaResult.success();
     }
@@ -75,8 +79,9 @@ public class UserController {
      */
     @PostMapping("/update/password")
     @Operation(summary = "修改当前用户密码", description = "根据原密码")
-    public MaaResult<Void> updatePassword(@CurrentUser LoginUser user,
-                                          @RequestBody @Valid PasswordUpdateDTO updateDTO) {
+    @ApiResponse(description = "修改密码结果")
+    public MaaResult<Void> updatePassword(@Parameter(description = "登录用户") @CurrentUser LoginUser user,
+                                          @Parameter(description = "修改密码请求") @RequestBody @Valid PasswordUpdateDTO updateDTO) {
         userService.modifyPassword(user, updateDTO.getNewPassword());
         return MaaResult.success();
     }
@@ -89,8 +94,9 @@ public class UserController {
      */
     @PostMapping("/update/info")
     @Operation(summary = "更新用户详细信息")
-    public MaaResult<Void> updateInfo(@CurrentUser LoginUser user,
-                                      @Valid @RequestBody UserInfoUpdateDTO updateDTO) {
+    @ApiResponse(description = "更新结果")
+    public MaaResult<Void> updateInfo(@Parameter(description = "登录用户") @CurrentUser LoginUser user,
+                                      @Parameter(description = "更新用户详细信息请求") @Valid @RequestBody UserInfoUpdateDTO updateDTO) {
         userService.updateUserInfo(user, updateDTO);
         return MaaResult.success();
     }
@@ -104,7 +110,9 @@ public class UserController {
      * @return 成功响应
      */
     @PostMapping("/password/reset")
-    public MaaResult<Void> passwordReset(@RequestBody @Valid PasswordResetDTO passwordResetDTO) {
+    @Operation(summary = "重置密码")
+    @ApiResponse(description = "重置密码结果")
+    public MaaResult<Void> passwordReset(@Parameter(description = "重置密码请求") @RequestBody @Valid PasswordResetDTO passwordResetDTO) {
         // 校验用户邮箱是否存在
         userService.checkUserExistByEmail(passwordResetDTO.getEmail());
         userService.modifyPasswordByActiveCode(passwordResetDTO);
@@ -119,7 +127,8 @@ public class UserController {
      */
     @PostMapping("/password/reset_request")
     @Operation(summary = "发送用于重置密码的验证码")
-    public MaaResult<Void> passwordResetRequest(@RequestBody @Valid PasswordResetVCodeDTO passwordResetVCodeDTO) {
+    @ApiResponse(description = "验证码发送结果")
+    public MaaResult<Void> passwordResetRequest(@Parameter(description = "发送重置密码的验证码请求") @RequestBody @Valid PasswordResetVCodeDTO passwordResetVCodeDTO) {
         // 校验用户邮箱是否存在
         userService.checkUserExistByEmail(passwordResetVCodeDTO.getEmail());
         emailService.sendVCode(passwordResetVCodeDTO.getEmail());
@@ -134,7 +143,8 @@ public class UserController {
      */
     @PostMapping("/refresh")
     @Operation(summary = "刷新token")
-    public MaaResult<Void> refresh(HttpServletRequest request) {
+    @ApiResponse(description = "刷新token结果")
+    public MaaResult<Void> refresh(@Parameter(description = "刷新token请求") HttpServletRequest request) {
         String token = request.getHeader(header);
         userService.refreshToken(token);
         return MaaResult.success();
@@ -148,7 +158,8 @@ public class UserController {
      */
     @PostMapping("/register")
     @Operation(summary = "用户注册")
-    public MaaResult<MaaUserInfo> register(@Valid @RequestBody RegisterDTO user) {
+    @ApiResponse(description = "注册结果")
+    public MaaResult<MaaUserInfo> register(@Parameter(description = "用户注册请求")@Valid @RequestBody RegisterDTO user) {
         return MaaResult.success(userService.register(user));
     }
 
@@ -157,7 +168,8 @@ public class UserController {
      */
     @PostMapping("/sendRegistrationToken")
     @Operation(summary = "注册时发送验证码")
-    public MaaResult<Void> sendRegistrationToken(@RequestBody SendRegistrationTokenDTO regDTO) {
+    @ApiResponse(description = "发送验证码结果", responseCode = "204")
+    public MaaResult<Void> sendRegistrationToken(@Parameter(description = "发送注册验证码请求")@RequestBody SendRegistrationTokenDTO regDTO) {
         //FIXME: 增加频率限制或者 captcha
         emailService.sendVCode(regDTO.getEmail());
         return new MaaResult<>(204, null, null);
@@ -171,13 +183,16 @@ public class UserController {
      */
     @PostMapping("/login")
     @Operation(summary = "用户登录")
-    public MaaResult<MaaLoginRsp> login(@RequestBody @Valid LoginDTO user) {
+    @ApiResponse(description = "登录结果")
+    public MaaResult<MaaLoginRsp> login(@Parameter(description = "登录请求") @RequestBody @Valid LoginDTO user) {
         return MaaResult.success("登陆成功", userService.login(user));
     }
 
     @GetMapping("/activateAccount")
     @Operation(summary = "激活账号")
-    public MaaResult<Void> activateAccount(EmailActivateReq activateDTO, HttpServletResponse response) {
+    @ApiResponse(description = "激活账号结果")
+    public MaaResult<Void> activateAccount(@Parameter(description = "激活请求") EmailActivateReq activateDTO,
+                                           @Parameter(description = "页面跳转参数") HttpServletResponse response) {
         userService.activateAccount(activateDTO);
         // 激活成功 跳转页面
         try {
