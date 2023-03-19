@@ -1,11 +1,32 @@
 version: '3.8'
 services:
-  maa_backend_center:
-    image: maa/maa_backend_center:latest
-    container_name: maa_backend_center
-    command: --spring.config.location=optional:file:/
-    volumes:
-      - ./application.yml:/application.yml:r
-      - ./latest.log:/logs/latest.log:ro
+  redis:
+    image: redis:latest
+    hostname: redis
+    container_name: redis
+    ports:
+      - "6379:6379"
     restart: always
-    network_mode: "host"
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    volumes:
+      - ../.data:/data/db
+    ports:
+      - "27017:27017"
+    restart: always
+  maa:
+    image: ghcr.io/MaaAssistantArknights/maabackendcenter:latest
+    container_name: maa
+    command: --spring.profiles.active=prod 
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./application-prod.yml:/app/application-prod.yml:ro
+    links:
+      - redis
+      - mongo
+    restart: always
+    depends_on:
+      - redis
+      - mongo
