@@ -1,10 +1,5 @@
-FROM gradle:jdk17-alpine AS builder
+FROM amazoncorretto:17-alpine as runner
 WORKDIR /app
-COPY . .
-RUN gradle build -x test --no-daemon --stacktrace
-
-FROM openjdk:jre-alpine as runner
-WORKDIR /app
-COPY --from=builder /app/build/libs/MaaBackendCenter*.jar /MaaBackendCenter.jar
-EXPOSE 8888
+COPY ./build/libs/MaaBackendCenter*.jar /MaaBackendCenter.jar
+EXPOSE 7000-9000
 ENTRYPOINT ["java", "-jar", "/MaaBackendCenter.jar"]
