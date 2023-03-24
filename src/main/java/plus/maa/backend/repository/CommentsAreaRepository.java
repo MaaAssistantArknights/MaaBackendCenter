@@ -30,7 +30,7 @@ public interface CommentsAreaRepository extends MongoRepository<CommentsArea, St
 
     Stream<CommentsArea> findByCopilotIdInAndDelete(Collection<Long> copilotIds, boolean delete);
 
-    List<CommentsArea> findByMainCommentIdInAndDelete(List<String> ids, boolean delete);
+    List<CommentsArea> findByMainCommentIdIn(List<String> ids);
 
     Long countByCopilotIdAndDelete(Long copilotId, boolean delete);
 

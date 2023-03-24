@@ -27,7 +27,7 @@ public interface CommentConverter {
 
     @Mapping(target = "like", source = "likeCount")
     @Mapping(target = "uploader", source = "maaUser.userName")
-    @Mapping(target = "replyTo", source = "reMaaUser.userName")
     @Mapping(target = "commentId", source = "id")
-    SubCommentsInfo toSubCommentsInfo(CommentsArea commentsArea, String id, int likeCount, MaaUser maaUser, MaaUser reMaaUser);
+    @Mapping(target = "deleted", source = "delete")
+    SubCommentsInfo toSubCommentsInfo(CommentsArea commentsArea, String id, int likeCount, MaaUser maaUser, boolean delete);
 }

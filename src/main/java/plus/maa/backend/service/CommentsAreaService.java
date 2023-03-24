@@ -185,7 +185,18 @@ public class CommentsAreaService {
 
 
         //获取子评论
-        List<CommentsArea> subCommentsList = commentsAreaRepository.findByMainCommentIdInAndDelete(mainCommentsList.stream().map(CommentsArea::getId).toList(), false);
+        List<CommentsArea> subCommentsList = commentsAreaRepository.findByMainCommentIdIn(
+                mainCommentsList.stream()
+                        .map(CommentsArea::getId)
+                        .toList()
+        );
+
+        //将已删除评论内容替换为空
+        subCommentsList.forEach(comment -> {
+            if (comment.isDelete()) {
+                comment.setMessage("");
+            }
+        });
 
 
         //所有评论
@@ -197,38 +208,37 @@ public class CommentsAreaService {
         Map<String, MaaUser> maaUserMap = userRepository.findByUsersId(userId);
 
 
-        //将CommentsArea转换为CommentsInfo 并填充用户名
+        //转换主评论数据并填充用户名
         List<CommentsInfo> commentsInfos = mainCommentsList.stream().map(mainComment -> {
-            CommentsInfo commentsInfo = CommentConverter.INSTANCE
-                    .toCommentsInfo(mainComment
-                            , mainComment.getId()
-                            , (int) mainComment.getLikeCount()
-                            , maaUserMap.getOrDefault(mainComment.getUploaderId(), new MaaUser().setUserName("未知用户):"))
-                    );
+            CommentsInfo commentsInfo =
+                    CommentConverter.INSTANCE
+                            .toCommentsInfo(
+                                    mainComment
+                                    , mainComment.getId()
+                                    , (int) mainComment.getLikeCount()
+                                    , maaUserMap.getOrDefault(
+                                            mainComment.getUploaderId()
+                                            , new MaaUser().setUserName("未知用户):")
+                                    )
+                            );
 
-            //将CommentsArea转换为SubCommentsInfo 并填充用户名
             List<SubCommentsInfo> subCommentsInfoList = subCommentsList.stream()
                     .filter(comment -> Objects.equals(commentsInfo.getCommentId(), comment.getMainCommentId()))
-                    .map(subComment -> {
-                        SubCommentsInfo subCommentsInfo = CommentConverter.INSTANCE
-                                .toSubCommentsInfo(subComment
-                                        , subComment.getId()
-                                        , (int) subComment.getLikeCount()
-                                        , maaUserMap.getOrDefault(subComment.getUploaderId(), new MaaUser().setUserName("未知用户):"))
-                                        , maaUserMap.getOrDefault(allComments.stream()
-                                                //获取被回复评论的用户名
-                                                .filter(commentFilter ->
-                                                        Objects.equals(commentFilter.getId()
-                                                                , subComment.getFromCommentId()
-                                                        )
-                                                )
-                                                .findFirst().orElse(new CommentsArea().setUploaderId(""))
-                                                .getUploaderId(), new MaaUser().setUserName("未知用户):")));
-
-
-                        subCommentsInfo.setUploader(maaUserMap.get(subCommentsInfo.getUploaderId()).getUserName());
-                        return subCommentsInfo;
-                    }).toList();
+                    //转换子评论数据并填充用户名
+                    .map(subComment ->
+                            CommentConverter.INSTANCE
+                                    .toSubCommentsInfo(
+                                            subComment
+                                            , subComment.getId()
+                                            , (int) subComment.getLikeCount()
+                                            //填充评论用户名
+                                            , maaUserMap.getOrDefault(
+                                                    subComment.getUploaderId(),
+                                                    new MaaUser().setUserName("未知用户):")
+                                            )
+                                            , subComment.isDelete()
+                                    )
+                    ).toList();
 
 
             commentsInfo.setSubCommentsInfos(subCommentsInfoList);

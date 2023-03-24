@@ -26,6 +26,6 @@ public class SubCommentsInfo {
     private Date uploadTime;
     private int like;
     private String fromCommentId;
-    private String replyTo;
     private String mainCommentId;
+    private boolean deleted;
 }
