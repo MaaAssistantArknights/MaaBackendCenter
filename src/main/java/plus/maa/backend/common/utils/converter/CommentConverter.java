@@ -6,6 +6,7 @@ import org.mapstruct.factory.Mappers;
 import plus.maa.backend.controller.response.CommentsInfo;
 import plus.maa.backend.controller.response.SubCommentsInfo;
 import plus.maa.backend.repository.entity.CommentsArea;
+import plus.maa.backend.repository.entity.MaaUser;
 
 /**
  * @author LoMu
@@ -18,15 +19,15 @@ public interface CommentConverter {
 
 
     @Mapping(target = "like", source = "likeCount")
+    @Mapping(target = "uploader", source = "maaUser.userName")
     @Mapping(target = "commentId", source = "id")
     @Mapping(target = "subCommentsInfos", ignore = true)
-    @Mapping(target = "uploader", ignore = true)
-    CommentsInfo toCommentsInfo(CommentsArea commentsArea);
+    CommentsInfo toCommentsInfo(CommentsArea commentsArea, String id, int likeCount, MaaUser maaUser);
 
 
     @Mapping(target = "like", source = "likeCount")
+    @Mapping(target = "uploader", source = "maaUser.userName")
     @Mapping(target = "commentId", source = "id")
-    @Mapping(target = "replyTo", ignore = true)
-    @Mapping(target = "uploader", ignore = true)
-    SubCommentsInfo toSubCommentsInfo(CommentsArea commentsArea);
+    @Mapping(target = "deleted", source = "delete")
+    SubCommentsInfo toSubCommentsInfo(CommentsArea commentsArea, String id, int likeCount, MaaUser maaUser, boolean delete);
 }

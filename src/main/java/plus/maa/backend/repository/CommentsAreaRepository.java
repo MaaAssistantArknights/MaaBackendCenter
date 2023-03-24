@@ -17,7 +17,7 @@ import java.util.stream.Stream;
 
 @Repository
 public interface CommentsAreaRepository extends MongoRepository<CommentsArea, String> {
-    List<CommentsArea> findByMainCommentIdAndDeleteIsFalse(String commentsId);
+
 
     List<CommentsArea> findByMainCommentId(String commentsId);
 
@@ -29,6 +29,8 @@ public interface CommentsAreaRepository extends MongoRepository<CommentsArea, St
     );
 
     Stream<CommentsArea> findByCopilotIdInAndDelete(Collection<Long> copilotIds, boolean delete);
+
+    List<CommentsArea> findByMainCommentIdIn(List<String> ids);
 
     Long countByCopilotIdAndDelete(Long copilotId, boolean delete);
 
