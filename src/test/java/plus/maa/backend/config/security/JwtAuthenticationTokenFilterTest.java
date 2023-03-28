@@ -1,4 +1,4 @@
-package plus.maa.backend.filter;
+package plus.maa.backend.config.security;
 
 import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateTime;
@@ -57,7 +57,7 @@ class JwtAuthenticationTokenFilterTest {
         when(request.getHeader(properties.getJwt().getHeader())).thenReturn("Bearer " + jwt);
         var filterChain = mock(FilterChain.class);
         try {
-            filter.doFilterInternal(request, mock(HttpServletResponse.class), filterChain);
+            filter.doFilter(request, mock(HttpServletResponse.class), filterChain);
         } catch (Exception ignored) {
         }
         assert SecurityContextHolder.getContext().getAuthentication() != null;

@@ -1,6 +1,6 @@
 package plus.maa.backend.config;
 
-import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -9,9 +9,8 @@ import plus.maa.backend.handler.AccessLimitInterceptHandlerImpl;
 /**
  * @author AnselYuki
  */
-@SpringBootConfiguration
+@Configuration
 public class CorsConfig implements WebMvcConfigurer {
-
 
 
     @Override
@@ -30,7 +29,6 @@ public class CorsConfig implements WebMvcConfigurer {
                 // 跨域允许时间
                 .maxAge(3600);
     }
-
 
 
     @Override

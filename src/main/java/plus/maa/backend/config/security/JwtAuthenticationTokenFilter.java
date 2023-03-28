@@ -1,4 +1,4 @@
-package plus.maa.backend.filter;
+package plus.maa.backend.config.security;
 
 import cn.hutool.core.date.DateTime;
 import cn.hutool.jwt.JWT;
@@ -11,7 +11,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.CredentialsExpiredException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

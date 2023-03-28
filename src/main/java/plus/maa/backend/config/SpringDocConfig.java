@@ -9,8 +9,8 @@ import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springdoc.core.customizers.OperationCustomizer;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.MethodParameter;
 import plus.maa.backend.common.annotation.CurrentUser;
 
@@ -21,7 +21,7 @@ import java.util.Optional;
 /**
  * @author AnselYuki
  */
-@SpringBootConfiguration
+@Configuration
 public class SpringDocConfig {
 
     @Value("${maa-copilot.info.version}")
