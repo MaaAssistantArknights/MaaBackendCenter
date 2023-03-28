@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -92,13 +93,13 @@ public class GlobalExceptionHandler {
         log.warn("请求方式错误", e);
         return MaaResult.fail(405, String.format("请求方法不正确:%s", e.getMessage()));
     }
-    
+
     /**
      * 处理由 {@link org.springframework.util.Assert} 工具产生的异常
      */
-    @ExceptionHandler({ IllegalArgumentException.class, IllegalStateException.class })
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
     public MaaResult<String> illegalArgumentOrStateExceptionHandler(RuntimeException e) {
-        return MaaResult.fail(HttpStatus.BAD_REQUEST.value(), e.getMessage());        
+        return MaaResult.fail(HttpStatus.BAD_REQUEST.value(), e.getMessage());
     }
 
     /**
@@ -119,6 +120,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     public MaaResult<String> authExceptionHandler(AuthenticationException e) {
         return MaaResult.fail(401, e.getMessage());
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public MaaResult<String> handleResponseStatusException(ResponseStatusException ex) {
+        return MaaResult.fail(ex.getStatusCode().value(), ex.getMessage());
     }
 
     /**

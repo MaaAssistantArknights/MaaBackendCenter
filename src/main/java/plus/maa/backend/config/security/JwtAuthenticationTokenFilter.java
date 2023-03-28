@@ -8,8 +8,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.CredentialsExpiredException;
@@ -29,11 +27,16 @@ import java.util.Objects;
 /**
  * @author AnselYuki
  */
-@Setter
 @Component
-@RequiredArgsConstructor
 public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
+    public JwtAuthenticationTokenFilter(RedisCache redisCache, AuthenticationHelper helper, MaaCopilotProperties properties) {
+        this.redisCache = redisCache;
+        this.helper = helper;
+        this.properties = properties;
+    }
+
     private final RedisCache redisCache;
+    private final AuthenticationHelper helper;
     private final MaaCopilotProperties properties;
 
     @Override
@@ -43,7 +46,7 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
             var jwt = parseAndValidateJwt(token);
             var user = retrieveAndValidateUser(jwt);
             var authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            helper.setAuthentication(authentication);
         } catch (AuthenticationException ex) {
             logger.trace(ex.getMessage());
         } catch (Exception ignored) {

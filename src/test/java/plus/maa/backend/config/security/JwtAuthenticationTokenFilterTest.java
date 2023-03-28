@@ -52,7 +52,7 @@ class JwtAuthenticationTokenFilterTest {
         mockUser.setToken(token);
         when(cache.getCache(cacheKey, LoginUser.class)).thenReturn(mockUser);
 
-        var filter = new JwtAuthenticationTokenFilter(cache, properties);
+        var filter = new JwtAuthenticationTokenFilter(cache, new AuthenticationHelper(), properties);
         var request = mock(HttpServletRequest.class);
         when(request.getHeader(properties.getJwt().getHeader())).thenReturn("Bearer " + jwt);
         var filterChain = mock(FilterChain.class);
