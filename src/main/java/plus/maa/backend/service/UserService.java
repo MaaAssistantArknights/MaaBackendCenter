@@ -16,8 +16,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import plus.maa.backend.common.MaaStatusCode;
 import plus.maa.backend.common.utils.converter.MaaUserConverter;
@@ -34,7 +33,6 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * @author AnselYuki
@@ -44,11 +42,12 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-    private static final String REDIS_KEY_PREFIX_LOGIN = "LOGIN:";
     private final AuthenticationManager authenticationManager;
     private final RedisCache redisCache;
     private final UserRepository userRepository;
     private final EmailService emailService;
+    private final UserSessionService userSessionService;
+    private final PasswordEncoder passwordEncoder;
 
     @Value("${maa-copilot.jwt.secret}")
     private String secret;
@@ -59,8 +58,7 @@ public class UserService {
 
     private LoginUser getLoginUserByToken(String token) {
         JWT jwt = JWTUtil.parseToken(token);
-        String redisKey = buildUserCacheKey(jwt.getPayload("userId").toString());
-        return redisCache.getCache(redisKey, LoginUser.class);
+        return userSessionService.getUser(jwt.getPayload("userId").toString());
     }
 
     /**
@@ -79,8 +77,8 @@ public class UserService {
             throw new MaaResultException("登陆失败");
         }
         // 若认证成功，使用UserID生成一个JwtToken,Token存入ResponseResult返回
-        LoginUser principal = (LoginUser) authenticate.getPrincipal();
-        String userId = String.valueOf(principal.getMaaUser().getUserId());
+        LoginUser loginUser = (LoginUser) authenticate.getPrincipal();
+        String userId = String.valueOf(loginUser.getMaaUser().getUserId());
         String token = RandomStringUtils.random(16, true, true);
         DateTime now = DateTime.now();
         DateTime newTime = now.offsetNew(DateField.SECOND, expire);
@@ -95,17 +93,8 @@ public class UserService {
             }
         };
 
-        // 把完整的用户信息存入Redis，UserID作为Key
-        String cacheKey = buildUserCacheKey(userId);
-        redisCache.updateCache(cacheKey, LoginUser.class, principal, cacheUser -> {
-            String cacheToken = cacheUser.getToken();
-            if (cacheToken != null && !"".equals(cacheToken)) {
-                payload.put("token", cacheToken);
-            } else {
-                cacheUser.setToken(token);
-            }
-            return cacheUser;
-        }, expire);
+        loginUser.setToken(token);
+        userSessionService.setUser(loginUser);
 
         String jwt = JWTUtil.createToken(payload, secret.getBytes());
 
@@ -115,7 +104,7 @@ public class UserService {
         rsp.setValidBefore(newTime.toLocalDateTime().toString());
         rsp.setRefreshToken("");
         rsp.setRefreshTokenValidBefore("");
-        rsp.setUserInfo(MaaUserConverter.INSTANCE.convert(principal.getMaaUser()));
+        rsp.setUserInfo(MaaUserConverter.INSTANCE.convert(loginUser.getMaaUser()));
 
         return rsp;
     }
@@ -128,34 +117,16 @@ public class UserService {
      */
     public void modifyPassword(LoginUser loginUser, String password) {
         MaaUser user = loginUser.getMaaUser();
-        // 修改密码的逻辑
-        String newPassword = new BCryptPasswordEncoder().encode(password);
+        // 修改密码的逻辑，应当使用与 authentication provider 一致的编码器
+        String newPassword = passwordEncoder.encode(password);
         user.setPassword(newPassword);
         userRepository.save(user);
 
-        // 以下更新jwt-token并重新签发jwt
+        // 更新 token
         String newJwtToken = RandomStringUtils.random(16, true, true);
-        DateTime now = DateTime.now();
-        DateTime newTime = now.offsetNew(DateField.SECOND, expire);
-        Map<String, Object> payload = new HashMap<>(4) {
-            {
-                put(JWTPayload.ISSUED_AT, now.getTime());
-                put(JWTPayload.EXPIRES_AT, newTime.getTime());
-                put(JWTPayload.NOT_BEFORE, now.getTime());
-                put("userId", user.getUserId());
-                put("token", newJwtToken);
-            }
-        };
-        String redisKey = buildUserCacheKey(user.getUserId());
-        // 把更新后的MaaUser对象重新塞回去..
-        loginUser.setMaaUser(user);
-        redisCache.updateCache(redisKey, LoginUser.class, loginUser, cacheUser -> {
-            cacheUser.setToken(newJwtToken);
-            return cacheUser;
-        }, expire);
-
-        String newJwt = JWTUtil.createToken(payload, secret.getBytes());
-        // TODO 通知客户端更新jwt
+        loginUser.setToken(newJwtToken);
+        userSessionService.setUser(loginUser);
+        // TODO 更新jwt-token并重新签发jwt, 通知客户端更新jwt
 
     }
 
@@ -166,13 +137,13 @@ public class UserService {
      * @return 返回注册成功的用户摘要（脱敏）
      */
     public MaaUserInfo register(RegisterDTO registerDTO) {
-        String encode = new BCryptPasswordEncoder().encode(registerDTO.getPassword());
+        String encode = passwordEncoder.encode(registerDTO.getPassword());
         MaaUser user = new MaaUser();
         BeanUtils.copyProperties(registerDTO, user);
         user.setPassword(encode);
         user.setStatus(1);
         MaaUserInfo userInfo;
-        if (!emailService.verifyVCode2(user.getEmail(), registerDTO.getRegistrationToken(),false)) {
+        if (!emailService.verifyVCode2(user.getEmail(), registerDTO.getRegistrationToken(), false)) {
             throw new MaaResultException(MaaStatusCode.MAA_REGISTRATION_CODE_NOT_FOUND);
         }
         try {
@@ -212,7 +183,7 @@ public class UserService {
         MaaUser user = loginUser.getMaaUser();
         user.updateAttribute(updateDTO);
         userRepository.save(user);
-        redisCache.setCache(buildUserCacheKey(user.getUserId()), loginUser);
+        userSessionService.setUser(loginUser);
     }
 
     /**
@@ -291,30 +262,12 @@ public class UserService {
      * @param userId      userId
      */
     private void updateLoginUserPermissions(int permissions, String userId) {
-        LoginUser loginUser;
-        // 用户为登录 直接返回
-        try {
-            loginUser = (LoginUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        } catch (ClassCastException e) {
-            return;
-        }
-        String cacheId = buildUserCacheKey(userId);
+        var loginUser = userSessionService.getUser(userId);
+        if (loginUser == null) return;
 
-        redisCache.updateCache(cacheId, LoginUser.class, loginUser, cacheUser -> {
-            Set<String> p = cacheUser.getPermissions();
-
-            // 更新权限数据
-            cacheUser.getMaaUser().setStatus(permissions);
-            for (int i = 0; i <= permissions; i++) {
-                p.add(Integer.toString(i));
-            }
-            cacheUser.setPermissions(p);
-
-            return cacheUser;
-        }, expire);
+        var permissionSet = loginUser.getPermissions();
+        for (int i = 0; i <= permissions; i++) permissionSet.add(Integer.toString(i));
+        userSessionService.setUser(loginUser);
     }
 
-    private static String buildUserCacheKey(String userId) {
-        return REDIS_KEY_PREFIX_LOGIN + userId;
-    }
 }

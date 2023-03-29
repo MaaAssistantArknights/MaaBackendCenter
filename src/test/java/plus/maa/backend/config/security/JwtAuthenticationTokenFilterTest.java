@@ -13,7 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.core.context.SecurityContextHolder;
 import plus.maa.backend.config.external.Jwt;
 import plus.maa.backend.config.external.MaaCopilotProperties;
-import plus.maa.backend.repository.RedisCache;
+import plus.maa.backend.service.UserSessionService;
 import plus.maa.backend.service.model.LoginUser;
 
 import java.util.HashMap;
@@ -45,14 +45,13 @@ class JwtAuthenticationTokenFilterTest {
             }
         };
         var jwt = JWTUtil.createToken(payload, properties.getJwt().getSecret().getBytes());
-        var cacheKey = "LOGIN:" + userId;
 
-        var cache = mock(RedisCache.class);
+        var userSessionService = mock(UserSessionService.class);
         var mockUser = new LoginUser();
         mockUser.setToken(token);
-        when(cache.getCache(cacheKey, LoginUser.class)).thenReturn(mockUser);
+        when(userSessionService.getUser(userId)).thenReturn(mockUser);
 
-        var filter = new JwtAuthenticationTokenFilter(cache, new AuthenticationHelper(), properties);
+        var filter = new JwtAuthenticationTokenFilter( new AuthenticationHelper(), properties, userSessionService);
         var request = mock(HttpServletRequest.class);
         when(request.getHeader(properties.getJwt().getHeader())).thenReturn("Bearer " + jwt);
         var filterChain = mock(FilterChain.class);

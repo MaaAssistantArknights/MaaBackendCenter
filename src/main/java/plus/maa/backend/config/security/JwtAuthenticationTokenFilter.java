@@ -18,7 +18,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import plus.maa.backend.config.external.MaaCopilotProperties;
-import plus.maa.backend.repository.RedisCache;
+import plus.maa.backend.service.UserSessionService;
 import plus.maa.backend.service.model.LoginUser;
 
 import java.io.IOException;
@@ -29,15 +29,16 @@ import java.util.Objects;
  */
 @Component
 public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
-    public JwtAuthenticationTokenFilter(RedisCache redisCache, AuthenticationHelper helper, MaaCopilotProperties properties) {
-        this.redisCache = redisCache;
+    public JwtAuthenticationTokenFilter(AuthenticationHelper helper, MaaCopilotProperties properties, UserSessionService userSessionService) {
         this.helper = helper;
         this.properties = properties;
+        this.userSessionService = userSessionService;
     }
 
-    private final RedisCache redisCache;
     private final AuthenticationHelper helper;
     private final MaaCopilotProperties properties;
+
+    private final UserSessionService userSessionService;
 
     @Override
     protected void doFilterInternal(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull FilterChain filterChain) throws IOException, ServletException {
@@ -78,8 +79,7 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
 
     @NotNull
     private LoginUser retrieveAndValidateUser(JWT jwt) throws AuthenticationException {
-        var redisKey = "LOGIN:" + jwt.getPayload("userId");
-        var user = redisCache.getCache(redisKey, LoginUser.class);
+        var user = userSessionService.getUser(jwt.getPayload("userId").toString());
         if (user == null) throw new UsernameNotFoundException("user not found");
         var jwtToken = jwt.getPayload("token").toString();
         if (!Objects.equals(user.getToken(), jwtToken)) throw new BadCredentialsException("invalid token");
