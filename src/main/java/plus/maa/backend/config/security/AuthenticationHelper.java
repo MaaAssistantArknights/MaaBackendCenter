@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,7 @@ import plus.maa.backend.service.model.LoginUser;
 public class AuthenticationHelper {
     /**
      * 设置当前 auth， 是 SecurityContextHolder.getContext().setAuthentication(authentication) 的集中调用
+     *
      * @param authentication 当前的 auth
      */
     public void setAuthentication(Authentication authentication) {
@@ -45,8 +47,10 @@ public class AuthenticationHelper {
      */
     public @Nullable String getUserId() {
         var auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth instanceof LoginUser) {
-            return ((LoginUser) auth).getUserId();
+        if (auth == null) return null;
+        if (auth instanceof UsernamePasswordAuthenticationToken) {
+            var principal = auth.getPrincipal();
+            if (principal instanceof LoginUser) return ((LoginUser) principal).getUserId();
         } else if (auth instanceof JwtAuthToken) {
             return ((JwtAuthToken) auth).getSubject();
         }
