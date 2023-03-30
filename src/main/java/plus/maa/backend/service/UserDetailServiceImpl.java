@@ -35,13 +35,16 @@ public class UserDetailServiceImpl implements UserDetailsService {
             throw new UsernameNotFoundException("用户不存在");
         }
 
-        Integer status = user.getStatus();
-        Set<String> authorities = new HashSet<>();
-
-        for (int i = 0; i <= status; i++) {
-            authorities.add(Integer.toString(i));
-        }
+        var permissions = collectPermissionsFor(user);
         //数据封装成UserDetails返回
-        return new LoginUser(user, authorities);
+        return new LoginUser(user, permissions);
+    }
+
+    public Set<String> collectPermissionsFor(MaaUser user) {
+        var permissions = new HashSet<String>();
+        for (int i = 0; i <= user.getStatus(); i++) {
+            permissions.add(Integer.toString(i));
+        }
+        return permissions;
     }
 }

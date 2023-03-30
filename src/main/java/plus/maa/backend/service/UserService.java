@@ -48,6 +48,7 @@ public class UserService {
     private final EmailService emailService;
     private final UserSessionService userSessionService;
     private final PasswordEncoder passwordEncoder;
+    private final UserDetailServiceImpl userDetailService;
 
     @Value("${maa-copilot.jwt.secret}")
     private String secret;
@@ -175,7 +176,7 @@ public class UserService {
         MaaUser user = loginUser.getMaaUser();
         user.setStatus(1);
         userRepository.save(user);
-        updateLoginUserPermissions(1, user.getUserId());
+        updateLoginUserPermissions(user);
     }
 
     /**
@@ -253,7 +254,7 @@ public class UserService {
         user.setStatus(1);
         userRepository.save(user);
 
-        updateLoginUserPermissions(1, user.getUserId());
+        updateLoginUserPermissions(user);
         // 清除缓存
         redisCache.removeCache("UUID:" + uuid);
     }
@@ -261,15 +262,14 @@ public class UserService {
     /**
      * 实时更新用户权限(更新redis缓存中的用户权限)
      *
-     * @param permissions 权限值
-     * @param userId      userId
+     * @param user 所依赖的数据库用户
      */
-    private void updateLoginUserPermissions(int permissions, String userId) {
-        var loginUser = userSessionService.getUser(userId);
+    private void updateLoginUserPermissions(MaaUser user) {
+        var loginUser = userSessionService.getUser(user.getUserId());
         if (loginUser == null) return;
 
-        var permissionSet = loginUser.getPermissions();
-        for (int i = 0; i <= permissions; i++) permissionSet.add(Integer.toString(i));
+        loginUser.setMaaUser(user);
+        loginUser.setPermissions(userDetailService.collectPermissionsFor(user));
         userSessionService.setUser(loginUser);
     }
 
