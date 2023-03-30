@@ -82,7 +82,7 @@ public class UserController {
     @ApiResponse(description = "修改密码结果")
     public MaaResult<Void> updatePassword(@Parameter(description = "登录用户") @CurrentUser LoginUser user,
                                           @Parameter(description = "修改密码请求") @RequestBody @Valid PasswordUpdateDTO updateDTO) {
-        userService.modifyPassword(user, updateDTO.getNewPassword());
+        userService.modifyPassword(user.getUserId(), updateDTO.getNewPassword());
         return MaaResult.success();
     }
 
@@ -159,7 +159,7 @@ public class UserController {
     @PostMapping("/register")
     @Operation(summary = "用户注册")
     @ApiResponse(description = "注册结果")
-    public MaaResult<MaaUserInfo> register(@Parameter(description = "用户注册请求")@Valid @RequestBody RegisterDTO user) {
+    public MaaResult<MaaUserInfo> register(@Parameter(description = "用户注册请求") @Valid @RequestBody RegisterDTO user) {
         return MaaResult.success(userService.register(user));
     }
 
@@ -169,7 +169,7 @@ public class UserController {
     @PostMapping("/sendRegistrationToken")
     @Operation(summary = "注册时发送验证码")
     @ApiResponse(description = "发送验证码结果", responseCode = "204")
-    public MaaResult<Void> sendRegistrationToken(@Parameter(description = "发送注册验证码请求")@RequestBody SendRegistrationTokenDTO regDTO) {
+    public MaaResult<Void> sendRegistrationToken(@Parameter(description = "发送注册验证码请求") @RequestBody SendRegistrationTokenDTO regDTO) {
         //FIXME: 增加频率限制或者 captcha
         emailService.sendVCode(regDTO.getEmail());
         return new MaaResult<>(204, null, null);

@@ -112,16 +112,21 @@ public class UserService {
     /**
      * 修改密码
      *
-     * @param loginUser 当前用户
-     * @param password  新密码
+     * @param userId      当前用户
+     * @param rawPassword 新密码
      */
-    public void modifyPassword(LoginUser loginUser, String password) {
-        MaaUser user = loginUser.getMaaUser();
+    public void modifyPassword(String userId, String rawPassword) {
+        var userResult = userRepository.findById(userId);
+        if (userResult.isEmpty()) return;
+        var maaUser = userResult.get();
         // 修改密码的逻辑，应当使用与 authentication provider 一致的编码器
-        String newPassword = passwordEncoder.encode(password);
-        user.setPassword(newPassword);
-        userRepository.save(user);
+        maaUser.setPassword(passwordEncoder.encode(rawPassword));
+        userRepository.save(maaUser);
 
+        // 更新 session
+        var loginUser = userSessionService.getUser(userId);
+        if (loginUser == null) return;
+        loginUser.setMaaUser(maaUser);
         // 更新 token
         String newJwtToken = RandomStringUtils.random(16, true, true);
         loginUser.setToken(newJwtToken);
@@ -214,10 +219,8 @@ public class UserService {
      */
     public void modifyPasswordByActiveCode(PasswordResetDTO passwordResetDTO) {
         emailService.verifyVCode(passwordResetDTO.getEmail(), passwordResetDTO.getActiveCode());
-        LoginUser loginUser = new LoginUser();
-        MaaUser maaUser = userRepository.findByEmail(passwordResetDTO.getEmail());
-        loginUser.setMaaUser(maaUser);
-        modifyPassword(loginUser, passwordResetDTO.getPassword());
+        var maaUser = userRepository.findByEmail(passwordResetDTO.getEmail());
+        modifyPassword(maaUser.getUserId(), passwordResetDTO.getPassword());
     }
 
     /**
