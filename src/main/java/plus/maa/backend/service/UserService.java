@@ -3,7 +3,6 @@ package plus.maa.backend.service;
 import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.lang.Assert;
-import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTPayload;
 import cn.hutool.jwt.JWTUtil;
 import lombok.RequiredArgsConstructor;
@@ -56,11 +55,6 @@ public class UserService {
     private int expire;
     @Value("${maa-copilot.vcode.expire:600}")
     private int registrationCodeExpireInSecond;
-
-    private LoginUser getLoginUserByToken(String token) {
-        JWT jwt = JWTUtil.parseToken(token);
-        return userSessionService.getUser(jwt.getPayload("userId").toString());
-    }
 
     /**
      * 登录方法

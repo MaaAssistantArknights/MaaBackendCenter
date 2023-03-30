@@ -36,7 +36,7 @@ public class CopilotController {
     public MaaResult<Long> uploadCopilot(
             @Parameter(description = "登录用户") @CurrentUser LoginUser loginUser,
             @Parameter(description = "作业操作请求") @RequestBody CopilotCUDRequest request) {
-        return MaaResult.success(copilotService.upload(loginUser, request.getContent()));
+        return MaaResult.success(copilotService.upload(loginUser.getUserId(), request.getContent()));
     }
 
     @Operation(summary = "删除作业")
@@ -44,7 +44,7 @@ public class CopilotController {
     @PostMapping("/delete")
     public MaaResult<Void> deleteCopilot(@Parameter(description = "登录用户") @CurrentUser LoginUser loginUser,
                                          @Parameter(description = "作业操作请求") @RequestBody CopilotCUDRequest request) {
-        copilotService.delete(loginUser, request);
+        copilotService.delete(loginUser.getUserId(), request);
         return MaaResult.success();
     }
 
@@ -72,7 +72,7 @@ public class CopilotController {
     @PostMapping("/update")
     public MaaResult<Void> updateCopilot(@Parameter(description = "登录用户") @CurrentUser LoginUser loginUser,
                                          @Parameter(description = "作业操作请求") @RequestBody CopilotCUDRequest copilotCUDRequest) {
-        copilotService.update(loginUser, copilotCUDRequest);
+        copilotService.update(loginUser.getUserId(), copilotCUDRequest);
         return MaaResult.success();
     }
 

@@ -141,11 +141,11 @@ public class CopilotService {
      * @param content 前端编辑json作业内容
      * @return 返回_id
      */
-    public Long upload(LoginUser user, String content) {
+    public Long upload(String loginUserId, String content) {
         CopilotDTO copilotDTO = correctCopilot(parseToCopilotDto(content));
         // 将其转换为数据库存储对象
         Copilot copilot = CopilotConverter.INSTANCE.toCopilot(
-                copilotDTO, user.getMaaUser(),
+                copilotDTO, loginUserId,
                 new Date(), copilotIncrementId.getAndIncrement(),
                 content);
         copilotRepository.insert(copilot);
@@ -156,9 +156,9 @@ public class CopilotService {
     /**
      * 根据作业id删除作业
      */
-    public void delete(LoginUser user, CopilotCUDRequest request) {
+    public void delete(String loginUserId, CopilotCUDRequest request) {
         copilotRepository.findByCopilotId(request.getId()).ifPresent(copilot -> {
-            Assert.state(Objects.equals(copilot.getUploaderId(), user.getUserId()), "您无法修改不属于您的作业");
+            Assert.state(Objects.equals(copilot.getUploaderId(), loginUserId), "您无法修改不属于您的作业");
             copilot.setDelete(true);
             copilotRepository.save(copilot);
         });
@@ -332,12 +332,12 @@ public class CopilotService {
      *
      * @param copilotCUDRequest 作业_id content
      */
-    public void update(LoginUser loginUser, CopilotCUDRequest copilotCUDRequest) {
+    public void update(String loginUserId, CopilotCUDRequest copilotCUDRequest) {
         String content = copilotCUDRequest.getContent();
         Long id = copilotCUDRequest.getId();
         copilotRepository.findByCopilotId(id).ifPresent(copilot -> {
             CopilotDTO copilotDTO = correctCopilot(parseToCopilotDto(content));
-            Assert.state(Objects.equals(copilot.getUploaderId(), loginUser.getUserId()), "您无法修改不属于您的作业");
+            Assert.state(Objects.equals(copilot.getUploaderId(), loginUserId), "您无法修改不属于您的作业");
             copilot.setUploadTime(new Date());
             CopilotConverter.INSTANCE.updateCopilotFromDto(copilotDTO, content, copilot);
             copilotRepository.save(copilot);
