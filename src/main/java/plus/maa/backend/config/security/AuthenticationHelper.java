@@ -8,10 +8,14 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
 import plus.maa.backend.common.utils.IpUtil;
 import plus.maa.backend.service.jwt.JwtAuthToken;
 import plus.maa.backend.service.model.LoginUser;
+
+import java.util.Objects;
 
 /**
  * Auth 助手，统一 auth 的设置和获取
@@ -58,12 +62,13 @@ public class AuthenticationHelper {
     }
 
     /**
-     * 获取已验证用户 id 或者未验证用户 ip 地址
+     * 获取已验证用户 id 或者未验证用户 ip 地址。在 HTTP request 之外调用该方法获取 ip 会抛出 NPE
      *
-     * @param request 当前request
      * @return 用户 id 或者 ip 地址
      */
-    public @NotNull String getUserIdOrIpAddress(HttpServletRequest request) {
+    public @NotNull String getUserIdOrIpAddress() {
+        var attributes = ((ServletRequestAttributes) Objects.requireNonNull(RequestContextHolder.getRequestAttributes()));
+        var request = attributes.getRequest();
         var id = getUserId();
         if (id == null) id = IpUtil.getIpAddr(request);
         return id;

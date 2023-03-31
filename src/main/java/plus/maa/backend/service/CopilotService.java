@@ -5,10 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import jakarta.annotation.PostConstruct;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -19,7 +19,6 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
-import plus.maa.backend.common.utils.IpUtil;
 import plus.maa.backend.common.utils.converter.CopilotConverter;
 import plus.maa.backend.controller.request.CopilotCUDRequest;
 import plus.maa.backend.controller.request.CopilotDTO;
@@ -34,7 +33,6 @@ import plus.maa.backend.repository.entity.CommentsArea;
 import plus.maa.backend.repository.entity.Copilot;
 import plus.maa.backend.repository.entity.CopilotRating;
 import plus.maa.backend.repository.entity.MaaUser;
-import plus.maa.backend.service.model.LoginUser;
 import plus.maa.backend.service.model.RatingCache;
 import plus.maa.backend.service.model.RatingType;
 
@@ -58,7 +56,6 @@ public class CopilotService {
     private final MongoTemplate mongoTemplate;
     private final ObjectMapper mapper;
     private final ArkLevelService levelService;
-    private final HttpServletRequest request;
     private final RedisCache redisCache;
     private final UserRepository userRepository;
     private final CopilotRatingRepository copilotRatingRepository;
@@ -167,13 +164,12 @@ public class CopilotService {
     /**
      * 指定查询
      */
-    public Optional<CopilotInfo> getCopilotById(LoginUser user, Long id) {
-        String userId = getUserId(user);
+    public Optional<CopilotInfo> getCopilotById(String userIdOrIpAddress, Long id) {
         // 根据ID获取作业, 如作业不存在则抛出异常返回
         Optional<Copilot> copilotOptional = copilotRepository.findByCopilotIdAndDeleteIsFalse(id);
         return copilotOptional.map(copilot -> {
             // 60分钟内限制同一个用户对访问量的增加
-            RatingCache cache = redisCache.getCache("views:" + userId, RatingCache.class);
+            RatingCache cache = redisCache.getCache("views:" + userIdOrIpAddress, RatingCache.class);
             if (Objects.isNull(cache) || Objects.isNull(cache.getCopilotIds()) ||
                     !cache.getCopilotIds().contains(id)) {
                 Query query = Query.query(Criteria.where("copilotId").is(id));
@@ -182,9 +178,9 @@ public class CopilotService {
                 update.inc("views");
                 mongoTemplate.updateFirst(query, update, Copilot.class);
                 if (Objects.isNull(cache)) {
-                    redisCache.setCache("views:" + userId, new RatingCache(Sets.newHashSet(id)));
+                    redisCache.setCache("views:" + userIdOrIpAddress, new RatingCache(Sets.newHashSet(id)));
                 } else {
-                    redisCache.updateCache("views:" + userId, RatingCache.class, cache,
+                    redisCache.updateCache("views:" + userIdOrIpAddress, RatingCache.class, cache,
                             updateCache -> {
                                 updateCache.getCopilotIds().add(id);
                                 return updateCache;
@@ -194,20 +190,19 @@ public class CopilotService {
             CopilotRating rating = copilotRatingRepository.findByCopilotId(copilot.getCopilotId());
             Map<String, MaaUser> maaUser = userRepository.findByUsersId(List.of(copilot.getUploaderId()));
 
-            return formatCopilot(userId, copilot, rating, maaUser.get(copilot.getUploaderId()).getUserName(),
+            return formatCopilot(userIdOrIpAddress, copilot, rating, maaUser.get(copilot.getUploaderId()).getUserName(),
                     commentsAreaRepository.countByCopilotIdAndDelete(copilot.getCopilotId(), false));
         });
     }
 
     /**
-     * 分页查询
+     * 分页查询。传入 userId 不为空时限制为用户所有的数据
      *
-     * @param user    获取已登录用户自己的作业数据
+     * @param userId  获取已登录用户自己的作业数据
      * @param request 模糊查询
      * @return CopilotPageInfo
      */
-    public CopilotPageInfo queriesCopilot(LoginUser user, CopilotQueriesRequest request) {
-        String userId = getUserId(user);
+    public CopilotPageInfo queriesCopilot(@Nullable String userId, CopilotQueriesRequest request) {
         Sort.Order sortOrder = new Sort.Order(
                 request.isDesc() ? Sort.Direction.DESC : Sort.Direction.ASC,
                 Optional.ofNullable(request.getOrderBy())
@@ -271,9 +266,8 @@ public class CopilotService {
         //查看自己
         if (StringUtils.isNotBlank(request.getUploaderId())) {
             if ("me".equals(request.getUploaderId())) {
-                String loginUserId = user.getMaaUser().getUserId();
-                if (!ObjectUtils.isEmpty(loginUserId)) {
-                    andQueries.add(Criteria.where("uploaderId").is(loginUserId));
+                if (!ObjectUtils.isEmpty(userId)) {
+                    andQueries.add(Criteria.where("uploaderId").is(userId));
                 }
             } else {
                 andQueries.add(Criteria.where("uploaderId").is(request.getUploaderId()));
@@ -347,11 +341,10 @@ public class CopilotService {
     /**
      * 评分相关
      *
-     * @param request   评分
-     * @param loginUser 用于已登录用户作出评分
+     * @param request           评分
+     * @param userIdOrIpAddress 用于已登录用户作出评分
      */
-    public void rates(LoginUser loginUser, CopilotRatingReq request) {
-        String userId = getUserId(loginUser);
+    public void rates(String userIdOrIpAddress, CopilotRatingReq request) {
         String rating = request.getRating();
 
         Assert.isTrue(copilotRepository.existsCopilotsByCopilotId(request.getId()), "作业id不存在");
@@ -361,7 +354,7 @@ public class CopilotService {
             CopilotRating copilotRating = new CopilotRating(request.getId());
             copilotRating.setRatingUsers(
                     List.of(
-                            new CopilotRating.RatingUser(userId, request.getRating())
+                            new CopilotRating.RatingUser(userIdOrIpAddress, request.getRating())
                     )
             );
             copilotRatingRepository.insert(copilotRating);
@@ -381,7 +374,7 @@ public class CopilotService {
 
         // 查看是否已评分 如果已评分则进行更新
         for (CopilotRating.RatingUser ratingUser : ratingUsers) {
-            if (userId.equals(ratingUser.getUserId())) {
+            if (userIdOrIpAddress.equals(ratingUser.getUserId())) {
                 //做出相同的评分则直接返回
                 if (ratingUser.getRating().equals(rating)) {
                     return;
@@ -396,7 +389,7 @@ public class CopilotService {
 
         // 不存在评分 则添加新的评分
         if (!existUserId) {
-            CopilotRating.RatingUser ratingUser = new CopilotRating.RatingUser(userId, rating);
+            CopilotRating.RatingUser ratingUser = new CopilotRating.RatingUser(userIdOrIpAddress, rating);
             ratingUsers.add(ratingUser);
             update.addToSet("ratingUsers", ratingUser);
             mongoTemplate.updateFirst(query, update, CopilotRating.class);
@@ -437,7 +430,7 @@ public class CopilotService {
     /**
      * 将数据库内容转换为前端所需格式<br>
      */
-    private CopilotInfo formatCopilot(String userId, Copilot copilot, CopilotRating rating, String userName,
+    private CopilotInfo formatCopilot(String userIdOrIpAddress, Copilot copilot, CopilotRating rating, String userName,
                                       Long commentsCount) {
         CopilotInfo info = CopilotConverter.INSTANCE.toCopilotInfo(copilot, userName, copilot.getCopilotId(),
                 commentsCount);
@@ -452,7 +445,7 @@ public class CopilotService {
             // 评分数少于一定数量
             info.setNotEnoughRating(rus.size() <= 5);
             rus.stream()
-                    .filter(ru -> Objects.equals(userId, ru.getUserId()))
+                    .filter(ru -> Objects.equals(userIdOrIpAddress, ru.getUserId()))
                     .findFirst()
                     .ifPresent(fst -> info.setRatingType(RatingType.fromRatingType(fst.getRating()).getDisplay()));
         });
@@ -486,20 +479,5 @@ public class CopilotService {
     private void updateContent(Long copilotId, String content) {
         copilotRepository.findByCopilotId(copilotId).ifPresent(copilot ->
                 copilotRepository.save(copilot.setContent(content)));
-    }
-
-    /**
-     * 获取用户唯一标识符<br/>
-     * 如果未登录获取ip <br/>
-     * 如果已登录获取id
-     *
-     * @param loginUser LoginUser
-     * @return 用户标识符
-     */
-    private String getUserId(LoginUser loginUser) {
-        return ObjectUtils.isEmpty(loginUser) ?
-                IpUtil.getIpAddr(request)
-                : loginUser.getMaaUser().getUserId();
-
     }
 }
