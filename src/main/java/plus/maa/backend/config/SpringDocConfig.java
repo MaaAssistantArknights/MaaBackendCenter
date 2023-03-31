@@ -36,7 +36,7 @@ public class SpringDocConfig {
     @Value("${maa-copilot.jwt.header}")
     private String securitySchemeHeader;
 
-    private final String securitySchemeName = "Bearer";
+    public static final String SECURITY_SCHEME_NAME = "Bearer";
 
     @Bean
     public OpenAPI emergencyLogistics() {
@@ -46,7 +46,7 @@ public class SpringDocConfig {
                         .description("GitHub repo")
                         .url("https://github.com/MaaAssistantArknights/MaaBackendCenter"))
                 .components(new Components()
-                        .addSecuritySchemes(securitySchemeName,
+                        .addSecuritySchemes(SECURITY_SCHEME_NAME,
                                 new SecurityScheme()
                                         .type(SecurityScheme.Type.APIKEY)
                                         .in(SecurityScheme.In.HEADER)
@@ -65,13 +65,13 @@ public class SpringDocConfig {
                 if (parameter.hasParameterAnnotation(CurrentUser.class)) {
                     var security = Optional.ofNullable(operation.getSecurity());
                     // 已有 security scheme
-                    if (security.stream().flatMap(List::stream).anyMatch(s -> s.containsKey(securitySchemeName))) {
+                    if (security.stream().flatMap(List::stream).anyMatch(s -> s.containsKey(SECURITY_SCHEME_NAME))) {
                         break;
                     }
 
                     // 添加 security scheme
                     operation.setSecurity(security.orElseGet(ArrayList::new));
-                    operation.getSecurity().add(new SecurityRequirement().addList(securitySchemeName));
+                    operation.getSecurity().add(new SecurityRequirement().addList(SECURITY_SCHEME_NAME));
                     break;
                 }
             }

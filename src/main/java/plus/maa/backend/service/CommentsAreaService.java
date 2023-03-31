@@ -22,7 +22,6 @@ import plus.maa.backend.repository.UserRepository;
 import plus.maa.backend.repository.entity.CommentsArea;
 import plus.maa.backend.repository.entity.CopilotRating;
 import plus.maa.backend.repository.entity.MaaUser;
-import plus.maa.backend.service.model.LoginUser;
 
 import java.util.*;
 
@@ -45,12 +44,11 @@ public class CommentsAreaService {
      * 评论
      * 每个评论都有一个uuid加持
      *
-     * @param loginUser      登录用户
+     * @param userId         登录用户 id
      * @param commentsAddDTO CommentsRequest
      */
-    public void addComments(LoginUser loginUser, CommentsAddDTO commentsAddDTO) {
+    public void addComments(String userId, CommentsAddDTO commentsAddDTO) {
         long copilotId = Long.parseLong(commentsAddDTO.getCopilotId());
-        MaaUser maaUser = loginUser.getMaaUser();
         String message = commentsAddDTO.getMessage();
 
         Assert.isTrue(StringUtils.isNotBlank(message), "评论不可为空");
@@ -80,7 +78,7 @@ public class CommentsAreaService {
         //创建评论表
         CommentsArea commentsArea = new CommentsArea();
         commentsArea.setCopilotId(copilotId)
-                .setUploaderId(maaUser.getUserId())
+                .setUploaderId(userId)
                 .setFromCommentId(fromCommentsId)
                 .setMainCommentId(mainCommentsId)
                 .setMessage(message);
@@ -89,9 +87,9 @@ public class CommentsAreaService {
     }
 
 
-    public void deleteComments(LoginUser loginUser, String commentsId) {
+    public void deleteComments(String userId, String commentsId) {
         CommentsArea commentsArea = findCommentsById(commentsId);
-        verifyOwner(loginUser, commentsArea.getUploaderId());
+        verifyOwner(userId, commentsArea.getUploaderId());
 
         Date date = new Date();
         commentsArea.setDelete(true);
@@ -113,11 +111,10 @@ public class CommentsAreaService {
     /**
      * 为评论进行点赞
      *
-     * @param loginUser         登录用户
+     * @param userId            登录用户 id
      * @param commentsRatingDTO CommentsRatingDTO
      */
-    public void rates(LoginUser loginUser, CommentsRatingDTO commentsRatingDTO) {
-        String userId = loginUser.getMaaUser().getUserId();
+    public void rates(String userId, CommentsRatingDTO commentsRatingDTO) {
         String rating = commentsRatingDTO.getRating();
         boolean existRatingUser = false;
 
@@ -252,8 +249,8 @@ public class CommentsAreaService {
     }
 
 
-    private void verifyOwner(LoginUser user, String uploaderId) {
-        Assert.isTrue(Objects.equals(user.getMaaUser().getUserId(), uploaderId), "您无法删除不属于您的评论");
+    private void verifyOwner(String userId, String uploaderId) {
+        Assert.isTrue(Objects.equals(userId, uploaderId), "您无法删除不属于您的评论");
     }
 
 
@@ -262,6 +259,5 @@ public class CommentsAreaService {
         Assert.isTrue(commentsArea.isPresent(), "评论不存在");
         return commentsArea.get();
     }
-
 
 }
