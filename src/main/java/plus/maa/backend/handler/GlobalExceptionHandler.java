@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
@@ -120,6 +121,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     public MaaResult<String> authExceptionHandler(AuthenticationException e) {
         return MaaResult.fail(401, e.getMessage());
+    }
+
+    /**
+     * 文件大小超出处理阈值
+     *
+     * @param e MaxUploadSizeExceededException
+     * @return Maximum upload size exceeded
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public MaaResult<String> maxFileExceptionHandler(MaxUploadSizeExceededException e) {
+        return MaaResult.fail(413, e.getMessage());
     }
 
     @ExceptionHandler(ResponseStatusException.class)
