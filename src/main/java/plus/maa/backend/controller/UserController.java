@@ -3,6 +3,7 @@ package plus.maa.backend.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -12,15 +13,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import plus.maa.backend.common.annotation.CurrentUser;
+import plus.maa.backend.config.SpringDocConfig;
 import plus.maa.backend.config.external.MaaCopilotProperties;
+import plus.maa.backend.config.security.AuthenticationHelper;
 import plus.maa.backend.controller.request.*;
 import plus.maa.backend.controller.response.MaaLoginRsp;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.MaaUserInfo;
 import plus.maa.backend.service.EmailService;
 import plus.maa.backend.service.UserService;
-import plus.maa.backend.service.model.LoginUser;
 
 import java.io.IOException;
 
@@ -50,12 +51,17 @@ public class UserController {
      * @param activateDTO 激活码
      * @return 成功响应
      */
-    @PostMapping("/activate")
-    @Operation(summary = "激活token中的用户")
+    @Operation(summary = "激活用户")
     @ApiResponse(description = "激活用户结果")
-    public MaaResult<Void> activate(@Parameter(description = "登录用户") @CurrentUser LoginUser user,
-                                    @Parameter(description = "激活用户请求") @Valid @RequestBody ActivateDTO activateDTO) {
-        userService.activateUser(user, activateDTO);
+    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @PostMapping("/activate")
+    public MaaResult<Void> activate(
+            AuthenticationHelper helper,
+            @Parameter(description = "激活用户请求") @Valid @RequestBody ActivateDTO activateDTO
+    ) {
+        // FIXME 应改为从 body 中获取， 解决激活——登录悖论，待讨论
+        var userId = helper.requireUserId();
+        userService.activateUser(userId, activateDTO);
         return MaaResult.success();
     }
 
@@ -64,11 +70,13 @@ public class UserController {
      *
      * @return null
      */
-    @PostMapping("/activate/request")
     @Operation(summary = "完成注册后发送邮箱激活码")
     @ApiResponse(description = "激活码发送结果")
-    public MaaResult<Void> activateRequest(@Parameter(description = "登录用户") @CurrentUser LoginUser user) {
-        userService.sendEmailCode(user);
+    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @PostMapping("/activate/request")
+    public MaaResult<Void> activateRequest(AuthenticationHelper helper) {
+        // FIXME 完成注册后发送激活码不应该由客户端请求
+        userService.sendActiveCodeByEmail(helper.requireUserId());
         return MaaResult.success();
     }
 
@@ -77,12 +85,15 @@ public class UserController {
      *
      * @return http响应
      */
-    @PostMapping("/update/password")
     @Operation(summary = "修改当前用户密码", description = "根据原密码")
     @ApiResponse(description = "修改密码结果")
-    public MaaResult<Void> updatePassword(@Parameter(description = "登录用户") @CurrentUser LoginUser user,
-                                          @Parameter(description = "修改密码请求") @RequestBody @Valid PasswordUpdateDTO updateDTO) {
-        userService.modifyPassword(user.getUserId(), updateDTO.getNewPassword());
+    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @PostMapping("/update/password")
+    public MaaResult<Void> updatePassword(
+            AuthenticationHelper helper,
+            @Parameter(description = "修改密码请求") @RequestBody @Valid PasswordUpdateDTO updateDTO
+    ) {
+        userService.modifyPassword(helper.requireUserId(), updateDTO.getNewPassword());
         return MaaResult.success();
     }
 
@@ -92,16 +103,17 @@ public class UserController {
      * @param updateDTO 用户信息参数
      * @return http响应
      */
-    @PostMapping("/update/info")
     @Operation(summary = "更新用户详细信息")
     @ApiResponse(description = "更新结果")
-    public MaaResult<Void> updateInfo(@Parameter(description = "登录用户") @CurrentUser LoginUser user,
-                                      @Parameter(description = "更新用户详细信息请求") @Valid @RequestBody UserInfoUpdateDTO updateDTO) {
-        userService.updateUserInfo(user, updateDTO);
+    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @PostMapping("/update/info")
+    public MaaResult<Void> updateInfo(
+            AuthenticationHelper helper,
+            @Parameter(description = "更新用户详细信息请求") @Valid @RequestBody UserInfoUpdateDTO updateDTO
+    ) {
+        userService.updateUserInfo(helper.requireUserId(), updateDTO);
         return MaaResult.success();
     }
-
-    // TODO 邮件重置密码需要在用户未登录的情况下使用，需要修改
 
     /**
      * 邮箱重设密码

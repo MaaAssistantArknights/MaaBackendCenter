@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
@@ -158,44 +159,53 @@ public class UserService {
     /**
      * 通过传入的JwtToken来获取当前用户的信息
      *
-     * @param loginUser   当前用户
+     * @param userId      当前用户
      * @param activateDTO 邮箱激活码
      */
-    public void activateUser(LoginUser loginUser, ActivateDTO activateDTO) {
-        if (Objects.equals(loginUser.getMaaUser().getStatus(), 1)) {
-            return;
-        }
-        String email = loginUser.getMaaUser().getEmail();
-        emailService.verifyVCode(email, activateDTO.getToken());
-        MaaUser user = loginUser.getMaaUser();
-        user.setStatus(1);
-        userRepository.save(user);
-        updateLoginUserPermissions(user);
+    public void activateUser(@NotNull String userId, ActivateDTO activateDTO) {
+        userRepository.findById(userId).ifPresent((maaUser) -> {
+            if (1 == maaUser.getStatus()) return;
+            var email = maaUser.getEmail();
+            emailService.verifyVCode(email, activateDTO.getToken());
+            maaUser.setStatus(1);
+            userRepository.save(maaUser);
+
+            var loginUser = userSessionService.getUser(maaUser.getUserId());
+            if (loginUser == null) return;
+            loginUser.setMaaUser(maaUser);
+            userSessionService.setUser(loginUser);
+        });
     }
 
     /**
-     * 更新用户密码
+     * 更新用户信息
      *
-     * @param loginUser 当前用户
+     * @param userId    用户id
      * @param updateDTO 更新参数
      */
-    public void updateUserInfo(LoginUser loginUser, UserInfoUpdateDTO updateDTO) {
-        MaaUser user = loginUser.getMaaUser();
-        user.updateAttribute(updateDTO);
-        userRepository.save(user);
-        userSessionService.setUser(loginUser);
+    public void updateUserInfo(@NotNull String userId, UserInfoUpdateDTO updateDTO) {
+        userRepository.findById(userId).ifPresent((maaUser) -> {
+            maaUser.updateAttribute(updateDTO);
+            userRepository.save(maaUser);
+
+            var loginUser = userSessionService.getUser(maaUser.getUserId());
+            if (loginUser == null) return;
+            loginUser.setMaaUser(maaUser);
+            userSessionService.setUser(loginUser);
+        });
     }
 
     /**
-     * 发送验证码，用户信息从token中获取
+     * 为用户发送激活验证码
      *
-     * @param loginUser 当前用户
+     * @param userId 用户 id
      */
-    public void sendEmailCode(LoginUser loginUser) {
-        Assert.state(Objects.equals(loginUser.getMaaUser().getStatus(), 0),
-                "用户已经激活，无法再次发送验证码");
-        String email = loginUser.getEmail();
-        emailService.sendVCode(email);
+    public void sendActiveCodeByEmail(String userId) {
+        userRepository.findById(userId).ifPresent((maaUser) -> {
+            Assert.state(Objects.equals(maaUser.getStatus(), 0),
+                    "用户已经激活，无法再次发送验证码");
+            emailService.sendVCode(maaUser.getEmail());
+        });
     }
 
     /**
