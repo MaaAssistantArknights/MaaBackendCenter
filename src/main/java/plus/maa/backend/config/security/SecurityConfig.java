@@ -39,7 +39,8 @@ public class SecurityConfig {
             "/copilot/query",
             "/copilot/get/**",
             "/copilot/rating",
-            "/comments/query"
+            "/comments/query",
+            "/file/upload"
     };
 
     //添加需要权限1才能访问的接口
@@ -52,6 +53,7 @@ public class SecurityConfig {
     };
 
     private static final String[] URL_AUTHENTICATION_2 = {
+            "/file/download/*"
     };
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter;
@@ -85,7 +87,6 @@ public class SecurityConfig {
                         //此处用于管理员操作接口
                         .requestMatchers(URL_AUTHENTICATION_2).hasAuthority("2")
                         .anyRequest().authenticated());
-
         //添加过滤器
         http.addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
