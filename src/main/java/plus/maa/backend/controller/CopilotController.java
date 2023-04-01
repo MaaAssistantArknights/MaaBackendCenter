@@ -36,7 +36,7 @@ public class CopilotController {
     @JsonSchema
     @PostMapping("/upload")
     public MaaResult<Long> uploadCopilot(
-            AuthenticationHelper helper,
+            @Parameter(hidden = true) AuthenticationHelper helper,
             @Parameter(description = "作业操作请求") @RequestBody CopilotCUDRequest request
     ) {
         return MaaResult.success(copilotService.upload(helper.requireUserId(), request.getContent()));
@@ -47,7 +47,7 @@ public class CopilotController {
     @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
     @PostMapping("/delete")
     public MaaResult<Void> deleteCopilot(
-            AuthenticationHelper helper,
+            @Parameter(hidden = true) AuthenticationHelper helper,
             @Parameter(description = "作业操作请求") @RequestBody CopilotCUDRequest request
     ) {
         copilotService.delete(helper.requireUserId(), request);
@@ -58,7 +58,7 @@ public class CopilotController {
     @ApiResponse(description = "作业信息")
     @GetMapping("/get/{id}")
     public MaaResult<CopilotInfo> getCopilotById(
-            AuthenticationHelper helper,
+            @Parameter(hidden = true) AuthenticationHelper helper,
             @Parameter(description = "作业id") @PathVariable("id") Long id
     ) {
         var userIdOrIpAddress = helper.getUserIdOrIpAddress();
@@ -71,7 +71,7 @@ public class CopilotController {
     @ApiResponse(description = "作业信息")
     @GetMapping("/query")
     public MaaResult<CopilotPageInfo> queriesCopilot(
-            AuthenticationHelper helper,
+            @Parameter(hidden = true) AuthenticationHelper helper,
             @Parameter(description = "作业查询请求") CopilotQueriesRequest copilotQueriesRequest
     ) {
         return MaaResult.success(copilotService.queriesCopilot(helper.getUserId(), copilotQueriesRequest));
@@ -83,7 +83,7 @@ public class CopilotController {
     @JsonSchema
     @PostMapping("/update")
     public MaaResult<Void> updateCopilot(
-            AuthenticationHelper helper,
+            @Parameter(hidden = true) AuthenticationHelper helper,
             @Parameter(description = "作业操作请求") @RequestBody CopilotCUDRequest copilotCUDRequest
     ) {
         copilotService.update(helper.requireUserId(), copilotCUDRequest);
@@ -95,7 +95,7 @@ public class CopilotController {
     @JsonSchema
     @PostMapping("/rating")
     public MaaResult<String> ratesCopilotOperation(
-            AuthenticationHelper helper,
+            @Parameter(hidden = true) AuthenticationHelper helper,
             @Parameter(description = "作业评分请求") @RequestBody CopilotRatingReq copilotRatingReq
     ) {
         copilotService.rates(helper.getUserIdOrIpAddress(), copilotRatingReq);

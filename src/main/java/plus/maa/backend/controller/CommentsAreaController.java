@@ -37,7 +37,7 @@ public class CommentsAreaController {
     @ApiResponse(description = "发送评论结果")
     @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
     public MaaResult<String> sendComments(
-            AuthenticationHelper authenticationHelper,
+            @Parameter(hidden = true) AuthenticationHelper authenticationHelper,
             @Parameter(description = "评论") @Valid @RequestBody CommentsAddDTO comments
     ) {
         commentsAreaService.addComments(authenticationHelper.requireUserId(), comments);
@@ -56,7 +56,7 @@ public class CommentsAreaController {
     @ApiResponse(description = "评论删除结果")
     @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
     public MaaResult<String> deleteComments(
-            AuthenticationHelper helper,
+            @Parameter(hidden = true) AuthenticationHelper helper,
             @Parameter(description = "评论删除对象") @Valid @RequestBody CommentsDeleteDTO comments
     ) {
         commentsAreaService.deleteComments(helper.requireUserId(), comments.getCommentId());
@@ -69,7 +69,7 @@ public class CommentsAreaController {
     @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
     @PostMapping("/rating")
     public MaaResult<String> ratesComments(
-            AuthenticationHelper helper,
+            @Parameter(hidden = true) AuthenticationHelper helper,
             @Parameter(description = "评论点赞对象") @Valid @RequestBody CommentsRatingDTO commentsRatingDTO
     ) {
         commentsAreaService.rates(helper.requireUserId(), commentsRatingDTO);

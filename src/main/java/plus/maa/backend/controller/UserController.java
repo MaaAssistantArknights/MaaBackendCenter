@@ -56,7 +56,7 @@ public class UserController {
     @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
     @PostMapping("/activate")
     public MaaResult<Void> activate(
-            AuthenticationHelper helper,
+            @Parameter(hidden = true) AuthenticationHelper helper,
             @Parameter(description = "激活用户请求") @Valid @RequestBody ActivateDTO activateDTO
     ) {
         // FIXME 应改为从 body 中获取， 解决激活——登录悖论，待讨论
@@ -74,7 +74,7 @@ public class UserController {
     @ApiResponse(description = "激活码发送结果")
     @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
     @PostMapping("/activate/request")
-    public MaaResult<Void> activateRequest(AuthenticationHelper helper) {
+    public MaaResult<Void> activateRequest(@Parameter(hidden = true) AuthenticationHelper helper) {
         // FIXME 完成注册后发送激活码不应该由客户端请求
         userService.sendActiveCodeByEmail(helper.requireUserId());
         return MaaResult.success();
@@ -90,7 +90,7 @@ public class UserController {
     @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
     @PostMapping("/update/password")
     public MaaResult<Void> updatePassword(
-            AuthenticationHelper helper,
+            @Parameter(hidden = true) AuthenticationHelper helper,
             @Parameter(description = "修改密码请求") @RequestBody @Valid PasswordUpdateDTO updateDTO
     ) {
         userService.modifyPassword(helper.requireUserId(), updateDTO.getNewPassword());
@@ -108,7 +108,7 @@ public class UserController {
     @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
     @PostMapping("/update/info")
     public MaaResult<Void> updateInfo(
-            AuthenticationHelper helper,
+            @Parameter(hidden = true) AuthenticationHelper helper,
             @Parameter(description = "更新用户详细信息请求") @Valid @RequestBody UserInfoUpdateDTO updateDTO
     ) {
         userService.updateUserInfo(helper.requireUserId(), updateDTO);
