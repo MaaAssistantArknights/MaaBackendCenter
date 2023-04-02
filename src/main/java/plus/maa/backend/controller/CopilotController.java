@@ -1,11 +1,13 @@
 package plus.maa.backend.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.JsonSchema;
 import plus.maa.backend.config.SpringDocConfig;
@@ -18,6 +20,8 @@ import plus.maa.backend.controller.response.CopilotPageInfo;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.service.CopilotService;
 
+import java.util.Map;
+
 /**
  * @author LoMu
  * Date  2022-12-25 17:08
@@ -29,6 +33,8 @@ import plus.maa.backend.service.CopilotService;
 @Tag(name = "CopilotController", description = "作业本体管理接口")
 public class CopilotController {
     private final CopilotService copilotService;
+
+    private final ObjectMapper mapper;
 
     @Operation(summary = "上传作业")
     @ApiResponse(description = "上传作业结果")
@@ -72,9 +78,11 @@ public class CopilotController {
     @GetMapping("/query")
     public MaaResult<CopilotPageInfo> queriesCopilot(
             @Parameter(hidden = true) AuthenticationHelper helper,
-            @Parameter(description = "作业查询请求") CopilotQueriesRequest copilotQueriesRequest
+            @Parameter(description = "作业查询请求") @ParameterObject CopilotQueriesRequest copilotQueriesRequest,
+            @Parameter(hidden = true) @RequestParam Map<String, Object> params
     ) {
-        return MaaResult.success(copilotService.queriesCopilot(helper.getUserId(), copilotQueriesRequest));
+        var parsed = mapper.convertValue(params, CopilotQueriesRequest.class);
+        return MaaResult.success(copilotService.queriesCopilot(helper.getUserId(), parsed));
     }
 
     @Operation(summary = "更新作业")

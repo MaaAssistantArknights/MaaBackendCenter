@@ -1,5 +1,6 @@
 package plus.maa.backend.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -19,6 +20,8 @@ import plus.maa.backend.controller.response.CommentsAreaInfo;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.service.CommentsAreaService;
 
+import java.util.Map;
+
 /**
  * @author LoMu
  * Date  2023-02-17 14:56
@@ -31,6 +34,7 @@ import plus.maa.backend.service.CommentsAreaService;
 public class CommentsAreaController {
 
     private final CommentsAreaService commentsAreaService;
+    private final ObjectMapper mapper;
 
     @PostMapping("/add")
     @Operation(summary = "发送评论")
@@ -47,8 +51,12 @@ public class CommentsAreaController {
     @GetMapping("/query")
     @Operation(summary = "分页查询评论")
     @ApiResponse(description = "评论区信息")
-    public MaaResult<CommentsAreaInfo> queriesCommentsArea(@Parameter(description = "评论区") CommentsQueriesDTO commentsQueriesDTO) {
-        return MaaResult.success(commentsAreaService.queriesCommentsArea(commentsQueriesDTO));
+    public MaaResult<CommentsAreaInfo> queriesCommentsArea(
+            @Parameter(description = "评论区") CommentsQueriesDTO commentsQueriesDTO,
+            @Parameter(hidden = true) @RequestParam Map<String, Object> params
+    ) {
+        var parsed = mapper.convertValue(params, CommentsQueriesDTO.class);
+        return MaaResult.success(commentsAreaService.queriesCommentsArea(parsed));
     }
 
     @PostMapping("/delete")

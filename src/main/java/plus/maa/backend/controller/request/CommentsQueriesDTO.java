@@ -19,12 +19,4 @@ public class CommentsQueriesDTO {
     private int limit;
     private boolean desc;
     private String orderBy;
-
-    public void setCopilot_id(Long copilotId) {
-        this.copilotId = copilotId;
-    }
-
-    public void setOrder_by(String orderBy) {
-        this.orderBy = orderBy;
-    }
 }
