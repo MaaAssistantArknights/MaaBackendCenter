@@ -1,5 +1,7 @@
 package plus.maa.backend.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.v3.core.jackson.ModelResolver;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.ExternalDocumentation;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -87,5 +89,10 @@ public class SpringDocConfig {
                 .license(new License()
                         .name("GNU Affero General Public License v3.0")
                         .url("https://www.gnu.org/licenses/agpl-3.0.html"));
+    }
+
+    @Bean
+    public ModelResolver modelResolver(ObjectMapper objectMapper) {
+        return new ModelResolver(objectMapper);
     }
 }
