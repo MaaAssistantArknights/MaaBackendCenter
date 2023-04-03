@@ -3,8 +3,10 @@ spring:
     active: template
   jackson:
     property-naming-strategy: SNAKE_CASE
-    date-format: yyyy-MM-dd HH:mm:ss
-    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss z
+    time-zone: UTC
+    deserialization:
+      FAIL_ON_UNKNOWN_PROPERTIES: false
   data:
     mongodb:
       # 打开自动索引生成（否则数据库内唯一索引不生效

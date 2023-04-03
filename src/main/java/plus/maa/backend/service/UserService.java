@@ -29,7 +29,6 @@ import plus.maa.backend.repository.UserRepository;
 import plus.maa.backend.repository.entity.MaaUser;
 import plus.maa.backend.service.model.LoginUser;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -96,8 +95,8 @@ public class UserService {
 
         MaaLoginRsp rsp = new MaaLoginRsp();
         rsp.setToken(jwt);
-        rsp.setValidAfter(LocalDateTime.now().toString());
-        rsp.setValidBefore(newTime.toLocalDateTime().toString());
+        rsp.setValidAfter(now);
+        rsp.setValidBefore(newTime);
         rsp.setRefreshToken("");
         rsp.setRefreshTokenValidBefore("");
         rsp.setUserInfo(MaaUserConverter.INSTANCE.convert(loginUser.getMaaUser()));

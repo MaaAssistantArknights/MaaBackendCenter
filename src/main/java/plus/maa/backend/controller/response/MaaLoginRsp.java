@@ -4,13 +4,15 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class MaaLoginRsp {
     private String token;
-    private String validBefore;
-    private String validAfter;
+    private Date validBefore;
+    private Date validAfter;
     private String refreshToken;
     private String refreshTokenValidBefore;
     private MaaUserInfo userInfo;
