@@ -13,9 +13,6 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import plus.maa.backend.common.MaaStatusCode;
@@ -27,7 +24,7 @@ import plus.maa.backend.controller.response.MaaUserInfo;
 import plus.maa.backend.repository.RedisCache;
 import plus.maa.backend.repository.UserRepository;
 import plus.maa.backend.repository.entity.MaaUser;
-import plus.maa.backend.service.model.LoginUser;
+import plus.maa.backend.service.session.UserSessionService;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -41,7 +38,6 @@ import java.util.Objects;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-    private final AuthenticationManager authenticationManager;
     private final RedisCache redisCache;
     private final UserRepository userRepository;
     private final EmailService emailService;
@@ -63,17 +59,11 @@ public class UserService {
      * @return 携带了token的封装类
      */
     public MaaLoginRsp login(LoginDTO loginDTO) {
-        // 使用 AuthenticationManager 中的 authenticate 进行用户认证
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                loginDTO.getEmail(), loginDTO.getPassword());
-        Authentication authenticate = authenticationManager.authenticate(authenticationToken);
-        // 若认证失败，给出相应提示
-        if (Objects.isNull(authenticate)) {
-            throw new MaaResultException("登陆失败");
-        }
-        // 若认证成功，使用UserID生成一个JwtToken,Token存入ResponseResult返回
-        LoginUser loginUser = (LoginUser) authenticate.getPrincipal();
-        String userId = String.valueOf(loginUser.getMaaUser().getUserId());
+        var user = userRepository.findByEmail(loginDTO.getEmail());
+        if (user == null || !passwordEncoder.matches(loginDTO.getPassword(), user.getPassword()))
+            throw new MaaResultException(401, "登陆失败");
+
+        String userId = String.valueOf(user.getUserId());
         String token = RandomStringUtils.random(16, true, true);
         DateTime now = DateTime.now();
         DateTime newTime = now.offsetNew(DateField.SECOND, expire);
@@ -88,8 +78,11 @@ public class UserService {
             }
         };
 
-        loginUser.setToken(token);
-        userSessionService.setUser(loginUser);
+        userSessionService.setSession(user.getUserId(), (session) -> {
+            session.setMaaUser(user);
+            session.setPermissions(userDetailService.collectPermissionsFor(user));
+            session.setToken(token);
+        });
 
         String jwt = JWTUtil.createToken(payload, secret.getBytes());
 
@@ -99,7 +92,7 @@ public class UserService {
         rsp.setValidBefore(newTime);
         rsp.setRefreshToken("");
         rsp.setRefreshTokenValidBefore("");
-        rsp.setUserInfo(MaaUserConverter.INSTANCE.convert(loginUser.getMaaUser()));
+        rsp.setUserInfo(MaaUserConverter.INSTANCE.convert(user));
 
         return rsp;
     }
@@ -118,14 +111,10 @@ public class UserService {
         maaUser.setPassword(passwordEncoder.encode(rawPassword));
         userRepository.save(maaUser);
 
-        // 更新 session
-        var loginUser = userSessionService.getUser(userId);
-        if (loginUser == null) return;
-        loginUser.setMaaUser(maaUser);
-        // 更新 token
-        String newJwtToken = RandomStringUtils.random(16, true, true);
-        loginUser.setToken(newJwtToken);
-        userSessionService.setUser(loginUser);
+        userSessionService.updateSessionIfPresent(userId, (session) -> {
+            session.setMaaUser(maaUser);
+            session.setToken(RandomStringUtils.random(16, true, true));
+        });
         // TODO 更新jwt-token并重新签发jwt, 通知客户端更新jwt
 
     }
@@ -169,10 +158,9 @@ public class UserService {
             maaUser.setStatus(1);
             userRepository.save(maaUser);
 
-            var loginUser = userSessionService.getUser(maaUser.getUserId());
-            if (loginUser == null) return;
-            loginUser.setMaaUser(maaUser);
-            userSessionService.setUser(loginUser);
+            userSessionService.updateSessionIfPresent(maaUser.getUserId(), (session) -> {
+                session.setMaaUser(maaUser);
+            });
         });
     }
 
@@ -187,10 +175,9 @@ public class UserService {
             maaUser.updateAttribute(updateDTO);
             userRepository.save(maaUser);
 
-            var loginUser = userSessionService.getUser(maaUser.getUserId());
-            if (loginUser == null) return;
-            loginUser.setMaaUser(maaUser);
-            userSessionService.setUser(loginUser);
+            userSessionService.updateSessionIfPresent(maaUser.getUserId(), (s) -> {
+                s.setMaaUser(maaUser);
+            });
         });
     }
 
@@ -268,12 +255,12 @@ public class UserService {
      * @param user 所依赖的数据库用户
      */
     private void updateLoginUserPermissions(MaaUser user) {
-        var loginUser = userSessionService.getUser(user.getUserId());
+        var loginUser = userSessionService.getSession(user.getUserId());
         if (loginUser == null) return;
 
-        loginUser.setMaaUser(user);
-        loginUser.setPermissions(userDetailService.collectPermissionsFor(user));
-        userSessionService.setUser(loginUser);
+        userSessionService.updateSessionIfPresent(user.getUserId(), (s) -> {
+            s.setPermissions(userDetailService.collectPermissionsFor(user));
+        });
     }
 
 }

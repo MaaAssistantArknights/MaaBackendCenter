@@ -18,7 +18,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import plus.maa.backend.config.external.MaaCopilotProperties;
-import plus.maa.backend.service.UserSessionService;
+import plus.maa.backend.service.session.UserSessionService;
 import plus.maa.backend.service.model.LoginUser;
 
 import java.io.IOException;
@@ -79,10 +79,10 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
 
     @NotNull
     private LoginUser retrieveAndValidateUser(JWT jwt) throws AuthenticationException {
-        var user = userSessionService.getUser(jwt.getPayload("userId").toString());
-        if (user == null) throw new UsernameNotFoundException("user not found");
+        var session = userSessionService.getSession(jwt.getPayload("userId").toString());
+        if (session == null) throw new UsernameNotFoundException("user not found");
         var jwtToken = jwt.getPayload("token").toString();
-        if (!Objects.equals(user.getToken(), jwtToken)) throw new BadCredentialsException("invalid token");
-        return user;
+        if (!Objects.equals(session.getToken(), jwtToken)) throw new BadCredentialsException("invalid token");
+        return new LoginUser(session.getMaaUser(), session.getPermissions());
     }
 }
