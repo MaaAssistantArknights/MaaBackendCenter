@@ -1,6 +1,5 @@
 package plus.maa.backend.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -20,8 +19,6 @@ import plus.maa.backend.controller.response.CommentsAreaInfo;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.service.CommentsAreaService;
 
-import java.util.Map;
-
 /**
  * @author LoMu
  * Date  2023-02-17 14:56
@@ -32,19 +29,17 @@ import java.util.Map;
 @Tag(name = "CommentArea", description = "评论区管理接口")
 @RequestMapping("/comments")
 public class CommentsAreaController {
-
     private final CommentsAreaService commentsAreaService;
-    private final ObjectMapper mapper;
+    private final AuthenticationHelper authHelper;
 
     @PostMapping("/add")
     @Operation(summary = "发送评论")
     @ApiResponse(description = "发送评论结果")
     @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
     public MaaResult<String> sendComments(
-            @Parameter(hidden = true) AuthenticationHelper authenticationHelper,
             @Parameter(description = "评论") @Valid @RequestBody CommentsAddDTO comments
     ) {
-        commentsAreaService.addComments(authenticationHelper.requireUserId(), comments);
+        commentsAreaService.addComments(authHelper.requireUserId(), comments);
         return MaaResult.success("评论成功");
     }
 
@@ -52,10 +47,19 @@ public class CommentsAreaController {
     @Operation(summary = "分页查询评论")
     @ApiResponse(description = "评论区信息")
     public MaaResult<CommentsAreaInfo> queriesCommentsArea(
-            @Parameter(description = "评论区") CommentsQueriesDTO commentsQueriesDTO,
-            @Parameter(hidden = true) @RequestParam Map<String, Object> params
+            @RequestParam(name = "copilot_id") Long copilotId,
+            @RequestParam(name = "page", required = false, defaultValue = "0") int page,
+            @RequestParam(name = "limit", required = false, defaultValue = "10") int limit,
+            @RequestParam(name = "desc", required = false, defaultValue = "true") boolean desc,
+            @RequestParam(name = "order_by", required = false) String orderBy
     ) {
-        var parsed = mapper.convertValue(params, CommentsQueriesDTO.class);
+        var parsed = new CommentsQueriesDTO(
+                copilotId,
+                page,
+                limit,
+                desc,
+                orderBy
+        );
         return MaaResult.success(commentsAreaService.queriesCommentsArea(parsed));
     }
 
@@ -64,10 +68,9 @@ public class CommentsAreaController {
     @ApiResponse(description = "评论删除结果")
     @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
     public MaaResult<String> deleteComments(
-            @Parameter(hidden = true) AuthenticationHelper helper,
             @Parameter(description = "评论删除对象") @Valid @RequestBody CommentsDeleteDTO comments
     ) {
-        commentsAreaService.deleteComments(helper.requireUserId(), comments.getCommentId());
+        commentsAreaService.deleteComments(authHelper.requireUserId(), comments.getCommentId());
         return MaaResult.success("评论已删除");
     }
 
@@ -77,10 +80,9 @@ public class CommentsAreaController {
     @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
     @PostMapping("/rating")
     public MaaResult<String> ratesComments(
-            @Parameter(hidden = true) AuthenticationHelper helper,
             @Parameter(description = "评论点赞对象") @Valid @RequestBody CommentsRatingDTO commentsRatingDTO
     ) {
-        commentsAreaService.rates(helper.requireUserId(), commentsRatingDTO);
+        commentsAreaService.rates(authHelper.requireUserId(), commentsRatingDTO);
         return MaaResult.success("成功");
     }
 }

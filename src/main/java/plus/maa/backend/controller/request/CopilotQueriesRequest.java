@@ -1,14 +1,15 @@
 package plus.maa.backend.controller.request;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 /**
  * @author LoMu
  * Date  2022-12-26 2:48
  */
+@AllArgsConstructor
 @Data
 public class CopilotQueriesRequest {
-    private String id;
     private int page;
     private int limit;
     private String levelKeyword;

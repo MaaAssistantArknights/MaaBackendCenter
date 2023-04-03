@@ -50,10 +50,11 @@ public class SpringDocConfig {
                 .components(new Components()
                         .addSecuritySchemes(SECURITY_SCHEME_NAME,
                                 new SecurityScheme()
-                                        .type(SecurityScheme.Type.APIKEY)
+                                        .type(SecurityScheme.Type.HTTP)
+                                        .scheme("bearer")
                                         .in(SecurityScheme.In.HEADER)
                                         .name(securitySchemeHeader)
-                                        .description("JWT Authorization header using the Bearer scheme. Example: \"%s: Bearer {token}\"".formatted(securitySchemeHeader))
+                                        .description("JWT Authorization header using the Bearer scheme. Raw head example: \"%s: Bearer {token}\"".formatted(securitySchemeHeader))
                         ));
     }
 
