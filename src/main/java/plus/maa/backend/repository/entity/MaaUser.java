@@ -12,6 +12,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import plus.maa.backend.controller.request.UserInfoUpdateDTO;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author AnselYuki
@@ -31,6 +33,7 @@ public class MaaUser implements Serializable {
     private String email;
     private String password;
     private Integer status = 0;
+    private List<String> refreshJwtIds = new ArrayList<>();
 
     public void updateAttribute(UserInfoUpdateDTO updateDTO) {
         String userName = updateDTO.getUserName();

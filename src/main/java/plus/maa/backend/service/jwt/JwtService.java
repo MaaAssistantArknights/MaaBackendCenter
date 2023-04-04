@@ -70,16 +70,16 @@ public class JwtService {
     }
 
     /**
-     * 产生新的 RefreshToken. 新的 token 除了签发和生效时间不同外，其余属性均继承自原来的 token.
+     * 产生新的 RefreshToken. 新的 token 除了签发和生效时间、 id 不同外，其余属性均继承自原来的 token.
      * 一般情况下， RefreshToken 应结合数据库使用以避免陷入无法撤销的窘境
      *
      * @param old 原 token
      * @return 新的 RefreshToken
      */
     @NotNull
-    public JwtRefreshToken newRefreshToken(JwtRefreshToken old) {
+    public JwtRefreshToken newRefreshToken(JwtRefreshToken old, @Nullable String jwtId) {
         var now = DateTime.now();
-        return new JwtRefreshToken(old.getSubject(), old.getJwtId(), now, old.getExpiresAt(), now, key);
+        return new JwtRefreshToken(old.getSubject(), jwtId, now, old.getExpiresAt(), now, key);
     }
 
     /**

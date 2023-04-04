@@ -1,16 +1,18 @@
 package plus.maa.backend.service;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
-import lombok.RequiredArgsConstructor;
 import plus.maa.backend.repository.UserRepository;
 import plus.maa.backend.repository.entity.MaaUser;
 import plus.maa.backend.service.model.LoginUser;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -46,5 +48,10 @@ public class UserDetailServiceImpl implements UserDetailsService {
             permissions.add(Integer.toString(i));
         }
         return permissions;
+    }
+
+    public List<? extends GrantedAuthority> collectAuthoritiesFor(MaaUser user) {
+        return collectPermissionsFor(user).stream()
+                .map(SimpleGrantedAuthority::new).toList();
     }
 }

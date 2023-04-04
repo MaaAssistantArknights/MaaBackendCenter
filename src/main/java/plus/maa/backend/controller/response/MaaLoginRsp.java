@@ -7,13 +7,13 @@ import lombok.NoArgsConstructor;
 import java.util.Date;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
 public class MaaLoginRsp {
     private String token;
     private Date validBefore;
     private Date validAfter;
     private String refreshToken;
-    private String refreshTokenValidBefore;
+    private Date refreshTokenValidBefore;
+    private Date refreshTokenValidAfter;
     private MaaUserInfo userInfo;
 }

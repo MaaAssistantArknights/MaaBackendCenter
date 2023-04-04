@@ -1,56 +1,41 @@
 package plus.maa.backend.config.security;
 
-import cn.hutool.core.date.DateTime;
-import cn.hutool.jwt.JWT;
-import cn.hutool.jwt.JWTUtil;
-import cn.hutool.jwt.RegisteredPayload;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.CredentialsExpiredException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import plus.maa.backend.config.external.MaaCopilotProperties;
-import plus.maa.backend.service.session.UserSessionService;
-import plus.maa.backend.service.model.LoginUser;
+import plus.maa.backend.service.jwt.JwtService;
 
 import java.io.IOException;
-import java.util.Objects;
 
 /**
  * @author AnselYuki
  */
 @Component
 public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
-    public JwtAuthenticationTokenFilter(AuthenticationHelper helper, MaaCopilotProperties properties, UserSessionService userSessionService) {
+    public JwtAuthenticationTokenFilter(AuthenticationHelper helper, MaaCopilotProperties properties, JwtService jwtService) {
         this.helper = helper;
         this.properties = properties;
-        this.userSessionService = userSessionService;
+        this.jwtService = jwtService;
     }
 
     private final AuthenticationHelper helper;
     private final MaaCopilotProperties properties;
-
-    private final UserSessionService userSessionService;
+    private final JwtService jwtService;
 
     @Override
     protected void doFilterInternal(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull FilterChain filterChain) throws IOException, ServletException {
         try {
             var token = extractToken(request);
-            var jwt = parseAndValidateJwt(token);
-            var user = retrieveAndValidateUser(jwt);
-            var authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
-            helper.setAuthentication(authentication);
-        } catch (AuthenticationException ex) {
+            var authToken = jwtService.verifyAndParseAuthToken(token);
+            helper.setAuthentication(authToken);
+        } catch (Exception ex) {
             logger.trace(ex.getMessage());
-        } catch (Exception ignored) {
         } finally {
             filterChain.doFilter(request, response);
         }
@@ -62,27 +47,5 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
         var head = request.getHeader(properties.getJwt().getHeader());
         if (head == null || !head.startsWith("Bearer ")) throw new Exception("token not found");
         return head.substring(7);
-    }
-
-    @NotNull
-    private JWT parseAndValidateJwt(String token) throws BadCredentialsException {
-        if (!JWTUtil.verify(token, properties.getJwt().getSecret().getBytes()))
-            throw new BadCredentialsException("invalid token");
-        var jwt = JWTUtil.parseToken(token);
-        var now = DateTime.now();
-        var notBefore = DateTime.of((Long) jwt.getPayload(RegisteredPayload.NOT_BEFORE));
-        if (now.isBefore(notBefore)) throw new CredentialsExpiredException("haven't come into effect");
-        var expiresAt = DateTime.of((Long) jwt.getPayload(RegisteredPayload.EXPIRES_AT));
-        if (now.isAfter(expiresAt)) throw new CredentialsExpiredException("token expired");
-        return jwt;
-    }
-
-    @NotNull
-    private LoginUser retrieveAndValidateUser(JWT jwt) throws AuthenticationException {
-        var session = userSessionService.getSession(jwt.getPayload("userId").toString());
-        if (session == null) throw new UsernameNotFoundException("user not found");
-        var jwtToken = jwt.getPayload("token").toString();
-        if (!Objects.equals(session.getToken(), jwtToken)) throw new BadCredentialsException("invalid token");
-        return new LoginUser(session.getMaaUser(), session.getPermissions());
     }
 }

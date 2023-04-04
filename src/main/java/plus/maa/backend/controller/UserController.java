@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.Data;
@@ -154,10 +153,9 @@ public class UserController {
     @PostMapping("/refresh")
     @Operation(summary = "刷新token")
     @ApiResponse(description = "刷新token结果")
-    public MaaResult<Void> refresh(@Parameter(description = "刷新token请求") HttpServletRequest request) {
-        String token = request.getHeader(header);
-        userService.refreshToken(token);
-        return MaaResult.success();
+    public MaaResult<MaaLoginRsp> refresh(@Parameter(description = "刷新token请求") @RequestBody RefreshReq request) {
+        var res = userService.refreshToken(request.getRefreshToken());
+        return MaaResult.success(res);
     }
 
     /**
