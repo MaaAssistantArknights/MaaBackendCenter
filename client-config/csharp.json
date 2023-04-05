@@ -1,0 +1,7 @@
+{
+  "packageName": "Plus.Maa.Copilot.Client",
+  "packageGuid": "498c2ea0ed094879b4ea28b74fc2de25",
+  "targetFramework": "v5.0",
+  "modelPropertyNaming": "PascalCase",
+  "netCoreProjectFile": true
+}

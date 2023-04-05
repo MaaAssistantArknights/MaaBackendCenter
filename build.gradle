@@ -3,6 +3,8 @@ plugins {
     id 'org.springframework.boot' version '3.0.2'
     id "io.spring.dependency-management" version "1.1.0"
     id "io.freefair.lombok" version "6.6"
+    id "org.springdoc.openapi-gradle-plugin" version "1.6.0"
+    id 'org.hidetake.swagger.generator' version '2.19.2'
 }
 
 group 'plus.maa'
@@ -49,8 +51,40 @@ dependencies {
 
     testImplementation "org.mockito:mockito-core:3.+"
 
+    swaggerCodegen 'io.swagger.codegen.v3:swagger-codegen-cli:3.0.41'
+
 }
 
 test {
     useJUnitPlatform()
+}
+
+def swagger_output_dir = "$buildDir/docs"
+def swagger_output_name = 'swagger.json'
+
+openApi {
+    apiDocsUrl.set("http://localhost:8848/v3/api-docs")
+    outputDir.set(file(swagger_output_dir))
+    outputFileName.set(swagger_output_name)
+    waitTimeInSeconds.set(10)
+}
+
+swaggerSources {
+    def client_dir = "$buildDir/clients"
+    TsFetch {
+        inputFile = file("$swagger_output_dir/$swagger_output_name")
+        code {
+            language = 'typescript-fetch'
+            configFile = file('client-config/ts-fetch.json')
+            outputDir = file("$client_dir/ts-fetch-client")
+        }
+    }
+    CSharp{
+        inputFile = file("$swagger_output_dir/$swagger_output_name")
+        code {
+            language = 'csharp'
+            configFile = file('client-config/csharp.json')
+            outputDir = file("$client_dir/csharp-client")
+        }
+    }
 }
