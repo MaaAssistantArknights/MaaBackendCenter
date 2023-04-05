@@ -3,7 +3,7 @@ spring:
     active: template
   jackson:
     property-naming-strategy: SNAKE_CASE
-    date-format: yyyy-MM-dd HH:mm:ss z
+    date-format: yyyy-MM-dd'T'HH:mm:ss'Z'
     time-zone: UTC
     deserialization:
       FAIL_ON_UNKNOWN_PROPERTIES: false
