@@ -76,10 +76,12 @@ swaggerSources {
         code {
             language = 'typescript-fetch'
             configFile = file('client-config/ts-fetch.json')
+            templateDir = file('client-config/typescript-fetch')
+            rawOptions = ["--template-engine", "mustache"]
             outputDir = file("$client_dir/ts-fetch-client")
         }
     }
-    CSharp{
+    CSharp {
         inputFile = file("$swagger_output_dir/$swagger_output_name")
         code {
             language = 'csharp'
