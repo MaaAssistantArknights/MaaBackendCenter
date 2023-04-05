@@ -1,29 +1,23 @@
 package plus.maa.backend.service.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import plus.maa.backend.repository.entity.MaaUser;
 
 import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * @author AnselYuki
  */
-@AllArgsConstructor
 public class LoginUser implements UserDetails {
 
-    private MaaUser maaUser;
-    private List<SimpleGrantedAuthority> authorities;
+    private final MaaUser maaUser;
+    private final Collection<? extends GrantedAuthority> authorities;
 
-    public LoginUser(MaaUser maaUser, Set<String> permissions) {
+    public LoginUser(MaaUser maaUser, Collection<? extends GrantedAuthority> authorities) {
         this.maaUser = maaUser;
-        this.authorities = permissions.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
+        this.authorities = authorities;
     }
 
     @Override

@@ -1,6 +1,5 @@
 package plus.maa.backend.config.security;
 
-import jakarta.servlet.http.HttpServletRequest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.http.HttpStatus;
@@ -67,10 +66,11 @@ public class AuthenticationHelper {
      * @return 用户 id 或者 ip 地址
      */
     public @NotNull String getUserIdOrIpAddress() {
-        var attributes = ((ServletRequestAttributes) Objects.requireNonNull(RequestContextHolder.getRequestAttributes()));
-        var request = attributes.getRequest();
         var id = getUserId();
-        if (id == null) id = IpUtil.getIpAddr(request);
-        return id;
+        if (id != null) return id;
+
+        var attributes = Objects.requireNonNull(RequestContextHolder.getRequestAttributes());
+        var request = ((ServletRequestAttributes) attributes).getRequest();
+        return IpUtil.getIpAddr(request);
     }
 }
