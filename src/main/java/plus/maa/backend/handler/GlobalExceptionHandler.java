@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
@@ -120,6 +121,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     public MaaResult<String> authExceptionHandler(AuthenticationException e) {
         return MaaResult.fail(401, e.getMessage());
+    }
+
+    @ExceptionHandler(MultipartException.class)
+    public MaaResult<String> fileSizeThresholdHandler(MultipartException e) {
+        return MaaResult.fail(413, e.getMessage());
     }
 
     @ExceptionHandler(ResponseStatusException.class)

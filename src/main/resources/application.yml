@@ -1,6 +1,12 @@
 spring:
   profiles:
     active: template
+  servlet:
+    multipart:
+      #最大文件阈值
+      max-file-size: 500KB
+      #最大请求阈值
+      max-request-size: 50KB
   jackson:
     property-naming-strategy: SNAKE_CASE
     date-format: yyyy-MM-dd'T'HH:mm:ss'Z'
