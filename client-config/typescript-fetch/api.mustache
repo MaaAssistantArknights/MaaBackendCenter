@@ -8,6 +8,8 @@ import { Configuration } from "./configuration";
 
 const BASE_PATH = "{{{basePath}}}".replace(/\/+$/, "");
 
+const DATE_FORMAT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/
+
 /**
  *
  * @export
@@ -65,6 +67,17 @@ export class RequiredError extends Error {
     constructor(public field: string, msg?: string) {
         super(msg);
     }
+}
+
+function correctType(target: any): any {
+    if (typeof target === "string") {
+        if (target.match(DATE_FORMAT)) return new Date(target);
+    } else if (typeof target === "object") {
+        for (const key of Object.keys(target)) {
+            target[key] = correctType(target[key]);
+        }
+    }
+    return target
 }
 
 {{#models}}
@@ -146,11 +159,11 @@ export const {{classname}}FetchParamCreator = function (configuration?: Configur
             {{/isOAuth}}
             {{#isBearer}}
             // bearer required
-            if (configuration && configuration.accessToken) {
-                const localVarAccessTokenValue = typeof configuration.bearer === 'function'
+            if (configuration && configuration.bearer) {
+                const localBearer = typeof configuration.bearer === 'function'
                     ? configuration.bearer()
                     : configuration.bearer;
-                localVarHeaderParameter["Authorization"] = "Bearer " + localVarAccessTokenValue;
+                localVarHeaderParameter["Authorization"] = "Bearer " + localBearer;
             }
             {{/isBearer}}
 
@@ -276,7 +289,7 @@ export const {{classname}}Fp = function(configuration?: Configuration) {
             return (fetch: FetchAPI = portableFetch, basePath: string = BASE_PATH) => {
                 return fetch(basePath + localVarFetchArgs.url, localVarFetchArgs.options).then((response) => {
                     if (response.status >= 200 && response.status < 300) {
-                        return response{{#returnType}}.json(){{/returnType}};
+                        return response{{#returnType}}.json().then(correctType){{/returnType}};
                     } else {
                         throw response;
                     }
