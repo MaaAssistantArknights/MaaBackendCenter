@@ -2,27 +2,33 @@ package plus.maa.backend.controller;
 
 import com.mongodb.client.gridfs.GridFSFindIterable;
 import com.mongodb.client.gridfs.model.GridFSFile;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.gridfs.GridFsOperations;
+import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
 import plus.maa.backend.common.annotation.AccessLimit;
+import plus.maa.backend.config.SpringDocConfig;
 import plus.maa.backend.controller.response.MaaResult;
 
 import java.io.IOException;
 import java.io.InputStream;
-
-
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Date;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -45,8 +51,8 @@ public class FileController {
      * @return 上传成功, 数据已被接收
      */
     @AccessLimit
-    @PostMapping("/upload")
-    public MaaResult<String> uploadFile(@RequestParam MultipartFile file) {
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public MaaResult<String> uploadFile(@RequestParam(name = "file") MultipartFile file) {
         //文件小于1024Bytes不接收
         if (file.getSize() < 1024) {
             throw new MultipartException("Minimum upload size exceeded");
@@ -64,6 +70,10 @@ public class FileController {
         return MaaResult.success("上传成功,数据已被接收");
     }
 
+    @Operation(summary = "下载文件")
+    @ApiResponse(content = @Content(mediaType = "application/zip"), responseCode = "200")
+    @ApiResponse(content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE), responseCode = "400")
+    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
     @AccessLimit
     @GetMapping("/download")
     public MaaResult<Void> fileDownload(

@@ -28,6 +28,7 @@ public class SecurityConfig {
 
     private static final String[] URL_PERMIT_ALL = {
             "/",
+            "/error",
             "/version",
             "/user/activateAccount",
             "/user/password/reset_request",
