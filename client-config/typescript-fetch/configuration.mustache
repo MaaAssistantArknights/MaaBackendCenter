@@ -6,7 +6,6 @@ export interface ConfigurationParameters {
     username?: string;
     password?: string;
     accessToken?: string | ((name: string, scopes?: string[]) => string);
-    bearer?: string | (() => string);
     basePath?: string;
 }
 
@@ -32,17 +31,12 @@ export class Configuration {
      */
     password?: string;
     /**
-     * parameter for oauth2 security
+     * parameter for oauth2/bearer security, when used with bearer security, function parameters should be ignored
      * @param name security name
      * @param scopes oauth2 scope
      * @memberof Configuration
      */
     accessToken?: string | ((name: string, scopes?: string[]) => string);
-    /**
-    * parameter for bearer security, without 'Bearer ' prefix
-    * @memberof Configuration
-    */
-    bearer?: string | (() => string);
     /**
      * override base path
      * 
@@ -56,7 +50,6 @@ export class Configuration {
         this.username = param.username;
         this.password = param.password;
         this.accessToken = param.accessToken;
-        this.bearer = param.bearer;
         this.basePath = param.basePath;
     }
 }
