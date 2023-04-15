@@ -100,9 +100,9 @@ public class FileController {
         }
 
         if (StringUtils.isBlank(beLocated) || Objects.equals("after", beLocated.toLowerCase())) {
-            query = new Query(Criteria.where("uploadDate").lte(d));
-        } else {
             query = new Query(Criteria.where("uploadDate").gte(d));
+        } else {
+            query = new Query(Criteria.where("uploadDate").lte(d));
         }
         GridFSFindIterable files = gridFsOperations.find(query);
 
