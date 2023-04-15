@@ -5,6 +5,7 @@ import com.mongodb.client.gridfs.model.GridFSFile;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletResponse;
@@ -71,12 +72,14 @@ public class FileController {
     }
 
     @Operation(summary = "下载文件")
-    @ApiResponse(content = @Content(mediaType = "application/zip"), responseCode = "200")
-    @ApiResponse(content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE), responseCode = "400")
+    @ApiResponse(
+            responseCode = "200",
+            content = @Content(mediaType = "application/zip", schema = @Schema(type = "string", format = "binary"))
+    )
     @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
     @AccessLimit
     @GetMapping("/download")
-    public MaaResult<Void> fileDownload(
+    public void fileDownload(
             @Parameter(description = "日期 yyy-MM-dd") String date,
             @Parameter(description = "在日期之前或之后[before,after]") String beLocated,
             @Parameter(description = "对查询到的数据进行删除") boolean delete,
@@ -128,6 +131,5 @@ public class FileController {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return MaaResult.success(null);
     }
 }
