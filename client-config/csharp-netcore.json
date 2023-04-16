@@ -1,7 +1,8 @@
 {
-  "packageName": "Plus.Maa.Copilot.Client",
+  "packageName": "MaaCopilotClient",
+  "packageVersion": "1.0.0",
   "packageGuid": "498c2ea0ed094879b4ea28b74fc2de25",
-  "targetFramework": "v5.0",
+  "targetFramework": "net48",
   "modelPropertyNaming": "PascalCase",
   "netCoreProjectFile": true
 }

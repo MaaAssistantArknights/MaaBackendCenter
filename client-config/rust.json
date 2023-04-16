@@ -1,0 +1,6 @@
+{
+  "packageName": "maa_copilot_client",
+  "packageVersion": "1.0.0",
+  "library": "reqwest",
+  "supportMiddleware": true
+}

@@ -1,6 +1,6 @@
 {
   "npmName": "maa-copilot-client",
   "npmVersion": "1.0.0",
-  "modelPropertyNaming": "original",
+  "modelPropertyNaming": "camelCase",
   "snapshot": true
 }
