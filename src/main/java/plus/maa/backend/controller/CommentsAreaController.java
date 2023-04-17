@@ -11,11 +11,11 @@ import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.JsonSchema;
 import plus.maa.backend.config.SpringDocConfig;
 import plus.maa.backend.config.security.AuthenticationHelper;
-import plus.maa.backend.controller.request.CommentsAddDTO;
-import plus.maa.backend.controller.request.CommentsDeleteDTO;
-import plus.maa.backend.controller.request.CommentsQueriesDTO;
-import plus.maa.backend.controller.request.CommentsRatingDTO;
-import plus.maa.backend.controller.response.CommentsAreaInfo;
+import plus.maa.backend.controller.request.comments.CommentsAddDTO;
+import plus.maa.backend.controller.request.comments.CommentsDeleteDTO;
+import plus.maa.backend.controller.request.comments.CommentsQueriesDTO;
+import plus.maa.backend.controller.request.comments.CommentsRatingDTO;
+import plus.maa.backend.controller.response.comments.CommentsAreaInfo;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.service.CommentsAreaService;
 

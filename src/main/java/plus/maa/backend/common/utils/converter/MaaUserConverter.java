@@ -6,7 +6,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
-import plus.maa.backend.controller.response.MaaUserInfo;
+import plus.maa.backend.controller.response.user.MaaUserInfo;
 import plus.maa.backend.repository.entity.MaaUser;
 
 /**
@@ -14,7 +14,7 @@ import plus.maa.backend.repository.entity.MaaUser;
  * created on 2022/12/26
  */
 @Mapper(imports = {
-    Objects.class
+        Objects.class
 })
 public interface MaaUserConverter {
 

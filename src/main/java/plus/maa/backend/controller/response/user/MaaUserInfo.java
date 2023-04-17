@@ -1,4 +1,4 @@
-package plus.maa.backend.controller.response;
+package plus.maa.backend.controller.response.user;
 
 import org.springframework.beans.BeanUtils;
 
