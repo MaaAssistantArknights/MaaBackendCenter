@@ -9,8 +9,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 
+import org.hibernate.validator.constraints.Length;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,7 +20,6 @@ import plus.maa.backend.common.annotation.AccessLimit;
 import plus.maa.backend.config.SpringDocConfig;
 import plus.maa.backend.config.security.AuthenticationHelper;
 import plus.maa.backend.controller.request.file.ImageDownloadDTO;
-import plus.maa.backend.controller.request.file.ImageUploadDTO;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.service.FileService;
 
@@ -41,10 +42,13 @@ public class FileController {
      * @return 上传成功, 数据已被接收
      */
     @AccessLimit
-    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @GetMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public MaaResult<String> uploadFile(@RequestParam(name = "file") MultipartFile file,
-                                        @RequestBody @Valid ImageUploadDTO imageUploadDTO) {
-        fileService.uploadFile(file, imageUploadDTO, helper);
+                                        @RequestParam String type,
+                                        @RequestParam String version,
+                                        @RequestParam(required = false) String classification,
+                                        @RequestParam(required = false) String label) {
+        fileService.uploadFile(file, type, version, classification, label, helper);
         return MaaResult.success("上传成功,数据已被接收");
     }
 

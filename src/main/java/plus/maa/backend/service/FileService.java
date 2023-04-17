@@ -4,10 +4,10 @@ package plus.maa.backend.service;
 import com.mongodb.client.gridfs.GridFSFindIterable;
 import com.mongodb.client.gridfs.model.GridFSFile;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
-import org.springframework.cglib.beans.BeanMap;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.gridfs.GridFsOperations;
@@ -17,7 +17,6 @@ import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
 import plus.maa.backend.config.security.AuthenticationHelper;
 import plus.maa.backend.controller.request.file.ImageDownloadDTO;
-import plus.maa.backend.controller.request.file.ImageUploadDTO;
 import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.repository.RedisCache;
 
@@ -42,7 +41,12 @@ public class FileService {
     private final GridFsOperations gridFsOperations;
     private final RedisCache redisCache;
 
-    public void uploadFile(MultipartFile file, ImageUploadDTO imageUploadDTO, AuthenticationHelper helper) {
+    public void uploadFile(MultipartFile file,
+                           String type,
+                           String version,
+                           String classification,
+                           String label,
+                           AuthenticationHelper helper) {
 
         //redis持久化
         if (redisCache.getCache("NotEnable:UploadFile", String.class) != null) {
@@ -55,27 +59,24 @@ public class FileService {
         }
         Assert.notNull(file.getOriginalFilename(), "文件名不可为空");
 
-        String version;
         String antecedentVersion = null;
-        if (imageUploadDTO.getVersion().contains("-")) {
-            String[] split = imageUploadDTO.getVersion().split("-");
+        if (version.contains("-")) {
+            String[] split = version.split("-");
             version = split[0];
             antecedentVersion = split[1];
-        } else {
-            version = imageUploadDTO.getVersion();
         }
 
         Document document = new Document();
         document.put("version", version);
         document.put("antecedentVersion", antecedentVersion);
-        document.put("label", imageUploadDTO.getLabel());
-        document.put("classification", imageUploadDTO.getClassification());
-        document.put("type", imageUploadDTO.getType());
+        document.put("label", label);
+        document.put("classification", classification);
+        document.put("type", type);
         document.put("ip", helper.getUserIdOrIpAddress());
 
 
         String fileType = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf("."));
-        String fileName = "Maa-" + imageUploadDTO.getType() + UUID.randomUUID().toString().replaceAll("-", "") + fileType;
+        String fileName = "Maa-" + UUID.randomUUID().toString().replaceAll("-", "") + fileType;
 
         try {
             gridFsOperations.store(file.getInputStream(), fileName, document);
@@ -122,7 +123,7 @@ public class FileService {
         Set<Criteria> criteriaSet = new HashSet<>();
 
         //图片类型
-        criteriaSet.add(Criteria.where("type").regex(Pattern.compile(imageDownloadDTO.getClassification(), Pattern.CASE_INSENSITIVE)));
+        criteriaSet.add(Criteria.where("type").regex(Pattern.compile(imageDownloadDTO.getType(), Pattern.CASE_INSENSITIVE)));
 
         //指定下载某个类型的图片
         if (StringUtils.isNotBlank(imageDownloadDTO.getClassification())) {

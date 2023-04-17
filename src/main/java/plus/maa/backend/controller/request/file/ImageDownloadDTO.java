@@ -16,7 +16,6 @@ import java.util.List;
 @Data
 public class ImageDownloadDTO {
     @NotNull
-    @Length(min = 1, max = 188, message = "超出长度188")
     private String type;
     private String classification;
     private List<String> version;
