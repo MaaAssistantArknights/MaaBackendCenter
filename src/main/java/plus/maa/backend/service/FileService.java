@@ -77,8 +77,8 @@ public class FileService {
 
         int index = file.getOriginalFilename().lastIndexOf(".");
         String fileType = "";
-        if (index == -1){
-            fileType = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf("."));
+        if (index != -1) {
+            fileType = file.getOriginalFilename().substring(index);
         }
 
         String fileName = "Maa-" + UUID.randomUUID().toString().replaceAll("-", "") + fileType;
