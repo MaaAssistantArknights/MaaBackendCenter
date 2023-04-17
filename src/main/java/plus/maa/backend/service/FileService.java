@@ -10,6 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.gridfs.GridFsCriteria;
 import org.springframework.data.mongodb.gridfs.GridFsOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -102,7 +103,7 @@ public class FileService {
         }
 
         if (StringUtils.isBlank(beLocated) || Objects.equals("after", beLocated.toLowerCase())) {
-            query = new Query(Criteria.where("uploadDate").gte(d));
+            query = new Query(Criteria.where("metadata").gte(d));
         } else {
             query = new Query(Criteria.where("uploadDate").lte(d));
         }
@@ -122,12 +123,13 @@ public class FileService {
         Query query = new Query();
         Set<Criteria> criteriaSet = new HashSet<>();
 
+
         //图片类型
-        criteriaSet.add(Criteria.where("type").regex(Pattern.compile(imageDownloadDTO.getType(), Pattern.CASE_INSENSITIVE)));
+        criteriaSet.add(GridFsCriteria.whereMetaData("type").regex(Pattern.compile(imageDownloadDTO.getType(), Pattern.CASE_INSENSITIVE)));
 
         //指定下载某个类型的图片
         if (StringUtils.isNotBlank(imageDownloadDTO.getClassification())) {
-            criteriaSet.add(Criteria.where("classification").regex(Pattern.compile(imageDownloadDTO.getClassification(), Pattern.CASE_INSENSITIVE)));
+            criteriaSet.add(GridFsCriteria.whereMetaData("classification").regex(Pattern.compile(imageDownloadDTO.getClassification(), Pattern.CASE_INSENSITIVE)));
         }
 
         //指定版本或指定范围版本
@@ -140,19 +142,20 @@ public class FileService {
                     String[] split = version.get(0).split("-");
                     antecedentVersion = split[1];
                 }
-                criteriaSet.add(Criteria.where("version").is(version.get(0)).and("antecedentVersion").is(antecedentVersion));
+                criteriaSet.add(GridFsCriteria.whereMetaData("version").is(version.get(0)).and("antecedentVersion").is(antecedentVersion));
 
             } else if (version.size() == 2) {
-                criteriaSet.add(Criteria.where("version").gte(version.get(0)).lte(version.get(1)));
+                criteriaSet.add(GridFsCriteria.whereMetaData("version").gte(version.get(0)).lte(version.get(1)));
             }
         }
 
         if (StringUtils.isNotBlank(imageDownloadDTO.getLabel())) {
-            criteriaSet.add(Criteria.where("label").regex(Pattern.compile(imageDownloadDTO.getLabel(), Pattern.CASE_INSENSITIVE)));
+            criteriaSet.add(GridFsCriteria.whereMetaData("label").regex(Pattern.compile(imageDownloadDTO.getLabel(), Pattern.CASE_INSENSITIVE)));
         }
 
         Criteria criteria = new Criteria().andOperator(criteriaSet);
         query.addCriteria(criteria);
+
 
         GridFSFindIterable gridFSFiles = gridFsOperations.find(query);
 
