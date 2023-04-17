@@ -48,7 +48,7 @@ public class FileController {
                                         @RequestParam String version,
                                         @RequestParam(required = false) String classification,
                                         @RequestParam(required = false) String label) {
-        fileService.uploadFile(file, type, version, classification, label, helper);
+        fileService.uploadFile(file, type, version, classification, label, helper.getUserIdOrIpAddress());
         return MaaResult.success("上传成功,数据已被接收");
     }
 
@@ -83,9 +83,9 @@ public class FileController {
     }
 
     @Operation(summary = "关闭uploadfile接口")
-    @GetMapping("/close")
-    public MaaResult<String> close() {
-        return MaaResult.success(fileService.close());
+    @GetMapping("/disable")
+    public MaaResult<String> disable() {
+        return MaaResult.success(fileService.disable());
     }
 
     @Operation(summary = "开启uploadfile接口")

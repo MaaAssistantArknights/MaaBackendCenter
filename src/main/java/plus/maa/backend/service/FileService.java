@@ -47,7 +47,7 @@ public class FileService {
                            String version,
                            String classification,
                            String label,
-                           AuthenticationHelper helper) {
+                           String ip) {
 
         //redis持久化
         if (redisCache.getCache("NotEnable:UploadFile", String.class) != null) {
@@ -73,10 +73,14 @@ public class FileService {
         document.put("label", label);
         document.put("classification", classification);
         document.put("type", type);
-        document.put("ip", helper.getUserIdOrIpAddress());
+        document.put("ip", ip);
 
+        int index = file.getOriginalFilename().lastIndexOf(".");
+        String fileType = "";
+        if (index == -1){
+            fileType = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf("."));
+        }
 
-        String fileType = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf("."));
         String fileName = "Maa-" + UUID.randomUUID().toString().replaceAll("-", "") + fileType;
 
         try {
@@ -169,7 +173,7 @@ public class FileService {
 
     }
 
-    public String close() {
+    public String disable() {
         redisCache.setCache("NotEnable:UploadFile", "1", 0, TimeUnit.DAYS);
         return "已关闭";
     }
