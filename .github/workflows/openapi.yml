@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - openapi
+  workflow_dispatch:
 jobs:
   build-openapi:
     runs-on: ubuntu-latest
