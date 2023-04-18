@@ -57,7 +57,7 @@ public class SecurityConfig {
     private static final String[] URL_AUTHENTICATION_2 = {
             "/file/download/**",
             "/file/download/",
-            "/file/colse",
+            "/file/disable",
             "/file/enable"
     };
     private final AuthenticationConfiguration authenticationConfiguration;

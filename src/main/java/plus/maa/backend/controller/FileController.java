@@ -83,14 +83,20 @@ public class FileController {
     }
 
     @Operation(summary = "关闭uploadfile接口")
-    @GetMapping("/disable")
-    public MaaResult<String> disable() {
+    @PostMapping("/disable")
+    public MaaResult<String> disable(@RequestBody boolean status) {
+        if (!status) {
+            return MaaResult.fail(403, "Forbidden");
+        }
         return MaaResult.success(fileService.disable());
     }
 
     @Operation(summary = "开启uploadfile接口")
-    @GetMapping("/enable")
-    public MaaResult<String> enable() {
+    @PostMapping("/enable")
+    public MaaResult<String> enable(@RequestBody boolean status) {
+        if (!status) {
+            return MaaResult.fail(403, "Forbidden");
+        }
         return MaaResult.success(fileService.enable());
     }
 
