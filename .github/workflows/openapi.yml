@@ -1,0 +1,66 @@
+name: Build and Distribute Openapi Clients
+on:
+  push:
+    branches:
+      - openapi
+jobs:
+  build-openapi:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    services:
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+      mongo:
+        image: mongo
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Get Tag Version
+        id: get_version
+        run: |
+          export TRUNCATED_GITHUB_SHA=$(echo ${{ github.sha }} | cut -c1-7);
+          echo "VERSION_TAG=${GITHUB_REF/refs\/heads\//}-${TRUNCATED_GITHUB_SHA}" >> $GITHUB_ENV
+
+      - uses: actions/setup-java@v3
+        with:
+          distribution: zulu
+          java-version: 17
+
+#      - name: Startup Mongodb
+#        uses: supercharge/mongodb-github-action@1.8.0
+#
+#      - name: Startup Redis
+#        uses: shogo82148/actions-setup-redis@v1
+
+      - name: Remove aliyun maven mirror
+        run: |
+          sed -i '/maven {/,+2d' build.gradle
+
+      - run: chmod 777 ./gradlew
+
+      - name: Execute Gradle generateOpenApi
+        run: ./gradlew generateOpenApi
+
+      - name: Generate Clients
+        run: ./gradlew generateSwaggerCode
+
+      - name: upload openapi
+        uses: actions/upload-artifact@v3
+        with:
+          name: openapi
+          path: ./build/docs/swagger.json
+
+      - name: upload clients
+        uses: actions/upload-artifact@v3
+        with:
+          name: clients
+          path: ./build/clients/**/*
