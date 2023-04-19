@@ -18,9 +18,9 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import plus.maa.backend.common.annotation.JsonSchema;
-import plus.maa.backend.controller.request.CommentsRatingDTO;
-import plus.maa.backend.controller.request.CopilotCUDRequest;
-import plus.maa.backend.controller.request.CopilotRatingReq;
+import plus.maa.backend.controller.request.comments.CommentsRatingDTO;
+import plus.maa.backend.controller.request.copilot.CopilotCUDRequest;
+import plus.maa.backend.controller.request.copilot.CopilotRatingReq;
 import plus.maa.backend.controller.response.MaaResultException;
 
 import java.io.IOException;
@@ -84,6 +84,5 @@ public class JsonSchemaAop {
         } catch (ValidationException e) {
             throw new MaaResultException(HttpStatus.BAD_REQUEST.value(), "数据不符合规范，请前往前端作业编辑器进行操作");
         }
-
     }
 }

@@ -1,7 +1,6 @@
 package plus.maa.backend.controller;
 
-import com.mongodb.client.gridfs.GridFSFindIterable;
-import com.mongodb.client.gridfs.model.GridFSFile;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -9,29 +8,20 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.gridfs.GridFsOperations;
+
+import org.hibernate.validator.constraints.Length;
 import org.springframework.http.MediaType;
-import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
 import plus.maa.backend.common.annotation.AccessLimit;
 import plus.maa.backend.config.SpringDocConfig;
+import plus.maa.backend.config.security.AuthenticationHelper;
+import plus.maa.backend.controller.request.file.ImageDownloadDTO;
 import plus.maa.backend.controller.response.MaaResult;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
+import plus.maa.backend.service.FileService;
 
 /**
  * @author LoMu
@@ -42,8 +32,8 @@ import java.util.zip.ZipOutputStream;
 @RequestMapping("file")
 @RequiredArgsConstructor
 public class FileController {
-
-    private final GridFsOperations gridFsOperations;
+    private final FileService fileService;
+    private final AuthenticationHelper helper;
 
     /**
      * 支持匿名
@@ -52,22 +42,13 @@ public class FileController {
      * @return 上传成功, 数据已被接收
      */
     @AccessLimit
-    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public MaaResult<String> uploadFile(@RequestParam(name = "file") MultipartFile file) {
-        //文件小于1024Bytes不接收
-        if (file.getSize() < 1024) {
-            throw new MultipartException("Minimum upload size exceeded");
-        }
-        Assert.notNull(file.getOriginalFilename(), "文件名不可为空");
-
-        String fileType = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf("."));
-        String fileName = "Maa-" + UUID.randomUUID().toString().replaceAll("-", "") + fileType;
-
-        try {
-            gridFsOperations.store(file.getInputStream(), fileName);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    @GetMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public MaaResult<String> uploadFile(@RequestParam(name = "file") MultipartFile file,
+                                        @RequestParam String type,
+                                        @RequestParam String version,
+                                        @RequestParam(required = false) String classification,
+                                        @RequestParam(required = false) String label) {
+        fileService.uploadFile(file, type, version, classification, label, helper.getUserIdOrIpAddress());
         return MaaResult.success("上传成功,数据已被接收");
     }
 
@@ -79,57 +60,44 @@ public class FileController {
     @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
     @AccessLimit
     @GetMapping("/download")
-    public void fileDownload(
-            @Parameter(description = "日期 yyy-MM-dd") String date,
+    public void downloadSpecifiedDateFile(
+            @Parameter(description = "日期 yyyy-MM-dd") String date,
             @Parameter(description = "在日期之前或之后[before,after]") String beLocated,
             @Parameter(description = "对查询到的数据进行删除") boolean delete,
             HttpServletResponse response
     ) {
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-        Date d;
-        Query query;
-
-        if (StringUtils.isBlank(date)) {
-            d = new Date(System.currentTimeMillis());
-        } else {
-            try {
-                d = formatter.parse(date);
-            } catch (ParseException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        if (StringUtils.isBlank(beLocated) || Objects.equals("after", beLocated.toLowerCase())) {
-            query = new Query(Criteria.where("uploadDate").gte(d));
-        } else {
-            query = new Query(Criteria.where("uploadDate").lte(d));
-        }
-        GridFSFindIterable files = gridFsOperations.find(query);
-
-        response.addHeader("Content-Disposition", "attachment;filename=" + System.currentTimeMillis() + ".zip");
-
-        try (ZipOutputStream zipOutputStream = new ZipOutputStream(response.getOutputStream())) {
-
-            for (GridFSFile file : files) {
-
-                ZipEntry zipEntry = new ZipEntry(file.getFilename());
-                try (InputStream inputStream = gridFsOperations.getResource(file).getInputStream()) {
-                    //添加压缩文件
-                    zipOutputStream.putNextEntry(zipEntry);
-
-                    byte[] bytes = new byte[1024];
-                    int len;
-                    while ((len = inputStream.read(bytes)) != -1) {
-                        zipOutputStream.write(bytes, 0, len);
-                        zipOutputStream.flush();
-                    }
-                }
-            }
-            if (delete) {
-                gridFsOperations.delete(query);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        fileService.downloadDateFile(date, beLocated, delete, response);
     }
+
+    @Operation(summary = "下载文件")
+    @ApiResponse(
+            responseCode = "200",
+            content = @Content(mediaType = "application/zip", schema = @Schema(type = "string", format = "binary"))
+    )
+    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @PostMapping("/download")
+    public void downloadFile(@RequestBody @Valid
+                             ImageDownloadDTO imageDownloadDTO,
+                             HttpServletResponse response) {
+        fileService.downloadFile(imageDownloadDTO, response);
+    }
+
+    @Operation(summary = "关闭uploadfile接口")
+    @PostMapping("/disable")
+    public MaaResult<String> disable(@RequestBody boolean status) {
+        if (!status) {
+            return MaaResult.fail(403, "Forbidden");
+        }
+        return MaaResult.success(fileService.disable());
+    }
+
+    @Operation(summary = "开启uploadfile接口")
+    @PostMapping("/enable")
+    public MaaResult<String> enable(@RequestBody boolean status) {
+        if (!status) {
+            return MaaResult.fail(403, "Forbidden");
+        }
+        return MaaResult.success(fileService.enable());
+    }
+
 }

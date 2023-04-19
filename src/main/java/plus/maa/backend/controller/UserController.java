@@ -15,10 +15,10 @@ import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.config.SpringDocConfig;
 import plus.maa.backend.config.external.MaaCopilotProperties;
 import plus.maa.backend.config.security.AuthenticationHelper;
-import plus.maa.backend.controller.request.*;
-import plus.maa.backend.controller.response.MaaLoginRsp;
+import plus.maa.backend.controller.request.user.*;
+import plus.maa.backend.controller.response.user.MaaLoginRsp;
 import plus.maa.backend.controller.response.MaaResult;
-import plus.maa.backend.controller.response.MaaUserInfo;
+import plus.maa.backend.controller.response.user.MaaUserInfo;
 import plus.maa.backend.service.EmailService;
 import plus.maa.backend.service.UserService;
 

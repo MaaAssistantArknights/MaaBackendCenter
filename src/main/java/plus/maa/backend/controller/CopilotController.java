@@ -10,11 +10,11 @@ import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.JsonSchema;
 import plus.maa.backend.config.SpringDocConfig;
 import plus.maa.backend.config.security.AuthenticationHelper;
-import plus.maa.backend.controller.request.CopilotCUDRequest;
-import plus.maa.backend.controller.request.CopilotQueriesRequest;
-import plus.maa.backend.controller.request.CopilotRatingReq;
-import plus.maa.backend.controller.response.CopilotInfo;
-import plus.maa.backend.controller.response.CopilotPageInfo;
+import plus.maa.backend.controller.request.copilot.CopilotCUDRequest;
+import plus.maa.backend.controller.request.copilot.CopilotQueriesRequest;
+import plus.maa.backend.controller.request.copilot.CopilotRatingReq;
+import plus.maa.backend.controller.response.copilot.CopilotInfo;
+import plus.maa.backend.controller.response.copilot.CopilotPageInfo;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.service.CopilotService;
 

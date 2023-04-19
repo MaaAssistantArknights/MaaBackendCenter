@@ -1,4 +1,4 @@
-package plus.maa.backend.controller.response;
+package plus.maa.backend.controller.response.comments;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

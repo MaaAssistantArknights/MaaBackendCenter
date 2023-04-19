@@ -41,5 +41,4 @@ public class SystemController {
         return MaaResult.success(systemInfo);
     }
 
-
 }

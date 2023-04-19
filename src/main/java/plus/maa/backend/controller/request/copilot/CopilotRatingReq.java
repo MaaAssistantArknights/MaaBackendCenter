@@ -1,4 +1,4 @@
-package plus.maa.backend.controller.request;
+package plus.maa.backend.controller.request.copilot;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;

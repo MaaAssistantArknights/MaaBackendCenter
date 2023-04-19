@@ -1,4 +1,4 @@
-package plus.maa.backend.controller.response;
+package plus.maa.backend.controller.response.copilot;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;

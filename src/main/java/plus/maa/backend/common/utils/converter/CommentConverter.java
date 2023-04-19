@@ -3,8 +3,8 @@ package plus.maa.backend.common.utils.converter;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
-import plus.maa.backend.controller.response.CommentsInfo;
-import plus.maa.backend.controller.response.SubCommentsInfo;
+import plus.maa.backend.controller.response.comments.CommentsInfo;
+import plus.maa.backend.controller.response.comments.SubCommentsInfo;
 import plus.maa.backend.repository.entity.CommentsArea;
 import plus.maa.backend.repository.entity.MaaUser;
 

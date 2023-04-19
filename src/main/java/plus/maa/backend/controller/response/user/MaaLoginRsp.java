@@ -1,8 +1,7 @@
-package plus.maa.backend.controller.response;
+package plus.maa.backend.controller.response.user;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.util.Date;
 

@@ -30,7 +30,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import plus.maa.backend.common.utils.converter.ArkLevelConverter;
-import plus.maa.backend.controller.response.ArkLevelInfo;
+import plus.maa.backend.controller.response.copilot.ArkLevelInfo;
 import plus.maa.backend.repository.ArkLevelRepository;
 import plus.maa.backend.repository.GithubRepository;
 import plus.maa.backend.repository.RedisCache;

@@ -2,10 +2,9 @@ package plus.maa.backend.common.utils.converter;
 
 import org.mapstruct.*;
 import org.mapstruct.factory.Mappers;
-import plus.maa.backend.controller.request.CopilotDTO;
-import plus.maa.backend.controller.response.CopilotInfo;
+import plus.maa.backend.controller.request.copilot.CopilotDTO;
+import plus.maa.backend.controller.response.copilot.CopilotInfo;
 import plus.maa.backend.repository.entity.Copilot;
-import plus.maa.backend.repository.entity.MaaUser;
 
 import java.util.Date;
 

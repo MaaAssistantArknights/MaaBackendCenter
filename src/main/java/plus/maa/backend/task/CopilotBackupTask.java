@@ -15,7 +15,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import plus.maa.backend.config.external.CopilotBackup;
 import plus.maa.backend.config.external.MaaCopilotProperties;
-import plus.maa.backend.controller.response.ArkLevelInfo;
+import plus.maa.backend.controller.response.copilot.ArkLevelInfo;
 import plus.maa.backend.repository.CopilotRepository;
 import plus.maa.backend.repository.entity.Copilot;
 import plus.maa.backend.service.ArkLevelService;

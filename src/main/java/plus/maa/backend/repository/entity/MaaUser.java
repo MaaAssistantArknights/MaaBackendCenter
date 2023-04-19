@@ -9,7 +9,7 @@ import lombok.experimental.Accessors;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
-import plus.maa.backend.controller.request.UserInfoUpdateDTO;
+import plus.maa.backend.controller.request.user.UserInfoUpdateDTO;
 
 import java.io.Serializable;
 import java.util.ArrayList;
