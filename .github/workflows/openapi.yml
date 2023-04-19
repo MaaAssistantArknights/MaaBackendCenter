@@ -1,6 +1,10 @@
 name: Openapi and Clients
 on:
   release:
+  push:
+    branches:
+      - main
+      - dev
   workflow_dispatch:
 jobs:
   generate-openapi-and-clients:
@@ -22,12 +26,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}   # checkout the correct branch name
+          fetch-depth: 0                # fetch the whole repo history
 
-      - name: Get Tag Version
-        id: get_version
-        run: |
-          export TRUNCATED_GITHUB_SHA=$(echo ${{ github.sha }} | cut -c1-7);
-          echo "VERSION_TAG=${GITHUB_REF/refs\/heads\//}-${TRUNCATED_GITHUB_SHA}" >> $GITHUB_ENV
+      - name: Git Version
+        id: version
+        uses: codacy/git-version@2.7.1
+        with:
+          release-branch: main
+          dev-branch: dev
+          major-identifier: "breaking:"
+          minor-identifier: "feature:"
 
       - uses: actions/setup-java@v3
         with:
@@ -44,6 +54,14 @@ jobs:
         run: |
           sed -i '/maven {/,+2d' build.gradle
 
+      - name: Set versions
+        run: |
+          sed -i "s/^version.*$/version '${{ steps.version.outputs.version }}'/g" build.gradle
+          sed -i 's/"packageVersion.*,/"packageVersion": "${{ steps.version.outputs.version }}",/g' client-config/cpp.json
+          sed -i 's/"packageVersion.*,/"packageVersion": "${{ steps.version.outputs.version }}",/g' client-config/csharp-netcore.json
+          sed -i 's/"packageVersion.*,/"packageVersion": "${{ steps.version.outputs.version }}",/g' client-config/rust.json
+          sed -i 's/"npmVersion.*,/"npmVersion": "${{ steps.version.outputs.version }}",/g' client-config/ts-fetch.json
+
       - run: chmod 777 ./gradlew
 
       - name: Execute Gradle generateOpenApi
@@ -55,14 +73,8 @@ jobs:
       - name: upload openapi
         uses: actions/upload-artifact@v3
         with:
-          name: openapi
+          name: openapi-${{ steps.version.outputs.version }}
           path: ./build/docs/swagger.json
-
-      - name: upload ts client
-        uses: actions/upload-artifact@v3
-        with:
-          name: ts-client
-          path: ./build/clients/ts-fetch-client/*
 
       - name: upload cpp client
         uses: actions/upload-artifact@v3
@@ -81,3 +93,9 @@ jobs:
         with:
           name: rust-client
           path: ./build/clients/rust-client/*
+
+      - name: upload ts client
+        uses: actions/upload-artifact@v3
+        with:
+          name: ts-client
+          path: ./build/clients/ts-fetch-client/*
