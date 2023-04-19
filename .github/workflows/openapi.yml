@@ -1,11 +1,9 @@
-name: Build and Distribute Openapi Clients
+name: Openapi and Clients
 on:
-  push:
-    branches:
-      - openapi
+  release:
   workflow_dispatch:
 jobs:
-  build-openapi:
+  generate-openapi-and-clients:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -60,8 +58,26 @@ jobs:
           name: openapi
           path: ./build/docs/swagger.json
 
-      - name: upload clients
+      - name: upload ts client
         uses: actions/upload-artifact@v3
         with:
-          name: clients
-          path: ./build/clients/**/*
+          name: ts-client
+          path: ./build/clients/ts-fetch-client/*
+
+      - name: upload cpp client
+        uses: actions/upload-artifact@v3
+        with:
+          name: cpp-client
+          path: ./build/clients/cpp-client/*
+
+      - name: upload csharp client
+        uses: actions/upload-artifact@v3
+        with:
+          name: csharp-client
+          path: ./build/clients/csharp-client/*
+
+      - name: upload rust client
+        uses: actions/upload-artifact@v3
+        with:
+          name: rust-client
+          path: ./build/clients/rust-client/*
