@@ -1,0 +1,101 @@
+name: Openapi and Clients
+on:
+  release:
+  push:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+jobs:
+  generate-openapi-and-clients:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    services:
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+      mongo:
+        image: mongo
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}   # checkout the correct branch name
+          fetch-depth: 0                # fetch the whole repo history
+
+      - name: Git Version
+        id: version
+        uses: codacy/git-version@2.7.1
+        with:
+          release-branch: main
+          dev-branch: dev
+          major-identifier: "breaking:"
+          minor-identifier: "feature:"
+
+      - uses: actions/setup-java@v3
+        with:
+          distribution: zulu
+          java-version: 17
+
+#      - name: Startup Mongodb
+#        uses: supercharge/mongodb-github-action@1.8.0
+#
+#      - name: Startup Redis
+#        uses: shogo82148/actions-setup-redis@v1
+
+      - name: Remove aliyun maven mirror
+        run: |
+          sed -i '/maven {/,+2d' build.gradle
+
+      - name: Set versions
+        run: |
+          sed -i "s/^version.*$/version '${{ steps.version.outputs.version }}'/g" build.gradle
+          sed -i 's/"packageVersion.*,/"packageVersion": "${{ steps.version.outputs.version }}",/g' client-config/cpp.json
+          sed -i 's/"packageVersion.*,/"packageVersion": "${{ steps.version.outputs.version }}",/g' client-config/csharp-netcore.json
+          sed -i 's/"packageVersion.*,/"packageVersion": "${{ steps.version.outputs.version }}",/g' client-config/rust.json
+          sed -i 's/"npmVersion.*,/"npmVersion": "${{ steps.version.outputs.version }}",/g' client-config/ts-fetch.json
+
+      - run: chmod 777 ./gradlew
+
+      - name: Execute Gradle generateOpenApi
+        run: ./gradlew generateOpenApi
+
+      - name: Generate Clients
+        run: ./gradlew generateSwaggerCode
+
+      - name: upload openapi
+        uses: actions/upload-artifact@v3
+        with:
+          name: openapi-${{ steps.version.outputs.version }}
+          path: ./build/docs/swagger.json
+
+      - name: upload cpp client
+        uses: actions/upload-artifact@v3
+        with:
+          name: cpp-client
+          path: ./build/clients/cpp-client/*
+
+      - name: upload csharp client
+        uses: actions/upload-artifact@v3
+        with:
+          name: csharp-client
+          path: ./build/clients/csharp-client/*
+
+      - name: upload rust client
+        uses: actions/upload-artifact@v3
+        with:
+          name: rust-client
+          path: ./build/clients/rust-client/*
+
+      - name: upload ts client
+        uses: actions/upload-artifact@v3
+        with:
+          name: ts-client
+          path: ./build/clients/ts-fetch-client/*

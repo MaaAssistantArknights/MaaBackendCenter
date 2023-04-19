@@ -67,7 +67,7 @@ openApi {
     apiDocsUrl.set("http://localhost:8848/v3/api-docs")
     outputDir.set(file(swagger_output_dir))
     outputFileName.set(swagger_output_name)
-    waitTimeInSeconds.set(10)
+    waitTimeInSeconds.set(30)
 }
 
 swaggerSources {
