@@ -1,4 +1,4 @@
-package plus.maa.backend.controller.request.file;
+package plus.maa.backend.controller.file;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;

@@ -1,4 +1,4 @@
-package plus.maa.backend.controller;
+package plus.maa.backend.controller.file;
 
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -9,17 +9,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
-
-import org.hibernate.validator.constraints.Length;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import plus.maa.backend.common.annotation.AccessLimit;
 import plus.maa.backend.config.SpringDocConfig;
 import plus.maa.backend.config.security.AuthenticationHelper;
-import plus.maa.backend.controller.request.file.ImageDownloadDTO;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.service.FileService;
 
@@ -43,11 +39,13 @@ public class FileController {
      */
     @AccessLimit
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public MaaResult<String> uploadFile(@RequestParam(name = "file") MultipartFile file,
-                                        @RequestParam String type,
-                                        @RequestParam String version,
-                                        @RequestParam(required = false) String classification,
-                                        @RequestParam(required = false) String label) {
+    public MaaResult<String> uploadFile(
+            @RequestPart MultipartFile file,
+            @RequestPart String type,
+            @RequestPart String version,
+            @RequestPart(required = false) String classification,
+            @RequestPart(required = false) String label
+    ) {
         fileService.uploadFile(file, type, version, classification, label, helper.getUserIdOrIpAddress());
         return MaaResult.success("上传成功,数据已被接收");
     }
@@ -82,7 +80,23 @@ public class FileController {
         fileService.downloadFile(imageDownloadDTO, response);
     }
 
+    @Operation(summary = "设置上传文件功能状态")
+    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @PostMapping("/upload_ability")
+    public MaaResult<Void> setUploadAbility(@RequestBody UploadAbility request) {
+        fileService.setUploadEnabled(request.enabled);
+        return MaaResult.success();
+    }
+
+    @Operation(summary = "获取上传文件功能状态")
+    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @GetMapping("/upload_ability")
+    public MaaResult<UploadAbility> getUploadAbility() {
+        return MaaResult.success(new UploadAbility(fileService.isUploadEnabled()));
+    }
+
     @Operation(summary = "关闭uploadfile接口")
+    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
     @PostMapping("/disable")
     public MaaResult<String> disable(@RequestBody boolean status) {
         if (!status) {
@@ -92,6 +106,7 @@ public class FileController {
     }
 
     @Operation(summary = "开启uploadfile接口")
+    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
     @PostMapping("/enable")
     public MaaResult<String> enable(@RequestBody boolean status) {
         if (!status) {

@@ -4,7 +4,6 @@ package plus.maa.backend.service;
 import com.mongodb.client.gridfs.GridFSFindIterable;
 import com.mongodb.client.gridfs.model.GridFSFile;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -16,8 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
-import plus.maa.backend.config.security.AuthenticationHelper;
-import plus.maa.backend.controller.request.file.ImageDownloadDTO;
+import plus.maa.backend.controller.file.ImageDownloadDTO;
 import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.repository.RedisCache;
 
@@ -174,13 +172,30 @@ public class FileService {
     }
 
     public String disable() {
-        redisCache.setCache("NotEnable:UploadFile", "1", 0, TimeUnit.DAYS);
+        setUploadEnabled(false);
         return "已关闭";
     }
 
     public String enable() {
-        redisCache.removeCache("NotEnable:UploadFile");
+        setUploadEnabled(true);
         return "已启用";
+    }
+
+    public boolean isUploadEnabled() {
+        return redisCache.getCache("NotEnable:UploadFile", String.class) == null;
+    }
+
+    /**
+     * 设置上传功能状态
+     * @param enabled 是否开启
+     */
+    public void setUploadEnabled(boolean enabled) {
+        // Fixme: redis recovery solution should be added, or change to another storage
+        if (enabled) {
+            redisCache.removeCache("NotEnable:UploadFile");
+        } else {
+            redisCache.setCache("NotEnable:UploadFile", "1", 0, TimeUnit.DAYS);
+        }
     }
 
 
