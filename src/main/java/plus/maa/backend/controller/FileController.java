@@ -42,7 +42,7 @@ public class FileController {
      * @return 上传成功, 数据已被接收
      */
     @AccessLimit
-    @GetMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public MaaResult<String> uploadFile(@RequestParam(name = "file") MultipartFile file,
                                         @RequestParam String type,
                                         @RequestParam String version,
