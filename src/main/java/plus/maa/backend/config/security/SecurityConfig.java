@@ -58,7 +58,8 @@ public class SecurityConfig {
             "/file/download/**",
             "/file/download/",
             "/file/disable",
-            "/file/enable"
+            "/file/enable",
+            "/file/upload_ability"
     };
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter;
