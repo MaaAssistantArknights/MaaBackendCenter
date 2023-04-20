@@ -1,4 +1,4 @@
-name: Create and publish a Docker image
+name: Release jar and Docker image
 
 on:
   push:
@@ -23,6 +23,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}   # checkout the correct branch name
+          fetch-depth: 0                # fetch the whole repo history
+
+      - name: Git Version
+        id: version
+        uses: codacy/git-version@2.7.1
+        with:
+          release-branch: main
+          dev-branch: dev
+          major-identifier: "breaking:"
+          minor-identifier: "feature:"
 
       - name: Get Tag Version
         id: get_version
@@ -34,16 +46,23 @@ jobs:
         with:
           distribution: zulu
           java-version: 17
-        
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
 
       - name: Remove aliyun maven mirror
         run: |
           sed -i '/maven {/,+2d' build.gradle
 
-      - name: Execute Gradle build
-        run: ./gradlew build -x test
+      - name: Set Java version
+        run: |
+          sed -i "s/^version.*$/version '${{ steps.version.outputs.version }}'/g" build.gradle
+
+      - name: Build jar
+        run: ./gradlew bootJar
+
+      - name: Upload jar
+        uses: actions/upload-artifact@v3
+        with:
+          name: jar
+          path: ./build/libs/*
 
       - name: Log in to the Container registry
         uses: docker/login-action@v2
