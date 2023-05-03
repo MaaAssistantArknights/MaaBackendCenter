@@ -82,22 +82,22 @@ public class CommentsAreaService {
             //通知
             if (maaCopilotProperties.getMail().getNotification()) {
                 String rawUploaderId = rawCommentsArea.getUploaderId();
-                if (Objects.equals(userId, rawUploaderId)) {
-                    return;
-                }
-                userRepository.findById(rawUploaderId).ifPresent(
-                        maaUser -> {
-                            if (rawCommentsArea.isNotification()) {
-                                emailService.sendCommentNotification(
-                                        maaUser.getEmail(),
-                                        maaUser.getUserName(),
-                                        copilotId,
-                                        message,
-                                        rawCommentsArea.getMessage()
-                                );
+                if (!Objects.equals(userId, rawUploaderId)) {
+                    userRepository.findById(rawUploaderId).ifPresent(
+                            maaUser -> {
+                                if (rawCommentsArea.isNotification()) {
+                                    emailService.sendCommentNotification(
+                                            maaUser.getEmail(),
+                                            maaUser.getUserName(),
+                                            copilotId,
+                                            message,
+                                            rawCommentsArea.getMessage()
+                                    );
+                                }
                             }
-                        }
-                );
+                    );
+                }
+
             }
         }
 
