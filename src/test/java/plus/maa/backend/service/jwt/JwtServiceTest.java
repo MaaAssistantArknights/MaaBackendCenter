@@ -43,8 +43,8 @@ class JwtServiceTest {
         assert subject.equals(parsedToken.getSubject());
 
         var newToken = service.newRefreshToken(parsedToken, null);
-        assert !newToken.getIssuedAt().before(parsedToken.getIssuedAt());
-        assert !newToken.getNotBefore().before(parsedToken.getNotBefore());
+        assert !newToken.getIssuedAt().isBefore(parsedToken.getIssuedAt());
+        assert !newToken.getNotBefore().isBefore(parsedToken.getNotBefore());
         assert newToken.getExpiresAt().equals(parsedToken.getExpiresAt());
     }
 

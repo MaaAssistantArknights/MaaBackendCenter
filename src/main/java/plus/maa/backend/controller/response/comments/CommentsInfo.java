@@ -5,8 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -25,7 +25,7 @@ public class CommentsInfo {
 
     //评论内容
     private String message;
-    private Date uploadTime;
+    private LocalDateTime uploadTime;
     private int like;
     private List<SubCommentsInfo> subCommentsInfos = new ArrayList<>();
 }

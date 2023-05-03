@@ -47,11 +47,11 @@ public class CommentsAreaController {
     @Operation(summary = "分页查询评论")
     @ApiResponse(description = "评论区信息")
     public MaaResult<CommentsAreaInfo> queriesCommentsArea(
-            @RequestParam(name = "copilot_id") Long copilotId,
+            @RequestParam(name = "copilotId") Long copilotId,
             @RequestParam(name = "page", required = false, defaultValue = "0") int page,
             @RequestParam(name = "limit", required = false, defaultValue = "10") int limit,
             @RequestParam(name = "desc", required = false, defaultValue = "true") boolean desc,
-            @RequestParam(name = "order_by", required = false) String orderBy
+            @RequestParam(name = "orderBy", required = false) String orderBy
     ) {
         var parsed = new CommentsQueriesDTO(
                 copilotId,

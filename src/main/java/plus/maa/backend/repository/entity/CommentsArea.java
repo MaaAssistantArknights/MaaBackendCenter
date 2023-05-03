@@ -7,8 +7,8 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -40,11 +40,11 @@ public class CommentsArea implements Serializable {
 
     private long likeCount;
 
-    private Date uploadTime = new Date();
+    private LocalDateTime uploadTime = LocalDateTime.now();
 
     private boolean delete;
 
-    private Date deleteTime;
+    private LocalDateTime deleteTime;
 
     //其主评论id(如果自身为主评论则为null)
     private String mainCommentId;

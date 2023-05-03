@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * @author LoMu
@@ -23,7 +23,7 @@ public class SubCommentsInfo {
 
     //评论内容
     private String message;
-    private Date uploadTime;
+    private LocalDateTime uploadTime;
     private int like;
     private String fromCommentId;
     private String mainCommentId;

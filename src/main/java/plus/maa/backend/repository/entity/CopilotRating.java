@@ -1,7 +1,7 @@
 package plus.maa.backend.repository.entity;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import org.springframework.data.annotation.Id;
@@ -46,7 +46,7 @@ public class CopilotRating {
     @JsonIgnore
     private boolean delete;
     @JsonIgnore
-    private Date deleteTime;
+    private LocalDateTime deleteTime;
 
     @Data
     @NoArgsConstructor
@@ -55,5 +55,8 @@ public class CopilotRating {
         @Indexed
         private String userId;
         private String rating;
+
+        @JsonIgnore
+        private LocalDateTime rateTime;
     }
 }

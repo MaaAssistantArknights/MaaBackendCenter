@@ -7,8 +7,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.Date;
 
 /**
  * 基于 {@link JWT} 的 AuthToken. 本类实现了 {@link Authentication}， 可直接用于 Spring Security
@@ -37,9 +37,9 @@ public final class JwtAuthToken extends JwtToken implements Authentication {
     public JwtAuthToken(
             String sub,
             String jti,
-            Date iat,
-            Date exp,
-            Date nbf,
+            LocalDateTime iat,
+            LocalDateTime  exp,
+            LocalDateTime   nbf,
             Collection<? extends GrantedAuthority> authorities,
             byte[] key
     ) {

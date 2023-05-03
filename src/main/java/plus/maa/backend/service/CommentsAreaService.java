@@ -23,6 +23,7 @@ import plus.maa.backend.repository.entity.CommentsArea;
 import plus.maa.backend.repository.entity.CopilotRating;
 import plus.maa.backend.repository.entity.MaaUser;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -91,15 +92,15 @@ public class CommentsAreaService {
         CommentsArea commentsArea = findCommentsById(commentsId);
         verifyOwner(userId, commentsArea.getUploaderId());
 
-        Date date = new Date();
+        LocalDateTime now = LocalDateTime.now();
         commentsArea.setDelete(true);
-        commentsArea.setDeleteTime(date);
+        commentsArea.setDeleteTime(now);
 
         //删除所有回复
         if (StringUtils.isBlank(commentsArea.getMainCommentId())) {
             List<CommentsArea> commentsAreaList = commentsAreaRepository.findByMainCommentId(commentsArea.getId());
             commentsAreaList.forEach(ca ->
-                    ca.setDeleteTime(date)
+                    ca.setDeleteTime(now)
                             .setDelete(true)
             );
             commentsAreaRepository.saveAll(commentsAreaList);
@@ -131,7 +132,7 @@ public class CommentsAreaService {
 
         //不存在 创建一个用户评分
         if (!existRatingUser) {
-            CopilotRating.RatingUser ratingUser = new CopilotRating.RatingUser(userId, rating);
+            CopilotRating.RatingUser ratingUser = new CopilotRating.RatingUser(userId, rating, LocalDateTime.now());
             ratingUserList.add(ratingUser);
         }
 

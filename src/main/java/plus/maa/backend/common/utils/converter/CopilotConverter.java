@@ -6,7 +6,7 @@ import plus.maa.backend.controller.request.copilot.CopilotDTO;
 import plus.maa.backend.controller.response.copilot.CopilotInfo;
 import plus.maa.backend.repository.entity.Copilot;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 
 /**
@@ -46,7 +46,7 @@ public interface CopilotConverter {
     @Mapping(target = "uploadTime", source = "now")
     @Mapping(target = "firstUploadTime", source = "now")
     @Mapping(target = "uploaderId", source = "userId")
-    Copilot toCopilot(CopilotDTO copilotDto, String userId, Date now, Long copilotId, String content);
+    Copilot toCopilot(CopilotDTO copilotDto, String userId, LocalDateTime now, Long copilotId, String content);
 
     @Mapping(target = "ratingType", ignore = true)
     @Mapping(target = "ratingRatio", ignore = true)

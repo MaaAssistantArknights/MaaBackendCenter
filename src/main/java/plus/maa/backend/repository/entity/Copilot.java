@@ -2,7 +2,7 @@ package plus.maa.backend.repository.entity;
 
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.annotation.Id;
@@ -68,8 +68,8 @@ public class Copilot implements Serializable {
     //描述
     private Doc doc;
 
-    private Date firstUploadTime;
-    private Date uploadTime;
+    private LocalDateTime  firstUploadTime;
+    private LocalDateTime uploadTime;
 
     // 原始数据
     private String content;
@@ -77,7 +77,7 @@ public class Copilot implements Serializable {
     @JsonIgnore
     private boolean delete;
     @JsonIgnore
-    private Date deleteTime;
+    private LocalDateTime deleteTime;
 
     @Data
     @NoArgsConstructor

@@ -1,6 +1,6 @@
 package plus.maa.backend.service.jwt;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 public class JwtRefreshToken extends JwtToken {
     /**
@@ -22,9 +22,9 @@ public class JwtRefreshToken extends JwtToken {
     public JwtRefreshToken(
             String sub,
             String jti,
-            Date iat,
-            Date exp,
-            Date nbf,
+            LocalDateTime iat,
+            LocalDateTime  exp,
+            LocalDateTime   nbf,
             byte[] key
     ) {
         super(sub, jti, iat, exp, nbf, TYPE, key);

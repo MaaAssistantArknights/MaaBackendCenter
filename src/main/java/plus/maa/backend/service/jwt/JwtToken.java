@@ -1,13 +1,15 @@
 package plus.maa.backend.service.jwt;
 
-import cn.hutool.core.date.DateTime;
 import cn.hutool.json.JSONObject;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTUtil;
 import cn.hutool.jwt.RegisteredPayload;
 import lombok.Getter;
 
-import java.util.Date;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.util.TimeZone;
 
 /**
  * 对 {@link JWT} 的包装增强，某些 payload 被标记为 MUST
@@ -37,18 +39,18 @@ public class JwtToken {
     public JwtToken(
             String sub,
             String jti,
-            Date iat,
-            Date exp,
-            Date nbf,
+            LocalDateTime iat,
+            LocalDateTime  exp,
+            LocalDateTime   nbf,
             String typ,
             byte[] key
     ) {
         jwt = JWT.create();
         jwt.setPayload(RegisteredPayload.SUBJECT, sub);
         jwt.setPayload(RegisteredPayload.JWT_ID, jti);
-        jwt.setPayload(RegisteredPayload.ISSUED_AT, iat.getTime());
-        jwt.setPayload(RegisteredPayload.EXPIRES_AT, exp.getTime());
-        jwt.setPayload(RegisteredPayload.NOT_BEFORE, nbf.getTime());
+        jwt.setPayload(RegisteredPayload.ISSUED_AT, iat.toInstant(OffsetDateTime.now().getOffset()).toEpochMilli());
+        jwt.setPayload(RegisteredPayload.EXPIRES_AT, exp.toInstant(OffsetDateTime.now().getOffset()).toEpochMilli());
+        jwt.setPayload(RegisteredPayload.NOT_BEFORE, nbf.toInstant(OffsetDateTime.now().getOffset()).toEpochMilli());
         jwt.setPayload(CLAIM_TYPE, typ);
         jwt.setKey(key);
         payload = jwt.getPayloads();
@@ -65,18 +67,21 @@ public class JwtToken {
     }
 
 
-    public Date getIssuedAt() {
-        return DateTime.of(payload.getLong(RegisteredPayload.ISSUED_AT));
+    public LocalDateTime getIssuedAt() {
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(payload.getLong(RegisteredPayload.ISSUED_AT)),
+                TimeZone.getDefault().toZoneId());
     }
 
 
-    public Date getExpiresAt() {
-        return DateTime.of(payload.getLong(RegisteredPayload.EXPIRES_AT));
+    public LocalDateTime getExpiresAt() {
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(payload.getLong(RegisteredPayload.EXPIRES_AT)),
+                TimeZone.getDefault().toZoneId());
     }
 
 
-    public Date getNotBefore() {
-        return DateTime.of(payload.getLong(RegisteredPayload.NOT_BEFORE));
+    public LocalDateTime getNotBefore() {
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(payload.getLong(RegisteredPayload.NOT_BEFORE)),
+                TimeZone.getDefault().toZoneId());
     }
 
 
@@ -97,9 +102,9 @@ public class JwtToken {
         return jwt.sign();
     }
 
-    public void validateDate(Date moment) throws JwtExpiredException {
-        if (!moment.before(getExpiresAt())) throw new JwtExpiredException("expired");
-        if (moment.before(getNotBefore())) throw new JwtExpiredException("haven't take effect");
+    public void validateDate(LocalDateTime moment) throws JwtExpiredException {
+        if (!moment.isBefore(getExpiresAt())) throw new JwtExpiredException("expired");
+        if (moment.isBefore(getNotBefore())) throw new JwtExpiredException("haven't take effect");
     }
 
 }

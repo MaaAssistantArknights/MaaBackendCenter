@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -13,7 +13,7 @@ import java.util.Date;
 public class CopilotInfo implements Serializable {
     private Long id;
 
-    private Date uploadTime;
+    private LocalDateTime uploadTime;
     private String uploader;
     //用于前端显示的格式化后的干员信息 [干员名]::[技能]
     private int views;

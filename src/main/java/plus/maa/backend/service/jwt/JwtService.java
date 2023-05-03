@@ -1,7 +1,5 @@
 package plus.maa.backend.service.jwt;
 
-import cn.hutool.core.date.DateField;
-import cn.hutool.core.date.DateTime;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
@@ -9,6 +7,7 @@ import org.springframework.stereotype.Service;
 import plus.maa.backend.config.external.Jwt;
 import plus.maa.backend.config.external.MaaCopilotProperties;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 
 /**
@@ -34,9 +33,9 @@ public class JwtService {
      * @return JwtAuthToken
      */
     public JwtAuthToken issueAuthToken(String subject, @Nullable String jwtId, Collection<? extends GrantedAuthority> authorities) {
-        var now = DateTime.now();
-        var expiresAt = now.offsetNew(DateField.SECOND, (int) jwtProperties.getExpire());
-        return new JwtAuthToken(subject, jwtId, now, expiresAt, now, authorities, key);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expireAt = now.plusSeconds(jwtProperties.getExpire());
+        return new JwtAuthToken(subject, jwtId, now, expireAt, now, authorities, key);
     }
 
     /**
@@ -50,7 +49,7 @@ public class JwtService {
     @NotNull
     public JwtAuthToken verifyAndParseAuthToken(String authToken) throws JwtInvalidException, JwtExpiredException {
         var token = new JwtAuthToken(authToken, key);
-        token.validateDate(DateTime.now());
+        token.validateDate(LocalDateTime.now());
         token.setAuthenticated(true);
         return token;
     }
@@ -64,9 +63,9 @@ public class JwtService {
      */
     @NotNull
     public JwtRefreshToken issueRefreshToken(String subject, @Nullable String jwtId) {
-        var now = DateTime.now();
-        var expiresAt = now.offsetNew(DateField.SECOND, (int) jwtProperties.getRefreshExpire());
-        return new JwtRefreshToken(subject, jwtId, now, expiresAt, now, key);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expireAt = now.plusSeconds(jwtProperties.getRefreshExpire());
+        return new JwtRefreshToken(subject, jwtId, now, expireAt, now, key);
     }
 
     /**
@@ -78,7 +77,7 @@ public class JwtService {
      */
     @NotNull
     public JwtRefreshToken newRefreshToken(JwtRefreshToken old, @Nullable String jwtId) {
-        var now = DateTime.now();
+        LocalDateTime now = LocalDateTime.now();
         return new JwtRefreshToken(old.getSubject(), jwtId, now, old.getExpiresAt(), now, key);
     }
 
@@ -93,7 +92,7 @@ public class JwtService {
     @NotNull
     public JwtRefreshToken verifyAndParseRefreshToken(String refreshToken) throws JwtInvalidException, JwtExpiredException {
         var token = new JwtRefreshToken(refreshToken, key);
-        token.validateDate(DateTime.now());
+        token.validateDate(LocalDateTime.now());
         return token;
     }
 

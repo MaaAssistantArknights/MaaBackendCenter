@@ -38,6 +38,7 @@ import plus.maa.backend.service.model.RatingType;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -143,7 +144,7 @@ public class CopilotService {
         // 将其转换为数据库存储对象
         Copilot copilot = CopilotConverter.INSTANCE.toCopilot(
                 copilotDTO, loginUserId,
-                new Date(), copilotIncrementId.getAndIncrement(),
+                LocalDateTime.now(), copilotIncrementId.getAndIncrement(),
                 content);
         copilotRepository.insert(copilot);
         copilotRatingRepository.insert(new CopilotRating(copilot.getCopilotId()));
@@ -332,7 +333,7 @@ public class CopilotService {
         copilotRepository.findByCopilotId(id).ifPresent(copilot -> {
             CopilotDTO copilotDTO = correctCopilot(parseToCopilotDto(content));
             Assert.state(Objects.equals(copilot.getUploaderId(), loginUserId), "您无法修改不属于您的作业");
-            copilot.setUploadTime(new Date());
+            copilot.setUploadTime(LocalDateTime.now());
             CopilotConverter.INSTANCE.updateCopilotFromDto(copilotDTO, content, copilot);
             copilotRepository.save(copilot);
         });
@@ -354,7 +355,7 @@ public class CopilotService {
             CopilotRating copilotRating = new CopilotRating(request.getId());
             copilotRating.setRatingUsers(
                     List.of(
-                            new CopilotRating.RatingUser(userIdOrIpAddress, request.getRating())
+                            new CopilotRating.RatingUser(userIdOrIpAddress, request.getRating(), LocalDateTime.now())
                     )
             );
             copilotRatingRepository.insert(copilotRating);
@@ -381,6 +382,7 @@ public class CopilotService {
                 }
                 existUserId = true;
                 ratingUser.setRating(rating);
+                ratingUser.setRateTime(LocalDateTime.now());
             }
         }
 
@@ -389,7 +391,8 @@ public class CopilotService {
 
         // 不存在评分 则添加新的评分
         if (!existUserId) {
-            CopilotRating.RatingUser ratingUser = new CopilotRating.RatingUser(userIdOrIpAddress, rating);
+            CopilotRating.RatingUser ratingUser = new CopilotRating.RatingUser(userIdOrIpAddress,
+                    rating, LocalDateTime.now());
             ratingUsers.add(ratingUser);
             update.addToSet("ratingUsers", ratingUser);
             mongoTemplate.updateFirst(query, update, CopilotRating.class);
@@ -419,8 +422,9 @@ public class CopilotService {
         copilotRating.setRatingRatio(ratingLevel);
         mongoTemplate.save(copilotRating);
 
-        // TODO 计算热度 (暂时) 评分达到指定阈值 添加额外分数 使其排名更高
-        double hotScore = ratingCount > 5 ? rawRatingLevel + (likeCount - disLikeCount) + 10 : rawRatingLevel + (likeCount - disLikeCount);
+        double hotScore = ratingCount > 5 ?
+                rawRatingLevel + (likeCount - disLikeCount) + 10 :
+                rawRatingLevel + (likeCount - disLikeCount);
         // 更新热度
         copilotRepository.findByCopilotId(request.getId()).ifPresent(copilot ->
                 copilotRepository.save(copilot.setHotScore(hotScore)));
