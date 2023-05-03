@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.0.2'
+    id 'org.springframework.boot' version '3.0.6'
     id "io.spring.dependency-management" version "1.1.0"
     id "io.freefair.lombok" version "6.6"
     id "org.springdoc.openapi-gradle-plugin" version "1.6.0"
@@ -14,11 +14,14 @@ repositories {
     maven {
         url 'https://maven.aliyun.com/repository/public/'
     }
+    maven {
+        url 'https://maven.aliyun.com/repository/spring/'
+    }
     mavenCentral()
 }
 
 ext {
-    set('springCloudVersion', "2022.0.0")
+    set('springCloudVersion', "2022.0.2")
 }
 
 dependencies {
@@ -50,8 +53,6 @@ dependencies {
     implementation 'com.github.ben-manes.caffeine:caffeine:3.1.2'
     implementation 'com.github.erosb:everit-json-schema:1.14.1'
     implementation 'com.google.guava:guava:31.1-jre'
-
-    testImplementation "org.mockito:mockito-core:3.+"
 
 //    swaggerCodegen 'io.swagger.codegen.v3:swagger-codegen-cli:3.0.41'
     swaggerCodegen 'org.openapitools:openapi-generator-cli:6.5.0'

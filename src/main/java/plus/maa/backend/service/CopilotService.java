@@ -2,7 +2,9 @@ package plus.maa.backend.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -24,10 +26,10 @@ import plus.maa.backend.controller.request.copilot.CopilotCUDRequest;
 import plus.maa.backend.controller.request.copilot.CopilotDTO;
 import plus.maa.backend.controller.request.copilot.CopilotQueriesRequest;
 import plus.maa.backend.controller.request.copilot.CopilotRatingReq;
+import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.controller.response.copilot.ArkLevelInfo;
 import plus.maa.backend.controller.response.copilot.CopilotInfo;
 import plus.maa.backend.controller.response.copilot.CopilotPageInfo;
-import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.repository.*;
 import plus.maa.backend.repository.entity.CommentsArea;
 import plus.maa.backend.repository.entity.Copilot;
@@ -39,6 +41,7 @@ import plus.maa.backend.service.model.RatingType;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -398,7 +401,6 @@ public class CopilotService {
             mongoTemplate.updateFirst(query, update, CopilotRating.class);
         }
 
-
         List<CopilotRating.RatingUser> newRatingUsers = copilotRatingRepository.findByCopilotId(request.getId()).getRatingUsers();
         // 计算评分相关
         long ratingCount = newRatingUsers.stream().filter(ratingUser ->
@@ -407,10 +409,6 @@ public class CopilotService {
 
         long likeCount = newRatingUsers.stream().filter(ratingUser ->
                 Objects.equals(ratingUser.getRating(), "Like")).count();
-
-        long disLikeCount = newRatingUsers.stream().filter(ratingUser ->
-                Objects.equals(ratingUser.getRating(), "Dislike")).count();
-
 
         double rawRatingLevel = ratingCount != 0 ? (double) likeCount / ratingCount : 0;
         BigDecimal bigDecimal = new BigDecimal(rawRatingLevel);
@@ -422,13 +420,26 @@ public class CopilotService {
         copilotRating.setRatingRatio(ratingLevel);
         mongoTemplate.save(copilotRating);
 
-        double hotScore = ratingCount > 5 ?
-                rawRatingLevel + (likeCount - disLikeCount) + 10 :
-                rawRatingLevel + (likeCount - disLikeCount);
         // 更新热度
         copilotRepository.findByCopilotId(request.getId()).ifPresent(copilot ->
-                copilotRepository.save(copilot.setHotScore(hotScore)));
+                copilotRepository.save(copilot.setHotScore(getHotScore(copilot, copilotRating))));
 
+    }
+
+    public static double getHotScore(Copilot copilot, CopilotRating rating) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime lastWeek = now.minusWeeks(1);
+        LocalDateTime uploadTime = copilot.getUploadTime();
+        List<CopilotRating.RatingUser> lastWeeksRatings = rating.getRatingUsers().stream()
+                .filter(ru -> ru.getRateTime() != null &&
+                        ru.getRateTime().isAfter(lastWeek)).toList();
+        ListMultimap<String, CopilotRating.RatingUser> ratingByType =
+                Multimaps.index(lastWeeksRatings, CopilotRating.RatingUser::getRating);
+        List<CopilotRating.RatingUser> ups = ratingByType.get("Like");
+        List<CopilotRating.RatingUser> downs = ratingByType.get("Dislike");
+        double s = (double) (ups.size()) / Math.max(ups.size() + downs.size(), 1) * copilot.getViews();
+        double order = Math.log(Math.max(s, 1));
+        return order + s * uploadTime.toInstant(ZoneOffset.UTC).toEpochMilli() / 450000000000d;
     }
 
     /**
