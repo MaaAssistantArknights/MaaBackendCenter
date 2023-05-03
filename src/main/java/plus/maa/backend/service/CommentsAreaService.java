@@ -81,8 +81,11 @@ public class CommentsAreaService {
 
             //通知
             if (maaCopilotProperties.getMail().getNotification()) {
-                String uploaderId = rawCommentsArea.getUploaderId();
-                userRepository.findById(uploaderId).ifPresent(
+                String rawUploaderId = rawCommentsArea.getUploaderId();
+                if (Objects.equals(userId, rawUploaderId)) {
+                    return;
+                }
+                userRepository.findById(rawUploaderId).ifPresent(
                         maaUser -> {
                             if (rawCommentsArea.isNotification()) {
                                 emailService.sendCommentNotification(
