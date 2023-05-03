@@ -10,6 +10,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import plus.maa.backend.common.utils.converter.CommentConverter;
+import plus.maa.backend.config.external.MaaCopilotProperties;
 import plus.maa.backend.controller.request.comments.CommentsAddDTO;
 import plus.maa.backend.controller.request.comments.CommentsQueriesDTO;
 import plus.maa.backend.controller.request.comments.CommentsRatingDTO;
@@ -40,6 +41,10 @@ public class CommentsAreaService {
 
     private final UserRepository userRepository;
 
+    private final EmailService emailService;
+
+    private final MaaCopilotProperties maaCopilotProperties;
+
 
     /**
      * 评论
@@ -58,7 +63,6 @@ public class CommentsAreaService {
 
         String fromCommentsId = null;
         String mainCommentsId = null;
-
         if (StringUtils.isNoneBlank(commentsAddDTO.getFromCommentId())) {
 
             Optional<CommentsArea> commentsAreaOptional = commentsAreaRepository.findById(commentsAddDTO.getFromCommentId());
@@ -74,6 +78,24 @@ public class CommentsAreaService {
                     .isNoneBlank(rawCommentsArea.getId()) ?
                     rawCommentsArea.getId() : null;
 
+
+            //通知
+            if (maaCopilotProperties.getMail().getNotification()) {
+                String uploaderId = rawCommentsArea.getUploaderId();
+                userRepository.findById(uploaderId).ifPresent(
+                        maaUser -> {
+                            if (rawCommentsArea.isNotification()) {
+                                emailService.sendCommentNotification(
+                                        maaUser.getEmail(),
+                                        maaUser.getUserName(),
+                                        copilotId,
+                                        message,
+                                        rawCommentsArea.getMessage()
+                                );
+                            }
+                        }
+                );
+            }
         }
 
         //创建评论表
@@ -82,7 +104,8 @@ public class CommentsAreaService {
                 .setUploaderId(userId)
                 .setFromCommentId(fromCommentsId)
                 .setMainCommentId(mainCommentsId)
-                .setMessage(message);
+                .setMessage(message)
+                .setNotification(commentsArea.isNotification());
         commentsAreaRepository.insert(commentsArea);
 
     }
@@ -90,8 +113,14 @@ public class CommentsAreaService {
 
     public void deleteComments(String userId, String commentsId) {
         CommentsArea commentsArea = findCommentsById(commentsId);
-        verifyOwner(userId, commentsArea.getUploaderId());
-
+        //允许作者删除评论
+        copilotRepository.findByCopilotId(commentsArea.getCopilotId())
+                .ifPresent(copilot ->
+                        Assert.isTrue(
+                                Objects.equals(userId, copilot.getUploaderId())
+                                        || Objects.equals(userId, commentsArea.getUploaderId()),
+                                "您无法删除不属于您的评论")
+                );
         LocalDateTime now = LocalDateTime.now();
         commentsArea.setDelete(true);
         commentsArea.setDeleteTime(now);
@@ -247,11 +276,6 @@ public class CommentsAreaService {
                 .setPage(pageNumber)
                 .setTotal(count)
                 .setData(commentsInfos);
-    }
-
-
-    private void verifyOwner(String userId, String uploaderId) {
-        Assert.isTrue(Objects.equals(userId, uploaderId), "您无法删除不属于您的评论");
     }
 
 

@@ -130,4 +130,16 @@ public class EmailService {
         redisCache.setCache("UUID:" + uuid, email, expire);
     }
 
+    @Async
+    public void sendCommentNotification(String email, String userName, Long copilotId, String message, String rawMessage) {
+        if (rawMessage.length() > 5) {
+            rawMessage = rawMessage.substring(0, 5);
+        }
+        EmailBusinessObject.builder()
+                .setMailAccount(getMailAccount())
+                .setEmail(email)
+                .setTitle("Re:@[" + userName + "] 来自作业 " + copilotId + " ---> (" + rawMessage + ")")
+                .setMessage(message)
+                .sendCustomMessage();
+    }
 }

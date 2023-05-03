@@ -24,4 +24,6 @@ public class CommentsAddDTO {
     //子评论(回复评论)
     private String fromCommentId;
 
+    private boolean notification = true;
+
 }
