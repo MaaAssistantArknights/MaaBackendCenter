@@ -3,6 +3,7 @@ package plus.maa.backend.repository;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import plus.maa.backend.repository.entity.Copilot;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -12,13 +13,13 @@ import java.util.Optional;
 
 public interface CopilotRepository extends MongoRepository<Copilot, String> {
 
+    List<Copilot> findAllByDeleteIsFalse();
+
     Optional<Copilot> findFirstByOrderByCopilotIdDesc();
 
     Optional<Copilot> findByCopilotIdAndDeleteIsFalse(Long copilotId);
 
     Optional<Copilot> findByCopilotId(Long copilotId);
-
-    Optional<Copilot> findByIdAndDeleteIsFalse(String id);
 
     boolean existsCopilotsByCopilotId(Long copilotId);
 
