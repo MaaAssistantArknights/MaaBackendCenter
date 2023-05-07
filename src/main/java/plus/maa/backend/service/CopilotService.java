@@ -41,7 +41,7 @@ import plus.maa.backend.service.model.RatingType;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -430,16 +430,32 @@ public class CopilotService {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime lastWeek = now.minusWeeks(1);
         LocalDateTime uploadTime = copilot.getUploadTime();
-        List<CopilotRating.RatingUser> lastWeeksRatings = rating.getRatingUsers().stream()
-                .filter(ru -> ru.getRateTime() != null &&
-                        ru.getRateTime().isAfter(lastWeek)).toList();
+        // 基于时间的基础分
+        double base = 6d;
+        // 相比上传时间过了多少周
+        long pastedWeeks = ChronoUnit.WEEKS.between(uploadTime, now) + 1;
+        base = base / Math.log(pastedWeeks + 1);
+        // 上一周的评分列表
+        List<CopilotRating.RatingUser> lastWeeksRatings = Optional.ofNullable(rating)
+                .map(CopilotRating::getRatingUsers)
+                .map(rus -> rus.stream()
+                        .filter(ru -> ru.getRateTime() != null &&
+                                ru.getRateTime().isAfter(lastWeek)).toList()
+                ).orElse(Collections.emptyList());
         ListMultimap<String, CopilotRating.RatingUser> ratingByType =
-                Multimaps.index(lastWeeksRatings, CopilotRating.RatingUser::getRating);
-        List<CopilotRating.RatingUser> ups = ratingByType.get("Like");
-        List<CopilotRating.RatingUser> downs = ratingByType.get("Dislike");
-        double s = (double) (ups.size()) / Math.max(ups.size() + downs.size(), 1) * copilot.getViews();
+                Multimaps.index(lastWeeksRatings, cr -> cr.getRating().toLowerCase());
+        int ups = Math.max(ratingByType.get("like").size(), 1);
+        int downs = ratingByType.get("dislike").size();
+        double greatRate = (double) ups / (ups + downs);
+        if ((ups + downs) >= 5 && downs >= ups) {
+            // 将信赖就差评过多的作业打入地狱
+            base = base * greatRate;
+        }
+        // 上一周好评率 * (上一周评分数 / 10) * (浏览数 / 10) / 过去的周数
+        double s =  greatRate * (copilot.getViews() / 10d)
+                * Math.max(lastWeeksRatings.size() / 10d, 1) / pastedWeeks;
         double order = Math.log(Math.max(s, 1));
-        return order + s * uploadTime.toInstant(ZoneOffset.UTC).toEpochMilli() / 450000000000d;
+        return order + s / 1000d + base;
     }
 
     /**
