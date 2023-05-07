@@ -97,7 +97,6 @@ public class CommentsAreaService {
                             }
                     );
                 }
-
             }
         }
 
@@ -157,8 +156,12 @@ public class CommentsAreaService {
         //判断是否存在 如果已存在则修改评分
         for (CopilotRating.RatingUser ratingUser : ratingUserList) {
             if (Objects.equals(userId, ratingUser.getUserId())) {
+                if (Objects.equals(rating, ratingUser.getRating())) {
+                    return;
+                }
                 ratingUser.setRating(rating);
                 existRatingUser = true;
+                break;
             }
         }
 

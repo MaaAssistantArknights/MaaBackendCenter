@@ -383,6 +383,7 @@ public class CopilotService {
                 existUserId = true;
                 ratingUser.setRating(rating);
                 ratingUser.setRateTime(LocalDateTime.now());
+                break;
             }
         }
 
