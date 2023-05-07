@@ -44,9 +44,6 @@ public class CopilotScoreRefreshTask {
                 .collect(Collectors.toMap(CopilotRating::getCopilotId, Function.identity(), (v1, v2) -> v1));
         for (Copilot copilot : copilots) {
             CopilotRating rating = ratingById.get(copilot.getCopilotId());
-            if (rating == null) {
-                continue;
-            }
             copilot.setHotScore(CopilotService.getHotScore(copilot, rating));
             changedCopilots.add(copilot);
         }
