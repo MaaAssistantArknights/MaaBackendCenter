@@ -2,7 +2,9 @@ package plus.maa.backend.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -24,10 +26,10 @@ import plus.maa.backend.controller.request.copilot.CopilotCUDRequest;
 import plus.maa.backend.controller.request.copilot.CopilotDTO;
 import plus.maa.backend.controller.request.copilot.CopilotQueriesRequest;
 import plus.maa.backend.controller.request.copilot.CopilotRatingReq;
+import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.controller.response.copilot.ArkLevelInfo;
 import plus.maa.backend.controller.response.copilot.CopilotInfo;
 import plus.maa.backend.controller.response.copilot.CopilotPageInfo;
-import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.repository.*;
 import plus.maa.backend.repository.entity.CommentsArea;
 import plus.maa.backend.repository.entity.Copilot;
@@ -39,6 +41,7 @@ import plus.maa.backend.service.model.RatingType;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -398,7 +401,6 @@ public class CopilotService {
             mongoTemplate.updateFirst(query, update, CopilotRating.class);
         }
 
-
         List<CopilotRating.RatingUser> newRatingUsers = copilotRatingRepository.findByCopilotId(request.getId()).getRatingUsers();
         // 计算评分相关
         long ratingCount = newRatingUsers.stream().filter(ratingUser ->
@@ -407,10 +409,6 @@ public class CopilotService {
 
         long likeCount = newRatingUsers.stream().filter(ratingUser ->
                 Objects.equals(ratingUser.getRating(), "Like")).count();
-
-        long disLikeCount = newRatingUsers.stream().filter(ratingUser ->
-                Objects.equals(ratingUser.getRating(), "Dislike")).count();
-
 
         double rawRatingLevel = ratingCount != 0 ? (double) likeCount / ratingCount : 0;
         BigDecimal bigDecimal = new BigDecimal(rawRatingLevel);
@@ -422,13 +420,42 @@ public class CopilotService {
         copilotRating.setRatingRatio(ratingLevel);
         mongoTemplate.save(copilotRating);
 
-        double hotScore = ratingCount > 5 ?
-                rawRatingLevel + (likeCount - disLikeCount) + 10 :
-                rawRatingLevel + (likeCount - disLikeCount);
         // 更新热度
         copilotRepository.findByCopilotId(request.getId()).ifPresent(copilot ->
-                copilotRepository.save(copilot.setHotScore(hotScore)));
+                copilotRepository.save(copilot.setHotScore(getHotScore(copilot, copilotRating))));
 
+    }
+
+    public static double getHotScore(Copilot copilot, CopilotRating rating) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime lastWeek = now.minusWeeks(1);
+        LocalDateTime uploadTime = copilot.getUploadTime();
+        // 基于时间的基础分
+        double base = 6d;
+        // 相比上传时间过了多少周
+        long pastedWeeks = ChronoUnit.WEEKS.between(uploadTime, now) + 1;
+        base = base / Math.log(pastedWeeks + 1);
+        // 上一周的评分列表
+        List<CopilotRating.RatingUser> lastWeeksRatings = Optional.ofNullable(rating)
+                .map(CopilotRating::getRatingUsers)
+                .map(rus -> rus.stream()
+                        .filter(ru -> ru.getRateTime() != null &&
+                                ru.getRateTime().isAfter(lastWeek)).toList()
+                ).orElse(Collections.emptyList());
+        ListMultimap<String, CopilotRating.RatingUser> ratingByType =
+                Multimaps.index(lastWeeksRatings, cr -> cr.getRating().toLowerCase());
+        int ups = Math.max(ratingByType.get("like").size(), 1);
+        int downs = ratingByType.get("dislike").size();
+        double greatRate = (double) ups / (ups + downs);
+        if ((ups + downs) >= 5 && downs >= ups) {
+            // 将信赖就差评过多的作业打入地狱
+            base = base * greatRate;
+        }
+        // 上一周好评率 * (上一周评分数 / 10) * (浏览数 / 10) / 过去的周数
+        double s =  greatRate * (copilot.getViews() / 10d)
+                * Math.max(lastWeeksRatings.size() / 10d, 1) / pastedWeeks;
+        double order = Math.log(Math.max(s, 1));
+        return order + s / 1000d + base;
     }
 
     /**

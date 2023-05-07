@@ -1,26 +1,23 @@
 package plus.maa.backend.repository.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.Accessors;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
-
 /**
  * @author LoMu
- * Date  2022-12-25 17:56
+ * Date 2022-12-25 17:56
  */
 @Data
 @NoArgsConstructor
@@ -30,45 +27,42 @@ import lombok.experimental.Accessors;
 @Document("maa_copilot")
 public class Copilot implements Serializable {
     @Id
-    //作业id
+    // 作业id
     private String id;
-    //自增数字ID
+    // 自增数字ID
     @Indexed(unique = true)
     private Long copilotId;
-    //关卡名
+    // 关卡名
     @Indexed
     private String stageName;
 
-
-    //上传者id
+    // 上传者id
     private String uploaderId;
 
-    //查看次数
+    // 查看次数
     private Long views = 0L;
 
-    //热度
+    // 热度
     private double hotScore;
 
-
-    //难度
+    // 难度
     private int difficulty;
 
-    //版本号(文档中说明:最低要求 maa 版本号，必选。保留字段)
+    // 版本号(文档中说明:最低要求 maa 版本号，必选。保留字段)
 
     private String minimumRequired;
 
-
-    //指定干员
+    // 指定干员
     private List<Operators> opers;
-    //群组
+    // 群组
     private List<Groups> groups;
     // 战斗中的操作
     private List<Action> actions;
 
-    //描述
+    // 描述
     private Doc doc;
 
-    private LocalDateTime  firstUploadTime;
+    private LocalDateTime firstUploadTime;
     private LocalDateTime uploadTime;
 
     // 原始数据
@@ -86,11 +80,10 @@ public class Copilot implements Serializable {
     public static class OperationGroup implements Serializable {
         // 干员名
         private String name;
-        //技能序号。可选，默认 1
+        // 技能序号。可选，默认 1
         private int skill = 1;
         // 技能用法。可选，默认 0
         private int skillUsage;
-
 
     }
 
@@ -101,12 +94,11 @@ public class Copilot implements Serializable {
     public static class Operators implements Serializable {
         // 干员名
         private String name;
-        //技能序号。可选，默认 1
+        // 技能序号。可选，默认 1
         private int skill = 1;
         // 技能用法。可选，默认 0
         private int skillUsage;
         private Requirements requirements = new Requirements();
-
 
         @Data
         @NoArgsConstructor
@@ -141,7 +133,6 @@ public class Copilot implements Serializable {
         private List<String> operators;
     }
 
-
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -152,7 +143,7 @@ public class Copilot implements Serializable {
         private int kills;
         private int costs;
         private int costChanges;
-        //默认 -1
+        // 默认 -1
         private int cooling = -1;
 
         private String name;
@@ -163,17 +154,16 @@ public class Copilot implements Serializable {
         private String direction = "None";
         // 修改技能用法。当 type 为 "技能用法" 时必选
         private int skillUsage;
-        //前置延时
+        // 前置延时
         private int preDelay;
-        //后置延时
+        // 后置延时
         private int postDelay;
-        //maa:保留字段，暂未实现
+        // maa:保留字段，暂未实现
         private long timeout;
 
-        //描述
+        // 描述
         private String doc = "";
         private String docColor = "Gray";
-
 
     }
 
