@@ -67,31 +67,31 @@ public class CommentsAreaService {
 
             Optional<CommentsArea> commentsAreaOptional = commentsAreaRepository.findById(commentsAddDTO.getFromCommentId());
             Assert.isTrue(commentsAreaOptional.isPresent(), "回复的评论不存在");
-            CommentsArea rawCommentsArea = commentsAreaOptional.get();
+            CommentsArea replyCommentsArea = commentsAreaOptional.get();
 
             //判断其回复的评论是主评论 还是子评论
             mainCommentsId = StringUtils
-                    .isNoneBlank(rawCommentsArea.getMainCommentId()) ?
-                    rawCommentsArea.getMainCommentId() : rawCommentsArea.getId();
+                    .isNoneBlank(replyCommentsArea.getMainCommentId()) ?
+                    replyCommentsArea.getMainCommentId() : replyCommentsArea.getId();
 
             fromCommentsId = StringUtils
-                    .isNoneBlank(rawCommentsArea.getId()) ?
-                    rawCommentsArea.getId() : null;
+                    .isNoneBlank(replyCommentsArea.getId()) ?
+                    replyCommentsArea.getId() : null;
 
 
             //通知
             if (maaCopilotProperties.getMail().getNotification()) {
-                String rawUploaderId = rawCommentsArea.getUploaderId();
-                if (!Objects.equals(userId, rawUploaderId)) {
-                    userRepository.findById(rawUploaderId).ifPresent(
+                String replayUploaderId = replyCommentsArea.getUploaderId();
+                if (!Objects.equals(userId, replayUploaderId)) {
+                    userRepository.findById(replayUploaderId).ifPresent(
                             maaUser -> {
-                                if (rawCommentsArea.isNotification()) {
+                                if (replyCommentsArea.isNotification()) {
                                     emailService.sendCommentNotification(
                                             maaUser.getEmail(),
                                             maaUser.getUserName(),
                                             copilotId,
                                             message,
-                                            rawCommentsArea.getMessage()
+                                            replyCommentsArea.getMessage()
                                     );
                                 }
                             }

@@ -131,14 +131,14 @@ public class EmailService {
     }
 
     @Async
-    public void sendCommentNotification(String email, String userName, Long copilotId, String message, String rawMessage) {
-        if (rawMessage.length() > 5) {
-            rawMessage = rawMessage.substring(0, 5);
+    public void sendCommentNotification(String email, String userName, Long copilotId, String message, String replyMessage) {
+        if (replyMessage.length() > 5) {
+            replyMessage = replyMessage.substring(0, 5);
         }
         EmailBusinessObject.builder()
                 .setMailAccount(getMailAccount())
                 .setEmail(email)
-                .setTitle("Re:@[" + userName + "] 来自作业 " + copilotId + " ---> (" + rawMessage + ")")
+                .setTitle("Reply:@[" + userName + "] 来自作业 " + copilotId + " ---> (" + replyMessage + ")")
                 .setMessage(message)
                 .sendCustomMessage();
     }
