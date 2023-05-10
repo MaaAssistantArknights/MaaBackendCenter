@@ -10,6 +10,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import plus.maa.backend.common.utils.converter.CommentConverter;
+import plus.maa.backend.config.external.MaaCopilotProperties;
 import plus.maa.backend.controller.request.comments.CommentsAddDTO;
 import plus.maa.backend.controller.request.comments.CommentsQueriesDTO;
 import plus.maa.backend.controller.request.comments.CommentsRatingDTO;
@@ -40,6 +41,10 @@ public class CommentsAreaService {
 
     private final UserRepository userRepository;
 
+    private final EmailService emailService;
+
+    private final MaaCopilotProperties maaCopilotProperties;
+
 
     /**
      * 评论
@@ -58,22 +63,41 @@ public class CommentsAreaService {
 
         String fromCommentsId = null;
         String mainCommentsId = null;
-
         if (StringUtils.isNoneBlank(commentsAddDTO.getFromCommentId())) {
 
             Optional<CommentsArea> commentsAreaOptional = commentsAreaRepository.findById(commentsAddDTO.getFromCommentId());
             Assert.isTrue(commentsAreaOptional.isPresent(), "回复的评论不存在");
-            CommentsArea rawCommentsArea = commentsAreaOptional.get();
+            CommentsArea replyCommentsArea = commentsAreaOptional.get();
 
             //判断其回复的评论是主评论 还是子评论
             mainCommentsId = StringUtils
-                    .isNoneBlank(rawCommentsArea.getMainCommentId()) ?
-                    rawCommentsArea.getMainCommentId() : rawCommentsArea.getId();
+                    .isNoneBlank(replyCommentsArea.getMainCommentId()) ?
+                    replyCommentsArea.getMainCommentId() : replyCommentsArea.getId();
 
             fromCommentsId = StringUtils
-                    .isNoneBlank(rawCommentsArea.getId()) ?
-                    rawCommentsArea.getId() : null;
+                    .isNoneBlank(replyCommentsArea.getId()) ?
+                    replyCommentsArea.getId() : null;
 
+
+            //通知
+            if (maaCopilotProperties.getMail().getNotification()) {
+                String replayUploaderId = replyCommentsArea.getUploaderId();
+                if (!Objects.equals(userId, replayUploaderId)) {
+                    userRepository.findById(replayUploaderId).ifPresent(
+                            maaUser -> {
+                                if (replyCommentsArea.isNotification()) {
+                                    emailService.sendCommentNotification(
+                                            maaUser.getEmail(),
+                                            maaUser.getUserName(),
+                                            copilotId,
+                                            message,
+                                            replyCommentsArea.getMessage()
+                                    );
+                                }
+                            }
+                    );
+                }
+            }
         }
 
         //创建评论表
@@ -82,7 +106,8 @@ public class CommentsAreaService {
                 .setUploaderId(userId)
                 .setFromCommentId(fromCommentsId)
                 .setMainCommentId(mainCommentsId)
-                .setMessage(message);
+                .setMessage(message)
+                .setNotification(commentsArea.isNotification());
         commentsAreaRepository.insert(commentsArea);
 
     }
@@ -90,8 +115,14 @@ public class CommentsAreaService {
 
     public void deleteComments(String userId, String commentsId) {
         CommentsArea commentsArea = findCommentsById(commentsId);
-        verifyOwner(userId, commentsArea.getUploaderId());
-
+        //允许作者删除评论
+        copilotRepository.findByCopilotId(commentsArea.getCopilotId())
+                .ifPresent(copilot ->
+                        Assert.isTrue(
+                                Objects.equals(userId, copilot.getUploaderId())
+                                        || Objects.equals(userId, commentsArea.getUploaderId()),
+                                "您无法删除不属于您的评论")
+                );
         LocalDateTime now = LocalDateTime.now();
         commentsArea.setDelete(true);
         commentsArea.setDeleteTime(now);
@@ -125,8 +156,12 @@ public class CommentsAreaService {
         //判断是否存在 如果已存在则修改评分
         for (CopilotRating.RatingUser ratingUser : ratingUserList) {
             if (Objects.equals(userId, ratingUser.getUserId())) {
+                if (Objects.equals(rating, ratingUser.getRating())) {
+                    return;
+                }
                 ratingUser.setRating(rating);
                 existRatingUser = true;
+                break;
             }
         }
 
@@ -247,11 +282,6 @@ public class CommentsAreaService {
                 .setPage(pageNumber)
                 .setTotal(count)
                 .setData(commentsInfos);
-    }
-
-
-    private void verifyOwner(String userId, String uploaderId) {
-        Assert.isTrue(Objects.equals(userId, uploaderId), "您无法删除不属于您的评论");
     }
 
 

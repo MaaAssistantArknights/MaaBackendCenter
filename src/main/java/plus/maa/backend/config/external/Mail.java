@@ -15,4 +15,5 @@ public class Mail {
     private String pass;
     private Boolean starttls;
     private Boolean ssl;
+    private Boolean notification;
 }

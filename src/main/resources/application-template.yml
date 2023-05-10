@@ -57,6 +57,8 @@ maa-copilot:
     pass: 123456789
     starttls: true
     ssl: false
+    #邮件通知
+    notification: true
 
 
 

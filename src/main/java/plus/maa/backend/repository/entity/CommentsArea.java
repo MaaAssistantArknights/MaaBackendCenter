@@ -49,6 +49,9 @@ public class CommentsArea implements Serializable {
     //其主评论id(如果自身为主评论则为null)
     private String mainCommentId;
 
+    //邮件通知
+    private boolean notification;
+
 }
 
 
