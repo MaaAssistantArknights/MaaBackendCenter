@@ -19,4 +19,5 @@ public class CommentsQueriesDTO {
     private int limit;
     private boolean desc;
     private String orderBy;
+    private String justSeeId;
 }

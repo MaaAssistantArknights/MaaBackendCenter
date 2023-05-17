@@ -68,7 +68,7 @@ public class Copilot implements Serializable {
     //描述
     private Doc doc;
 
-    private LocalDateTime  firstUploadTime;
+    private LocalDateTime firstUploadTime;
     private LocalDateTime uploadTime;
 
     // 原始数据
@@ -78,6 +78,8 @@ public class Copilot implements Serializable {
     private boolean delete;
     @JsonIgnore
     private LocalDateTime deleteTime;
+    @JsonIgnore
+    private Boolean notification;
 
     @Data
     @NoArgsConstructor

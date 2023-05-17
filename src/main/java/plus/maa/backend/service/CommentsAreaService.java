@@ -10,7 +10,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import plus.maa.backend.common.utils.converter.CommentConverter;
-import plus.maa.backend.config.external.MaaCopilotProperties;
 import plus.maa.backend.controller.request.comments.CommentsAddDTO;
 import plus.maa.backend.controller.request.comments.CommentsQueriesDTO;
 import plus.maa.backend.controller.request.comments.CommentsRatingDTO;
@@ -21,10 +20,13 @@ import plus.maa.backend.repository.CommentsAreaRepository;
 import plus.maa.backend.repository.CopilotRepository;
 import plus.maa.backend.repository.UserRepository;
 import plus.maa.backend.repository.entity.CommentsArea;
+import plus.maa.backend.repository.entity.Copilot;
 import plus.maa.backend.repository.entity.CopilotRating;
 import plus.maa.backend.repository.entity.MaaUser;
+import plus.maa.backend.service.model.CommentNotification;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -43,8 +45,6 @@ public class CommentsAreaService {
 
     private final EmailService emailService;
 
-    private final MaaCopilotProperties maaCopilotProperties;
-
 
     /**
      * 评论
@@ -56,59 +56,77 @@ public class CommentsAreaService {
     public void addComments(String userId, CommentsAddDTO commentsAddDTO) {
         long copilotId = Long.parseLong(commentsAddDTO.getCopilotId());
         String message = commentsAddDTO.getMessage();
-
+        Optional<Copilot> copilotOptional = copilotRepository.findByCopilotId(copilotId);
         Assert.isTrue(StringUtils.isNotBlank(message), "评论不可为空");
-        Assert.isTrue(copilotRepository.existsCopilotsByCopilotId(copilotId), "作业表不存在");
+        Assert.isTrue(copilotOptional.isPresent(), "作业表不存在");
 
 
         String fromCommentsId = null;
         String mainCommentsId = null;
+
+        CommentsArea commentsArea = null;
+        String emailNotification = null;
+
+
+        //代表这是一条回复评论
         if (StringUtils.isNoneBlank(commentsAddDTO.getFromCommentId())) {
 
             Optional<CommentsArea> commentsAreaOptional = commentsAreaRepository.findById(commentsAddDTO.getFromCommentId());
             Assert.isTrue(commentsAreaOptional.isPresent(), "回复的评论不存在");
-            CommentsArea replyCommentsArea = commentsAreaOptional.get();
+            commentsArea = commentsAreaOptional.get();
+            Assert.isTrue(!commentsArea.isDelete(), "回复的评论不存在");
 
-            //判断其回复的评论是主评论 还是子评论
             mainCommentsId = StringUtils
-                    .isNoneBlank(replyCommentsArea.getMainCommentId()) ?
-                    replyCommentsArea.getMainCommentId() : replyCommentsArea.getId();
+                    .isNoneBlank(commentsArea.getMainCommentId()) ?
+                    commentsArea.getMainCommentId() : commentsArea.getId();
 
             fromCommentsId = StringUtils
-                    .isNoneBlank(replyCommentsArea.getId()) ?
-                    replyCommentsArea.getId() : null;
+                    .isNoneBlank(commentsArea.getId()) ?
+                    commentsArea.getId() : null;
+
+            if (Objects.isNull(commentsArea.getNotification()) || commentsArea.getNotification()) {
+                emailNotification = "commentAuthor";
+            }
+
+        } else {
+            emailNotification = "copilotAuthor";
+        }
+
+        if (Objects.nonNull(emailNotification)) {
+            Copilot copilot = copilotOptional.get();
+            String replyUserId = "copilotAuthor".equals(emailNotification) ? copilot.getUploaderId() : commentsArea.getUploaderId();
+            String title = "copilotAuthor".equals(emailNotification) ? copilot.getDoc().getTitle() : commentsArea.getMessage();
+            Map<String, MaaUser> maaUserMap = userRepository.findByUsersId(List.of(userId, replyUserId));
+            if (!Objects.equals(replyUserId, userId)) {
+
+                LocalDateTime time = LocalDateTime.now();
+                String timeStr = time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                CommentNotification commentNotification = new CommentNotification();
+                commentNotification
+                        .setTitle(title)
+                        .setDate(timeStr)
+                        .setName(maaUserMap.getOrDefault(replyUserId, new MaaUser().setUserName("用户已注销:(")).getUserName())
+                        .setReName(maaUserMap.getOrDefault(userId, new MaaUser().setUserName("用户已注销:(")).getUserName())
+                        .setReMessage(message);
 
 
-            //通知
-            if (maaCopilotProperties.getMail().getNotification()) {
-                String replayUploaderId = replyCommentsArea.getUploaderId();
-                if (!Objects.equals(userId, replayUploaderId)) {
-                    userRepository.findById(replayUploaderId).ifPresent(
-                            maaUser -> {
-                                if (replyCommentsArea.isNotification()) {
-                                    emailService.sendCommentNotification(
-                                            maaUser.getEmail(),
-                                            maaUser.getUserName(),
-                                            copilotId,
-                                            message,
-                                            replyCommentsArea.getMessage()
-                                    );
-                                }
-                            }
-                    );
+                MaaUser maaUser = maaUserMap.get(replyUserId);
+                if (!Objects.isNull(maaUser)) {
+                    emailService.sendCommentNotification(maaUser.getEmail(), commentNotification);
                 }
             }
         }
 
+
         //创建评论表
-        CommentsArea commentsArea = new CommentsArea();
-        commentsArea.setCopilotId(copilotId)
-                .setUploaderId(userId)
-                .setFromCommentId(fromCommentsId)
-                .setMainCommentId(mainCommentsId)
-                .setMessage(message)
-                .setNotification(commentsArea.isNotification());
-        commentsAreaRepository.insert(commentsArea);
+        commentsAreaRepository.insert(
+                new CommentsArea().setCopilotId(copilotId)
+                        .setUploaderId(userId)
+                        .setFromCommentId(fromCommentsId)
+                        .setMainCommentId(mainCommentsId)
+                        .setMessage(message)
+                        .setNotification(commentsAddDTO.isNotification())
+        );
 
     }
 
@@ -208,7 +226,15 @@ public class CommentsAreaService {
 
 
         //主评论
-        Page<CommentsArea> mainCommentsList = commentsAreaRepository.findByCopilotIdAndDeleteAndMainCommentIdExists(request.getCopilotId(), false, false, pageable);
+
+        Page<CommentsArea> mainCommentsList;
+
+        if (StringUtils.isNotBlank(request.getJustSeeId())) {
+            mainCommentsList = commentsAreaRepository.findByCopilotIdAndUploaderIdAndDeleteAndMainCommentIdExists(request.getCopilotId(), request.getJustSeeId(), false, false, pageable);
+        } else {
+            mainCommentsList = commentsAreaRepository.findByCopilotIdAndDeleteAndMainCommentIdExists(request.getCopilotId(), false, false, pageable);
+        }
+
         long count = mainCommentsList.getTotalElements();
 
         int pageNumber = mainCommentsList.getTotalPages();
@@ -291,4 +317,13 @@ public class CommentsAreaService {
         return commentsArea.get();
     }
 
+
+    public void notificationStatus(String userId, String id, boolean status) {
+        Optional<CommentsArea> commentsAreaOptional = commentsAreaRepository.findById(id);
+        Assert.isTrue(commentsAreaOptional.isPresent(), "评论不存在");
+        CommentsArea commentsArea = commentsAreaOptional.get();
+        Assert.isTrue(Objects.equals(userId, commentsArea.getUploaderId()), "您没有权限修改");
+        commentsArea.setNotification(status);
+        commentsAreaRepository.save(commentsArea);
+    }
 }

@@ -50,7 +50,7 @@ public class CommentsArea implements Serializable {
     private String mainCommentId;
 
     //邮件通知
-    private boolean notification;
+    private Boolean notification;
 
 }
 

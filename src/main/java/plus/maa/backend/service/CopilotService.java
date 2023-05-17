@@ -484,4 +484,13 @@ public class CopilotService {
         copilotRepository.findByCopilotId(copilotId).ifPresent(copilot ->
                 copilotRepository.save(copilot.setContent(content)));
     }
+
+    public void notificationStatus(String userId, Long copilotId, boolean status) {
+        Optional<Copilot> copilotOptional = copilotRepository.findByCopilotId(copilotId);
+        Assert.isTrue(copilotOptional.isPresent(), "copilot不存在");
+        Copilot copilot = copilotOptional.get();
+        Assert.isTrue(Objects.equals(userId, copilot.getUploaderId()), "您没有权限修改");
+        copilot.setNotification(status);
+        copilotRepository.save(copilot);
+    }
 }

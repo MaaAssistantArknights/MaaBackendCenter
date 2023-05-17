@@ -39,4 +39,6 @@ public class CopilotDTO {
 
     //描述
     private Copilot.Doc doc;
+
+    private boolean notification;
 }

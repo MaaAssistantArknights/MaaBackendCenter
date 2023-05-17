@@ -149,13 +149,29 @@ public class EmailBusinessObject {
         }
     }
 
+    public void sendCommentNotification(Map<String, String> map) {
+        try {
+            send(this.mailAccount,
+                    this.emailList,
+                    this.title + " Re: " + map.get("title"),
+                    defaultMailIncludeHtmlTemplates("mail-comment-notification.ftlh", map),
+                    this.isHtml
+            );
+        } catch (Exception ex) {
+            throw new RuntimeException("邮件发送失败", ex);
+        }
+    }
+
     private String defaultMailIncludeHtmlTemplates(String content, String obj) {
         return parseMessages(content, obj, DEFAULT_MAIL_INCLUDE_HTML_TEMPLATE);
     }
 
+    private String defaultMailIncludeHtmlTemplates(String content, Map<String, String> map) {
+        return parseMessages(content, DEFAULT_MAIL_INCLUDE_HTML_TEMPLATE, map);
+    }
+
+
     /**
-     * 将ftl文件转换为String对象
-     *
      * @param content      自定义内容
      * @param templateName ftlh路径
      * @return String
@@ -164,18 +180,21 @@ public class EmailBusinessObject {
         return FreeMarkerUtils.parseData(Collections.singletonMap("content", content), templateName);
     }
 
-
     /**
-     * 将ftl文件转换为String对象
+     * ftlh多个参数下
      *
-     * @param content      邮件内嵌ftlh路径
-     * @param obj          内嵌邮件中的动态内容
-     * @param templateName ftlh路径
+     * @param content 邮件内嵌ftlh路径
      * @return String
      */
+    private String parseMessages(String content, String templateName, Map<String, String> map) {
+        map.put("content", content);
+        return FreeMarkerUtils.parseData(map, templateName);
+    }
+
     private String parseMessages(String content, String obj, String templateName) {
         return FreeMarkerUtils.parseData(Map.of("content", content, "obj", obj), templateName);
     }
+
 
     /**
      * 发送邮件给多人
