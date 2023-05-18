@@ -10,6 +10,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import plus.maa.backend.common.utils.converter.CommentConverter;
+import plus.maa.backend.config.external.MaaCopilotProperties;
 import plus.maa.backend.controller.request.comments.CommentsAddDTO;
 import plus.maa.backend.controller.request.comments.CommentsQueriesDTO;
 import plus.maa.backend.controller.request.comments.CommentsRatingDTO;
@@ -44,6 +45,8 @@ public class CommentsAreaService {
     private final UserRepository userRepository;
 
     private final EmailService emailService;
+
+    private final MaaCopilotProperties maaCopilotProperties;
 
 
     /**
@@ -92,13 +95,15 @@ public class CommentsAreaService {
             emailNotification = "copilotAuthor";
         }
 
-        if (Objects.nonNull(emailNotification)) {
+        //通知
+        if (Objects.nonNull(emailNotification) && maaCopilotProperties.getMail().getNotification()) {
             Copilot copilot = copilotOptional.get();
+            //通知作业作者或是评论作者
             String replyUserId = "copilotAuthor".equals(emailNotification) ? copilot.getUploaderId() : commentsArea.getUploaderId();
             String title = "copilotAuthor".equals(emailNotification) ? copilot.getDoc().getTitle() : commentsArea.getMessage();
             Map<String, MaaUser> maaUserMap = userRepository.findByUsersId(List.of(userId, replyUserId));
-            if (!Objects.equals(replyUserId, userId)) {
 
+            if (!Objects.equals(replyUserId, userId)) {
                 LocalDateTime time = LocalDateTime.now();
                 String timeStr = time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                 CommentNotification commentNotification = new CommentNotification();
