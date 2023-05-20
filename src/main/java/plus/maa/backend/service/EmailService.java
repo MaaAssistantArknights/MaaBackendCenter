@@ -139,7 +139,7 @@ public class EmailService {
         String title = commentNotification.getTitle();
         if (Strings.isNotBlank(title)) {
             if (title.length() > 10) {
-                title = title.substring(0, 10);
+                title = title.substring(0, 10) + "....";
             }
         }
 

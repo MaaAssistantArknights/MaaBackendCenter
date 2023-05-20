@@ -68,7 +68,7 @@ public class CommentsAreaService {
         String mainCommentsId = null;
 
         CommentsArea commentsArea = null;
-        String emailNotification = null;
+        Boolean isCopilotAuthor = null;
 
 
         //代表这是一条回复评论
@@ -88,19 +88,19 @@ public class CommentsAreaService {
                     commentsArea.getId() : null;
 
             if (Objects.isNull(commentsArea.getNotification()) || commentsArea.getNotification()) {
-                emailNotification = "commentAuthor";
+                isCopilotAuthor = false;
             }
 
         } else {
-            emailNotification = "copilotAuthor";
+            isCopilotAuthor = true;
         }
 
         //通知
-        if (Objects.nonNull(emailNotification) && maaCopilotProperties.getMail().getNotification()) {
+        if (Objects.nonNull(isCopilotAuthor) && maaCopilotProperties.getMail().getNotification()) {
             Copilot copilot = copilotOptional.get();
             //通知作业作者或是评论作者
-            String replyUserId = "copilotAuthor".equals(emailNotification) ? copilot.getUploaderId() : commentsArea.getUploaderId();
-            String title = "copilotAuthor".equals(emailNotification) ? copilot.getDoc().getTitle() : commentsArea.getMessage();
+            String replyUserId = isCopilotAuthor ? copilot.getUploaderId() : commentsArea.getUploaderId();
+            String title = isCopilotAuthor ? copilot.getDoc().getTitle() : commentsArea.getMessage();
             Map<String, MaaUser> maaUserMap = userRepository.findByUsersId(List.of(userId, replyUserId));
 
             if (!Objects.equals(replyUserId, userId)) {
@@ -116,7 +116,7 @@ public class CommentsAreaService {
 
 
                 MaaUser maaUser = maaUserMap.get(replyUserId);
-                if (!Objects.isNull(maaUser)) {
+                if (Objects.nonNull(maaUser)) {
                     emailService.sendCommentNotification(maaUser.getEmail(), commentNotification);
                 }
             }
