@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.JsonSchema;
@@ -51,14 +52,16 @@ public class CommentsAreaController {
             @RequestParam(name = "page", required = false, defaultValue = "0") int page,
             @RequestParam(name = "limit", required = false, defaultValue = "10") int limit,
             @RequestParam(name = "desc", required = false, defaultValue = "true") boolean desc,
-            @RequestParam(name = "orderBy", required = false) String orderBy
+            @RequestParam(name = "orderBy", required = false) String orderBy,
+            @RequestParam(name = "justSeeId", required = false) String justSeeId
     ) {
         var parsed = new CommentsQueriesDTO(
                 copilotId,
                 page,
                 limit,
                 desc,
-                orderBy
+                orderBy,
+                justSeeId
         );
         return MaaResult.success(commentsAreaService.queriesCommentsArea(parsed));
     }
@@ -84,5 +87,13 @@ public class CommentsAreaController {
     ) {
         commentsAreaService.rates(authHelper.requireUserId(), commentsRatingDTO);
         return MaaResult.success("成功");
+    }
+
+    @Operation(summary = "设置通知接收状态")
+    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @GetMapping("/status")
+    public MaaResult<String> modifyStatus(@RequestParam @NotBlank String id, @RequestParam boolean status) {
+        commentsAreaService.notificationStatus(authHelper.getUserId(), id, status);
+        return MaaResult.success("success");
     }
 }

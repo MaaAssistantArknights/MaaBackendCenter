@@ -42,7 +42,9 @@ public class SecurityConfig {
             "/copilot/get/**",
             "/copilot/rating",
             "/comments/query",
-            "/file/upload"
+            "/file/upload",
+            "/comments/status",
+            "/copilot/status"
     };
 
     //添加需要权限1才能访问的接口

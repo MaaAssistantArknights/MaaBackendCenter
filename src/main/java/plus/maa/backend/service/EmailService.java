@@ -1,10 +1,13 @@
 package plus.maa.backend.service;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import cn.hutool.extra.mail.MailAccount;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -16,6 +19,7 @@ import plus.maa.backend.common.bo.EmailBusinessObject;
 import plus.maa.backend.config.external.MaaCopilotProperties;
 import plus.maa.backend.config.external.Mail;
 import plus.maa.backend.repository.RedisCache;
+import plus.maa.backend.service.model.CommentNotification;
 
 /**
  * @author LoMu
@@ -131,15 +135,25 @@ public class EmailService {
     }
 
     @Async
-    public void sendCommentNotification(String email, String userName, Long copilotId, String message, String replyMessage) {
-        if (replyMessage.length() > 5) {
-            replyMessage = replyMessage.substring(0, 5);
+    public void sendCommentNotification(String email, CommentNotification commentNotification) {
+        String title = commentNotification.getTitle();
+        if (Strings.isNotBlank(title)) {
+            if (title.length() > 10) {
+                title = title.substring(0, 10) + "....";
+            }
         }
+
+        Map<String, String> map = new HashMap<>();
+        map.put("name", commentNotification.getName());
+        map.put("domain", maaCopilotProperties.getInfo().getDomain());
+        map.put("reName", commentNotification.getReName());
+        map.put("date", commentNotification.getDate());
+        map.put("title", title);
+        map.put("reMessage", commentNotification.getReMessage());
         EmailBusinessObject.builder()
                 .setMailAccount(getMailAccount())
                 .setEmail(email)
-                .setTitle("Reply:@[" + userName + "] 来自作业 " + copilotId + " ---> (" + replyMessage + ")")
-                .setMessage(message)
-                .sendCustomMessage();
+                .sendCommentNotification(map);
+
     }
 }

@@ -72,6 +72,8 @@ public class Copilot implements Serializable {
     private boolean delete;
     @JsonIgnore
     private LocalDateTime deleteTime;
+    @JsonIgnore
+    private Boolean notification;
 
     @Data
     @NoArgsConstructor

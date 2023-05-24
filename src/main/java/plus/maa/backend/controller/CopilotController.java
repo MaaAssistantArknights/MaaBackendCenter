@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.JsonSchema;
@@ -116,6 +117,15 @@ public class CopilotController {
     ) {
         copilotService.rates(helper.getUserIdOrIpAddress(), copilotRatingReq);
         return MaaResult.success("评分成功");
+    }
+
+    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @Operation(summary = "修改通知状态")
+    @ApiResponse(description = "success")
+    @GetMapping("/status")
+    public MaaResult<String> modifyStatus(@RequestParam @NotBlank Long id, @RequestParam boolean status) {
+        copilotService.notificationStatus(helper.getUserId(), id, status);
+        return MaaResult.success("success");
     }
 
 }

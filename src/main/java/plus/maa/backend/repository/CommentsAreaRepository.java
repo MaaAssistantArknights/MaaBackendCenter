@@ -28,10 +28,17 @@ public interface CommentsAreaRepository extends MongoRepository<CommentsArea, St
             Pageable pageable
     );
 
+    Page<CommentsArea> findByCopilotIdAndUploaderIdAndDeleteAndMainCommentIdExists(Long copilotId,
+                                                                                   String uploaderId,
+                                                                                   boolean delete,
+                                                                                   boolean exists,
+                                                                                   Pageable pageable);
+
     Stream<CommentsArea> findByCopilotIdInAndDelete(Collection<Long> copilotIds, boolean delete);
 
     List<CommentsArea> findByMainCommentIdIn(List<String> ids);
 
     Long countByCopilotIdAndDelete(Long copilotId, boolean delete);
+
 
 }

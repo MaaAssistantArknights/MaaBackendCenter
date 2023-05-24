@@ -18,7 +18,7 @@ public class FreeMarkerUtils {
 
     private static final Configuration cfg = new Configuration(Configuration.VERSION_2_3_32);
     static {
-        cfg.setClassForTemplateLoading(FreeMarkerUtils.class, "/static/templates");
+        cfg.setClassForTemplateLoading(FreeMarkerUtils.class, "/static/templates/ftlh");
         cfg.setEncoding(Locale.CHINA, StandardCharsets.UTF_8.name());
     }
 
