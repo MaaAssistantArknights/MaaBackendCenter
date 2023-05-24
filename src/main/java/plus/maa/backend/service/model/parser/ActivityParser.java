@@ -2,6 +2,7 @@ package plus.maa.backend.service.model.parser;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import plus.maa.backend.repository.entity.ArkLevel;
 import plus.maa.backend.repository.entity.gamedata.ArkActivity;
@@ -9,6 +10,8 @@ import plus.maa.backend.repository.entity.gamedata.ArkStage;
 import plus.maa.backend.repository.entity.gamedata.ArkTilePos;
 import plus.maa.backend.service.ArkGameDataService;
 import plus.maa.backend.service.model.ArkLevelType;
+
+import java.util.Optional;
 
 /**
  * @author john180
@@ -34,18 +37,12 @@ public class ActivityParser implements ArkLevelParser {
         level.setCatOne(ArkLevelType.ACTIVITIES.getDisplay());
 
         ArkStage stage = dataService.findStage(level.getLevelId(), tilePos.getCode(), tilePos.getStageId());
-        if (stage == null) {
-            log.error("[PARSER]活动关卡未找到stage信息:{}", level.getLevelId());
-            return null;
-        }
-
-        ArkActivity act = dataService.findActivityByZoneId(stage.getZoneId());
-        if (act == null) {
-            log.error("[PARSER]活动关卡未找到activity信息:{}", level.getLevelId());
-            return null;
-        }
-
-        level.setCatTwo(act.getName());
+        level.setCatTwo(
+                Optional.ofNullable(stage)
+                        .map(ArkStage::getZoneId)
+                        .map(dataService::findActivityByZoneId)
+                        .map(ArkActivity::getName)
+                        .orElse(StringUtils.EMPTY));
         return level;
     }
 }
