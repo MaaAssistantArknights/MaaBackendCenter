@@ -19,6 +19,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @AllArgsConstructor
 @Document("maa_level")
 public class ArkLevel {
+    public static final ArkLevel EMPTY = new ArkLevel();
+
     @Id
     private String id;
     private String levelId;

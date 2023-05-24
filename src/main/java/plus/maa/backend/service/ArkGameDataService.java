@@ -25,11 +25,11 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 @RequiredArgsConstructor
 public class ArkGameDataService {
-    private static final String ARK_STAGE = "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/zh_CN/gamedata/excel/stage_table.json";
-    private static final String ARK_ZONE = "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/zh_CN/gamedata/excel/zone_table.json";
-    private static final String ARK_ACTIVITY = "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/zh_CN/gamedata/excel/activity_table.json";
-    private static final String ARK_CHARACTER = "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/zh_CN/gamedata/excel/character_table.json";
-    private static final String ARK_TOWER = "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/zh_CN/gamedata/excel/climb_tower_table.json";
+    private static final String ARK_STAGE = "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/gamedata/excel/stage_table.json";
+    private static final String ARK_ZONE = "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/gamedata/excel/zone_table.json";
+    private static final String ARK_ACTIVITY = "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/gamedata/excel/activity_table.json";
+    private static final String ARK_CHARACTER = "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/gamedata/excel/character_table.json";
+    private static final String ARK_TOWER = "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/gamedata/excel/climb_tower_table.json";
     private final OkHttpClient okHttpClient;
     private final ObjectMapper mapper = JsonMapper.builder()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
