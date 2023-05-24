@@ -12,6 +12,8 @@ public enum ArkLevelType {
     MEMORY("悖论模拟"),
     RUNE("危机合约"),
     LEGION("保全派驻"),
+    ROGUELIKE("集成战略"), //实际不进行解析
+    TRAINING("训练关卡"), //实际不进行解析
     UNKNOWN("未知类型");
     private final String display;
 
@@ -33,6 +35,8 @@ public enum ArkLevelType {
             case "memory" -> MEMORY;
             case "rune" -> RUNE;
             case "legion" -> LEGION;
+            case "roguelike" -> ROGUELIKE;
+            case "training" -> TRAINING;
             default -> UNKNOWN;
         };
     }

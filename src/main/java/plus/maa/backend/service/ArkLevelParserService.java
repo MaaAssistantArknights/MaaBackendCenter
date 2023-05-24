@@ -51,7 +51,8 @@ public class ArkLevelParserService {
                 .findFirst()
                 .orElse(null);
         if (parser == null) {
-            return null;
+            //类型存在但无对应Parser直接跳过
+            return ArkLevel.EMPTY;
         }
         return parser.parseLevel(level, tilePos);
     }

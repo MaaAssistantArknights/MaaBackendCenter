@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.Lists;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectInserter;
@@ -78,6 +79,8 @@ public class ArkLevelService {
     private final ArkGameDataService gameDataService;
     private final ObjectMapper mapper = new ObjectMapper();
     private final OkHttpClient okHttpClient;
+
+    private final List<String> bypassFileNames = Lists.newArrayList("overview.json");
 
     @Cacheable("arkLevels")
     public List<ArkLevelInfo> getArkLevelInfos() {
@@ -172,6 +175,10 @@ public class ArkLevelService {
      */
     private void download(DownloadTask task, GithubTree tree) {
         String fileName = URLEncoder.encode(tree.getPath(), StandardCharsets.UTF_8);
+        if (bypassFileNames.contains(fileName)) {
+            task.success();
+            return;
+        }
         String url = String.format("https://raw.githubusercontent.com/%s/master/%s/%s", maaRepo, tilePosPath, fileName);
         okHttpClient.newCall(new Request.Builder().url(url).build()).enqueue(new Callback() {
             @Override
@@ -199,6 +206,9 @@ public class ArkLevelService {
                     task.fail();
                     log.info("[LEVEL]地图数据解析失败:" + tree.getPath());
                     return;
+                } else if (level == ArkLevel.EMPTY) {
+                    task.pass();
+                    return;
                 }
                 arkLevelRepo.save(level);
 
@@ -214,6 +224,7 @@ public class ArkLevelService {
         private final long startTime = System.currentTimeMillis();
         private final AtomicInteger success = new AtomicInteger(0);
         private final AtomicInteger fail = new AtomicInteger(0);
+        private final AtomicInteger pass = new AtomicInteger(0);
         private final int total;
         private final Consumer<DownloadTask> finishCallback;
 
@@ -227,8 +238,13 @@ public class ArkLevelService {
             checkFinish();
         }
 
+        public void pass() {
+            pass.incrementAndGet();
+            checkFinish();
+        }
+
         public int getCurrent() {
-            return success.get() + fail.get();
+            return success.get() + fail.get() + pass.get();
         }
 
         public int getDuration() {
@@ -236,15 +252,15 @@ public class ArkLevelService {
         }
 
         public boolean isAllSuccess() {
-            return success.get() == total;
+            return success.get() + pass.get() == total;
         }
 
         private void checkFinish() {
-            if (success.get() + fail.get() != total) {
+            if (success.get() + fail.get() + pass.get() != total) {
                 return;
             }
             finishCallback.accept(this);
-            log.info("[LEVEL]地图数据下载完成, 成功:{}, 失败:{}, 总用时{}s", success.get(), fail.get(), getDuration());
+            log.info("[LEVEL]地图数据下载完成, 成功:{}, 失败:{}, 跳过:{} 总用时{}s", success.get(), fail.get(), pass.get(), getDuration());
         }
     }
 
