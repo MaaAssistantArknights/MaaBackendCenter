@@ -5,6 +5,7 @@ spring:
       # 如果没有密码
       # uri: mongodb://localhost:27017/MaaBackend
       # 有密码
+      # uri: mongodb://用户名:密码@localhost:27017/MaaBackend
       uri: mongodb://localhost/MaaBackend
     redis:
       port: 6379
