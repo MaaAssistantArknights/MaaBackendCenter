@@ -1,6 +1,7 @@
 package plus.maa.backend.service;
 
 import cn.hutool.core.lang.Assert;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -11,21 +12,24 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import plus.maa.backend.common.MaaStatusCode;
 import plus.maa.backend.common.utils.converter.MaaUserConverter;
+import plus.maa.backend.config.external.MaaCopilotProperties;
+import plus.maa.backend.config.external.Oauth2;
+import plus.maa.backend.config.security.Oauth2AccessToken;
 import plus.maa.backend.controller.request.user.*;
-import plus.maa.backend.controller.response.user.MaaLoginRsp;
 import plus.maa.backend.controller.response.MaaResultException;
+import plus.maa.backend.controller.response.user.MaaLoginRsp;
 import plus.maa.backend.controller.response.user.MaaUserInfo;
+import plus.maa.backend.repository.GithubRepository;
 import plus.maa.backend.repository.RedisCache;
 import plus.maa.backend.repository.UserRepository;
 import plus.maa.backend.repository.entity.MaaUser;
 import plus.maa.backend.service.jwt.JwtExpiredException;
 import plus.maa.backend.service.jwt.JwtInvalidException;
 import plus.maa.backend.service.jwt.JwtService;
+import plus.maa.backend.service.model.AccessToken;
 
-import java.util.ArrayList;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.UUID;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * @author AnselYuki
@@ -45,6 +49,9 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserDetailServiceImpl userDetailService;
     private final JwtService jwtService;
+    private final MaaCopilotProperties maaCopilotProperties;
+    private final GithubRepository githubRepository;
+    private final Oauth2AccessToken oauth2AccessToken;
 
     /**
      * 登录方法
@@ -76,6 +83,42 @@ public class UserService {
                 refreshToken.getNotBefore(),
                 MaaUserConverter.INSTANCE.convert(user)
         );
+    }
+
+
+    /*
+        跳转授权服务器申请code
+     */
+    public void loginRedirect(HttpServletResponse response) {
+        Oauth2 oauth2 = maaCopilotProperties.getOauth2();
+        String clientId = oauth2.getClientId();
+        try {
+            response.sendRedirect("https://github.com/login/oauth/authorize?client_id=" + clientId);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    //TODO: 已有账户则登录 没有则注册
+    public MaaLoginRsp loginOauth2(String uuid) {
+        return null;
+    }
+
+
+    /*
+    获取token
+     */
+    public void accessToken(String code) {
+        Oauth2 oauth2 = maaCopilotProperties.getOauth2();
+        AccessToken accessToken = oauth2AccessToken.accessToken(oauth2.getClientId(), oauth2.getClientSecret(), code);
+        assert accessToken != null;
+        String token = accessToken.getAccessToken();
+        Map<String, String> userInfo = githubRepository.getUserInfo(token);
+        String email = userInfo.get("email");
+        String uuid = UUID.randomUUID().toString();
+        redisCache.setCache("login:" + uuid, email);
+        //TODO: 携带UUID跳转访问loginOauth2接口
+
     }
 
     /**

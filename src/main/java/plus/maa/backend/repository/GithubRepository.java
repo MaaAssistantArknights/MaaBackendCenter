@@ -8,12 +8,14 @@ import plus.maa.backend.repository.entity.github.GithubCommit;
 import plus.maa.backend.repository.entity.github.GithubTrees;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author dragove
  * created on 2022/12/23
  */
 @FeignClient(value = "githubRepository", url = "https://api.github.com")
+
 public interface GithubRepository {
 
     /**
@@ -39,4 +41,10 @@ public interface GithubRepository {
                                   @PathVariable("repo") String repo,
                                   @RequestParam("path") String path,
                                   @RequestParam("per_page") int prePage);
+
+    @GetMapping(value = "/user",
+            headers = {
+                    "Authorization: Bearer {token}"
+            })
+    Map<String, String> getUserInfo(@RequestParam("token") String token);
 }

@@ -14,4 +14,5 @@ public class MaaCopilotProperties {
     private TaskCron taskCron;
     private CopilotBackup backup;
     private Mail mail;
+    private Oauth2 oauth2;
 }
