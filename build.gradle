@@ -1,9 +1,9 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.0.6'
-    id "io.spring.dependency-management" version "1.1.0"
-    id "io.freefair.lombok" version "6.6"
-    id "org.springdoc.openapi-gradle-plugin" version "1.6.0"
+    id 'org.springframework.boot' version '3.1.2'
+    id 'io.spring.dependency-management' version '1.1.2'
+    id 'io.freefair.lombok' version '8.1.0'
+    id 'org.springdoc.openapi-gradle-plugin' version '1.6.0'
     id 'org.hidetake.swagger.generator' version '2.19.2'
 }
 
@@ -25,36 +25,36 @@ ext {
 }
 
 dependencies {
-    implementation platform("org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}")
 
-    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+    annotationProcessor 'com.github.therapi:therapi-runtime-javadoc-scribe:0.13.0'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.3.Final'
-    annotationProcessor "com.github.therapi:therapi-runtime-javadoc-scribe:0.13.0"
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
     implementation 'org.springframework.boot:spring-boot-starter-test'
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
-    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-cache'
     //springdoc相关依赖没有被自动管理，必须保留版本号
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0'
     implementation 'com.github.therapi:therapi-runtime-javadoc:0.13.0'
 
+    implementation 'org.aspectj:aspectjrt:1.9.19'
     implementation 'com.squareup.okhttp3:okhttp:4.10.0'
     implementation 'com.sun.mail:javax.mail:1.6.2'
-    implementation 'cn.hutool:hutool-all:5.8.11'
+    implementation 'cn.hutool:hutool-extra:5.8.20'
+    implementation 'cn.hutool:hutool-jwt:5.8.20'
     implementation 'org.mapstruct:mapstruct:1.5.3.Final'
-    implementation 'org.eclipse.jgit:org.eclipse.jgit:6.4.0.202211300538-r'
-    implementation 'org.eclipse.jgit:org.eclipse.jgit.ssh.apache:6.4.0.202211300538-r'
+    implementation 'org.eclipse.jgit:org.eclipse.jgit:6.6.0.202305301015-r'
+    implementation 'org.eclipse.jgit:org.eclipse.jgit.ssh.apache.agent:6.6.0.202305301015-r'
     implementation 'org.freemarker:freemarker:2.3.32'
-    implementation 'com.github.ben-manes.caffeine:caffeine:3.1.2'
-    implementation 'com.github.erosb:everit-json-schema:1.14.1'
-    implementation 'com.google.guava:guava:31.1-jre'
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.1.6'
+    implementation 'com.github.erosb:everit-json-schema:1.14.2'
+    implementation 'com.google.guava:guava:32.1.1-jre'
 
-//    swaggerCodegen 'io.swagger.codegen.v3:swagger-codegen-cli:3.0.41'
     swaggerCodegen 'org.openapitools:openapi-generator-cli:6.5.0'
 
 }
@@ -63,53 +63,48 @@ test {
     useJUnitPlatform()
 }
 
-def swagger_output_dir = "$buildDir/docs"
+def swagger_output_dir = '$buildDir/docs'
 def swagger_output_name = 'swagger.json'
 
 openApi {
-    apiDocsUrl.set("http://localhost:8848/v3/api-docs")
+    apiDocsUrl.set('http://localhost:8848/v3/api-docs')
     outputDir.set(file(swagger_output_dir))
     outputFileName.set(swagger_output_name)
     waitTimeInSeconds.set(30)
 }
 
 swaggerSources {
-    def client_dir = "$buildDir/clients"
     TsFetch {
-        inputFile = file("$swagger_output_dir/$swagger_output_name")
+        inputFile = file('$swagger_output_dir/$swagger_output_name')
         code {
             language = 'typescript-fetch'
             configFile = file('client-config/ts-fetch.json')
-//            templateDir = file('client-config/typescript-fetch')
-            rawOptions = ["-e", "mustache"]
-            outputDir = file("$client_dir/ts-fetch-client")
+            rawOptions = ['-e', 'mustache']
+            outputDir = file('$client_dir/ts-fetch-client')
         }
     }
     CSharp {
-        inputFile = file("$swagger_output_dir/$swagger_output_name")
+        inputFile = file('$swagger_output_dir/$swagger_output_name')
         code {
             language = 'csharp-netcore'
             configFile = file('client-config/csharp-netcore.json')
-            outputDir = file("$client_dir/csharp-client")
-//            rawOptions = [
-//                    "--type-mappings", "binary=System.IO.Stream"
-//            ]
+            outputDir = file('$client_dir/csharp-client')
         }
     }
     Cpp {
-        inputFile = file("$swagger_output_dir/$swagger_output_name")
+        inputFile = file('$swagger_output_dir/$swagger_output_name')
         code {
             language = 'cpp-restsdk'
             configFile = file('client-config/cpp.json')
-            outputDir = file("$client_dir/cpp-client")
+            outputDir = file('$client_dir/cpp-client')
         }
     }
-    Rust{
-        inputFile = file("$swagger_output_dir/$swagger_output_name")
+    Rust {
+        inputFile = file('$swagger_output_dir/$swagger_output_name')
         code {
             language = 'rust'
             configFile = file('client-config/rust.json')
-            outputDir = file("$client_dir/rust-client")
+            outputDir = file('$client_dir/rust-client')
         }
     }
 }
