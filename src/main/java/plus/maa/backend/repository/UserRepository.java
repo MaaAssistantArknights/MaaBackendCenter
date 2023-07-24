@@ -1,7 +1,6 @@
 package plus.maa.backend.repository;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
-
 import plus.maa.backend.repository.entity.MaaUser;
 
 import java.util.List;
@@ -25,4 +24,6 @@ public interface UserRepository extends MongoRepository<MaaUser, String> {
         return findAllById(userId)
                 .stream().collect(Collectors.toMap(MaaUser::getUserId, Function.identity()));
     }
+
+
 }

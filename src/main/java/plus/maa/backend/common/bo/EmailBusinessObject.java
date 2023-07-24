@@ -1,9 +1,6 @@
 package plus.maa.backend.common.bo;
 
 
-import java.io.File;
-import java.util.*;
-
 import cn.hutool.extra.mail.MailAccount;
 import cn.hutool.extra.mail.MailUtil;
 import lombok.NoArgsConstructor;
@@ -11,6 +8,9 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import plus.maa.backend.common.utils.FreeMarkerUtils;
+
+import java.io.File;
+import java.util.*;
 
 
 /**
@@ -67,7 +67,7 @@ public class EmailBusinessObject {
      * @param title 标题
      */
     public EmailBusinessObject setTitle(String title) {
-        this.title = DEFAULT_TITLE_PREFIX + "  " + title;
+        this.title = title;
         return this;
     }
 
@@ -153,7 +153,7 @@ public class EmailBusinessObject {
         try {
             send(this.mailAccount,
                     this.emailList,
-                    this.title + " Re: " + map.get("title"),
+                    this.title,
                     defaultMailIncludeHtmlTemplates("mail-comment-notification.ftlh", map),
                     this.isHtml
             );
