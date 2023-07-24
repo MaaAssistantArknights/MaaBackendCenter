@@ -95,23 +95,34 @@ public class CommentsAreaService {
             isCopilotAuthor = true;
         }
 
-        //通知
+        //判断是否需要通知
         if (Objects.nonNull(isCopilotAuthor) && maaCopilotProperties.getMail().getNotification()) {
             Copilot copilot = copilotOptional.get();
+
             //通知作业作者或是评论作者
             String replyUserId = isCopilotAuthor ? copilot.getUploaderId() : commentsArea.getUploaderId();
-            String title = isCopilotAuthor ? copilot.getDoc().getTitle() : commentsArea.getMessage();
+
+
             Map<String, MaaUser> maaUserMap = userRepository.findByUsersId(List.of(userId, replyUserId));
 
+            //防止通知自己
             if (!Objects.equals(replyUserId, userId)) {
                 LocalDateTime time = LocalDateTime.now();
                 String timeStr = time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                 CommentNotification commentNotification = new CommentNotification();
+                MaaUser unknownUser = new MaaUser().setUserName("未知用户:(");
+
+
+                String authorName = maaUserMap.getOrDefault(replyUserId, unknownUser).getUserName();
+                String reName = maaUserMap.getOrDefault(userId, unknownUser).getUserName();
+
+                String title = isCopilotAuthor ? copilot.getDoc().getTitle() : commentsArea.getMessage();
+
                 commentNotification
                         .setTitle(title)
                         .setDate(timeStr)
-                        .setName(maaUserMap.getOrDefault(replyUserId, new MaaUser().setUserName("用户已注销:(")).getUserName())
-                        .setReName(maaUserMap.getOrDefault(userId, new MaaUser().setUserName("用户已注销:(")).getUserName())
+                        .setAuthorName(authorName)
+                        .setReName(reName)
                         .setReMessage(message);
 
 

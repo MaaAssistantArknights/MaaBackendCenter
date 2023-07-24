@@ -11,9 +11,10 @@ import lombok.experimental.Accessors;
 @Data
 @Accessors(chain = true)
 public class CommentNotification {
-    private String name;
+    private String authorName;
     private String reName;
     private String date;
     private String title;
     private String reMessage;
+    private String forntEndLink;
 }
