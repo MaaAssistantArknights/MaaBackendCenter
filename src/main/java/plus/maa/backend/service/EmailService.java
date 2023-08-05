@@ -42,15 +42,15 @@ public class EmailService {
 
     private final RedisCache redisCache;
 
-    private final static MailAccount mailAccount = new MailAccount();
+    private final MailAccount MAIL_ACCOUNT = new MailAccount();
 
     /**
-     * 初始化发件人信息
+     * 初始化邮件账户信息
      */
     @PostConstruct
     private void initMailAccount() {
         Mail mail = maaCopilotProperties.getMail();
-        mailAccount
+        MAIL_ACCOUNT
                 .setHost(mail.getHost())
                 .setPort(mail.getPort())
                 .setFrom(mail.getFrom())
@@ -58,7 +58,8 @@ public class EmailService {
                 .setPass(mail.getPass())
                 .setSslEnable(mail.getSsl())
                 .setStarttlsEnable(mail.getStarttls());
-        log.info("发件人信息初始化完成：{}", mailAccount);
+
+        log.info("邮件账户信息初始化完成: {}", MAIL_ACCOUNT);
     }
 
     /**
@@ -78,7 +79,7 @@ public class EmailService {
             log.warn("Email not sent, no-send enabled");
         } else {
             EmailBusinessObject.builder()
-                    .setMailAccount(mailAccount)
+                    .setMailAccount(MAIL_ACCOUNT)
                     .setEmail(email)
                     .sendVerificationCodeMessage(vcode);
         }
@@ -125,19 +126,19 @@ public class EmailService {
             log.warn("Email not sent, no-send enabled");
         } else {
             EmailBusinessObject.builder()
-                    .setMailAccount(mailAccount)
+                    .setMailAccount(MAIL_ACCOUNT)
                     .setEmail(email)
                     .sendActivateUrlMessage(url);
         }
-
+        // 存redis
         redisCache.setCache("UUID:" + uuid, email, expire);
     }
 
     @Async
     public void sendCommentNotification(String email, CommentNotification commentNotification) {
         int limit = 25;
-        //长度超过limit 后续会被替换为....
-        String title = "Re: " + commentNotification.getTitle();
+
+        String title = commentNotification.getTitle();
         if (Strings.isNotBlank(title)) {
             if (title.length() > limit) {
                 title = title.substring(0, limit) + "....";
@@ -152,8 +153,8 @@ public class EmailService {
         map.put("title", title);
         map.put("reMessage", commentNotification.getReMessage());
         EmailBusinessObject.builder()
-                .setTitle("收到新回复 来自用户@" + commentNotification.getReName() + title)
-                .setMailAccount(mailAccount)
+                .setTitle("收到新回复 来自用户@" + commentNotification.getReName() + " Re: " + map.get("title"))
+                .setMailAccount(MAIL_ACCOUNT)
                 .setEmail(email)
                 .sendCommentNotification(map);
 
