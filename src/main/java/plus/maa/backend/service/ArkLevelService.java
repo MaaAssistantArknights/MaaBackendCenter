@@ -1,35 +1,16 @@
 package plus.maa.backend.service;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
-import com.google.common.collect.Lists;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectInserter;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import okhttp3.*;
 import plus.maa.backend.common.utils.converter.ArkLevelConverter;
 import plus.maa.backend.controller.response.copilot.ArkLevelInfo;
 import plus.maa.backend.repository.ArkLevelRepository;
@@ -41,6 +22,15 @@ import plus.maa.backend.repository.entity.gamedata.ArkTilePos;
 import plus.maa.backend.repository.entity.github.GithubCommit;
 import plus.maa.backend.repository.entity.github.GithubTree;
 import plus.maa.backend.repository.entity.github.GithubTrees;
+
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * @author dragove
@@ -66,12 +56,6 @@ public class ArkLevelService {
     @Value("${maa-copilot.github.repo.tile.path:resource/Arknights-Tile-Pos}")
     private String tilePosPath;
 
-    @Value("${maa-copilot.ark-level-git.repository:}")
-    private String gitRepository;
-    @Value("${maa-copilot.ark-level-git.local-repository:}")
-    private String localRepository;
-    @Value("${maa-copilot.ark-level-git.json-path:}")
-    private String jsonPath;
     private final GithubRepository githubRepo;
     private final RedisCache redisCache;
     private final ArkLevelRepository arkLevelRepo;
@@ -80,7 +64,7 @@ public class ArkLevelService {
     private final ObjectMapper mapper = new ObjectMapper();
     private final OkHttpClient okHttpClient;
 
-    private final List<String> bypassFileNames = Lists.newArrayList("overview.json");
+    private final List<String> bypassFileNames = List.of("overview.json");
 
     @Cacheable("arkLevels")
     public List<ArkLevelInfo> getArkLevelInfos() {
@@ -109,7 +93,7 @@ public class ArkLevelService {
     public void runSyncLevelDataTask() {
         log.info("[LEVEL]开始同步地图数据");
         //获取地图文件夹最新的commit, 用于判断是否需要更新
-        List<GithubCommit> commits = githubRepo.getCommits(githubToken, maaRepo, tilePosPath, 1);
+        List<GithubCommit> commits = githubRepo.getCommits(githubToken);
         if (CollectionUtils.isEmpty(commits)) {
             log.info("[LEVEL]获取地图数据最新commit失败");
             return;
@@ -124,7 +108,7 @@ public class ArkLevelService {
         //获取根目录文件列表
         GithubTrees trees;
         List<String> files = Arrays.stream(tilePosPath.split("/")).toList();
-        trees = githubRepo.getTrees(githubToken, maaRepo, commit.getSha());
+        trees = githubRepo.getTrees(githubToken, commit.getSha());
         //根据路径获取文件列表
         for (String file : files) {
             if (trees == null || CollectionUtils.isEmpty(trees.getTree())) {
@@ -139,7 +123,7 @@ public class ArkLevelService {
                 log.info("[LEVEL]地图数据获取失败, 未找到文件夹{}", file);
                 return;
             }
-            trees = githubRepo.getTrees(githubToken, maaRepo, tree.getSha());
+            trees = githubRepo.getTrees(githubToken, tree.getSha());
         }
         if (trees == null || CollectionUtils.isEmpty(trees.getTree())) {
             log.info("[LEVEL]地图数据获取失败, 未找到文件夹{}", tilePosPath);
@@ -264,104 +248,4 @@ public class ArkLevelService {
         }
     }
 
-    @Async
-    public void runSyncLevelDataTaskForJGit() {
-        log.info("[LEVEL]开始同步地图数据");
-        Git git = getGitRepository();
-        if (git == null) {
-            return;
-        }
-        String lastCommit;
-        try {
-            lastCommit = git.log().setMaxCount(1).call().iterator().next().getName();
-        } catch (Exception exception) {
-            exception.printStackTrace();
-            log.warn("[LEVEL]获取最新commit失败");
-            return;
-        }
-        String cacheCommit = redisCache.getCacheLevelCommit();
-        if (Objects.equals(cacheCommit, lastCommit)) {
-            log.info("[LEVEL]地图数据已是最新");
-            return;
-        }
-        if (!gitCheckout(git, lastCommit)) {
-            return;
-        }
-
-        File file = new File(Path.of(localRepository, jsonPath).toUri());
-        if (!file.exists()) {
-            log.warn("[LEVEL]地图数据获取失败, 未找到文件夹{}", jsonPath);
-            return;
-        }
-        List<File> jsons = Arrays.stream(Objects.requireNonNull(file.listFiles())).filter(f -> f.isFile() && f.getName().endsWith(".json")).toList();
-        log.info("[LEVEL]已发现{}份地图数据", jsons.size());
-
-        List<String> shaList = arkLevelRepo.findAllShaBy().stream().map(ArkLevelSha::getSha).toList();
-        try (ObjectInserter inserter = git.getRepository().newObjectInserter()) {
-
-            int errorCount = 0;
-            int handleCount = 0;
-            for (File ignored : jsons) {
-                try {
-                    byte[] bytes = Files.readAllBytes(file.toPath());
-                    String sha = inserter.idFor(Constants.OBJ_BLOB, bytes).name();
-                    if (shaList.contains(sha)) {
-                        continue;
-                    }
-                    ArkTilePos tilePos = mapper.readValue(bytes, ArkTilePos.class);
-                    ArkLevel level = parserService.parseLevel(tilePos, sha);
-                    if (level == null) {
-                        errorCount++;
-                        log.info("[LEVEL]地图数据解析失败:" + file.getPath());
-                        continue;
-                    }
-                    arkLevelRepo.save(level);
-                    handleCount++;
-                } catch (IOException e) {
-                    errorCount++;
-                    e.printStackTrace();
-                }
-            }
-            log.info("[LEVEL]{}份地图数据更新成功", handleCount);
-            if (errorCount > 0) {
-                log.warn("[LEVEL]{}份地图数据更新失败", errorCount);
-                return;
-            }
-            redisCache.setCacheLevelCommit(lastCommit);
-        }
-    }
-
-    private Git getGitRepository() {
-        if (Files.exists(Path.of(localRepository, ".git"))) {
-            try {
-                Repository repository = new FileRepositoryBuilder().setGitDir(Path.of(localRepository, ".git").toFile()).build();
-                return new Git(repository);
-            } catch (Exception exception) {
-                exception.printStackTrace();
-                log.warn("[LEVEL]地图数据pull失败");
-                return null;
-            }
-        } else {
-            try {
-                //TODO:需要超时机制
-                return Git.cloneRepository().setURI(gitRepository).setDirectory(new File(localRepository)).setNoCheckout(true).call();
-            } catch (Exception exception) {
-                exception.printStackTrace();
-                log.warn("[LEVEL]地图数据拉取失败失败");
-                return null;
-            }
-        }
-    }
-
-    private boolean gitCheckout(Git git, String lastCommit) {
-        try {
-            git.pull().call();
-            git.checkout().setStartPoint(lastCommit).addPath(jsonPath).call();
-        } catch (Exception exception) {
-            exception.printStackTrace();
-            log.warn("[LEVEL]地图数据checkout失败");
-            return false;
-        }
-        return true;
-    }
 }
