@@ -5,7 +5,7 @@
 </p>
 <div style="margin: 10px 0;">
     <p style="font-size: 18px; font-weight: 500;">
-        Re: ${title}
+        ${title}
     </p>
     <hr>
     <p>
