@@ -1,6 +1,7 @@
 package plus.maa.backend.service;
 
 import cn.hutool.extra.mail.MailAccount;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -41,16 +42,15 @@ public class EmailService {
 
     private final RedisCache redisCache;
 
-    /**
-     * 装配发件人信息
-     *
-     * @return mailAccount
-     */
-    private MailAccount getMailAccount() {
-        Mail mail = maaCopilotProperties.getMail();
+    private final MailAccount MAIL_ACCOUNT = new MailAccount();
 
-        MailAccount mailAccount = new MailAccount();
-        mailAccount
+    /**
+     * 初始化邮件账户信息
+     */
+    @PostConstruct
+    private void initMailAccount() {
+        Mail mail = maaCopilotProperties.getMail();
+        MAIL_ACCOUNT
                 .setHost(mail.getHost())
                 .setPort(mail.getPort())
                 .setFrom(mail.getFrom())
@@ -58,7 +58,8 @@ public class EmailService {
                 .setPass(mail.getPass())
                 .setSslEnable(mail.getSsl())
                 .setStarttlsEnable(mail.getStarttls());
-        return mailAccount;
+
+        log.info("邮件账户信息初始化完成: {}", MAIL_ACCOUNT);
     }
 
     /**
@@ -78,7 +79,7 @@ public class EmailService {
             log.warn("Email not sent, no-send enabled");
         } else {
             EmailBusinessObject.builder()
-                    .setMailAccount(getMailAccount())
+                    .setMailAccount(MAIL_ACCOUNT)
                     .setEmail(email)
                     .sendVerificationCodeMessage(vcode);
         }
@@ -125,7 +126,7 @@ public class EmailService {
             log.warn("Email not sent, no-send enabled");
         } else {
             EmailBusinessObject.builder()
-                    .setMailAccount(getMailAccount())
+                    .setMailAccount(MAIL_ACCOUNT)
                     .setEmail(email)
                     .sendActivateUrlMessage(url);
         }
@@ -153,7 +154,7 @@ public class EmailService {
         map.put("reMessage", commentNotification.getReMessage());
         EmailBusinessObject.builder()
                 .setTitle("收到新回复 来自用户@" + commentNotification.getReName() + " Re: " + map.get("title"))
-                .setMailAccount(getMailAccount())
+                .setMailAccount(MAIL_ACCOUNT)
                 .setEmail(email)
                 .sendCommentNotification(map);
 
