@@ -54,8 +54,9 @@ public class UserService {
      */
     public MaaLoginRsp login(LoginDTO loginDTO) {
         var user = userRepository.findByEmail(loginDTO.getEmail());
-        if (user == null || !passwordEncoder.matches(loginDTO.getPassword(), user.getPassword()))
-            throw new MaaResultException(401, "登陆失败");
+        if (user == null || !passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
+            throw new MaaResultException(401, "用户不存在或者密码错误");
+        }
 
         var jwtId = UUID.randomUUID().toString();
         var jwtIds = user.getRefreshJwtIds();
