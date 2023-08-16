@@ -14,6 +14,7 @@ import plus.maa.backend.config.external.MaaCopilotProperties;
 import plus.maa.backend.controller.request.comments.CommentsAddDTO;
 import plus.maa.backend.controller.request.comments.CommentsQueriesDTO;
 import plus.maa.backend.controller.request.comments.CommentsRatingDTO;
+import plus.maa.backend.controller.request.comments.CommentsToppingDTO;
 import plus.maa.backend.controller.response.comments.CommentsAreaInfo;
 import plus.maa.backend.controller.response.comments.CommentsInfo;
 import plus.maa.backend.controller.response.comments.SubCommentsInfo;
@@ -217,6 +218,26 @@ public class CommentsAreaService {
         commentsAreaRepository.save(commentsArea);
     }
 
+    /**
+     * 评论置顶
+     *
+     * @param userId             登录用户 id
+     * @param commentsToppingDTO CommentsToppingDTO
+     */
+    public void topping(String userId, CommentsToppingDTO commentsToppingDTO) {
+        CommentsArea commentsArea = findCommentsById(commentsToppingDTO.getCommentId());
+        Assert.isTrue(!commentsArea.isDelete(), "评论不存在");
+        // 只允许作者置顶评论
+        copilotRepository.findByCopilotId(commentsArea.getCopilotId())
+                .ifPresent(copilot -> {
+                            Assert.isTrue(
+                                    Objects.equals(userId, copilot.getUploaderId()),
+                                    "只有作者才能置顶评论");
+                            commentsArea.setTopping(commentsToppingDTO.isTopping());
+                            commentsAreaRepository.save(commentsArea);
+                        }
+                );
+    }
 
     /**
      * 查询
@@ -225,6 +246,8 @@ public class CommentsAreaService {
      * @return CommentsAreaInfo
      */
     public CommentsAreaInfo queriesCommentsArea(CommentsQueriesDTO request) {
+        Sort.Order toppingOrder = Sort.Order.desc("topping");
+
         Sort.Order sortOrder = new Sort.Order(
                 request.isDesc() ? Sort.Direction.DESC : Sort.Direction.ASC,
                 Optional.ofNullable(request.getOrderBy())
@@ -239,7 +262,7 @@ public class CommentsAreaService {
         int limit = request.getLimit() > 0 ? request.getLimit() : 10;
 
 
-        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(sortOrder));
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(toppingOrder, sortOrder));
 
 
         //主评论

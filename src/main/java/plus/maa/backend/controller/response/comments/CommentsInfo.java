@@ -27,5 +27,6 @@ public class CommentsInfo {
     private String message;
     private LocalDateTime uploadTime;
     private int like;
+    private boolean topping;
     private List<SubCommentsInfo> subCommentsInfos = new ArrayList<>();
 }

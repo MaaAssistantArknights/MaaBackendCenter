@@ -42,6 +42,9 @@ public class CommentsArea implements Serializable {
 
     private LocalDateTime uploadTime = LocalDateTime.now();
 
+    // 是否将该评论置顶
+    private boolean topping;
+
     private boolean delete;
 
     private LocalDateTime deleteTime;

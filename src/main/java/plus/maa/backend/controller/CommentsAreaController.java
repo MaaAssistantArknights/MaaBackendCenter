@@ -12,12 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.JsonSchema;
 import plus.maa.backend.config.SpringDocConfig;
 import plus.maa.backend.config.security.AuthenticationHelper;
-import plus.maa.backend.controller.request.comments.CommentsAddDTO;
-import plus.maa.backend.controller.request.comments.CommentsDeleteDTO;
-import plus.maa.backend.controller.request.comments.CommentsQueriesDTO;
-import plus.maa.backend.controller.request.comments.CommentsRatingDTO;
-import plus.maa.backend.controller.response.comments.CommentsAreaInfo;
+import plus.maa.backend.controller.request.comments.*;
 import plus.maa.backend.controller.response.MaaResult;
+import plus.maa.backend.controller.response.comments.CommentsAreaInfo;
 import plus.maa.backend.service.CommentsAreaService;
 
 /**
@@ -86,6 +83,18 @@ public class CommentsAreaController {
             @Parameter(description = "评论点赞对象") @Valid @RequestBody CommentsRatingDTO commentsRatingDTO
     ) {
         commentsAreaService.rates(authHelper.requireUserId(), commentsRatingDTO);
+        return MaaResult.success("成功");
+    }
+
+    @JsonSchema
+    @Operation(summary = "为评论置顶/取消置顶")
+    @ApiResponse(description = "置顶/取消置顶结果")
+    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @PostMapping("/topping")
+    public MaaResult<String> toppingComments(
+            @Parameter(description = "评论置顶对象") @Valid @RequestBody CommentsToppingDTO commentsToppingDTO
+    ) {
+        commentsAreaService.topping(authHelper.requireUserId(), commentsToppingDTO);
         return MaaResult.success("成功");
     }
 
