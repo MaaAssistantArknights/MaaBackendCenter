@@ -45,6 +45,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -213,18 +214,20 @@ public class CopilotService {
      */
     public CopilotPageInfo queriesCopilot(@Nullable String userId, CopilotQueriesRequest request) {
         // 只缓存默认状态下热度和访问量排序的结果，并且最多只缓存前三页
-        String cacheKey = null;
+        AtomicReference<String> cacheKey = new AtomicReference<>();
         if (request.getPage() <= 3 && request.getDocument() == null && request.getLevelKeyword() == null &&
                 request.getUploaderId() == null && request.getOperator() == null) {
-            CopilotPageInfo cache = switch (request.getOrderBy()) {
-                case "hot", "views" -> {
-                    cacheKey = String.format("home:%s:%s", request.getOrderBy(), request.hashCode());
-                    yield redisCache.getCache(cacheKey, CopilotPageInfo.class);
-                }
-                default -> null;
-            };
-            if (cache != null) {
-                return cache;
+            Optional<CopilotPageInfo> cacheOptional = Optional.ofNullable(request.getOrderBy())
+                    .filter(StringUtils::isNotBlank)
+                    .map(ob -> switch (ob) {
+                        case "hot", "views" -> {
+                            cacheKey.set(String.format("home:%s:%s", ob, request.hashCode()));
+                            yield redisCache.getCache(cacheKey.get(), CopilotPageInfo.class);
+                        }
+                        default -> null;
+                    });
+            if (cacheOptional.isPresent()) {
+                return cacheOptional.get();
             }
         }
 
@@ -346,9 +349,9 @@ public class CopilotService {
                 .setPage(pageNumber);
 
         // 决定是否缓存
-        if (cacheKey != null) {
+        if (cacheKey.get() != null) {
             // 缓存一小时
-            redisCache.setCache(cacheKey, data, 3600);
+            redisCache.setCache(cacheKey.get(), data, 3600);
         }
         return data;
     }
