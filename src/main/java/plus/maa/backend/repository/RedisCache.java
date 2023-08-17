@@ -75,11 +75,11 @@ public class RedisCache {
         }
     }
 
-    public <T> void setTheSet(final String key, Collection<T> set, long timeout) {
-        setTheSet(key, set, timeout, TimeUnit.SECONDS);
+    public <T> void addSet(final String key, Collection<T> set, long timeout) {
+        addSet(key, set, timeout, TimeUnit.SECONDS);
     }
 
-    public <T> void setTheSet(final String key, Collection<T> set, long timeout, TimeUnit timeUnit) {
+    public <T> void addSet(final String key, Collection<T> set, long timeout, TimeUnit timeUnit) {
         String[] jsonList = new String[set.size()];
         try {
             int i = 0;

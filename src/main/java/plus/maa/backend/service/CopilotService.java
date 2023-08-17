@@ -358,10 +358,10 @@ public class CopilotService {
             if ("hot".equals(request.getOrderBy())) {
                 // 热度榜缓存一天
                 timout = 3600 * 24;
-                redisCache.setTheSet("home:hot:copilotIds", copilotIds, timout);
+                redisCache.addSet("home:hot:copilotIds", copilotIds, timout);
             } else {
                 // 其他均保持默认
-                redisCache.setTheSet("home:copilotIds", copilotIds, timout);
+                redisCache.addSet("home:copilotIds", copilotIds, timout);
             }
             redisCache.setCache(cacheKey.get(), data, timout);
         }
