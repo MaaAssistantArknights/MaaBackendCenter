@@ -1,6 +1,5 @@
 package plus.maa.backend.controller.request.copilot;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.Max;
 import lombok.AllArgsConstructor;
@@ -18,15 +17,12 @@ public class CopilotQueriesRequest {
     private int page = 0;
     @Max(value = 50, message = "单页大小不得超过50")
     private int limit = 10;
-    @JsonAlias("level_keyword")
     private String levelKeyword;
     private String operator;
     private String content;
     private String document;
-    @JsonAlias("uploader_id")
     private String uploaderId;
     private boolean desc = true;
-    @JsonAlias("order_by")
     private String orderBy;
     private String language;
 

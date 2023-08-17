@@ -166,9 +166,11 @@ public class CopilotService {
              * 删除作业时，如果被删除的项在 Redis 首页缓存中存在，则清空首页缓存
              * 新增作业就不必，因为新作业显然不会那么快就登上热度榜和浏览量榜
              */
-            if (redisCache.valueMemberInSet("home:hot:copilotIds", copilot.getCopilotId())
-                    || redisCache.valueMemberInSet("home:copilotIds", copilot.getCopilotId())) {
-                redisCache.removeCacheByPattern("home:*");
+            if (redisCache.valueMemberInSet("home:hot:copilotIds", copilot.getCopilotId())) {
+                redisCache.removeCacheByPattern("home:hot:*");
+            }
+            if (redisCache.valueMemberInSet("home:views:copilotIds", copilot.getCopilotId())) {
+                redisCache.removeCacheByPattern("home:views:*");
             }
         });
     }
