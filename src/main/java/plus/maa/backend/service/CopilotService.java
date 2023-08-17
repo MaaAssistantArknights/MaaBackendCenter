@@ -11,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -162,6 +161,11 @@ public class CopilotService {
             Assert.state(Objects.equals(copilot.getUploaderId(), loginUserId), "您无法修改不属于您的作业");
             copilot.setDelete(true);
             copilotRepository.save(copilot);
+            /*
+             * 删除作业时，删除首页的所有缓存，因为此时首页内容可能发生变化
+             * 新增作业就不必，因为新作业显然不会那么快就登上热度榜和浏览量榜
+             */
+            redisCache.removeCacheByPattern("home:*");
         });
     }
 
@@ -207,14 +211,23 @@ public class CopilotService {
      * @param request 模糊查询
      * @return CopilotPageInfo
      */
-    @Cacheable(
-            cacheNames = "copilotPage",
-            key = "#request",
-            condition = "(#request.orderBy EQ 'hot' OR #request.orderBy EQ 'views')" +
-                    "AND #request.document == null AND #request.levelKeyword == null " +
-                    "AND #request.uploaderId == null AND #request.operator == null"
-    )
     public CopilotPageInfo queriesCopilot(@Nullable String userId, CopilotQueriesRequest request) {
+        // 只缓存默认状态下热度和访问量排序的结果，并且最多只缓存前三页
+        String cacheKey = null;
+        if (request.getPage() <= 3 && request.getDocument() == null && request.getLevelKeyword() == null &&
+                request.getUploaderId() == null && request.getOperator() == null) {
+            CopilotPageInfo cache = switch (request.getOrderBy()) {
+                case "hot", "views" -> {
+                    cacheKey = String.format("home:%s:%s", request.getOrderBy(), request.hashCode());
+                    yield redisCache.getCache(cacheKey, CopilotPageInfo.class);
+                }
+                default -> null;
+            };
+            if (cache != null) {
+                return cache;
+            }
+        }
+
         Sort.Order sortOrder = new Sort.Order(
                 request.isDesc() ? Sort.Direction.DESC : Sort.Direction.ASC,
                 Optional.ofNullable(request.getOrderBy())
@@ -287,13 +300,13 @@ public class CopilotService {
         }
 
         // 封装查询
-        if (andQueries.size() > 0) {
+        if (!andQueries.isEmpty()) {
             criteriaObj.andOperator(andQueries);
         }
-        if (norQueries.size() > 0) {
+        if (!norQueries.isEmpty()) {
             criteriaObj.norOperator(norQueries);
         }
-        if (orQueries.size() > 0) {
+        if (!orQueries.isEmpty()) {
             criteriaObj.orOperator(orQueries);
         }
         queryObj.addCriteria(criteriaObj);
@@ -326,11 +339,18 @@ public class CopilotService {
         boolean hasNext = count - (long) page * limit > 0;
 
         // 封装数据
-        return new CopilotPageInfo()
+        CopilotPageInfo data = new CopilotPageInfo()
                 .setTotal(count)
                 .setHasNext(hasNext)
                 .setData(infos)
                 .setPage(pageNumber);
+
+        // 决定是否缓存
+        if (cacheKey != null) {
+            // 缓存一小时
+            redisCache.setCache(cacheKey, data, 3600);
+        }
+        return data;
     }
 
     /**
