@@ -217,13 +217,20 @@ public class CopilotService {
      */
     public CopilotPageInfo queriesCopilot(@Nullable String userId, CopilotQueriesRequest request) {
         // 只缓存默认状态下热度和访问量排序的结果，并且最多只缓存前三页
+        AtomicLong timout = new AtomicLong(3600); // 默认缓存一小时
         AtomicReference<String> cacheKey = new AtomicReference<>();
+        AtomicReference<String> setKey = new AtomicReference<>();
         if (request.getPage() <= 3 && request.getDocument() == null && request.getLevelKeyword() == null &&
                 request.getUploaderId() == null && request.getOperator() == null) {
             Optional<CopilotPageInfo> cacheOptional = Optional.ofNullable(request.getOrderBy())
                     .filter(StringUtils::isNotBlank)
                     .map(ob -> switch (ob) {
                         case "hot", "views" -> {
+                            if ("hot".equals(ob)) {
+                                // 热度榜缓存一天
+                                timout.set(3600 * 24);
+                            }
+                            setKey.set(String.format("home:%s:copilotIds", ob));
                             cacheKey.set(String.format("home:%s:%s", ob, request.hashCode()));
                             yield redisCache.getCache(cacheKey.get(), CopilotPageInfo.class);
                         }
@@ -353,17 +360,10 @@ public class CopilotService {
 
         // 决定是否缓存
         if (cacheKey.get() != null) {
-            // 默认缓存一小时
-            long timout = 3600;
-            if ("hot".equals(request.getOrderBy())) {
-                // 热度榜缓存一天
-                timout = 3600 * 24;
-                redisCache.addSet("home:hot:copilotIds", copilotIds, timout);
-            } else {
-                // 其他均保持默认
-                redisCache.addSet("home:copilotIds", copilotIds, timout);
-            }
-            redisCache.setCache(cacheKey.get(), data, timout);
+            // 记录存在的作业id
+            redisCache.addSet(setKey.get(), copilotIds, timout.get());
+            // 缓存数据
+            redisCache.setCache(cacheKey.get(), data, timout.get());
         }
         return data;
     }
