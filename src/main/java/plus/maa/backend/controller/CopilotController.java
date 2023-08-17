@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -14,9 +15,9 @@ import plus.maa.backend.config.security.AuthenticationHelper;
 import plus.maa.backend.controller.request.copilot.CopilotCUDRequest;
 import plus.maa.backend.controller.request.copilot.CopilotQueriesRequest;
 import plus.maa.backend.controller.request.copilot.CopilotRatingReq;
+import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.copilot.CopilotInfo;
 import plus.maa.backend.controller.response.copilot.CopilotPageInfo;
-import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.service.CopilotService;
 
 /**
@@ -70,29 +71,8 @@ public class CopilotController {
     @ApiResponse(description = "作业信息")
     @GetMapping("/query")
     public MaaResult<CopilotPageInfo> queriesCopilot(
-            @RequestParam(name = "page", required = false, defaultValue = "0") int page,
-            @RequestParam(name = "limit", required = false, defaultValue = "10") int limit,
-            @RequestParam(name = "level_keyword", required = false) String levelKeyword,
-            @RequestParam(name = "operator", required = false) String operator,
-            @RequestParam(name = "content", required = false) String content,
-            @RequestParam(name = "document", required = false) String document,
-            @RequestParam(name = "uploader_id", required = false) String uploaderId,
-            @RequestParam(name = "desc", required = false, defaultValue = "true") boolean desc,
-            @RequestParam(name = "order_by", required = false) String orderBy,
-            @RequestParam(name = "language", required = false) String language
+            @Parameter(description = "作业查询请求") @Valid CopilotQueriesRequest parsed
     ) {
-        var parsed = new CopilotQueriesRequest(
-                page,
-                limit,
-                levelKeyword,
-                operator,
-                content,
-                document,
-                uploaderId,
-                desc,
-                orderBy,
-                language
-        );
         return MaaResult.success(copilotService.queriesCopilot(helper.getUserId(), parsed));
     }
 

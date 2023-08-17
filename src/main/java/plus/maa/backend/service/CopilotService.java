@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -200,11 +201,19 @@ public class CopilotService {
 
     /**
      * 分页查询。传入 userId 不为空时限制为用户所有的数据
+     * 会缓存默认状态下热度和访问量排序的结果
      *
      * @param userId  获取已登录用户自己的作业数据
      * @param request 模糊查询
      * @return CopilotPageInfo
      */
+    @Cacheable(
+            cacheNames = "copilotPage",
+            key = "#request",
+            condition = "(#request.orderBy EQ 'hot' OR #request.orderBy EQ 'views')" +
+                    "AND #request.document == null AND #request.levelKeyword == null " +
+                    "AND #request.uploaderId == null AND #request.operator == null"
+    )
     public CopilotPageInfo queriesCopilot(@Nullable String userId, CopilotQueriesRequest request) {
         Sort.Order sortOrder = new Sort.Order(
                 request.isDesc() ? Sort.Direction.DESC : Sort.Direction.ASC,
