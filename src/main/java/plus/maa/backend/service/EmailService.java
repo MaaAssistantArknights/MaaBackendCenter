@@ -14,6 +14,7 @@ import org.springframework.util.Assert;
 import plus.maa.backend.common.bo.EmailBusinessObject;
 import plus.maa.backend.config.external.MaaCopilotProperties;
 import plus.maa.backend.config.external.Mail;
+import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.repository.RedisCache;
 import plus.maa.backend.service.model.CommentNotification;
 
@@ -87,10 +88,17 @@ public class EmailService {
         redisCache.setCache("vCodeEmail:" + email, vcode, expire);
     }
 
-    @Async
+    /**
+     * 检验验证码并抛出异常
+     * @param email 邮箱
+     * @param vcode 验证码
+     * @throws MaaResultException 验证码错误
+     */
     public void verifyVCode(String email, String vcode) {
         String cacheVCode = redisCache.getCache("vCodeEmail:" + email, String.class);
-        Assert.state(StringUtils.equalsIgnoreCase(cacheVCode, vcode), "验证码错误");
+        if (!StringUtils.equalsIgnoreCase(cacheVCode, vcode)) {
+            throw new MaaResultException(401, "验证码错误");
+        }
         redisCache.removeCache("vCodeEmail:" + email);
     }
 
