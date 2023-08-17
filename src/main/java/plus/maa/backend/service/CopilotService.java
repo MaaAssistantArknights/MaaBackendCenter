@@ -163,10 +163,13 @@ public class CopilotService {
             copilot.setDelete(true);
             copilotRepository.save(copilot);
             /*
-             * 删除作业时，删除首页的所有缓存，因为此时首页内容可能发生变化
+             * 删除作业时，如果被删除的项在 Redis 首页缓存中存在，则清空首页缓存
              * 新增作业就不必，因为新作业显然不会那么快就登上热度榜和浏览量榜
              */
-            redisCache.removeCacheByPattern("home:*");
+            if (redisCache.valueMemberInSet("home:hot:copilotIds", copilot.getCopilotId())
+                    || redisCache.valueMemberInSet("home:copilotIds", copilot.getCopilotId())) {
+                redisCache.removeCacheByPattern("home:*");
+            }
         });
     }
 
@@ -350,8 +353,17 @@ public class CopilotService {
 
         // 决定是否缓存
         if (cacheKey.get() != null) {
-            // 缓存一小时
-            redisCache.setCache(cacheKey.get(), data, 3600);
+            // 默认缓存一小时
+            long timout = 3600;
+            if ("hot".equals(request.getOrderBy())) {
+                // 热度榜缓存一天
+                timout = 3600 * 24;
+                redisCache.setTheSet("home:hot:copilotIds", copilotIds, timout);
+            } else {
+                // 其他均保持默认
+                redisCache.setTheSet("home:copilotIds", copilotIds, timout);
+            }
+            redisCache.setCache(cacheKey.get(), data, timout);
         }
         return data;
     }

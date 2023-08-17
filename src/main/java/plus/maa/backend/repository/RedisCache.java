@@ -16,6 +16,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -62,6 +63,9 @@ public class RedisCache {
         try {
             json = writeMapper.writeValueAsString(value);
         } catch (JsonProcessingException e) {
+            if (log.isDebugEnabled()) {
+                log.debug(e.getMessage(), e);
+            }
             return;
         }
         if (timeout <= 0) {
@@ -69,6 +73,44 @@ public class RedisCache {
         } else {
             redisTemplate.opsForValue().set(key, json, timeout, timeUnit);
         }
+    }
+
+    public <T> void setTheSet(final String key, Collection<T> set, long timeout) {
+        setTheSet(key, set, timeout, TimeUnit.SECONDS);
+    }
+
+    public <T> void setTheSet(final String key, Collection<T> set, long timeout, TimeUnit timeUnit) {
+        String[] jsonList = new String[set.size()];
+        try {
+            int i = 0;
+            for (T t : set) {
+                jsonList[i++] = writeMapper.writeValueAsString(t);
+            }
+        } catch (JsonProcessingException e) {
+            if (log.isDebugEnabled()) {
+                log.debug(e.getMessage(), e);
+            }
+            return;
+        }
+        if (timeout <= 0) {
+            redisTemplate.opsForSet().add(key, jsonList);
+        } else {
+            redisTemplate.opsForSet().add(key, jsonList);
+            redisTemplate.expire(key, timeout, timeUnit);
+        }
+    }
+
+    public <T> boolean valueMemberInSet(final String key, T value) {
+        String json;
+        try {
+            json = writeMapper.writeValueAsString(value);
+        } catch (JsonProcessingException e) {
+            if (log.isDebugEnabled()) {
+                log.debug(e.getMessage(), e);
+            }
+            return false;
+        }
+        return Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(key, json));
     }
 
     public <T> T getCache(final String key, Class<T> valueType) {
