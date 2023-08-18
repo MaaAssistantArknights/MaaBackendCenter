@@ -101,16 +101,17 @@ public class RedisCache {
     }
 
     public <T> boolean valueMemberInSet(final String key, T value) {
-        String json;
         try {
-            json = writeMapper.writeValueAsString(value);
+            String json = writeMapper.writeValueAsString(value);
+            return Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(key, json));
         } catch (JsonProcessingException e) {
             if (log.isDebugEnabled()) {
                 log.debug(e.getMessage(), e);
             }
-            return false;
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
         }
-        return Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(key, json));
+        return false;
     }
 
     public <T> T getCache(final String key, Class<T> valueType) {
