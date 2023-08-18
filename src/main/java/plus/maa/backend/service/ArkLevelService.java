@@ -173,32 +173,27 @@ public class ArkLevelService {
 
             @Override
             public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
-                if (!response.isSuccessful()) {
-                    task.fail();
-                    log.error("[LEVEL]下载地图数据失败:" + tree.getPath());
-                    return;
-                }
-                ResponseBody body = response.body();
-                if (body == null) {
-                    task.fail();
-                    log.error("[LEVEL]下载地图数据失败:" + tree.getPath());
-                    return;
-                }
-                ArkTilePos tilePos = mapper.readValue(body.string(), ArkTilePos.class);
+                try (ResponseBody rspBody = response.body()) {
+                    if (!response.isSuccessful()) {
+                        task.fail();
+                        log.error("[LEVEL]下载地图数据失败:" + tree.getPath());
+                        return;
+                    }
+                    ArkTilePos tilePos = mapper.readValue(rspBody.string(), ArkTilePos.class);
+                    ArkLevel level = parserService.parseLevel(tilePos, tree.getSha());
+                    if (level == null) {
+                        task.fail();
+                        log.info("[LEVEL]地图数据解析失败:" + tree.getPath());
+                        return;
+                    } else if (level == ArkLevel.EMPTY) {
+                        task.pass();
+                        return;
+                    }
+                    arkLevelRepo.save(level);
 
-                ArkLevel level = parserService.parseLevel(tilePos, tree.getSha());
-                if (level == null) {
-                    task.fail();
-                    log.info("[LEVEL]地图数据解析失败:" + tree.getPath());
-                    return;
-                } else if (level == ArkLevel.EMPTY) {
-                    task.pass();
-                    return;
+                    task.success();
+                    log.info("[LEVEL]下载地图数据 {} 成功, 进度{}/{}, 用时:{}s", tilePos.getName(), task.getCurrent(), task.getTotal(), task.getDuration());
                 }
-                arkLevelRepo.save(level);
-
-                task.success();
-                log.info("[LEVEL]下载地图数据 {} 成功, 进度{}/{}, 用时:{}s", tilePos.getName(), task.getCurrent(), task.getTotal(), task.getDuration());
             }
         });
     }
