@@ -45,6 +45,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserDetailServiceImpl userDetailService;
     private final JwtService jwtService;
+    private final MaaUserConverter maaUserConverter;
 
     /**
      * 登录方法
@@ -75,7 +76,7 @@ public class UserService {
                 refreshToken.getValue(),
                 refreshToken.getExpiresAt(),
                 refreshToken.getNotBefore(),
-                MaaUserConverter.INSTANCE.convert(user)
+                maaUserConverter.convert(user)
         );
     }
 
@@ -195,7 +196,7 @@ public class UserService {
                     refreshToken.getValue(),
                     refreshToken.getExpiresAt(),
                     refreshToken.getNotBefore(),
-                    MaaUserConverter.INSTANCE.convert(user)
+                    maaUserConverter.convert(user)
             );
         } catch (JwtInvalidException | JwtExpiredException | NoSuchElementException e) {
             throw new MaaResultException(401, e.getMessage());

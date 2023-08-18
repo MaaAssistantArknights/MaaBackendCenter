@@ -1,7 +1,6 @@
 package plus.maa.backend.common.utils.converter;
 
 import org.mapstruct.*;
-import org.mapstruct.factory.Mappers;
 import plus.maa.backend.controller.request.copilot.CopilotDTO;
 import plus.maa.backend.controller.response.copilot.CopilotInfo;
 import plus.maa.backend.repository.entity.Copilot;
@@ -14,9 +13,8 @@ import java.time.LocalDateTime;
  * Date  2023-01-10 19:10
  */
 
-@Mapper
+@Mapper(componentModel = "spring")
 public interface CopilotConverter {
-    CopilotConverter INSTANCE = Mappers.getMapper(CopilotConverter.class);
 
     /**
      * 实现增量更新

@@ -51,6 +51,8 @@ public class CommentsAreaService {
 
     private final MaaUser UNKNOWN_USER = new MaaUser().setUserName("未知用户:(");
 
+    private final CommentConverter commentConverter;
+
 
     /**
      * 评论
@@ -310,7 +312,7 @@ public class CommentsAreaService {
         //转换主评论数据并填充用户名
         List<CommentsInfo> commentsInfos = mainCommentsList.stream().map(mainComment -> {
             CommentsInfo commentsInfo =
-                    CommentConverter.INSTANCE
+                    commentConverter
                             .toCommentsInfo(
                                     mainComment
                                     , mainComment.getId()
@@ -325,7 +327,7 @@ public class CommentsAreaService {
                     .filter(comment -> Objects.equals(commentsInfo.getCommentId(), comment.getMainCommentId()))
                     //转换子评论数据并填充用户名
                     .map(subComment ->
-                            CommentConverter.INSTANCE
+                            commentConverter
                                     .toSubCommentsInfo(
                                             subComment
                                             , subComment.getId()

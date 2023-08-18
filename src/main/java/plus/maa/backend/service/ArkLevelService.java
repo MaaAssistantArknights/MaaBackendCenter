@@ -63,6 +63,7 @@ public class ArkLevelService {
     private final ArkGameDataService gameDataService;
     private final ObjectMapper mapper = new ObjectMapper();
     private final OkHttpClient okHttpClient;
+    private final ArkLevelConverter arkLevelConverter;
 
     private final List<String> bypassFileNames = List.of("overview.json");
 
@@ -70,20 +71,20 @@ public class ArkLevelService {
     public List<ArkLevelInfo> getArkLevelInfos() {
         return arkLevelRepo.findAll()
                 .stream()
-                .map(ArkLevelConverter.INSTANCE::convert)
+                .map(arkLevelConverter::convert)
                 .collect(Collectors.toList());
     }
 
     @Cacheable("arkLevel")
     public ArkLevelInfo findByLevelIdFuzzy(String levelId) {
         ArkLevel level = arkLevelRepo.findByLevelIdFuzzy(levelId).findAny().orElse(null);
-        return ArkLevelConverter.INSTANCE.convert(level);
+        return arkLevelConverter.convert(level);
     }
 
 
     public List<ArkLevelInfo> queryLevelByKeyword(String keyword) {
         List<ArkLevel> levels = arkLevelRepo.queryLevelByKeyword(keyword).collect(Collectors.toList());
-        return ArkLevelConverter.INSTANCE.convert(levels);
+        return arkLevelConverter.convert(levels);
     }
 
     /**

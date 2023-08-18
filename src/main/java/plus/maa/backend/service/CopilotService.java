@@ -63,9 +63,11 @@ public class CopilotService {
     private final ArkLevelService levelService;
     private final RedisCache redisCache;
     private final UserRepository userRepository;
-    private final CopilotRatingRepository copilotRatingRepository;
-    private final AtomicLong copilotIncrementId = new AtomicLong(20000);
     private final CommentsAreaRepository commentsAreaRepository;
+    private final CopilotRatingRepository copilotRatingRepository;
+
+    private final CopilotConverter copilotConverter;
+    private final AtomicLong copilotIncrementId = new AtomicLong(20000);
 
     /*
         首页分页查询缓存配置
@@ -156,7 +158,7 @@ public class CopilotService {
     public Long upload(String loginUserId, String content) {
         CopilotDTO copilotDTO = correctCopilot(parseToCopilotDto(content));
         // 将其转换为数据库存储对象
-        Copilot copilot = CopilotConverter.INSTANCE.toCopilot(
+        Copilot copilot = copilotConverter.toCopilot(
                 copilotDTO, loginUserId,
                 LocalDateTime.now(), copilotIncrementId.getAndIncrement(),
                 content);
@@ -393,7 +395,7 @@ public class CopilotService {
             CopilotDTO copilotDTO = correctCopilot(parseToCopilotDto(content));
             Assert.state(Objects.equals(copilot.getUploaderId(), loginUserId), "您无法修改不属于您的作业");
             copilot.setUploadTime(LocalDateTime.now());
-            CopilotConverter.INSTANCE.updateCopilotFromDto(copilotDTO, content, copilot);
+            copilotConverter.updateCopilotFromDto(copilotDTO, content, copilot);
             copilotRepository.save(copilot);
         });
     }
@@ -520,7 +522,7 @@ public class CopilotService {
      */
     private CopilotInfo formatCopilot(String userIdOrIpAddress, Copilot copilot, CopilotRating rating, String userName,
                                       Long commentsCount) {
-        CopilotInfo info = CopilotConverter.INSTANCE.toCopilotInfo(copilot, userName, copilot.getCopilotId(),
+        CopilotInfo info = copilotConverter.toCopilotInfo(copilot, userName, copilot.getCopilotId(),
                 commentsCount);
         Optional<CopilotRating> copilotRating = Optional.ofNullable(rating);
 

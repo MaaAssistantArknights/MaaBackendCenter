@@ -5,6 +5,7 @@ plugins {
     id 'io.freefair.lombok' version '8.1.0'
     id 'org.springdoc.openapi-gradle-plugin' version '1.6.0'
     id 'org.hidetake.swagger.generator' version '2.19.2'
+    id 'org.graalvm.buildtools.native' version '0.9.24'
 }
 
 group 'plus.maa'
@@ -18,10 +19,6 @@ repositories {
         url 'https://maven.aliyun.com/repository/spring/'
     }
     mavenCentral()
-}
-
-ext {
-    set('springCloudVersion', "2022.0.2")
 }
 
 dependencies {
@@ -46,7 +43,7 @@ dependencies {
     implementation 'com.sun.mail:javax.mail:1.6.2'
     implementation 'cn.hutool:hutool-extra:5.8.20'
     implementation 'cn.hutool:hutool-jwt:5.8.20'
-    implementation 'org.mapstruct:mapstruct:1.5.3.Final'
+    implementation 'org.mapstruct:mapstruct:1.5.5.Final'
     implementation 'org.eclipse.jgit:org.eclipse.jgit:6.6.0.202305301015-r'
     implementation 'org.eclipse.jgit:org.eclipse.jgit.ssh.apache.agent:6.6.0.202305301015-r'
     implementation 'org.freemarker:freemarker:2.3.32'
