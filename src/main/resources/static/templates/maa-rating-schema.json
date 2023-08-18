@@ -4,6 +4,7 @@
   "properties": {
     "rating": {
       "type": "string",
+      "description": "The rating must be Like, Dislike, None",
       "enum": [
         "Like",
         "Dislike",

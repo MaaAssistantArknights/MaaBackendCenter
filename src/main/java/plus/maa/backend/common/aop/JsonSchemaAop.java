@@ -55,7 +55,7 @@ public class JsonSchemaAop {
     public void before(JoinPoint joinPoint, JsonSchema jsonSchema) {
         String schema_json = null;
         String content = null;
-        //获取 CopilotCUDRequest形参的index
+        //判断是验证的是Copilot还是Rating
         for (Object arg : joinPoint.getArgs()) {
             if (arg instanceof CopilotCUDRequest) {
                 content = ((CopilotCUDRequest) arg).getContent();
@@ -82,6 +82,7 @@ public class JsonSchemaAop {
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (ValidationException e) {
+            log.warn("schema Location: {}", e.getViolatedSchema().getSchemaLocation());
             throw new MaaResultException(HttpStatus.BAD_REQUEST.value(), "数据不符合规范，请前往前端作业编辑器进行操作");
         }
     }

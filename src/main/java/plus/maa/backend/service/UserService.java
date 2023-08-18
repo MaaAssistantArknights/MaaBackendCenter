@@ -12,8 +12,8 @@ import org.springframework.stereotype.Service;
 import plus.maa.backend.common.MaaStatusCode;
 import plus.maa.backend.common.utils.converter.MaaUserConverter;
 import plus.maa.backend.controller.request.user.*;
-import plus.maa.backend.controller.response.user.MaaLoginRsp;
 import plus.maa.backend.controller.response.MaaResultException;
+import plus.maa.backend.controller.response.user.MaaLoginRsp;
 import plus.maa.backend.controller.response.user.MaaUserInfo;
 import plus.maa.backend.repository.RedisCache;
 import plus.maa.backend.repository.UserRepository;
@@ -104,6 +104,7 @@ public class UserService {
      */
     public MaaUserInfo register(RegisterDTO registerDTO) {
         String encode = passwordEncoder.encode(registerDTO.getPassword());
+
         MaaUser user = new MaaUser();
         BeanUtils.copyProperties(registerDTO, user);
         user.setPassword(encode);
@@ -236,15 +237,19 @@ public class UserService {
         Assert.notNull(email, "链接已过期");
         MaaUser user = userRepository.findByEmail(email);
 
-        if (Objects.equals(user.getStatus(), 1)) {
+        try {
+            if (Objects.equals(user.getStatus(), 1)) {
+                return;
+            }
+            // 激活账户
+            user.setStatus(1);
+            userRepository.save(user);
+
+            // 清除缓存
+        } finally {
             redisCache.removeCache("UUID:" + uuid);
-            return;
         }
-        // 激活账户
-        user.setStatus(1);
-        userRepository.save(user);
-        // 清除缓存
-        redisCache.removeCache("UUID:" + uuid);
     }
+
 
 }
