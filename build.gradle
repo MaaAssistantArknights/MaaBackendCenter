@@ -54,6 +54,7 @@ dependencies {
     implementation 'com.github.erosb:everit-json-schema:1.14.2'
     implementation 'com.google.guava:guava:32.1.1-jre'
     implementation 'org.aspectj:aspectjweaver:1.9.19'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 
     swaggerCodegen 'org.openapitools:openapi-generator-cli:6.5.0'
 

@@ -45,6 +45,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -65,6 +66,17 @@ public class CopilotService {
     private final CopilotRatingRepository copilotRatingRepository;
     private final AtomicLong copilotIncrementId = new AtomicLong(20000);
     private final CommentsAreaRepository commentsAreaRepository;
+
+    /*
+        首页分页查询缓存配置
+        格式为：需要缓存的 orderBy 类型（也就是榜单类型） -> 缓存时间
+        （Map.of()返回的是不可变对象，无需担心线程安全问题）
+     */
+    private static final Map<String, Long> HOME_PAGE_CACHE_CONFIG = Map.of(
+            "hot", 3600 * 24L,
+            "views", 3600L,
+            "id", 300L
+    );
 
     @PostConstruct
     public void init() {
@@ -161,6 +173,17 @@ public class CopilotService {
             Assert.state(Objects.equals(copilot.getUploaderId(), loginUserId), "您无法修改不属于您的作业");
             copilot.setDelete(true);
             copilotRepository.save(copilot);
+            /*
+             * 删除作业时，如果被删除的项在 Redis 首页缓存中存在，则清空对应的首页缓存
+             * 新增作业就不必，因为新作业显然不会那么快就登上热度榜和浏览量榜
+             */
+            for (var kv : HOME_PAGE_CACHE_CONFIG.entrySet()) {
+                String key = String.format("home:%s:copilotIds", kv.getKey());
+                String pattern = String.format("home:%s:*", kv.getKey());
+                if (redisCache.valueMemberInSet(key, copilot.getCopilotId())) {
+                    redisCache.removeCacheByPattern(pattern);
+                }
+            }
         });
     }
 
@@ -200,12 +223,37 @@ public class CopilotService {
 
     /**
      * 分页查询。传入 userId 不为空时限制为用户所有的数据
+     * 会缓存默认状态下热度和访问量排序的结果
      *
      * @param userId  获取已登录用户自己的作业数据
      * @param request 模糊查询
      * @return CopilotPageInfo
      */
     public CopilotPageInfo queriesCopilot(@Nullable String userId, CopilotQueriesRequest request) {
+
+        AtomicLong cacheTimeout = new AtomicLong();
+        AtomicReference<String> cacheKey = new AtomicReference<>();
+        AtomicReference<String> setKey = new AtomicReference<>();
+        // 只缓存默认状态下热度和访问量排序的结果，并且最多只缓存前三页
+        if (request.getPage() <= 3 && request.getDocument() == null && request.getLevelKeyword() == null &&
+                request.getUploaderId() == null && request.getOperator() == null) {
+
+            Optional<CopilotPageInfo> cacheOptional = Optional.ofNullable(request.getOrderBy())
+                    .filter(StringUtils::isNotBlank)
+                    .map(HOME_PAGE_CACHE_CONFIG::get)
+                    .map(t -> {
+                        cacheTimeout.set(t);
+                        setKey.set(String.format("home:%s:copilotIds", request.getOrderBy()));
+                        cacheKey.set(String.format("home:%s:%s", request.getOrderBy(), request.hashCode()));
+                        return redisCache.getCache(cacheKey.get(), CopilotPageInfo.class);
+                    });
+
+            // 如果缓存存在则直接返回
+            if (cacheOptional.isPresent()) {
+                return cacheOptional.get();
+            }
+        }
+
         Sort.Order sortOrder = new Sort.Order(
                 request.isDesc() ? Sort.Direction.DESC : Sort.Direction.ASC,
                 Optional.ofNullable(request.getOrderBy())
@@ -278,13 +326,13 @@ public class CopilotService {
         }
 
         // 封装查询
-        if (andQueries.size() > 0) {
+        if (!andQueries.isEmpty()) {
             criteriaObj.andOperator(andQueries);
         }
-        if (norQueries.size() > 0) {
+        if (!norQueries.isEmpty()) {
             criteriaObj.norOperator(norQueries);
         }
-        if (orQueries.size() > 0) {
+        if (!orQueries.isEmpty()) {
             criteriaObj.orOperator(orQueries);
         }
         queryObj.addCriteria(criteriaObj);
@@ -317,11 +365,20 @@ public class CopilotService {
         boolean hasNext = count - (long) page * limit > 0;
 
         // 封装数据
-        return new CopilotPageInfo()
+        CopilotPageInfo data = new CopilotPageInfo()
                 .setTotal(count)
                 .setHasNext(hasNext)
                 .setData(infos)
                 .setPage(pageNumber);
+
+        // 决定是否缓存
+        if (cacheKey.get() != null) {
+            // 记录存在的作业id
+            redisCache.addSet(setKey.get(), copilotIds, cacheTimeout.get());
+            // 缓存数据
+            redisCache.setCache(cacheKey.get(), data, cacheTimeout.get());
+        }
+        return data;
     }
 
     /**

@@ -45,21 +45,8 @@ public class CommentsAreaController {
     @Operation(summary = "分页查询评论")
     @ApiResponse(description = "评论区信息")
     public MaaResult<CommentsAreaInfo> queriesCommentsArea(
-            @RequestParam(name = "copilotId") Long copilotId,
-            @RequestParam(name = "page", required = false, defaultValue = "0") int page,
-            @RequestParam(name = "limit", required = false, defaultValue = "10") int limit,
-            @RequestParam(name = "desc", required = false, defaultValue = "true") boolean desc,
-            @RequestParam(name = "orderBy", required = false) String orderBy,
-            @RequestParam(name = "justSeeId", required = false) String justSeeId
+            @Parameter(description = "评论查询对象") @Valid CommentsQueriesDTO parsed
     ) {
-        var parsed = new CommentsQueriesDTO(
-                copilotId,
-                page,
-                limit,
-                desc,
-                orderBy,
-                justSeeId
-        );
         return MaaResult.success(commentsAreaService.queriesCommentsArea(parsed));
     }
 
