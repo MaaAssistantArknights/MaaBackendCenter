@@ -7,6 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import plus.maa.backend.repository.CopilotRatingRepository;
 import plus.maa.backend.repository.CopilotRepository;
+import plus.maa.backend.repository.RedisCache;
 import plus.maa.backend.repository.entity.Copilot;
 import plus.maa.backend.repository.entity.CopilotRating;
 import plus.maa.backend.service.CopilotService;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class CopilotScoreRefreshTask {
 
+    RedisCache redisCache;
     CopilotRepository copilotRepository;
     CopilotRatingRepository copilotRatingRepository;
 
@@ -48,6 +50,8 @@ public class CopilotScoreRefreshTask {
             changedCopilots.add(copilot);
         }
         copilotRepository.saveAll(changedCopilots);
+        // 移除首页热度缓存
+        redisCache.removeCacheByPattern("home:hot:*");
     }
 
 }
