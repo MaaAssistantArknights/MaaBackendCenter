@@ -67,6 +67,17 @@ public class CopilotService {
     private final AtomicLong copilotIncrementId = new AtomicLong(20000);
     private final CommentsAreaRepository commentsAreaRepository;
 
+    /*
+        首页分页查询缓存配置
+        格式为：需要缓存的 orderBy 类型（也就是榜单类型） -> 缓存时间
+        （Map.of()返回的是不可变对象，无需担心线程安全问题）
+     */
+    private static final Map<String, Long> HOME_PAGE_CACHE_CONFIG = Map.of(
+            "hot", 3600 * 24L,
+            "views", 3600L,
+            "id", 300L
+    );
+
     @PostConstruct
     public void init() {
         // 初始化copilotId, 从数据库中获取最大的copilotId
@@ -163,14 +174,15 @@ public class CopilotService {
             copilot.setDelete(true);
             copilotRepository.save(copilot);
             /*
-             * 删除作业时，如果被删除的项在 Redis 首页缓存中存在，则清空首页缓存
+             * 删除作业时，如果被删除的项在 Redis 首页缓存中存在，则清空对应的首页缓存
              * 新增作业就不必，因为新作业显然不会那么快就登上热度榜和浏览量榜
              */
-            if (redisCache.valueMemberInSet("home:hot:copilotIds", copilot.getCopilotId())) {
-                redisCache.removeCacheByPattern("home:hot:*");
-            }
-            if (redisCache.valueMemberInSet("home:views:copilotIds", copilot.getCopilotId())) {
-                redisCache.removeCacheByPattern("home:views:*");
+            for (var kv : HOME_PAGE_CACHE_CONFIG.entrySet()) {
+                String key = String.format("home:%s:copilotIds", kv.getKey());
+                String pattern = String.format("home:%s:*", kv.getKey());
+                if (redisCache.valueMemberInSet(key, copilot.getCopilotId())) {
+                    redisCache.removeCacheByPattern(pattern);
+                }
             }
         });
     }
@@ -218,26 +230,25 @@ public class CopilotService {
      * @return CopilotPageInfo
      */
     public CopilotPageInfo queriesCopilot(@Nullable String userId, CopilotQueriesRequest request) {
-        // 只缓存默认状态下热度和访问量排序的结果，并且最多只缓存前三页
-        AtomicLong timout = new AtomicLong(3600); // 默认缓存一小时
+
+        AtomicLong cacheTimeout = new AtomicLong();
         AtomicReference<String> cacheKey = new AtomicReference<>();
         AtomicReference<String> setKey = new AtomicReference<>();
+        // 只缓存默认状态下热度和访问量排序的结果，并且最多只缓存前三页
         if (request.getPage() <= 3 && request.getDocument() == null && request.getLevelKeyword() == null &&
                 request.getUploaderId() == null && request.getOperator() == null) {
+
             Optional<CopilotPageInfo> cacheOptional = Optional.ofNullable(request.getOrderBy())
                     .filter(StringUtils::isNotBlank)
-                    .map(ob -> switch (ob) {
-                        case "hot", "views" -> {
-                            if ("hot".equals(ob)) {
-                                // 热度榜缓存一天
-                                timout.set(3600 * 24);
-                            }
-                            setKey.set(String.format("home:%s:copilotIds", ob));
-                            cacheKey.set(String.format("home:%s:%s", ob, request.hashCode()));
-                            yield redisCache.getCache(cacheKey.get(), CopilotPageInfo.class);
-                        }
-                        default -> null;
+                    .map(HOME_PAGE_CACHE_CONFIG::get)
+                    .map(t -> {
+                        cacheTimeout.set(t);
+                        setKey.set(String.format("home:%s:copilotIds", request.getOrderBy()));
+                        cacheKey.set(String.format("home:%s:%s", request.getOrderBy(), request.hashCode()));
+                        return redisCache.getCache(cacheKey.get(), CopilotPageInfo.class);
                     });
+
+            // 如果缓存存在则直接返回
             if (cacheOptional.isPresent()) {
                 return cacheOptional.get();
             }
@@ -363,9 +374,9 @@ public class CopilotService {
         // 决定是否缓存
         if (cacheKey.get() != null) {
             // 记录存在的作业id
-            redisCache.addSet(setKey.get(), copilotIds, timout.get());
+            redisCache.addSet(setKey.get(), copilotIds, cacheTimeout.get());
             // 缓存数据
-            redisCache.setCache(cacheKey.get(), data, timout.get());
+            redisCache.setCache(cacheKey.get(), data, cacheTimeout.get());
         }
         return data;
     }
