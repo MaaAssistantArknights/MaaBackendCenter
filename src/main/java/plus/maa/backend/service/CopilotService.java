@@ -511,7 +511,7 @@ public class CopilotService {
             base = base * greatRate;
         }
         // 上一周好评率 * (上一周评分数 / 10) * (浏览数 / 10) / 过去的周数
-        double s =  greatRate * (copilot.getViews() / 10d)
+        double s = greatRate * (copilot.getViews() / 10d)
                 * Math.max(lastWeeksRatings.size() / 10d, 1) / pastedWeeks;
         double order = Math.log(Math.max(s, 1));
         return order + s / 1000d + base;
@@ -542,33 +542,9 @@ public class CopilotService {
 
         info.setAvailable(true);
 
-        try {
-            // 兼容客户端, 将作业ID替换为数字ID
-            copilot.setId(Long.toString(copilot.getCopilotId()));
-            if (StringUtils.isEmpty(info.getContent())) {
-                // 设置干员组干员信息
-                if (copilot.getGroups() != null) {
-                    copilot.getGroups()
-                            .forEach(group -> {
-                                List<String> strings = group.getOpers().stream()
-                                        .map(opera -> String.format("%s %s", opera.getName(), opera.getSkill()))
-                                        .toList();
-                                group.setOperators(strings);
-                            });
-                }
-                String content = mapper.writeValueAsString(copilot);
-                info.setContent(content);
-                updateContent(copilot.getCopilotId(), content);
-            }
-        } catch (JsonProcessingException e) {
-            log.error("json序列化失败", e);
-        }
+        // 兼容客户端, 将作业ID替换为数字ID
+        copilot.setId(Long.toString(copilot.getCopilotId()));
         return info;
-    }
-
-    private void updateContent(Long copilotId, String content) {
-        copilotRepository.findByCopilotId(copilotId).ifPresent(copilot ->
-                copilotRepository.save(copilot.setContent(content)));
     }
 
     public void notificationStatus(String userId, Long copilotId, boolean status) {
