@@ -48,8 +48,8 @@ public class ArkLevelService {
     /**
      * maa 主仓库，一般不变
      */
-    @Value("${maa-copilot.github.repo:MaaAssistantArknights/MaaAssistantArknights}")
-    private String maaRepo;
+    @Value("${maa-copilot.github.repo:MaaAssistantArknights/MaaAssistantArknights/dev}")
+    private String maaRepoAndBranch;
     /**
      * 地图数据所在路径
      */
@@ -139,6 +139,12 @@ public class ArkLevelService {
         //根据sha筛选无需更新的地图
         List<String> shaList = arkLevelRepo.findAllShaBy().stream().map(ArkLevelSha::getSha).toList();
         levelTrees.removeIf(t -> shaList.contains(t.getSha()));
+        // 排除overview文件、肉鸽、训练关卡和 Guide? 不知道是啥
+        levelTrees.removeIf(t -> t.getPath().equals("overview.json") ||
+                t.getPath().contains("roguelike") ||
+                t.getPath().startsWith("tr_") ||
+                t.getPath().startsWith("guide_"));
+        levelTrees.removeIf(t -> t.getPath().contains("roguelike"));
         log.info("[LEVEL]{}份地图数据需要更新", levelTrees.size());
         if (levelTrees.isEmpty()) {
             return;
@@ -164,7 +170,7 @@ public class ArkLevelService {
             task.success();
             return;
         }
-        String url = String.format("https://raw.githubusercontent.com/%s/master/%s/%s", maaRepo, tilePosPath, fileName);
+        String url = String.format("https://raw.githubusercontent.com/%s/%s/%s", maaRepoAndBranch, tilePosPath, fileName);
         okHttpClient.newCall(new Request.Builder().url(url).build()).enqueue(new Callback() {
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
@@ -174,7 +180,7 @@ public class ArkLevelService {
             @Override
             public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
                 try (ResponseBody rspBody = response.body()) {
-                    if (!response.isSuccessful()) {
+                    if (!response.isSuccessful() || rspBody == null) {
                         task.fail();
                         log.error("[LEVEL]下载地图数据失败:" + tree.getPath());
                         return;
