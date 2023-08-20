@@ -16,6 +16,10 @@ public interface CopilotRatingRepository extends MongoRepository<CopilotRating, 
 
     boolean existsCopilotRatingByCopilotId(Long copilotId);
 
+    boolean existsCopilotRatingByCopilotIdAndDelete(Long copilotId, boolean delete);
+
     List<CopilotRating> findByCopilotIdIn(Collection<Long> copilotIds);
+
+    List<CopilotRating> findByCopilotIdInAndDelete(Collection<Long> copilotIds, boolean delete);
 
 }

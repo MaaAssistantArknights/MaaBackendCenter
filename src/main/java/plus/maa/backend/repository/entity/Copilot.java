@@ -42,6 +42,16 @@ public class Copilot implements Serializable {
     // 查看次数
     private Long views = 0L;
 
+    //评级
+    private int ratingLevel;
+
+    //评级比率 十分之一代表半星
+    private double ratingRatio;
+
+    private long likeCount;
+
+    private long dislikeCount;
+
     // 热度
     private double hotScore;
 
