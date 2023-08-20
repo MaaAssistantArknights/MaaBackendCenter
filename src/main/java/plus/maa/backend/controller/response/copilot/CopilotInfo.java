@@ -25,4 +25,6 @@ public class CopilotInfo implements Serializable {
     private int ratingType;
     private long commentsCount;
     private String content;
+    private long like;
+    private long dislike;
 }
