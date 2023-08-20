@@ -45,7 +45,7 @@ public class CopilotScoreRefreshTask {
     /**
      * 热度值刷入任务，每日三点执行
      */
-    @Scheduled(cron = "0 12 23 * * ?")
+    @Scheduled(cron = "0 0 3 * * ?")
     public void refreshHotScores() {
         List<Copilot> copilots = copilotRepository.findAllByDeleteIsFalse();
         List<Copilot> changedCopilots = new ArrayList<>();
