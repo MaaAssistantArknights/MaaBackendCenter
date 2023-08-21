@@ -218,7 +218,12 @@ public class CopilotService {
                         commentsAreaRepository.countByCopilotIdAndDelete(copilot.getCopilotId(), false));
             }
             // 新评分系统
-            return formatCopilot(userIdOrIpAddress, copilot, maaUser.get(copilot.getUploaderId()).getUserName(),
+            RatingType ratingType = ratingRepository.findByTypeAndKeyAndUserId(Rating.KeyType.COPILOT,
+                    Long.toString(copilot.getCopilotId()), userIdOrIpAddress)
+                    .map(Rating::getRating)
+                    .orElse(null);
+            // 用户点进作业会显示点赞信息
+            return formatCopilot(copilot, ratingType, maaUser.get(copilot.getUploaderId()).getUserName(),
                     commentsAreaRepository.countByCopilotIdAndDelete(copilot.getCopilotId(), false));
         });
     }
@@ -364,8 +369,9 @@ public class CopilotService {
                     .toList();
         } else {
             // 新版评分系统
+            // 反正目前首页和搜索不会直接展示当前用户有没有点赞，干脆直接不查，要用户点进作业才显示自己是否点赞
             infos = copilots.stream().map(copilot ->
-                    formatCopilot(userId, copilot,
+                    formatCopilot(copilot, null,
                             maaUsers.get(copilot.getUploaderId()).getUserName(),
                             commentsCount.get(copilot.getCopilotId())))
                     .toList();
@@ -620,19 +626,18 @@ public class CopilotService {
      * 将数据库内容转换为前端所需格式 <br>
      * 新版评分系统
      */
-    private CopilotInfo formatCopilot(String userIdOrIpAddress, Copilot copilot, String userName,
+    private CopilotInfo formatCopilot(Copilot copilot, @Nullable RatingType ratingType, String userName,
                                       Long commentsCount) {
         CopilotInfo info = copilotConverter.toCopilotInfo(copilot, userName, copilot.getCopilotId(),
                 commentsCount);
 
         info.setRatingRatio(copilot.getRatingRatio());
         info.setRatingLevel(copilot.getRatingLevel());
+        if (ratingType != null) {
+            info.setRatingType(ratingType.getDisplay());
+        }
         // 评分数少于一定数量
         info.setNotEnoughRating(copilot.getLikeCount() + copilot.getDislikeCount() <= 5);
-
-        // 判断评分中是否有当前用户评分记录 有则获取其评分并将其转换为 0 = None 1 = LIKE 2 = DISLIKE
-        Optional<Rating> rating = ratingRepository.findByTypeAndKeyAndUserId(Rating.KeyType.COPILOT, Long.toString(copilot.getCopilotId()), userIdOrIpAddress);
-        rating.ifPresent(r -> info.setRatingType(r.getRating().getDisplay()));
 
         info.setAvailable(true);
 
