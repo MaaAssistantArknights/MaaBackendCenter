@@ -538,7 +538,8 @@ public class CopilotService {
                 .where("copilotId").is(request.getId())
                 .and("delete").is(false)
         );
-        query.fields().include("likeCount", "dislikeCount");
+        // 排除 _id，防止误 save 该不完整作业后原有数据丢失
+        query.fields().include("likeCount", "dislikeCount").exclude("_id");
         Copilot copilot = mongoTemplate.findOne(query, Copilot.class);
         Assert.notNull(copilot, "作业不存在");
 
