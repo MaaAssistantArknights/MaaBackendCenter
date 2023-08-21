@@ -428,7 +428,6 @@ public class CopilotService {
 
         Assert.isTrue(copilotRepository.existsCopilotsByCopilotId(request.getId()), "作业id不存在");
 
-        boolean noReq = true;
         // 如果旧评分表存在，迁移评分数据
         if (copilotRatingRepository.existsCopilotRatingByCopilotIdAndDelete(request.getId(), false)) {
             // 查询指定作业评分
@@ -440,7 +439,6 @@ public class CopilotService {
                 long likeCount = 0;
                 long dislikeCount = 0;
                 List<Rating> ratingList = new ArrayList<>();
-                noReq = false;
                 for (CopilotRating.RatingUser ratingUser : ratingUsers) {
 
                     Rating newRating = new Rating()
@@ -477,13 +475,19 @@ public class CopilotService {
                     dislikeCount = 0;
                 }
                 ratingRepository.insert(ratingList);
+                // 计算评分相关
+                long ratingCount = likeCount + dislikeCount;
+                double rawRatingLevel = ratingCount != 0 ? (double) likeCount / ratingCount : 0;
+                BigDecimal bigDecimal = new BigDecimal(rawRatingLevel);
+                // 只取一位小数点
+                double ratingLevel = bigDecimal.setScale(1, RoundingMode.HALF_UP).doubleValue();
                 // 修改 copilot 表的评分相关数据
                 Query query = Query.query(Criteria.where("copilotId").is(request.getId()));
                 Update update = new Update();
                 update.set("likeCount", likeCount);
                 update.set("dislikeCount", dislikeCount);
-                update.set("ratingLevel", copilotRating.getRatingLevel());
-                update.set("ratingRatio", copilotRating.getRatingRatio());
+                update.set("ratingLevel", (int) (ratingLevel * 10));
+                update.set("ratingRatio", ratingLevel);
                 mongoTemplate.updateFirst(query, update, Copilot.class);
                 // 删除旧评分表
                 copilotRating.setDelete(true);
@@ -491,19 +495,29 @@ public class CopilotService {
             }
         }   // 迁移用代码结束，如不再需要可完全删除该 if 判断
 
+        int likeCountChange = 0;
+        int dislikeCountChange = 0;
         Optional<Rating> ratingOptional = ratingRepository.findByTypeAndKeyAndUserId(Rating.KeyType.COPILOT,
                 Long.toString(request.getId()), userIdOrIpAddress);
+        // 如果评分存在则更新评分
         if (ratingOptional.isPresent()) {
             Rating rating1 = ratingOptional.get();
-            // 如果评分相同 && 未迁移 则不做任何操作
-            if (Objects.equals(rating1.getRating(), RatingType.fromRatingType(rating)) && noReq) {
+            // 如果评分相同，则不做任何操作
+            if (Objects.equals(rating1.getRating(), RatingType.fromRatingType(rating))) {
                 return;
             }
             // 如果评分不同则更新评分
+            RatingType oldRatingType = rating1.getRating();
             rating1.setRating(RatingType.fromRatingType(rating));
             rating1.setRateTime(LocalDateTime.now());
             ratingRepository.save(rating1);
+            // 计算评分变化
+            likeCountChange = rating1.getRating() == RatingType.LIKE ? 1 :
+                    (oldRatingType != RatingType.LIKE ? 0 : -1);
+            dislikeCountChange = rating1.getRating() == RatingType.DISLIKE ? 1 :
+                    (oldRatingType != RatingType.DISLIKE ? 0 : -1);
         }
+
         // 不存在评分 则添加新的评分
         if (ratingOptional.isEmpty()) {
             Rating newRating = new Rating()
@@ -514,21 +528,32 @@ public class CopilotService {
                     .setRateTime(LocalDateTime.now());
 
             ratingRepository.insert(newRating);
+            // 计算评分变化
+            likeCountChange = newRating.getRating() == RatingType.LIKE ? 1 : 0;
+            dislikeCountChange = newRating.getRating() == RatingType.DISLIKE ? 1 : 0;
         }
 
-        // 计算评分相关
-        long ratingCount = ratingRepository.countByTypeAndKey(Rating.KeyType.COPILOT,
-                Long.toString(request.getId()));
+        // 获取只包含评分的作业
+        Query query = Query.query(Criteria
+                .where("copilotId").is(request.getId())
+                .and("delete").is(false)
+        );
+        query.fields().include("likeCount", "dislikeCount");
+        Copilot copilot = mongoTemplate.findOne(query, Copilot.class);
+        Assert.notNull(copilot, "作业不存在");
 
-        long likeCount = ratingRepository.countByTypeAndKeyAndRating(Rating.KeyType.COPILOT,
-                Long.toString(request.getId()), RatingType.LIKE);
+        // 计算评分相关
+        long likeCount = copilot.getLikeCount() + likeCountChange;
+        likeCount = likeCount < 0 ? 0 : likeCount;
+        long ratingCount = likeCount + copilot.getDislikeCount() + dislikeCountChange;
+        ratingCount = ratingCount < 0 ? 0 : ratingCount;
 
         double rawRatingLevel = ratingCount != 0 ? (double) likeCount / ratingCount : 0;
         BigDecimal bigDecimal = new BigDecimal(rawRatingLevel);
         // 只取一位小数点
         double ratingLevel = bigDecimal.setScale(1, RoundingMode.HALF_UP).doubleValue();
         // 更新数据
-        Query query = Query.query(Criteria
+        query = Query.query(Criteria
                 .where("copilotId").is(request.getId())
                 .and("delete").is(false)
         );
