@@ -15,6 +15,7 @@ import plus.maa.backend.repository.entity.Copilot;
 import plus.maa.backend.repository.entity.CopilotRating;
 import plus.maa.backend.repository.entity.Rating;
 import plus.maa.backend.service.CopilotService;
+import plus.maa.backend.service.model.RatingCount;
 import plus.maa.backend.service.model.RatingType;
 
 import java.time.LocalDateTime;
@@ -122,11 +123,4 @@ public class CopilotScoreRefreshTask {
         return mongoTemplate.aggregate(aggregation, Rating.class, RatingCount.class).getMappedResults();
     }
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class RatingCount {
-        private String key;
-        private long count;
-    }
 }

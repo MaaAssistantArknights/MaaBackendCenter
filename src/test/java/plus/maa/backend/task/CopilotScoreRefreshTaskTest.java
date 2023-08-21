@@ -14,6 +14,7 @@ import plus.maa.backend.repository.RedisCache;
 import plus.maa.backend.repository.entity.Copilot;
 import plus.maa.backend.repository.entity.CopilotRating;
 import plus.maa.backend.repository.entity.Rating;
+import plus.maa.backend.service.model.RatingCount;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -64,11 +65,11 @@ public class CopilotScoreRefreshTaskTest extends BaseMockTest {
                 copilot3.getCopilotId())), eq(false)))
                 .thenReturn(List.of(rating1, rating2));
         // 配置mongoTemplate
-        when(mongoTemplate.aggregate(any(), eq(Rating.class), eq(CopilotScoreRefreshTask.RatingCount.class)))
+        when(mongoTemplate.aggregate(any(), eq(Rating.class), eq(RatingCount.class)))
                 .thenReturn(new AggregationResults<>(List.of(
-                        new CopilotScoreRefreshTask.RatingCount("1", 1L),
-                        new CopilotScoreRefreshTask.RatingCount("2", 0L),
-                        new CopilotScoreRefreshTask.RatingCount("3", 0L)), new Document()));
+                        new RatingCount("1", 1L),
+                        new RatingCount("2", 0L),
+                        new RatingCount("3", 0L)), new Document()));
         // 配置 ratingRepository.insert 输入什么数组返回什么数组
         when(ratingRepository.insert(Collections.singleton(any()))).thenAnswer(invocation -> invocation.getArgument(0));
         // copilotRatingRepository.save
