@@ -20,12 +20,11 @@ import plus.maa.backend.controller.response.comments.CommentsInfo;
 import plus.maa.backend.controller.response.comments.SubCommentsInfo;
 import plus.maa.backend.repository.CommentsAreaRepository;
 import plus.maa.backend.repository.CopilotRepository;
+import plus.maa.backend.repository.RatingRepository;
 import plus.maa.backend.repository.UserRepository;
-import plus.maa.backend.repository.entity.CommentsArea;
-import plus.maa.backend.repository.entity.Copilot;
-import plus.maa.backend.repository.entity.CopilotRating;
-import plus.maa.backend.repository.entity.MaaUser;
+import plus.maa.backend.repository.entity.*;
 import plus.maa.backend.service.model.CommentNotification;
+import plus.maa.backend.service.model.RatingType;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -40,6 +39,8 @@ import java.util.*;
 @RequiredArgsConstructor
 public class CommentsAreaService {
     private final CommentsAreaRepository commentsAreaRepository;
+
+    private final RatingRepository ratingRepository;
 
     private final CopilotRepository copilotRepository;
 
@@ -186,36 +187,80 @@ public class CommentsAreaService {
      */
     public void rates(String userId, CommentsRatingDTO commentsRatingDTO) {
         String rating = commentsRatingDTO.getRating();
-        boolean existRatingUser = false;
 
         CommentsArea commentsArea = findCommentsById(commentsRatingDTO.getCommentId());
         List<CopilotRating.RatingUser> ratingUserList = commentsArea.getRatingUser();
 
-        //判断是否存在 如果已存在则修改评分
-        for (CopilotRating.RatingUser ratingUser : ratingUserList) {
-            if (Objects.equals(userId, ratingUser.getUserId())) {
-                if (Objects.equals(rating, ratingUser.getRating())) {
-                    return;
+        // 判断旧评分是否存在 如果存在则迁移评分
+        if (ratingUserList != null && !ratingUserList.isEmpty()) {
+            long likeCount = commentsArea.getLikeCount();
+            List<Rating> ratingList = new ArrayList<>();
+            for (CopilotRating.RatingUser ratingUser : ratingUserList) {
+
+                Rating newRating = new Rating()
+                        .setType(Rating.KeyType.COMMENT)
+                        .setKey(commentsArea.getId())
+                        .setUserId(ratingUser.getUserId())
+                        .setRating(RatingType.fromRatingType(ratingUser.getRating()))
+                        .setRateTime(ratingUser.getRateTime());
+                ratingList.add(newRating);
+
+                if (Objects.equals(userId, ratingUser.getUserId())) {
+                    if (Objects.equals(rating, ratingUser.getRating())) {
+                        continue;
+                    }
+                    RatingType oldRatingType = newRating.getRating();
+                    newRating.setRating(RatingType.fromRatingType(rating));
+                    newRating.setRateTime(LocalDateTime.now());
+                    likeCount += newRating.getRating() == RatingType.LIKE ? 1 :
+                            (oldRatingType != RatingType.LIKE ? 0 : -1);
                 }
-                ratingUser.setRating(rating);
-                existRatingUser = true;
-                break;
             }
+            if (likeCount < 0) {
+                likeCount = 0;
+            }
+            commentsArea.setLikeCount(likeCount);
+            commentsArea.setRatingUser(null);
+            ratingRepository.insert(ratingList);
+            commentsAreaRepository.save(commentsArea);
+        }   // 迁移用代码结束，如不再需要可完全删除该 if 判断
+
+        long change;
+        Optional<Rating> ratingOptional = ratingRepository.findByTypeAndKeyAndUserId(Rating.KeyType.COMMENT, commentsArea.getId(), userId);
+        // 判断该用户是否存在评分
+        if (ratingOptional.isPresent()) {
+            // 如果评分发生变化则更新
+            if (!Objects.equals(ratingOptional.get().getRating(), RatingType.fromRatingType(rating))) {
+                RatingType oldRatingType = ratingOptional.get().getRating();
+                ratingOptional.get().setRating(RatingType.fromRatingType(rating));
+                ratingOptional.get().setRateTime(LocalDateTime.now());
+                RatingType newRatingType = ratingRepository.save(ratingOptional.get()).getRating();
+                // 更新评分后更新评论的点赞数
+                change = newRatingType == RatingType.LIKE ? 1 :
+                        (oldRatingType != RatingType.LIKE ? 0 : -1);
+            } else {
+                // 如果评分未发生变化则结束
+                return;
+            }
+        } else {
+            // 不存在评分则创建
+            Rating newRating = new Rating()
+                    .setType(Rating.KeyType.COMMENT)
+                    .setKey(commentsArea.getId())
+                    .setUserId(userId)
+                    .setRating(RatingType.fromRatingType(rating))
+                    .setRateTime(LocalDateTime.now());
+
+            ratingRepository.insert(newRating);
+            change = newRating.getRating() == RatingType.LIKE ? 1 : 0;
         }
 
-        //不存在 创建一个用户评分
-        if (!existRatingUser) {
-            CopilotRating.RatingUser ratingUser = new CopilotRating.RatingUser(userId, rating, LocalDateTime.now());
-            ratingUserList.add(ratingUser);
+        // 点赞数不需要在高并发下特别精准，大概就行，但是也得避免特别离谱的数字
+        long likeCount = commentsArea.getLikeCount() + change;
+        if (likeCount < 0) {
+            likeCount = 0;
         }
-
-        long likeCount = ratingUserList.stream()
-                .filter(ratingUser ->
-                        Objects.equals(ratingUser.getRating(), "Like"))
-                .count();
-        commentsArea.setRatingUser(ratingUserList);
         commentsArea.setLikeCount(likeCount);
-
 
         commentsAreaRepository.save(commentsArea);
     }

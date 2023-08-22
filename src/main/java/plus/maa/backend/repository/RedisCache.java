@@ -80,6 +80,9 @@ public class RedisCache {
     }
 
     public <T> void addSet(final String key, Collection<T> set, long timeout, TimeUnit timeUnit) {
+        if (key == null || set == null || set.isEmpty()) { // Redis 会拒绝空集合
+            return;
+        }
         String[] jsonList = new String[set.size()];
         try {
             int i = 0;

@@ -8,7 +8,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -36,7 +35,7 @@ public class CommentsArea implements Serializable {
     private String message;
 
     //赞 踩
-    private List<CopilotRating.RatingUser> ratingUser = new ArrayList<>();
+    private List<CopilotRating.RatingUser> ratingUser;
 
     private long likeCount;
 

@@ -33,11 +33,19 @@ public interface CopilotConverter {
     @Mapping(target = "uploaderId", ignore = true)
     @Mapping(target = "uploadTime", ignore = true)
     @Mapping(target = "firstUploadTime", ignore = true)
+    @Mapping(target = "likeCount", ignore = true)
+    @Mapping(target = "dislikeCount", ignore = true)
+    @Mapping(target = "ratingRatio", ignore = true)
+    @Mapping(target = "ratingLevel", ignore = true)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateCopilotFromDto(CopilotDTO copilotDTO, String content, @MappingTarget Copilot copilot);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "deleteTime", ignore = true)
+    @Mapping(target = "likeCount", ignore = true)
+    @Mapping(target = "dislikeCount", ignore = true)
+    @Mapping(target = "ratingRatio", ignore = true)
+    @Mapping(target = "ratingLevel", ignore = true)
     @Mapping(target = "views", constant = "0L")
     @Mapping(target = "hotScore", constant = "0")
     @Mapping(target = "delete", constant = "false")
@@ -53,6 +61,8 @@ public interface CopilotConverter {
     @Mapping(target = "available", ignore = true)
     @Mapping(target = "id", source = "copilotId")
     @Mapping(target = "uploader", source = "userName")
+    @Mapping(target = "like", source = "copilot.likeCount")
+    @Mapping(target = "dislike", source = "copilot.dislikeCount")
     @Mapping(target = "commentsCount", conditionExpression = "java(commentsCount != null)")
     CopilotInfo toCopilotInfo(Copilot copilot, String userName, Long copilotId, Long commentsCount);
 }

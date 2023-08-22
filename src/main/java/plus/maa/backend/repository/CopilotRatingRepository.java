@@ -5,6 +5,7 @@ import plus.maa.backend.repository.entity.CopilotRating;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @author LoMu
@@ -14,8 +15,14 @@ public interface CopilotRatingRepository extends MongoRepository<CopilotRating, 
 
     CopilotRating findByCopilotId(Long copilotId);
 
+    Optional<CopilotRating> findByCopilotIdAndDelete(Long copilotId, boolean delete);
+
     boolean existsCopilotRatingByCopilotId(Long copilotId);
 
+    boolean existsCopilotRatingByCopilotIdAndDelete(Long copilotId, boolean delete);
+
     List<CopilotRating> findByCopilotIdIn(Collection<Long> copilotIds);
+
+    List<CopilotRating> findByCopilotIdInAndDelete(Collection<Long> copilotIds, boolean delete);
 
 }
