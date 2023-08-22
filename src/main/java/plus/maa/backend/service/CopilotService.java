@@ -212,9 +212,9 @@ public class CopilotService {
             }
             Map<String, MaaUser> maaUser = userRepository.findByUsersId(List.of(copilot.getUploaderId()));
             // 旧评分系统
-            CopilotRating rating = copilotRatingRepository.findByCopilotId(copilot.getCopilotId());
-            if (rating != null && !rating.isDelete()) {
-                return formatCopilot(userIdOrIpAddress, copilot, rating, maaUser.get(copilot.getUploaderId()).getUserName(),
+            Optional<CopilotRating> rating = copilotRatingRepository.findByCopilotIdAndDelete(copilot.getCopilotId(), false);
+            if (rating.isPresent()) {
+                return formatCopilot(userIdOrIpAddress, copilot, rating.get(), maaUser.get(copilot.getUploaderId()).getUserName(),
                         commentsAreaRepository.countByCopilotIdAndDelete(copilot.getCopilotId(), false));
             }
             // 新评分系统
@@ -633,12 +633,12 @@ public class CopilotService {
                     }
                 }
                 ratingRepository.insert(ratingList);
-                rating.setDelete(true);
-                copilotRatingRepository.save(rating);
                 copilot.setLikeCount(likeCount);
                 copilot.setDislikeCount(dislikeCount);
                 copilotRepository.save(copilot);
             }
+            rating.setDelete(true);
+            copilotRatingRepository.save(rating);
         });
 
         info.setAvailable(true);
