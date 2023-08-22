@@ -80,9 +80,9 @@ public class CopilotScoreRefreshTask {
                             ratingList.add(newRating);
                         }
                         ratingRepository.insert(ratingList);
-                        rating.setDelete(true);
-                        copilotRatingRepository.save(rating);
                     }
+                    rating.setDelete(true);
+                    copilotRatingRepository.save(rating);
                 }
             }
         }   // 迁移完成

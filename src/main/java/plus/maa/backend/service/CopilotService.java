@@ -489,10 +489,10 @@ public class CopilotService {
                 update.set("ratingLevel", (int) (ratingLevel * 10));
                 update.set("ratingRatio", ratingLevel);
                 mongoTemplate.updateFirst(query, update, Copilot.class);
-                // 删除旧评分表
-                copilotRating.setDelete(true);
-                copilotRatingRepository.save(copilotRating);
             }
+            // 删除旧评分表
+            copilotRating.setDelete(true);
+            copilotRatingRepository.save(copilotRating);
         }   // 迁移用代码结束，如不再需要可完全删除该 if 判断
 
         int likeCountChange = 0;
