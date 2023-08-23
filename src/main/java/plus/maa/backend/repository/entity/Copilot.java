@@ -78,6 +78,9 @@ public class Copilot implements Serializable {
     // 原始数据
     private String content;
 
+    // 是否隐藏作业
+    private boolean hidden = false;
+
     @JsonIgnore
     private boolean delete;
     @JsonIgnore

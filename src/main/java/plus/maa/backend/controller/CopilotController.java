@@ -12,9 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.JsonSchema;
 import plus.maa.backend.config.SpringDocConfig;
 import plus.maa.backend.config.security.AuthenticationHelper;
-import plus.maa.backend.controller.request.copilot.CopilotCUDRequest;
-import plus.maa.backend.controller.request.copilot.CopilotQueriesRequest;
-import plus.maa.backend.controller.request.copilot.CopilotRatingReq;
+import plus.maa.backend.controller.request.copilot.*;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.controller.response.copilot.CopilotInfo;
 import plus.maa.backend.controller.response.copilot.CopilotPageInfo;
@@ -39,9 +37,9 @@ public class CopilotController {
     @JsonSchema
     @PostMapping("/upload")
     public MaaResult<Long> uploadCopilot(
-            @Parameter(description = "作业操作请求") @RequestBody CopilotCUDRequest request
+            @Parameter(description = "作业操作请求") @RequestBody CopilotAddRequest request
     ) {
-        return MaaResult.success(copilotService.upload(helper.requireUserId(), request.getContent()));
+        return MaaResult.success(copilotService.upload(helper.requireUserId(), request));
     }
 
     @Operation(summary = "删除作业")
@@ -49,7 +47,7 @@ public class CopilotController {
     @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
     @PostMapping("/delete")
     public MaaResult<Void> deleteCopilot(
-            @Parameter(description = "作业操作请求") @RequestBody CopilotCUDRequest request
+            @Parameter(description = "作业操作请求") @RequestBody CopilotDeleteRequest request
     ) {
         copilotService.delete(helper.requireUserId(), request);
         return MaaResult.success();
@@ -82,9 +80,9 @@ public class CopilotController {
     @JsonSchema
     @PostMapping("/update")
     public MaaResult<Void> updateCopilot(
-            @Parameter(description = "作业操作请求") @RequestBody CopilotCUDRequest copilotCUDRequest
+            @Parameter(description = "作业操作请求") @RequestBody CopilotUpdateRequest copilotUpdateRequest
     ) {
-        copilotService.update(helper.requireUserId(), copilotCUDRequest);
+        copilotService.update(helper.requireUserId(), copilotUpdateRequest);
         return MaaResult.success();
     }
 

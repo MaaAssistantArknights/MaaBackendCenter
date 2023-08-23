@@ -7,7 +7,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CopilotCUDRequest {
+public class CopilotUpdateRequest {
     private String content;
+    private boolean hidden = false; // 是否隐藏作业
     private Long id;
 }

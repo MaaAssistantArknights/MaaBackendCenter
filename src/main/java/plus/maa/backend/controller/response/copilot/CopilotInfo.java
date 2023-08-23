@@ -1,5 +1,6 @@
 package plus.maa.backend.controller.response.copilot;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -27,4 +28,6 @@ public class CopilotInfo implements Serializable {
     private String content;
     private long like;
     private long dislike;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Boolean hidden = null;  // 一般情况下不会返回这个字段，只有在查看自己的作业详情时才会返回
 }

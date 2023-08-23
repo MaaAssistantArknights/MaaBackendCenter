@@ -73,7 +73,6 @@ public class CommentsAreaController {
         return MaaResult.success("成功");
     }
 
-    @JsonSchema
     @Operation(summary = "为评论置顶/取消置顶")
     @ApiResponse(description = "置顶/取消置顶结果")
     @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)

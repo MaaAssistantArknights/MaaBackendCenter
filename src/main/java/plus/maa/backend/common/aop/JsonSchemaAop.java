@@ -19,7 +19,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import plus.maa.backend.common.annotation.JsonSchema;
 import plus.maa.backend.controller.request.comments.CommentsRatingDTO;
-import plus.maa.backend.controller.request.copilot.CopilotCUDRequest;
+import plus.maa.backend.controller.request.copilot.CopilotAddRequest;
+import plus.maa.backend.controller.request.copilot.CopilotUpdateRequest;
 import plus.maa.backend.controller.request.copilot.CopilotRatingReq;
 import plus.maa.backend.controller.response.MaaResultException;
 
@@ -57,8 +58,12 @@ public class JsonSchemaAop {
         String content = null;
         //判断是验证的是Copilot还是Rating
         for (Object arg : joinPoint.getArgs()) {
-            if (arg instanceof CopilotCUDRequest) {
-                content = ((CopilotCUDRequest) arg).getContent();
+            if (arg instanceof CopilotAddRequest addRequest) {
+                content = addRequest.getContent();
+                schema_json = COPILOT_SCHEMA_JSON;
+            }
+            if (arg instanceof CopilotUpdateRequest updateRequest) {
+                content = updateRequest.getContent();
                 schema_json = COPILOT_SCHEMA_JSON;
             }
             if (arg instanceof CopilotRatingReq || arg instanceof CommentsRatingDTO) {

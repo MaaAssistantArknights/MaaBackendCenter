@@ -20,10 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import plus.maa.backend.common.utils.converter.CopilotConverter;
-import plus.maa.backend.controller.request.copilot.CopilotCUDRequest;
-import plus.maa.backend.controller.request.copilot.CopilotDTO;
-import plus.maa.backend.controller.request.copilot.CopilotQueriesRequest;
-import plus.maa.backend.controller.request.copilot.CopilotRatingReq;
+import plus.maa.backend.controller.request.copilot.*;
 import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.controller.response.copilot.ArkLevelInfo;
 import plus.maa.backend.controller.response.copilot.CopilotInfo;
@@ -148,16 +145,19 @@ public class CopilotService {
     /**
      * 上传新的作业
      *
-     * @param content 前端编辑json作业内容
+     * @param request 前端添加作业请求，包含作业 JSON 内容和是否隐藏
      * @return 返回_id
      */
-    public Long upload(String loginUserId, String content) {
+    public Long upload(String loginUserId, CopilotAddRequest request) {
+        String content = request.getContent();
+        boolean hidden = request.isHidden();
         CopilotDTO copilotDTO = correctCopilot(parseToCopilotDto(content));
         // 将其转换为数据库存储对象
         Copilot copilot = copilotConverter.toCopilot(
                 copilotDTO, loginUserId,
                 LocalDateTime.now(), copilotIncrementId.getAndIncrement(),
-                content);
+                content,
+                hidden);
         copilotRepository.insert(copilot);
         return copilot.getCopilotId();
     }
@@ -165,7 +165,7 @@ public class CopilotService {
     /**
      * 根据作业id删除作业
      */
-    public void delete(String loginUserId, CopilotCUDRequest request) {
+    public void delete(String loginUserId, CopilotDeleteRequest request) {
         copilotRepository.findByCopilotId(request.getId()).ifPresent(copilot -> {
             Assert.state(Objects.equals(copilot.getUploaderId(), loginUserId), "您无法修改不属于您的作业");
             copilot.setDelete(true);
@@ -211,20 +211,27 @@ public class CopilotService {
                 }
             }
             Map<String, MaaUser> maaUser = userRepository.findByUsersId(List.of(copilot.getUploaderId()));
+            CopilotInfo info;
             // 旧评分系统
             Optional<CopilotRating> rating = copilotRatingRepository.findByCopilotIdAndDelete(copilot.getCopilotId(), false);
             if (rating.isPresent()) {
-                return formatCopilot(userIdOrIpAddress, copilot, rating.get(), maaUser.get(copilot.getUploaderId()).getUserName(),
+                info = formatCopilot(userIdOrIpAddress, copilot, rating.get(), maaUser.get(copilot.getUploaderId()).getUserName(),
+                        commentsAreaRepository.countByCopilotIdAndDelete(copilot.getCopilotId(), false));
+            } else {
+                // 新评分系统
+                RatingType ratingType = ratingRepository.findByTypeAndKeyAndUserId(Rating.KeyType.COPILOT,
+                                Long.toString(copilot.getCopilotId()), userIdOrIpAddress)
+                        .map(Rating::getRating)
+                        .orElse(null);
+                // 用户点进作业会显示点赞信息
+                info = formatCopilot(copilot, ratingType, maaUser.get(copilot.getUploaderId()).getUserName(),
                         commentsAreaRepository.countByCopilotIdAndDelete(copilot.getCopilotId(), false));
             }
-            // 新评分系统
-            RatingType ratingType = ratingRepository.findByTypeAndKeyAndUserId(Rating.KeyType.COPILOT,
-                    Long.toString(copilot.getCopilotId()), userIdOrIpAddress)
-                    .map(Rating::getRating)
-                    .orElse(null);
-            // 用户点进作业会显示点赞信息
-            return formatCopilot(copilot, ratingType, maaUser.get(copilot.getUploaderId()).getUserName(),
-                    commentsAreaRepository.countByCopilotIdAndDelete(copilot.getCopilotId(), false));
+            // 如果是查看自己的作业详情，则返回作业的隐藏状态
+            if (Objects.equals(copilot.getUploaderId(), userIdOrIpAddress)) {
+                info.setHidden(copilot.isHidden());
+            }
+            return info;
         });
     }
 
@@ -331,6 +338,11 @@ public class CopilotService {
                 andQueries.add(Criteria.where("uploaderId").is(request.getUploaderId()));
             }
         }
+        // 只要不是查看自己的作业，就不会显示隐藏的作业
+        if (!"me".equals(request.getUploaderId())) {
+            // ne 是为了兼容之前没有 hidden 字段的作业
+            andQueries.add(Criteria.where("hidden").ne(true));
+        }
 
         // 封装查询
         if (!andQueries.isEmpty()) {
@@ -403,17 +415,31 @@ public class CopilotService {
     /**
      * 增量更新
      *
-     * @param copilotCUDRequest 作业_id content
+     * @param copilotUpdateRequest 作业_id content hidden
      */
-    public void update(String loginUserId, CopilotCUDRequest copilotCUDRequest) {
-        String content = copilotCUDRequest.getContent();
-        Long id = copilotCUDRequest.getId();
+    public void update(String loginUserId, CopilotUpdateRequest copilotUpdateRequest) {
+        String content = copilotUpdateRequest.getContent();
+        Long id = copilotUpdateRequest.getId();
+        boolean hidden = copilotUpdateRequest.isHidden();
         copilotRepository.findByCopilotId(id).ifPresent(copilot -> {
             CopilotDTO copilotDTO = correctCopilot(parseToCopilotDto(content));
             Assert.state(Objects.equals(copilot.getUploaderId(), loginUserId), "您无法修改不属于您的作业");
             copilot.setUploadTime(LocalDateTime.now());
-            copilotConverter.updateCopilotFromDto(copilotDTO, content, copilot);
+            boolean oldHidden = copilot.isHidden();
+            copilotConverter.updateCopilotFromDto(copilotDTO, content, hidden, copilot);
             copilotRepository.save(copilot);
+            // 如果作业隐藏状态发生变化并且是从显示变为隐藏，则清空对应的首页缓存
+            // 防止用户反复开关隐藏状态导致的首页缓存反复清空重建
+            if (hidden && !oldHidden) {
+                // 如果在 Redis 首页缓存中存在，则清空对应的首页缓存
+                for (var kv : HOME_PAGE_CACHE_CONFIG.entrySet()) {
+                    String key = String.format("home:%s:copilotIds", kv.getKey());
+                    String pattern = String.format("home:%s:*", kv.getKey());
+                    if (redisCache.valueMemberInSet(key, copilot.getCopilotId())) {
+                        redisCache.removeCacheByPattern(pattern);
+                    }
+                }
+            }
         });
     }
 
