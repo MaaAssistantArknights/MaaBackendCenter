@@ -36,6 +36,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
@@ -328,18 +329,21 @@ public class CopilotService {
             }
         }
 
+        AtomicBoolean seeMe = new AtomicBoolean(false);
         //查看自己
         if (StringUtils.isNotBlank(request.getUploaderId())) {
             if ("me".equals(request.getUploaderId())) {
                 if (!ObjectUtils.isEmpty(userId)) {
                     andQueries.add(Criteria.where("uploaderId").is(userId));
+                    seeMe.set(true);
                 }
             } else {
                 andQueries.add(Criteria.where("uploaderId").is(request.getUploaderId()));
             }
         }
+
         // 只要不是查看自己的作业，就不会显示隐藏的作业
-        if (!"me".equals(request.getUploaderId())) {
+        if (!seeMe.get()) {
             // ne 是为了兼容之前没有 hidden 字段的作业
             andQueries.add(Criteria.where("hidden").ne(true));
         }
@@ -373,20 +377,28 @@ public class CopilotService {
         if (ratings != null && !ratings.isEmpty()) {
             // 交由旧版评分系统并迁移数据
             Map<Long, CopilotRating> ratingByCopilotId = Maps.uniqueIndex(ratings, CopilotRating::getCopilotId);
-            infos = copilots.stream().map(copilot ->
-                            formatCopilot(userId, copilot,
-                                    ratingByCopilotId.get(copilot.getCopilotId()),
-                                    maaUsers.get(copilot.getUploaderId()).getUserName(),
-                                    commentsCount.get(copilot.getCopilotId())))
-                    .toList();
+            infos = copilots.stream().map(copilot -> {
+                CopilotInfo info = formatCopilot(userId, copilot,
+                        ratingByCopilotId.get(copilot.getCopilotId()),
+                        maaUsers.get(copilot.getUploaderId()).getUserName(),
+                        commentsCount.get(copilot.getCopilotId()));
+                if (seeMe.get()) {
+                    info.setHidden(copilot.isHidden());
+                }
+                return info;
+            }).toList();
         } else {
             // 新版评分系统
             // 反正目前首页和搜索不会直接展示当前用户有没有点赞，干脆直接不查，要用户点进作业才显示自己是否点赞
-            infos = copilots.stream().map(copilot ->
-                    formatCopilot(copilot, null,
-                            maaUsers.get(copilot.getUploaderId()).getUserName(),
-                            commentsCount.get(copilot.getCopilotId())))
-                    .toList();
+            infos = copilots.stream().map(copilot -> {
+                CopilotInfo info = formatCopilot(copilot, null,
+                        maaUsers.get(copilot.getUploaderId()).getUserName(),
+                        commentsCount.get(copilot.getCopilotId()));
+                if (seeMe.get()) {
+                    info.setHidden(copilot.isHidden());
+                }
+                return info;
+            }).toList();
         }
 
         // 计算页面
