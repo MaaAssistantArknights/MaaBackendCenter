@@ -21,6 +21,11 @@ repositories {
     mavenCentral()
 }
 
+ext {
+    // 统一管理版本号
+    hutoolVersion = '5.8.21'
+}
+
 dependencies {
 
     annotationProcessor 'com.github.therapi:therapi-runtime-javadoc-scribe:0.13.0'
@@ -41,8 +46,11 @@ dependencies {
 
     implementation 'com.squareup.okhttp3:okhttp:4.10.0'
     implementation 'com.sun.mail:javax.mail:1.6.2'
-    implementation 'cn.hutool:hutool-extra:5.8.20'
-    implementation 'cn.hutool:hutool-jwt:5.8.20'
+    // 双引号才能使用变量
+    implementation "cn.hutool:hutool-extra:$hutoolVersion"
+    implementation "cn.hutool:hutool-jwt:$hutoolVersion"
+    implementation "cn.hutool:hutool-dfa:$hutoolVersion"
+
     implementation 'org.mapstruct:mapstruct:1.5.5.Final'
     implementation 'org.eclipse.jgit:org.eclipse.jgit:6.6.0.202305301015-r'
     implementation 'org.eclipse.jgit:org.eclipse.jgit.ssh.apache.agent:6.6.0.202305301015-r'

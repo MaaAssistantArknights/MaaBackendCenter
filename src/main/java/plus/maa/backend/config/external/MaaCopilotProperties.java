@@ -24,4 +24,6 @@ public class MaaCopilotProperties {
     private CopilotBackup backup;
     @NestedConfigurationProperty
     private Mail mail;
+    @NestedConfigurationProperty
+    private SensitiveWord sensitiveWord;
 }

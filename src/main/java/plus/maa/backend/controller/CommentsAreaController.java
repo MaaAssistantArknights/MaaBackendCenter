@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.JsonSchema;
+import plus.maa.backend.common.annotation.SensitiveWordDetection;
 import plus.maa.backend.config.SpringDocConfig;
 import plus.maa.backend.config.security.AuthenticationHelper;
 import plus.maa.backend.controller.request.comments.*;
@@ -30,6 +31,7 @@ public class CommentsAreaController {
     private final CommentsAreaService commentsAreaService;
     private final AuthenticationHelper authHelper;
 
+    @SensitiveWordDetection("#comments.message")
     @PostMapping("/add")
     @Operation(summary = "发送评论")
     @ApiResponse(description = "发送评论结果")

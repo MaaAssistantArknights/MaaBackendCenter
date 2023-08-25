@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.JsonSchema;
+import plus.maa.backend.common.annotation.SensitiveWordDetection;
 import plus.maa.backend.config.SpringDocConfig;
 import plus.maa.backend.config.security.AuthenticationHelper;
 import plus.maa.backend.controller.request.copilot.CopilotCUDRequest;
@@ -33,6 +34,7 @@ public class CopilotController {
     private final CopilotService copilotService;
     private final AuthenticationHelper helper;
 
+    @SensitiveWordDetection("#objectMapper.readTree(#request.content).get('doc')?.toString()")
     @Operation(summary = "上传作业")
     @ApiResponse(description = "上传作业结果")
     @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
@@ -76,6 +78,7 @@ public class CopilotController {
         return MaaResult.success(copilotService.queriesCopilot(helper.getUserId(), parsed));
     }
 
+    @SensitiveWordDetection("#objectMapper.readTree(#copilotCUDRequest.content).get('doc')?.toString()")
     @Operation(summary = "更新作业")
     @ApiResponse(description = "更新结果")
     @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
