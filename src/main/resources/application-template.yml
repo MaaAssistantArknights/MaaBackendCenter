@@ -6,11 +6,25 @@ spring:
       # uri: mongodb://localhost:27017/MaaBackend
       # 有密码
       # uri: mongodb://用户名:密码@localhost:27017/MaaBackend
-      uri: mongodb://localhost/MaaBackend
+      uri: mongodb://192.168.1.104/MaaBackend
     redis:
       port: 6379
-      host: localhost
-
+      host: 192.168.1.104
+  security:
+    oauth2:
+      client:
+        registration:
+          maa:
+            client-id: $I_Am_The_Bone_Of_My_Sword!Steel_Is_My_Body_And_Fire_Is_My_Blood!$
+            client-secret: $I_Am_The_Bone_Of_My_Sword!Steel_Is_My_Body_And_Fire_Is_My_Blood!$
+            redirect-uri: https://${maa-copilot.info.domain}/login/oauth2/code/maa
+            authorization-grant-type: authorization_code
+        provider:
+          maa:
+            user-name-attribute: email
+            authorization-uri: https://hub.maa-org.net/application/o/authorize/
+            token-uri: https://hub.maa-org.net/application/o/token/
+            user-info-uri: https://hub.maa-org.net/application/o/userinfo/
 maa-copilot:
   backup:
     dir: /home/dove/copilotBak
@@ -60,8 +74,6 @@ maa-copilot:
     ssl: false
     #邮件通知
     notification: true
-
-
 
 springdoc:
   swagger-ui:

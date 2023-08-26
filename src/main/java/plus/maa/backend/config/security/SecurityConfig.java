@@ -1,16 +1,18 @@
 package plus.maa.backend.config.security;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import plus.maa.backend.config.external.MaaCopilotProperties;
+
+import java.io.PrintWriter;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -18,6 +20,7 @@ import static org.springframework.security.config.Customizer.withDefaults;
  * @author AnselYuki
  */
 @Configuration
+@Slf4j
 @RequiredArgsConstructor
 public class SecurityConfig {
     /**
@@ -26,7 +29,9 @@ public class SecurityConfig {
     private static final String[] URL_WHITELIST = {
             "/user/login",
             "/user/register",
-            "/user/sendRegistrationToken"
+            "/user/sendRegistrationToken",
+            "/user/login/maa",
+            "/login/oauth2/code/maa"
     };
 
     private static final String[] URL_PERMIT_ALL = {
@@ -70,6 +75,7 @@ public class SecurityConfig {
     private final JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter;
     private final AuthenticationEntryPointImpl authenticationEntryPoint;
     private final AccessDeniedHandlerImpl accessDeniedHandler;
+    private final MaaCopilotProperties maaCopilotProperties;
 
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
@@ -83,10 +89,6 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        //关闭CSRF,设置无状态连接
-        http.csrf(AbstractHttpConfigurer::disable)
-                //不通过Session获取SecurityContext
-                .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         //允许匿名访问的接口，如果是测试想要方便点就把这段全注释掉
         http.authorizeHttpRequests(authorize ->
@@ -106,6 +108,24 @@ public class SecurityConfig {
 
         //开启跨域请求
         http.cors(withDefaults());
+
+        http.oauth2Login(o -> o.loginPage("/user")
+                .authorizationEndpoint(authorizationEndpointConfig -> authorizationEndpointConfig
+                        .baseUri("/user/login"))
+                .defaultSuccessUrl(maaCopilotProperties.getInfo().getFrontendDomain())
+               );
+
+        //授权失败(正常来说不可能触发)
+        http.oauth2Login(o -> o
+                .failureHandler((request, response, exception) -> {
+            PrintWriter writer = response.getWriter();
+            writer.println(exception.getMessage());
+            log.warn(exception.getMessage());
+        }));
+
+
+
         return http.build();
     }
+
 }
