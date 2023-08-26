@@ -4,15 +4,27 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.oauth2.core.user.OAuth2UserAuthority;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import plus.maa.backend.common.MaaStatusCode;
 import plus.maa.backend.config.external.MaaCopilotProperties;
+import plus.maa.backend.controller.response.MaaResultException;
+import plus.maa.backend.repository.UserRepository;
+import plus.maa.backend.repository.entity.MaaUser;
 
 import java.io.PrintWriter;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -76,6 +88,7 @@ public class SecurityConfig {
     private final AuthenticationEntryPointImpl authenticationEntryPoint;
     private final AccessDeniedHandlerImpl accessDeniedHandler;
     private final MaaCopilotProperties maaCopilotProperties;
+    private final UserRepository userRepository;
 
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
@@ -118,12 +131,45 @@ public class SecurityConfig {
         //授权失败(正常来说不可能触发)
         http.oauth2Login(o -> o
                 .failureHandler((request, response, exception) -> {
-            PrintWriter writer = response.getWriter();
-            writer.println(exception.getMessage());
-            log.warn(exception.getMessage());
-        }));
+                    PrintWriter writer = response.getWriter();
+                    writer.println(exception.getMessage());
+                    log.warn(exception.getMessage());
+                }));
+
+        http.oauth2Login(o -> o.userInfoEndpoint(userInfoEndpointConfig -> userInfoEndpointConfig.userAuthoritiesMapper(this.userAuthoritiesMapper())));
 
         return http.build();
     }
 
+
+    private GrantedAuthoritiesMapper userAuthoritiesMapper() {
+        return (authorities) -> {
+            Set<GrantedAuthority> mappedAuthorities = new HashSet<>();
+
+            authorities.forEach(authority -> {
+                if (authority instanceof OAuth2UserAuthority oauth2UserAuthority) {
+
+                    Map<String, Object> userAttributes = oauth2UserAuthority.getAttributes();
+                    String email = userAttributes.get("email").toString();
+                    String nickname = userAttributes.get("nickname").toString();
+                    Optional<MaaUser> maaUserOptional = userRepository.findByEmail(email);
+
+                    MaaUser maaUser;
+                    if (maaUserOptional.isEmpty()) {
+                        maaUser = new MaaUser();
+                        maaUser.setStatus(1);
+                        maaUser.setUserName(nickname);
+                        maaUser.setEmail(email);
+                        try {
+                            userRepository.save(maaUser);
+                        } catch (DuplicateKeyException e) {
+                            throw new MaaResultException(MaaStatusCode.MAA_USER_EXISTS);
+                        }
+                    }
+                }
+            });
+
+            return mappedAuthorities;
+        };
+    }
 }

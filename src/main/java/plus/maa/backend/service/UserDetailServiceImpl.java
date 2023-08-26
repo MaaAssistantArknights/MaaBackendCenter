@@ -40,7 +40,7 @@ public class UserDetailServiceImpl implements UserDetailsService {
         return new LoginUser(user.get(), permissions);
     }
 
-    public Collection<? extends GrantedAuthority> collectAuthoritiesFor(MaaUser user) {
+    public static Collection<? extends GrantedAuthority> collectAuthoritiesFor(MaaUser user) {
         var authorities = new ArrayList<GrantedAuthority>();
         for (int i = 0; i <= user.getStatus(); i++) {
             authorities.add(new SimpleGrantedAuthority(Integer.toString(i)));

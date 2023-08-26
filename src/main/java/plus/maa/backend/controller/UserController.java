@@ -10,10 +10,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.config.SpringDocConfig;
 import plus.maa.backend.config.external.MaaCopilotProperties;
 import plus.maa.backend.config.security.AuthenticationHelper;
@@ -86,7 +83,7 @@ public class UserController {
      *
      * @return 成功响应，荷载JwtToken
      */
-    @PostMapping("/login")
+    @GetMapping("/login")
     @Operation(summary = "用户登录")
     @ApiResponse(description = "登录结果")
     public MaaResult<MaaLoginRsp> login() {

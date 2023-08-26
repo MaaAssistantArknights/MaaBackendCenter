@@ -4,9 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
-import plus.maa.backend.common.MaaStatusCode;
 import plus.maa.backend.common.utils.converter.MaaUserConverter;
 import plus.maa.backend.controller.request.user.UserInfoUpdateDTO;
 import plus.maa.backend.controller.response.MaaResultException;
@@ -33,7 +31,6 @@ public class UserService {
     private static final int LOGIN_LIMIT = 1;
 
     private final UserRepository userRepository;
-    private final UserDetailServiceImpl userDetailService;
     private final JwtService jwtService;
     private final MaaUserConverter maaUserConverter;
 
@@ -46,16 +43,6 @@ public class UserService {
     public MaaLoginRsp login(MaaUser maaUser) {
         var userOptional = userRepository.findByEmail(maaUser.getEmail());
         if (userOptional.isEmpty()) {
-            maaUser.setStatus(1);
-            try {
-                userRepository.save(maaUser);
-                userOptional = userRepository.findByEmail(maaUser.getEmail());
-            } catch (DuplicateKeyException e) {
-                throw new MaaResultException(MaaStatusCode.MAA_USER_EXISTS);
-            }
-        }
-
-        if (userOptional.isEmpty()) {
             throw new RuntimeException(":(");
         }
 
@@ -66,7 +53,7 @@ public class UserService {
         while (jwtIds.size() > LOGIN_LIMIT) jwtIds.remove(0);
         userRepository.save(user);
 
-        var authorities = userDetailService.collectAuthoritiesFor(user);
+        var authorities = UserDetailServiceImpl.collectAuthoritiesFor(user);
         var authToken = jwtService.issueAuthToken(user.getUserId(), null, authorities);
         var refreshToken = jwtService.issueRefreshToken(user.getUserId(), jwtId);
 
@@ -97,6 +84,7 @@ public class UserService {
     }
 
 
+
     /**
      * 刷新token
      *
@@ -120,7 +108,7 @@ public class UserService {
 
             var refreshToken = jwtService.newRefreshToken(old, jwtId);
 
-            var authorities = userDetailService.collectAuthoritiesFor(user);
+            var authorities = UserDetailServiceImpl.collectAuthoritiesFor(user);
             var authToken = jwtService.issueAuthToken(userId, null, authorities);
 
             return new MaaLoginRsp(

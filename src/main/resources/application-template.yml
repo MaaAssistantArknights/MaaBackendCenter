@@ -17,7 +17,7 @@ spring:
           maa:
             client-id: $I_Am_The_Bone_Of_My_Sword!Steel_Is_My_Body_And_Fire_Is_My_Blood!$
             client-secret: $I_Am_The_Bone_Of_My_Sword!Steel_Is_My_Body_And_Fire_Is_My_Blood!$
-            redirect-uri: https://${maa-copilot.info.domain}/login/oauth2/code/maa
+            redirect-uri: ${maa-copilot.info.domain}/login/oauth2/code/maa
             authorization-grant-type: authorization_code
         provider:
           maa:

@@ -49,7 +49,7 @@ public class AuthenticationHelper {
 
 
     /**
-     * 获取MAA Account用户的邮箱及用户名(用于未注册)
+     *  获取MAA Account用户的邮箱及用户名(用于未注册)
      */
     public @NotNull MaaUser getUserNameAndEmail() {
         var principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
