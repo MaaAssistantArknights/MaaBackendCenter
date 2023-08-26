@@ -9,6 +9,7 @@ import org.aspectj.lang.Signature;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
@@ -45,6 +46,7 @@ public class SensitiveWordAop {
     // 用于获取方法参数名
     private final DefaultParameterNameDiscoverer nameDiscoverer = new DefaultParameterNameDiscoverer();
 
+    @Nullable
     public Object getObjectBySpEL(String spELString, JoinPoint joinPoint) {
         // 获取被注解方法
         Signature signature = joinPoint.getSignature();
@@ -80,7 +82,7 @@ public class SensitiveWordAop {
             // 校验
             if (value instanceof String text) {
                 List<String> matchAll = wordTree.matchAll(text);
-                if (!matchAll.isEmpty()) {
+                if (matchAll != null && !matchAll.isEmpty()) {
                     throw new MaaResultException(HttpStatus.BAD_REQUEST.value(), "包含敏感词：" + matchAll);
                 }
             }

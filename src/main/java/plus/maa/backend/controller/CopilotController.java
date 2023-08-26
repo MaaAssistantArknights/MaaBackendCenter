@@ -34,11 +34,11 @@ public class CopilotController {
     private final CopilotService copilotService;
     private final AuthenticationHelper helper;
 
-    @SensitiveWordDetection("#objectMapper.readTree(#request.content).get('doc')?.toString()")
     @Operation(summary = "上传作业")
     @ApiResponse(description = "上传作业结果")
     @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
     @JsonSchema
+    @SensitiveWordDetection("#request.content != null ? #objectMapper.readTree(#request.content).get('doc')?.toString() : null")
     @PostMapping("/upload")
     public MaaResult<Long> uploadCopilot(
             @Parameter(description = "作业操作请求") @RequestBody CopilotCUDRequest request
@@ -78,11 +78,11 @@ public class CopilotController {
         return MaaResult.success(copilotService.queriesCopilot(helper.getUserId(), parsed));
     }
 
-    @SensitiveWordDetection("#objectMapper.readTree(#copilotCUDRequest.content).get('doc')?.toString()")
     @Operation(summary = "更新作业")
     @ApiResponse(description = "更新结果")
     @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
     @JsonSchema
+    @SensitiveWordDetection("#copilotCUDRequest.content != null ? #objectMapper.readTree(#copilotCUDRequest.content).get('doc')?.toString() : null")
     @PostMapping("/update")
     public MaaResult<Void> updateCopilot(
             @Parameter(description = "作业操作请求") @RequestBody CopilotCUDRequest copilotCUDRequest
