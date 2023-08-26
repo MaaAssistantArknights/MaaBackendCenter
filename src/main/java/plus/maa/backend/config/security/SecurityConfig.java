@@ -123,8 +123,6 @@ public class SecurityConfig {
             log.warn(exception.getMessage());
         }));
 
-
-
         return http.build();
     }
 

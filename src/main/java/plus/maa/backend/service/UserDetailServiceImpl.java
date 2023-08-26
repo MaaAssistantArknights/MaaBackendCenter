@@ -31,14 +31,13 @@ public class UserDetailServiceImpl implements UserDetailsService {
      */
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        MaaUser user = userRepository.findByEmail(email);
-        if (user == null) {
+        var user = userRepository.findByEmail(email);
+        if (user.isEmpty()) {
             throw new UsernameNotFoundException("用户不存在");
         }
-
-        var permissions = collectAuthoritiesFor(user);
+        var permissions = collectAuthoritiesFor(user.get());
         //数据封装成UserDetails返回
-        return new LoginUser(user, permissions);
+        return new LoginUser(user.get(), permissions);
     }
 
     public Collection<? extends GrantedAuthority> collectAuthoritiesFor(MaaUser user) {

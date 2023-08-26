@@ -6,14 +6,18 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
 import plus.maa.backend.common.utils.IpUtil;
+import plus.maa.backend.controller.response.MaaResultException;
+import plus.maa.backend.repository.entity.MaaUser;
 import plus.maa.backend.service.jwt.JwtAuthToken;
 import plus.maa.backend.service.model.LoginUser;
 
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -41,6 +45,24 @@ public class AuthenticationHelper {
         if (id == null)
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         return id;
+    }
+
+
+    /**
+     * 获取MAA Account用户的邮箱及用户名(用于未注册)
+     */
+    public @NotNull MaaUser getUserNameAndEmail() {
+        var principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal == null) {
+            throw new MaaResultException("账户未登录");
+        }
+        if (principal instanceof OAuth2User) {
+            Map<String, Object> attributes = ((OAuth2User) principal).getAttributes();
+            var email = attributes.get("email").toString();
+            var nickname = attributes.get("nickname").toString();
+            return new MaaUser().setUserName(nickname).setEmail(email);
+        }
+        return (MaaUser) principal;
     }
 
     /**
