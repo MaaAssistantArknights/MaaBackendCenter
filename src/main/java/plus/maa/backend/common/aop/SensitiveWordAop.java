@@ -42,7 +42,7 @@ public class SensitiveWordAop {
     // SpEL 表达式解析器
     private final SpelExpressionParser parser = new SpelExpressionParser();
 
-    // 用于获取方法参数定义名字
+    // 用于获取方法参数名
     private final DefaultParameterNameDiscoverer nameDiscoverer = new DefaultParameterNameDiscoverer();
 
     public Object getObjectBySpEL(String spELString, JoinPoint joinPoint) {
@@ -51,13 +51,13 @@ public class SensitiveWordAop {
         if (!(signature instanceof MethodSignature methodSignature)) {
             return null;
         }
-        // 获取方法形参名数组
+        // 获取方法参数名数组
         String[] paramNames = nameDiscoverer.getParameterNames(methodSignature.getMethod());
         // 解析 Spring 表达式对象
         Expression expression = parser.parseExpression(spELString);
         // Spring 表达式上下文对象
         EvaluationContext context = new StandardEvaluationContext();
-        // 通过joinPoint获取被注解方法的形参
+        // 通过 joinPoint 获取被注解方法的参数
         Object[] args = joinPoint.getArgs();
         // 给上下文赋值
         for (int i = 0; i < args.length; i++) {

@@ -31,7 +31,7 @@ public class SensitiveWordConfig {
      * 敏感词库初始化 <br>
      * 使用 Hutool 的 DFA 算法库，如果后续需要可转其他开源库或者使用付费的敏感词库 <br>
      *
-     * @return StringSearchEx2
+     * @return 敏感词库
      */
 
     @Bean
