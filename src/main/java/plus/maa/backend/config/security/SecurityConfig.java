@@ -9,8 +9,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2UserAuthority;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -39,8 +39,6 @@ public class SecurityConfig {
      * 添加放行接口在此处
      */
     private static final String[] URL_WHITELIST = {
-            "/user/login",
-            "/user/register",
             "/user/sendRegistrationToken",
             "/user/login/maa",
             "/login/oauth2/code/maa"
@@ -65,6 +63,11 @@ public class SecurityConfig {
             "/file/upload",
             "/comments/status",
             "/copilot/status"
+
+    };
+
+    private static final String[] URL_AUTHENTICATION_0 = {
+            "/user/login"
     };
 
     //添加需要权限1才能访问的接口
@@ -90,10 +93,6 @@ public class SecurityConfig {
     private final MaaCopilotProperties maaCopilotProperties;
     private final UserRepository userRepository;
 
-    @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
 
     @Bean
     public AuthenticationManager authenticationManager() throws Exception {
@@ -109,6 +108,7 @@ public class SecurityConfig {
                         .requestMatchers(URL_PERMIT_ALL).permitAll()
                         //权限 0 未激活 1 激活  等等.. (拥有权限1必然拥有权限0 拥有权限2必然拥有权限1、0)
                         //指定接口需要指定权限才能访问 如果不开启RBAC注释掉这一段即可
+                        .requestMatchers(URL_AUTHENTICATION_0).hasAuthority("0")
                         .requestMatchers(URL_AUTHENTICATION_1).hasAuthority("1")
                         //此处用于管理员操作接口
                         .requestMatchers(URL_AUTHENTICATION_2).hasAuthority("2")
@@ -166,6 +166,7 @@ public class SecurityConfig {
                             throw new MaaResultException(MaaStatusCode.MAA_USER_EXISTS);
                         }
                     }
+                    mappedAuthorities.add(new SimpleGrantedAuthority(Integer.toString(0)));
                 }
             });
 
