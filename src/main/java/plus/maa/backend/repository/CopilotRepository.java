@@ -1,9 +1,10 @@
 package plus.maa.backend.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import plus.maa.backend.repository.entity.Copilot;
 
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -13,7 +14,7 @@ import java.util.Optional;
 
 public interface CopilotRepository extends MongoRepository<Copilot, String> {
 
-    List<Copilot> findAllByDeleteIsFalse();
+    Page<Copilot> findAllByDeleteIsFalse(Pageable pageable);
 
     Optional<Copilot> findFirstByOrderByCopilotIdDesc();
 
