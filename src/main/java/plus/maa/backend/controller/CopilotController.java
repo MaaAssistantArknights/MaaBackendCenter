@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.JsonSchema;
+import plus.maa.backend.common.annotation.SensitiveWordDetection;
 import plus.maa.backend.config.SpringDocConfig;
 import plus.maa.backend.config.security.AuthenticationHelper;
 import plus.maa.backend.controller.request.copilot.CopilotCUDRequest;
@@ -37,6 +38,7 @@ public class CopilotController {
     @ApiResponse(description = "上传作业结果")
     @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
     @JsonSchema
+    @SensitiveWordDetection("#request.content != null ? #objectMapper.readTree(#request.content).get('doc')?.toString() : null")
     @PostMapping("/upload")
     public MaaResult<Long> uploadCopilot(
             @Parameter(description = "作业操作请求") @RequestBody CopilotCUDRequest request
@@ -80,6 +82,7 @@ public class CopilotController {
     @ApiResponse(description = "更新结果")
     @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
     @JsonSchema
+    @SensitiveWordDetection("#copilotCUDRequest.content != null ? #objectMapper.readTree(#copilotCUDRequest.content).get('doc')?.toString() : null")
     @PostMapping("/update")
     public MaaResult<Void> updateCopilot(
             @Parameter(description = "作业操作请求") @RequestBody CopilotCUDRequest copilotCUDRequest
