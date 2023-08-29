@@ -480,6 +480,11 @@ public class CopilotService {
         update.set("ratingLevel", (int) (ratingLevel * 10));
         update.set("ratingRatio", ratingLevel);
         mongoTemplate.updateFirst(query, update, Copilot.class);
+
+        // 记录近期评分变化量前 100 的作业 id
+        redisCache.incZSet("rate:hot:copilotIds",
+                Long.toString(request.getId()),
+                1, 100, 3600 * 3);
     }
 
     public static double getHotScore(Copilot copilot, long lastWeekLike, long lastWeekDislike) {

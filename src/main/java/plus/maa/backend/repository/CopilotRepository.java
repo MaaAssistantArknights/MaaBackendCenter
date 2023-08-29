@@ -5,6 +5,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import plus.maa.backend.repository.entity.Copilot;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -19,6 +21,8 @@ public interface CopilotRepository extends MongoRepository<Copilot, String> {
     Optional<Copilot> findFirstByOrderByCopilotIdDesc();
 
     Optional<Copilot> findByCopilotIdAndDeleteIsFalse(Long copilotId);
+
+    List<Copilot> findByCopilotIdInAndDeleteIsFalse(Collection<Long> copilotIds);
 
     Optional<Copilot> findByCopilotId(Long copilotId);
 

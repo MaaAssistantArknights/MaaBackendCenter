@@ -13,11 +13,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -45,6 +47,24 @@ public class RedisCache {
             .addModule(new JavaTimeModule())
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .build();
+
+    /*
+        使用 lua 脚本插入数据，维持 ZSet 的相对大小（size <= 实际大小 <= size + 50）以及过期时间
+        实际大小这么设计是为了避免频繁的 ZREMRANGEBYRANK 操作
+     */
+    private final String incZSetLuaScript = """
+            local member = ARGV[1]
+            local incScore = ARGV[2]
+            local size = ARGV[3]
+            local timeout = ARGV[4]
+            redis.call('ZINCRBY', KEYS[1], incScore, member)
+            redis.call('EXPIRE', KEYS[1], timeout)
+            local count = redis.call('ZCARD', KEYS[1])
+            if count > size + 50 then
+                redis.call('ZREMRANGEBYRANK', KEYS[1], 0, count - size - 1)
+            end
+            """;
+    private final RedisScript<Object> incZSetRedisScript = RedisScript.of(incZSetLuaScript);
 
     public <T> void setData(final String key, T value) {
         setCache(key, value, 0, TimeUnit.SECONDS);
@@ -101,6 +121,33 @@ public class RedisCache {
             redisTemplate.opsForSet().add(key, jsonList);
             redisTemplate.expire(key, timeout, timeUnit);
         }
+    }
+
+
+    /**
+     * ZSet 中元素的 score += incScore，如果元素不存在则插入 <br>
+     * 会维持 ZSet 的相对大小（size <= 实际大小 <= size + 50）以及过期时间 <br>
+     * 当大小超出 size + 50 时，会优先删除 score 最小的元素，直到大小等于 size
+     *
+     * @param key      ZSet 的 key
+     * @param member   ZSet 的 member
+     * @param incScore 增加的 score
+     * @param size     ZSet 的相对大小
+     * @param timeout  ZSet 的过期时间
+     */
+
+    public void incZSet(final String key, String member, double incScore, long size, long timeout) {
+        redisTemplate.execute(incZSetRedisScript, List.of(key), member, Double.toString(incScore), Long.toString(size), Long.toString(timeout));
+    }
+
+    // 获取的元素是按照 score 从小到大排列的
+    public Set<String> getZSet(final String key, long start, long end) {
+        return redisTemplate.opsForZSet().range(key, start, end);
+    }
+
+    // 获取的元素是按照 score 从大到小排列的
+    public Set<String> getZSetReverse(final String key, long start, long end) {
+        return redisTemplate.opsForZSet().reverseRange(key, start, end);
     }
 
     public <T> boolean valueMemberInSet(final String key, T value) {
