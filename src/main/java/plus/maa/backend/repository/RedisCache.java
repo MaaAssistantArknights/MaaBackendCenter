@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.ScanOptions;
@@ -141,11 +142,13 @@ public class RedisCache {
     }
 
     // 获取的元素是按照 score 从小到大排列的
+    @Nullable
     public Set<String> getZSet(final String key, long start, long end) {
         return redisTemplate.opsForZSet().range(key, start, end);
     }
 
     // 获取的元素是按照 score 从大到小排列的
+    @Nullable
     public Set<String> getZSetReverse(final String key, long start, long end) {
         return redisTemplate.opsForZSet().reverseRange(key, start, end);
     }
@@ -164,18 +167,22 @@ public class RedisCache {
         return false;
     }
 
+    @Nullable
     public <T> T getCache(final String key, Class<T> valueType) {
         return getCache(key, valueType, null, expire, TimeUnit.SECONDS);
     }
 
+    @Nullable
     public <T> T getCache(final String key, Class<T> valueType, Supplier<T> onMiss) {
         return getCache(key, valueType, onMiss, expire, TimeUnit.SECONDS);
     }
 
+    @Nullable
     public <T> T getCache(final String key, Class<T> valueType, Supplier<T> onMiss, long timeout) {
         return getCache(key, valueType, onMiss, timeout, TimeUnit.SECONDS);
     }
 
+    @Nullable
     public <T> T getCache(final String key, Class<T> valueType, Supplier<T> onMiss, long timeout, TimeUnit timeUnit) {
         T result;
         try {
@@ -235,6 +242,7 @@ public class RedisCache {
         }
     }
 
+    @Nullable
     public String getCacheLevelCommit() {
         return getCache("level:commit", String.class);
     }

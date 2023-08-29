@@ -20,8 +20,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
 public class CopilotScoreRefreshTaskTest extends BaseMockTest {
@@ -90,7 +89,7 @@ public class CopilotScoreRefreshTaskTest extends BaseMockTest {
                 .thenReturn(Set.of("1", "2", "3"));
 
         // 配置copilotRepository
-        when(copilotRepository.findByCopilotIdInAndDeleteIsFalse(eq(List.of(1L, 2L, 3L))))
+        when(copilotRepository.findByCopilotIdInAndDeleteIsFalse(anyCollection()))
                 .thenReturn(List.of(copilot1, copilot2, copilot3));
 
         // 配置mongoTemplate

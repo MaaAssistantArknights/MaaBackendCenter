@@ -74,12 +74,17 @@ public class CopilotScoreRefreshTask {
     @Scheduled(cron = "0 0 8-20/3 * * ?")
     public void refreshTop100HotScores() {
         Set<String> copilotIdSTRs = redisCache.getZSetReverse("rate:hot:copilotIds", 0, 99);
-        if (copilotIdSTRs.isEmpty()) {
+        if (copilotIdSTRs == null || copilotIdSTRs.isEmpty()) {
             return;
         }
+
         List<Copilot> copilots = copilotRepository.findByCopilotIdInAndDeleteIsFalse(
                 copilotIdSTRs.stream().map(Long::parseLong).collect(Collectors.toList())
         );
+        if (copilots == null || copilots.isEmpty()) {
+            return;
+        }
+
         refresh(copilotIdSTRs, copilots);
 
         // 移除近期评分变化量缓存
