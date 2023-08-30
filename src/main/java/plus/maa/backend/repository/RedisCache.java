@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -53,19 +54,7 @@ public class RedisCache {
         使用 lua 脚本插入数据，维持 ZSet 的相对大小（size <= 实际大小 <= size + 50）以及过期时间
         实际大小这么设计是为了避免频繁的 ZREMRANGEBYRANK 操作
      */
-    private final String incZSetLuaScript = """
-            local member = ARGV[1]
-            local incScore = ARGV[2]
-            local size = ARGV[3]
-            local timeout = ARGV[4]
-            redis.call('ZINCRBY', KEYS[1], incScore, member)
-            redis.call('EXPIRE', KEYS[1], timeout)
-            local count = redis.call('ZCARD', KEYS[1])
-            if count > size + 50 then
-                redis.call('ZREMRANGEBYRANK', KEYS[1], 0, count - size - 1)
-            end
-            """;
-    private final RedisScript<Object> incZSetRedisScript = RedisScript.of(incZSetLuaScript);
+    private final RedisScript<Object> incZSetRedisScript = RedisScript.of(new ClassPathResource("redis-lua/incZSet.lua"));
 
     public <T> void setData(final String key, T value) {
         setCache(key, value, 0, TimeUnit.SECONDS);
