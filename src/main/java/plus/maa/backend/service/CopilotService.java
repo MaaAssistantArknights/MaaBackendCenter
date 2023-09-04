@@ -2,7 +2,6 @@ package plus.maa.backend.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +28,10 @@ import plus.maa.backend.controller.response.copilot.ArkLevelInfo;
 import plus.maa.backend.controller.response.copilot.CopilotInfo;
 import plus.maa.backend.controller.response.copilot.CopilotPageInfo;
 import plus.maa.backend.repository.*;
-import plus.maa.backend.repository.entity.*;
+import plus.maa.backend.repository.entity.CommentsArea;
+import plus.maa.backend.repository.entity.Copilot;
+import plus.maa.backend.repository.entity.MaaUser;
+import plus.maa.backend.repository.entity.Rating;
 import plus.maa.backend.service.model.RatingCache;
 import plus.maa.backend.service.model.RatingType;
 
@@ -60,7 +62,6 @@ public class CopilotService {
     private final RedisCache redisCache;
     private final UserRepository userRepository;
     private final CommentsAreaRepository commentsAreaRepository;
-    private final CopilotRatingRepository copilotRatingRepository;
 
     private final CopilotConverter copilotConverter;
     private final AtomicLong copilotIncrementId = new AtomicLong(20000);
@@ -211,12 +212,7 @@ public class CopilotService {
                 }
             }
             Map<String, MaaUser> maaUser = userRepository.findByUsersId(List.of(copilot.getUploaderId()));
-            // 旧评分系统
-            Optional<CopilotRating> rating = copilotRatingRepository.findByCopilotIdAndDelete(copilot.getCopilotId(), false);
-            if (rating.isPresent()) {
-                return formatCopilot(userIdOrIpAddress, copilot, rating.get(), maaUser.get(copilot.getUploaderId()).getUserName(),
-                        commentsAreaRepository.countByCopilotIdAndDelete(copilot.getCopilotId(), false));
-            }
+
             // 新评分系统
             RatingType ratingType = ratingRepository.findByTypeAndKeyAndUserId(Rating.KeyType.COPILOT,
                     Long.toString(copilot.getCopilotId()), userIdOrIpAddress)
@@ -356,26 +352,13 @@ public class CopilotService {
         Map<Long, Long> commentsCount = commentsAreaRepository.findByCopilotIdInAndDelete(copilotIds, false)
                 .collect(Collectors.groupingBy(CommentsArea::getCopilotId, Collectors.counting()));
 
-        List<CopilotInfo> infos;
-        List<CopilotRating> ratings = copilotRatingRepository.findByCopilotIdInAndDelete(copilotIds, false);
-        if (ratings != null && !ratings.isEmpty()) {
-            // 交由旧版评分系统并迁移数据
-            Map<Long, CopilotRating> ratingByCopilotId = Maps.uniqueIndex(ratings, CopilotRating::getCopilotId);
-            infos = copilots.stream().map(copilot ->
-                            formatCopilot(userId, copilot,
-                                    ratingByCopilotId.get(copilot.getCopilotId()),
-                                    maaUsers.get(copilot.getUploaderId()).getUserName(),
-                                    commentsCount.get(copilot.getCopilotId())))
-                    .toList();
-        } else {
-            // 新版评分系统
-            // 反正目前首页和搜索不会直接展示当前用户有没有点赞，干脆直接不查，要用户点进作业才显示自己是否点赞
-            infos = copilots.stream().map(copilot ->
-                    formatCopilot(copilot, null,
-                            maaUsers.get(copilot.getUploaderId()).getUserName(),
-                            commentsCount.get(copilot.getCopilotId())))
-                    .toList();
-        }
+        // 新版评分系统
+        // 反正目前首页和搜索不会直接展示当前用户有没有点赞，干脆直接不查，要用户点进作业才显示自己是否点赞
+        List<CopilotInfo> infos = copilots.stream().map(copilot ->
+                formatCopilot(copilot, null,
+                        maaUsers.get(copilot.getUploaderId()).getUserName(),
+                        commentsCount.get(copilot.getCopilotId())))
+                .toList();
 
         // 计算页面
         int pageNumber = (int) Math.ceil((double) count / limit);
@@ -427,73 +410,6 @@ public class CopilotService {
         String rating = request.getRating();
 
         Assert.isTrue(copilotRepository.existsCopilotsByCopilotId(request.getId()), "作业id不存在");
-
-        // 如果旧评分表存在，迁移评分数据
-        if (copilotRatingRepository.existsCopilotRatingByCopilotIdAndDelete(request.getId(), false)) {
-            // 查询指定作业评分
-            CopilotRating copilotRating = copilotRatingRepository.findByCopilotId(request.getId());
-            List<CopilotRating.RatingUser> ratingUsers = copilotRating.getRatingUsers();
-
-            // 判断旧评分是否存在 如果存在则迁移评分
-            if (ratingUsers != null && !ratingUsers.isEmpty()) {
-                long likeCount = 0;
-                long dislikeCount = 0;
-                List<Rating> ratingList = new ArrayList<>();
-                for (CopilotRating.RatingUser ratingUser : ratingUsers) {
-
-                    Rating newRating = new Rating()
-                            .setType(Rating.KeyType.COPILOT)
-                            .setKey(Long.toString(request.getId()))
-                            .setUserId(ratingUser.getUserId())
-                            .setRating(RatingType.fromRatingType(ratingUser.getRating()))
-                            .setRateTime(ratingUser.getRateTime());
-                    ratingList.add(newRating);
-
-                    if (Objects.equals(ratingUser.getRating(), "Like")) {
-                        likeCount++;
-                    } else if (Objects.equals(ratingUser.getRating(), "Dislike")) {
-                        dislikeCount++;
-                    }
-
-                    if (Objects.equals(userIdOrIpAddress, ratingUser.getUserId())) {
-                        if (Objects.equals(rating, ratingUser.getRating())) {
-                            continue;
-                        }
-                        RatingType oldRatingType = newRating.getRating();
-                        newRating.setRating(RatingType.fromRatingType(rating));
-                        newRating.setRateTime(LocalDateTime.now());
-                        likeCount += newRating.getRating() == RatingType.LIKE ? 1 :
-                                (oldRatingType != RatingType.LIKE ? 0 : -1);
-                        dislikeCount += newRating.getRating() == RatingType.DISLIKE ? 1 :
-                                (oldRatingType != RatingType.DISLIKE ? 0 : -1);
-                    }
-                }
-                if (likeCount < 0) {
-                    likeCount = 0;
-                }
-                if (dislikeCount < 0) {
-                    dislikeCount = 0;
-                }
-                ratingRepository.insert(ratingList);
-                // 计算评分相关
-                long ratingCount = likeCount + dislikeCount;
-                double rawRatingLevel = ratingCount != 0 ? (double) likeCount / ratingCount : 0;
-                BigDecimal bigDecimal = new BigDecimal(rawRatingLevel);
-                // 只取一位小数点
-                double ratingLevel = bigDecimal.setScale(1, RoundingMode.HALF_UP).doubleValue();
-                // 修改 copilot 表的评分相关数据
-                Query query = Query.query(Criteria.where("copilotId").is(request.getId()));
-                Update update = new Update();
-                update.set("likeCount", likeCount);
-                update.set("dislikeCount", dislikeCount);
-                update.set("ratingLevel", (int) (ratingLevel * 10));
-                update.set("ratingRatio", ratingLevel);
-                mongoTemplate.updateFirst(query, update, Copilot.class);
-            }
-            // 删除旧评分表
-            copilotRating.setDelete(true);
-            copilotRatingRepository.save(copilotRating);
-        }   // 迁移用代码结束，如不再需要可完全删除该 if 判断
 
         int likeCountChange = 0;
         int dislikeCountChange = 0;
@@ -564,6 +480,11 @@ public class CopilotService {
         update.set("ratingLevel", (int) (ratingLevel * 10));
         update.set("ratingRatio", ratingLevel);
         mongoTemplate.updateFirst(query, update, Copilot.class);
+
+        // 记录近期评分变化量前 100 的作业 id
+        redisCache.incZSet("rate:hot:copilotIds",
+                Long.toString(request.getId()),
+                1, 100, 3600 * 3);
     }
 
     public static double getHotScore(Copilot copilot, long lastWeekLike, long lastWeekDislike) {
@@ -587,65 +508,6 @@ public class CopilotService {
                 * Math.max((ups + downs) / 10d, 1) / pastedWeeks;
         double order = Math.log(Math.max(s, 1));
         return order + s / 1000d + base;
-    }
-
-    /**
-     * 将数据库内容转换为前端所需格式<br>
-     * 旧系统，会自动迁移数据
-     */
-    private CopilotInfo formatCopilot(String userIdOrIpAddress, Copilot copilot, CopilotRating rating, String userName,
-                                      Long commentsCount) {
-        CopilotInfo info = copilotConverter.toCopilotInfo(copilot, userName, copilot.getCopilotId(),
-                commentsCount);
-        Optional<CopilotRating> copilotRating = Optional.ofNullable(rating);
-
-        // 判断评分中是否有用户评分记录 有则开始迁移
-        copilotRating.map(cr -> {
-            info.setRatingRatio(cr.getRatingRatio());
-            info.setRatingLevel(cr.getRatingLevel());
-            copilot.setRatingRatio(cr.getRatingRatio());
-            copilot.setRatingLevel(cr.getRatingLevel());
-            return cr.getRatingUsers();
-        }).ifPresent(rus -> {
-            // 评分数少于一定数量
-            info.setNotEnoughRating(rus.size() <= 5);
-            rus.stream()
-                    .filter(ru -> Objects.equals(userIdOrIpAddress, ru.getUserId()))
-                    .findFirst()
-                    .ifPresent(fst -> info.setRatingType(RatingType.fromRatingType(fst.getRating()).getDisplay()));
-            if (!rus.isEmpty()) {
-                // 迁移评分
-                long likeCount = 0;
-                long dislikeCount = 0;
-                List<Rating> ratingList = new ArrayList<>();
-                for (var ru : rus) {
-                    Rating newRating = new Rating()
-                            .setType(Rating.KeyType.COPILOT)
-                            .setKey(Long.toString(copilot.getCopilotId()))
-                            .setUserId(ru.getUserId())
-                            .setRating(RatingType.fromRatingType(ru.getRating()))
-                            .setRateTime(ru.getRateTime());
-                    ratingList.add(newRating);
-                    if (Objects.equals(ru.getRating(), "Like")) {
-                        likeCount++;
-                    } else if (Objects.equals(ru.getRating(), "Dislike")) {
-                        dislikeCount++;
-                    }
-                }
-                ratingRepository.insert(ratingList);
-                copilot.setLikeCount(likeCount);
-                copilot.setDislikeCount(dislikeCount);
-                copilotRepository.save(copilot);
-            }
-            rating.setDelete(true);
-            copilotRatingRepository.save(rating);
-        });
-
-        info.setAvailable(true);
-
-        // 兼容客户端, 将作业ID替换为数字ID
-        copilot.setId(Long.toString(copilot.getCopilotId()));
-        return info;
     }
 
     /**

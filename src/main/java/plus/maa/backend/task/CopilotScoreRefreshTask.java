@@ -1,29 +1,28 @@
 package plus.maa.backend.task;
 
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import plus.maa.backend.repository.CopilotRatingRepository;
 import plus.maa.backend.repository.CopilotRepository;
-import plus.maa.backend.repository.RatingRepository;
 import plus.maa.backend.repository.RedisCache;
 import plus.maa.backend.repository.entity.Copilot;
-import plus.maa.backend.repository.entity.CopilotRating;
 import plus.maa.backend.repository.entity.Rating;
 import plus.maa.backend.service.CopilotService;
 import plus.maa.backend.service.model.RatingCount;
 import plus.maa.backend.service.model.RatingType;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -39,8 +38,6 @@ public class CopilotScoreRefreshTask {
 
     RedisCache redisCache;
     CopilotRepository copilotRepository;
-    CopilotRatingRepository copilotRatingRepository;
-    RatingRepository ratingRepository;
     MongoTemplate mongoTemplate;
 
     /**
@@ -48,46 +45,55 @@ public class CopilotScoreRefreshTask {
      */
     @Scheduled(cron = "0 0 3 * * ?")
     public void refreshHotScores() {
-        List<Copilot> copilots = copilotRepository.findAllByDeleteIsFalse();
-        List<Copilot> changedCopilots = new ArrayList<>();
-        List<Long> copilotIds = copilots.stream().map(Copilot::getCopilotId).toList();
-        // 旧版评级系统迁移
-        List<CopilotRating> ratings = copilotRatingRepository.findByCopilotIdInAndDelete(copilotIds, false);
-        if (ratings != null && !ratings.isEmpty()) {
-            // 数据迁移
-            Map<Long, CopilotRating> ratingById = ratings.stream()
-                    .collect(Collectors.toMap(CopilotRating::getCopilotId, Function.identity(), (v1, v2) -> v1));
-            for (Copilot copilot : copilots) {
-                CopilotRating rating = ratingById.get(copilot.getCopilotId());
-                if (rating != null) {
-                    copilot.setRatingLevel(rating.getRatingLevel());
-                    copilot.setRatingRatio(rating.getRatingRatio());
-                    List<Rating> ratingList = new ArrayList<>();
-                    if (rating.getRatingUsers() != null) {
-                        for (var ratingUser : rating.getRatingUsers()) {
-                            if ("Like".equals(ratingUser.getRating())) {
-                                copilot.setLikeCount(copilot.getLikeCount() + 1);
-                            } else if ("Dislike".equals(ratingUser.getRating())) {
-                                copilot.setDislikeCount(copilot.getDislikeCount() + 1);
-                            }
-                            Rating newRating = new Rating()
-                                    .setType(Rating.KeyType.COPILOT)
-                                    .setKey(Long.toString(copilot.getCopilotId()))
-                                    .setUserId(ratingUser.getUserId())
-                                    .setRating(RatingType.fromRatingType(ratingUser.getRating()))
-                                    .setRateTime(ratingUser.getRateTime());
+        // 分页获取所有未删除的作业
+        Pageable pageable = Pageable.ofSize(1000);
+        Page<Copilot> copilots = copilotRepository.findAllByDeleteIsFalse(pageable);
 
-                            ratingList.add(newRating);
-                        }
-                        ratingRepository.insert(ratingList);
-                    }
-                    rating.setDelete(true);
-                    copilotRatingRepository.save(rating);
-                }
+        // 循环读取直到没有未删除的作业为止
+        while (copilots.hasContent()) {
+            List<String> copilotIdSTRs = copilots.stream()
+                    .map(copilot -> Long.toString(copilot.getCopilotId()))
+                    .collect(Collectors.toList());
+            refresh(copilotIdSTRs, copilots);
+            // 获取下一页
+            if (!copilots.hasNext()) {
+                // 没有下一页了，跳出循环
+                break;
             }
-        }   // 迁移完成
+            pageable = copilots.nextPageable();
+            copilots = copilotRepository.findAllByDeleteIsFalse(pageable);
+        }
 
-        List<String> copilotIdSTRs = copilotIds.stream().map(String::valueOf).toList();
+        // 移除首页热度缓存
+        redisCache.removeCacheByPattern("home:hot:*");
+    }
+
+    /**
+     * 刷入评分变更数 Top 100 的热度值，每日八点到二十点每三小时执行一次
+     */
+    @Scheduled(cron = "0 0 8-20/3 * * ?")
+    public void refreshTop100HotScores() {
+        Set<String> copilotIdSTRs = redisCache.getZSetReverse("rate:hot:copilotIds", 0, 99);
+        if (copilotIdSTRs == null || copilotIdSTRs.isEmpty()) {
+            return;
+        }
+
+        List<Copilot> copilots = copilotRepository.findByCopilotIdInAndDeleteIsFalse(
+                copilotIdSTRs.stream().map(Long::parseLong).collect(Collectors.toList())
+        );
+        if (copilots == null || copilots.isEmpty()) {
+            return;
+        }
+
+        refresh(copilotIdSTRs, copilots);
+
+        // 移除近期评分变化量缓存
+        redisCache.removeCacheByPattern("rate:hot:copilotIds");
+        // 移除首页热度缓存
+        redisCache.removeCacheByPattern("home:hot:*");
+    }
+
+    private void refresh(Collection<String> copilotIdSTRs, Iterable<Copilot> copilots) {
         // 批量获取最近七天的点赞和点踩数量
         LocalDateTime now = LocalDateTime.now();
         List<RatingCount> likeCounts = counts(copilotIdSTRs, RatingType.LIKE, now.minusDays(7));
@@ -100,12 +106,9 @@ public class CopilotScoreRefreshTask {
             long dislikeCount = dislikeCountMap.getOrDefault(Long.toString(copilot.getCopilotId()), 0L);
             double hotScore = CopilotService.getHotScore(copilot, likeCount, dislikeCount);
             copilot.setHotScore(hotScore);
-            changedCopilots.add(copilot);
         }
-
-        copilotRepository.saveAll(changedCopilots);
-        // 移除首页热度缓存
-        redisCache.removeCacheByPattern("home:hot:*");
+        // 批量更新热度值
+        copilotRepository.saveAll(copilots);
     }
 
     private List<RatingCount> counts(Collection<String> keys, RatingType rating, LocalDateTime startTime) {

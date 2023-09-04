@@ -22,7 +22,10 @@ import plus.maa.backend.repository.CommentsAreaRepository;
 import plus.maa.backend.repository.CopilotRepository;
 import plus.maa.backend.repository.RatingRepository;
 import plus.maa.backend.repository.UserRepository;
-import plus.maa.backend.repository.entity.*;
+import plus.maa.backend.repository.entity.CommentsArea;
+import plus.maa.backend.repository.entity.Copilot;
+import plus.maa.backend.repository.entity.MaaUser;
+import plus.maa.backend.repository.entity.Rating;
 import plus.maa.backend.service.model.CommentNotification;
 import plus.maa.backend.service.model.RatingType;
 
@@ -189,41 +192,6 @@ public class CommentsAreaService {
         String rating = commentsRatingDTO.getRating();
 
         CommentsArea commentsArea = findCommentsById(commentsRatingDTO.getCommentId());
-        List<CopilotRating.RatingUser> ratingUserList = commentsArea.getRatingUser();
-
-        // 判断旧评分是否存在 如果存在则迁移评分
-        if (ratingUserList != null && !ratingUserList.isEmpty()) {
-            long likeCount = commentsArea.getLikeCount();
-            List<Rating> ratingList = new ArrayList<>();
-            for (CopilotRating.RatingUser ratingUser : ratingUserList) {
-
-                Rating newRating = new Rating()
-                        .setType(Rating.KeyType.COMMENT)
-                        .setKey(commentsArea.getId())
-                        .setUserId(ratingUser.getUserId())
-                        .setRating(RatingType.fromRatingType(ratingUser.getRating()))
-                        .setRateTime(ratingUser.getRateTime());
-                ratingList.add(newRating);
-
-                if (Objects.equals(userId, ratingUser.getUserId())) {
-                    if (Objects.equals(rating, ratingUser.getRating())) {
-                        continue;
-                    }
-                    RatingType oldRatingType = newRating.getRating();
-                    newRating.setRating(RatingType.fromRatingType(rating));
-                    newRating.setRateTime(LocalDateTime.now());
-                    likeCount += newRating.getRating() == RatingType.LIKE ? 1 :
-                            (oldRatingType != RatingType.LIKE ? 0 : -1);
-                }
-            }
-            if (likeCount < 0) {
-                likeCount = 0;
-            }
-            commentsArea.setLikeCount(likeCount);
-            commentsArea.setRatingUser(null);
-            ratingRepository.insert(ratingList);
-            commentsAreaRepository.save(commentsArea);
-        }   // 迁移用代码结束，如不再需要可完全删除该 if 判断
 
         long change;
         Optional<Rating> ratingOptional = ratingRepository.findByTypeAndKeyAndUserId(Rating.KeyType.COMMENT, commentsArea.getId(), userId);
