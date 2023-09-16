@@ -1,6 +1,7 @@
 package plus.maa.backend.controller.request.user;
 
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,6 +18,7 @@ public class PasswordResetVCodeDTO {
     /**
      * 邮箱
      */
+    @NotBlank(message = "邮箱格式错误")
     @Email(message = "邮箱格式错误")
     private String email;
 }

@@ -133,22 +133,6 @@ public class EmailBusinessObject {
         }
     }
 
-
-    public void sendActivateUrlMessage(String url) {
-
-        try {
-            send(this.mailAccount, this.emailList
-                    , this.title + "  账户激活"
-                    , defaultMailIncludeHtmlTemplates(
-                            "mail-activateUrl.ftlh", url
-                    )
-                    , this.isHtml
-            );
-        } catch (Exception ex) {
-            throw new RuntimeException("邮件发送失败", ex);
-        }
-    }
-
     public void sendCommentNotification(Map<String, String> map) {
         try {
             send(this.mailAccount,

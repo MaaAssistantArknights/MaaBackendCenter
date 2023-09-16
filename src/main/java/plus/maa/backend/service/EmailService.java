@@ -2,11 +2,13 @@ package plus.maa.backend.service;
 
 import cn.hutool.extra.mail.MailAccount;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import plus.maa.backend.common.bo.EmailBusinessObject;
@@ -18,7 +20,6 @@ import plus.maa.backend.service.model.CommentNotification;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * @author LoMu
@@ -42,6 +43,11 @@ public class EmailService {
     private final RedisCache redisCache;
 
     private final MailAccount MAIL_ACCOUNT = new MailAccount();
+
+    // 注入自身代理类的延迟加载代理类
+    @Lazy
+    @Resource
+    private EmailService emailService;
 
     /**
      * 初始化邮件账户信息
@@ -69,8 +75,18 @@ public class EmailService {
      * @param email 邮箱
      */
 
-    @Async
     public void sendVCode(String email) {
+        // 限制请求间隔
+        Integer interval = redisCache.getCache("HasBeenSentVCode:" + email, Integer.class);
+        if (interval != null) {
+            throw new MaaResultException(403, String.format("发送验证码的请求至少需要间隔 %d 秒", interval));
+        }
+        // 调用注入的代理类执行异步任务
+        emailService.asyncSendVCode(email);
+    }
+
+    @Async
+    protected void asyncSendVCode(String email) {
         // 6位随机数验证码
         String vcode = RandomStringUtils.random(6, true, true).toUpperCase();
         if (flagNoSend) {
@@ -84,6 +100,8 @@ public class EmailService {
         }
         // 存redis
         redisCache.setCache("vCodeEmail:" + email, vcode, expire);
+        // 一个过期周期最多重发十条，记录已发送的邮箱以及间隔时间
+        redisCache.setCache("HasBeenSentVCode:" + email, expire / 10, expire / 10);
     }
 
     /**
@@ -96,29 +114,6 @@ public class EmailService {
         if (!redisCache.removeKVIfEquals("vCodeEmail:" + email, vcode.toUpperCase())) {
             throw new MaaResultException(401, "验证码错误");
         }
-    }
-
-    /**
-     * @param email 发送激活验证邮箱
-     */
-    @Async
-    public void sendActivateUrl(String email) {
-        // 生成uuid作为唯一标识符
-        String uuid = UUID.randomUUID().toString().replaceAll("-", "");
-        String url = domain + "/user/activateAccount?nonce=" + uuid;
-        if (flagNoSend) {
-            log.debug("url is " + url);
-            log.warn("Email not sent, no-send enabled");
-        } else {
-            EmailBusinessObject.builder()
-                    .setMailAccount(MAIL_ACCOUNT)
-                    .setEmail(email)
-                    .sendActivateUrlMessage(url);
-        }
-        // 存redis
-        redisCache.setCache("UUID:" + uuid, email, expire);
-        // 一个链接过期周期最多重发十条，记录已发送的邮箱以及间隔时间
-        redisCache.setCache("HasBeenSentAU:" + email, expire / 10, expire / 10);
     }
 
     @Async

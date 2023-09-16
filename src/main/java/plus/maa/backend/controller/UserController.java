@@ -5,24 +5,24 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import plus.maa.backend.config.SpringDocConfig;
 import plus.maa.backend.config.external.MaaCopilotProperties;
 import plus.maa.backend.config.security.AuthenticationHelper;
 import plus.maa.backend.controller.request.user.*;
-import plus.maa.backend.controller.response.user.MaaLoginRsp;
 import plus.maa.backend.controller.response.MaaResult;
+import plus.maa.backend.controller.response.user.MaaLoginRsp;
 import plus.maa.backend.controller.response.user.MaaUserInfo;
 import plus.maa.backend.service.EmailService;
 import plus.maa.backend.service.UserService;
-
-import java.io.IOException;
 
 /**
  * 用户相关接口
@@ -138,6 +138,17 @@ public class UserController {
     }
 
     /**
+     * 获得注册时的验证码
+     */
+    @PostMapping("/sendRegistrationToken")
+    @Operation(summary = "注册时发送验证码")
+    @ApiResponse(description = "发送验证码结果", responseCode = "204")
+    public MaaResult<Void> sendRegistrationToken(@Parameter(description = "发送注册验证码请求") @RequestBody @Valid SendRegistrationTokenDTO regDTO) {
+        userService.sendRegistrationToken(regDTO);
+        return new MaaResult<>(204, null, null);
+    }
+
+    /**
      * 用户登录
      *
      * @param user 登录参数
@@ -148,28 +159,5 @@ public class UserController {
     @ApiResponse(description = "登录结果")
     public MaaResult<MaaLoginRsp> login(@Parameter(description = "登录请求") @RequestBody @Valid LoginDTO user) {
         return MaaResult.success("登陆成功", userService.login(user));
-    }
-
-    @PostMapping("/resendActivateUrl")
-    @Operation(summary = "重新获取激活链接")
-    @ApiResponse(description = "发送激活链接")
-    public MaaResult<?> resendActivateUrl(@Parameter(description = "重新获取激活链接请求") @RequestBody @Valid ResendActivateUrlDTO activateUrlDTO) {
-        userService.resendActivateUrl(activateUrlDTO);
-        return MaaResult.success();
-    }
-
-    @GetMapping("/activateAccount")
-    @Operation(summary = "激活账号")
-    @ApiResponse(description = "激活账号结果")
-    public MaaResult<Void> activateAccount(@Parameter(description = "激活请求") EmailActivateReq activateDTO,
-                                           @Parameter(description = "页面跳转参数") HttpServletResponse response) {
-        userService.activateAccount(activateDTO);
-        // 激活成功 跳转页面
-        try {
-            response.sendRedirect(properties.getInfo().getFrontendDomain());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return MaaResult.success();
     }
 }

@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-public class ResendActivateUrlDTO {
+public class SendRegistrationTokenDTO {
     @NotBlank(message = "邮箱格式错误")
     @Email(message = "邮箱格式错误")
     private String email;

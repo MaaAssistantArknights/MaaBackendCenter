@@ -1,6 +1,5 @@
 package plus.maa.backend.service;
 
-import cn.hutool.core.lang.Assert;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +38,6 @@ public class UserService {
     // 未来转为配置项
     private static final int LOGIN_LIMIT = 1;
 
-    private final RedisCache redisCache;
     private final UserRepository userRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
@@ -109,9 +107,13 @@ public class UserService {
     public MaaUserInfo register(RegisterDTO registerDTO) {
         String encode = passwordEncoder.encode(registerDTO.getPassword());
 
+        // 校验验证码
+        emailService.verifyVCode(registerDTO.getEmail(), registerDTO.getRegistrationToken());
+
         MaaUser user = new MaaUser();
         BeanUtils.copyProperties(registerDTO, user);
         user.setPassword(encode);
+        user.setStatus(1);
         MaaUserInfo userInfo;
         try {
             MaaUser save = userRepository.save(user);
@@ -119,8 +121,6 @@ public class UserService {
         } catch (DuplicateKeyException e) {
             throw new MaaResultException(MaaStatusCode.MAA_USER_EXISTS);
         }
-        // 发送激活验证邮箱
-        emailService.sendActivateUrl(registerDTO.getEmail());
         return userInfo;
     }
 
@@ -200,51 +200,17 @@ public class UserService {
     }
 
     /**
-     * 重新发送激活邮件
+     * 注册时发送验证码
      */
-    public void resendActivateUrl(ResendActivateUrlDTO activateUrlDTO) {
-        // 限制请求间隔
-        Integer interval = redisCache.getCache("HasBeenSentAU:" + activateUrlDTO.getEmail(), Integer.class);
-        if (interval != null) {
-            throw new MaaResultException(403, String.format("发送激活邮件的请求至少需要间隔 %d 秒", interval));
-        }
+    public void sendRegistrationToken(SendRegistrationTokenDTO regDTO) {
         // 判断用户是否存在
-        MaaUser maaUser = userRepository.findByEmail(activateUrlDTO.getEmail());
-        if (maaUser == null) {
-            throw new MaaResultException(MaaStatusCode.MAA_USER_NOT_FOUND);
+        MaaUser maaUser = userRepository.findByEmail(regDTO.getEmail());
+        if (maaUser != null) {
+            // 用户已存在
+            throw new MaaResultException(MaaStatusCode.MAA_USER_EXISTS);
         }
-        // 禁止重复激活
-        if (!Objects.equals(maaUser.getStatus(), 0)) {
-            throw new MaaResultException(403, "用户已经激活，无法再次发送验证码");
-        }
-        // 重新发送验证码
-        emailService.sendActivateUrl(activateUrlDTO.getEmail());
+        // 发送验证码
+        emailService.sendVCode(regDTO.getEmail());
     }
-
-    /**
-     * 激活账户
-     *
-     * @param activateDTO uuid
-     */
-    public void activateAccount(EmailActivateReq activateDTO) {
-        String uuid = activateDTO.getNonce();
-        String email = redisCache.getCache("UUID:" + uuid, String.class);
-        Assert.notNull(email, "链接不存在或已过期");
-        MaaUser user = userRepository.findByEmail(email);
-
-        try {
-            if (Objects.equals(user.getStatus(), 1)) {
-                return;
-            }
-            // 激活账户
-            user.setStatus(1);
-            userRepository.save(user);
-
-            // 清除缓存
-        } finally {
-            redisCache.removeCache("UUID:" + uuid);
-        }
-    }
-
 
 }

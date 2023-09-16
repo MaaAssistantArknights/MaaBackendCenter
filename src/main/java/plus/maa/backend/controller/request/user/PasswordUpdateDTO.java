@@ -17,6 +17,7 @@ import org.hibernate.validator.constraints.Length;
 public class PasswordUpdateDTO {
     @NotBlank(message = "请输入原密码")
     private String originalPassword;
+    @NotBlank(message = "密码长度必须在8-32位之间")
     @Length(min = 8, max = 32, message = "密码长度必须在8-32位之间")
     private String newPassword;
 }
