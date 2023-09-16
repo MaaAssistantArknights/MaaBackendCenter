@@ -5,7 +5,6 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
@@ -94,11 +93,9 @@ public class EmailService {
      * @throws MaaResultException 验证码错误
      */
     public void verifyVCode(String email, String vcode) {
-        String cacheVCode = redisCache.getCache("vCodeEmail:" + email, String.class);
-        if (!StringUtils.equalsIgnoreCase(cacheVCode, vcode)) {
+        if (!redisCache.removeKVIfEquals("vCodeEmail:" + email, vcode.toUpperCase())) {
             throw new MaaResultException(401, "验证码错误");
         }
-        redisCache.removeCache("vCodeEmail:" + email);
     }
 
     /**
