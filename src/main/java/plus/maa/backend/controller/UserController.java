@@ -150,6 +150,14 @@ public class UserController {
         return MaaResult.success("登陆成功", userService.login(user));
     }
 
+    @PostMapping("/resendActivateUrl")
+    @Operation(summary = "重新获取激活链接")
+    @ApiResponse(description = "发送激活链接")
+    public MaaResult<?> resendActivateUrl(@Parameter(description = "重新获取激活链接请求") @RequestBody @Valid ResendActivateUrlDTO activateUrlDTO) {
+        userService.resendActivateUrl(activateUrlDTO);
+        return MaaResult.success();
+    }
+
     @GetMapping("/activateAccount")
     @Operation(summary = "激活账号")
     @ApiResponse(description = "激活账号结果")

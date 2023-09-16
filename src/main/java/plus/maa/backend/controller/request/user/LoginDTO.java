@@ -15,6 +15,7 @@ import lombok.experimental.Accessors;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LoginDTO {
+    @NotBlank(message = "邮箱格式错误")
     @Email(message = "邮箱格式错误")
     private String email;
     @NotBlank(message = "请输入用户密码")

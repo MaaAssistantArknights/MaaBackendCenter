@@ -1,6 +1,7 @@
 package plus.maa.backend.controller.request.user;
 
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,6 +16,7 @@ import org.hibernate.validator.constraints.Length;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RegisterDTO {
+    @NotBlank(message = "邮箱格式错误")
     @Email(message = "邮箱格式错误")
     private String email;
     @Length(min = 4, max = 24, message = "用户名长度应在2-24位之间")

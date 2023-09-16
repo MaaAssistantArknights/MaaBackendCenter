@@ -117,6 +117,8 @@ public class EmailService {
         }
         // 存redis
         redisCache.setCache("UUID:" + uuid, email, expire);
+        // 一个链接过期周期最多重发十条，记录已发送的邮箱以及间隔时间
+        redisCache.setCache("HasBeenSentAU:" + email, expire / 10, expire / 10);
     }
 
     @Async

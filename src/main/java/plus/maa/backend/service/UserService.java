@@ -60,7 +60,7 @@ public class UserService {
         }
         // 未激活的用户
         if (Objects.equals(user.getStatus(), 0)) {
-            throw new MaaResultException(401, "账户未激活");
+            throw new MaaResultException(MaaStatusCode.MAA_USER_NOT_ENABLED);
         }
 
         var jwtId = UUID.randomUUID().toString();
@@ -197,6 +197,28 @@ public class UserService {
         if (null == userRepository.findByEmail(email)) {
             throw new MaaResultException(MaaStatusCode.MAA_USER_NOT_FOUND);
         }
+    }
+
+    /**
+     * 重新发送激活邮件
+     */
+    public void resendActivateUrl(ResendActivateUrlDTO activateUrlDTO) {
+        // 限制请求间隔
+        Integer interval = redisCache.getCache("HasBeenSentAU:" + activateUrlDTO.getEmail(), Integer.class);
+        if (interval != null) {
+            throw new MaaResultException(403, String.format("发送激活邮件的请求至少需要间隔 %d 秒", interval));
+        }
+        // 判断用户是否存在
+        MaaUser maaUser = userRepository.findByEmail(activateUrlDTO.getEmail());
+        if (maaUser == null) {
+            throw new MaaResultException(MaaStatusCode.MAA_USER_NOT_FOUND);
+        }
+        // 禁止重复激活
+        if (!Objects.equals(maaUser.getStatus(), 0)) {
+            throw new MaaResultException(403, "用户已经激活，无法再次发送验证码");
+        }
+        // 重新发送验证码
+        emailService.sendActivateUrl(activateUrlDTO.getEmail());
     }
 
     /**
