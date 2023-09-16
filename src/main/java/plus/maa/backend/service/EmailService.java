@@ -10,7 +10,6 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
 import plus.maa.backend.common.bo.EmailBusinessObject;
 import plus.maa.backend.config.external.MaaCopilotProperties;
 import plus.maa.backend.config.external.Mail;
@@ -100,25 +99,6 @@ public class EmailService {
             throw new MaaResultException(401, "验证码错误");
         }
         redisCache.removeCache("vCodeEmail:" + email);
-    }
-
-    /**
-     * 验证发到某个邮箱的验证码
-     *
-     * @param email               邮箱
-     * @param vcode               验证码
-     * @param clearVCodeOnSuccess 验证成功是否删除验证码
-     * @return 是否一致
-     */
-
-    public boolean verifyVCode2(String email, String vcode, boolean clearVCodeOnSuccess) {
-        // FIXME:可能出现多线程数据争用问题，想办法用redis的一些方法直接比较完删除
-        String cacheVCode = redisCache.getCache("vCodeEmail:" + email, String.class);
-        boolean result = StringUtils.equalsIgnoreCase(cacheVCode, vcode);
-        if (clearVCodeOnSuccess && result) {
-            redisCache.removeCache("vCodeEmail:" + email);
-        }
-        return result;
     }
 
     /**

@@ -58,6 +58,10 @@ public class UserService {
         if (user == null || !passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
             throw new MaaResultException(401, "用户不存在或者密码错误");
         }
+        // 未激活的用户
+        if (Objects.equals(user.getStatus(), 0)) {
+            throw new MaaResultException(401, "账户未激活");
+        }
 
         var jwtId = UUID.randomUUID().toString();
         var jwtIds = user.getRefreshJwtIds();
@@ -108,34 +112,16 @@ public class UserService {
         MaaUser user = new MaaUser();
         BeanUtils.copyProperties(registerDTO, user);
         user.setPassword(encode);
-        user.setStatus(1);
         MaaUserInfo userInfo;
-        if (!emailService.verifyVCode2(user.getEmail(), registerDTO.getRegistrationToken(), false)) {
-            throw new MaaResultException(MaaStatusCode.MAA_REGISTRATION_CODE_NOT_FOUND);
-        }
         try {
             MaaUser save = userRepository.save(user);
             userInfo = new MaaUserInfo(save);
         } catch (DuplicateKeyException e) {
             throw new MaaResultException(MaaStatusCode.MAA_USER_EXISTS);
         }
+        // 发送激活验证邮箱
+        emailService.sendActivateUrl(registerDTO.getEmail());
         return userInfo;
-    }
-
-    /**
-     * 通过传入的JwtToken来获取当前用户的信息
-     *
-     * @param userId      当前用户
-     * @param activateDTO 邮箱激活码
-     */
-    public void activateUser(@NotNull String userId, ActivateDTO activateDTO) {
-        userRepository.findById(userId).ifPresent((maaUser) -> {
-            if (1 == maaUser.getStatus()) return;
-            var email = maaUser.getEmail();
-            emailService.verifyVCode(email, activateDTO.getToken());
-            maaUser.setStatus(1);
-            userRepository.save(maaUser);
-        });
     }
 
     /**
@@ -148,19 +134,6 @@ public class UserService {
         userRepository.findById(userId).ifPresent((maaUser) -> {
             maaUser.updateAttribute(updateDTO);
             userRepository.save(maaUser);
-        });
-    }
-
-    /**
-     * 为用户发送激活验证码
-     *
-     * @param userId 用户 id
-     */
-    public void sendActiveCodeByEmail(String userId) {
-        userRepository.findById(userId).ifPresent((maaUser) -> {
-            Assert.state(Objects.equals(maaUser.getStatus(), 0),
-                    "用户已经激活，无法再次发送验证码");
-            emailService.sendVCode(maaUser.getEmail());
         });
     }
 
@@ -234,7 +207,7 @@ public class UserService {
     public void activateAccount(EmailActivateReq activateDTO) {
         String uuid = activateDTO.getNonce();
         String email = redisCache.getCache("UUID:" + uuid, String.class);
-        Assert.notNull(email, "链接已过期");
+        Assert.notNull(email, "链接不存在或已过期");
         MaaUser user = userRepository.findByEmail(email);
 
         try {
