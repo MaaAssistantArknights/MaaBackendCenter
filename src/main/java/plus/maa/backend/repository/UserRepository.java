@@ -20,8 +20,6 @@ public interface UserRepository extends MongoRepository<MaaUser, String> {
      */
     MaaUser findByEmail(String email);
 
-    void deleteAllByStatusIs(Integer status);
-
     default Map<String, MaaUser> findByUsersId(List<String> userId) {
         return findAllById(userId)
                 .stream().collect(Collectors.toMap(MaaUser::getUserId, Function.identity()));
