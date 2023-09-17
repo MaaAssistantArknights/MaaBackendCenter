@@ -80,6 +80,52 @@ public class RedisCache {
         }
     }
 
+    /**
+     * 当缓存不存在时，则 set
+     *
+     * @param key 缓存的 key
+     * @param value 被缓存的值
+     * @return  是否 set
+     */
+
+    public <T> boolean setCacheIfAbsent(final String key, T value) {
+        return setCacheIfAbsent(key, value, expire);
+    }
+
+    /**
+     * 当缓存不存在时，则 set
+     *
+     * @param key 缓存的 key
+     * @param value 被缓存的值
+     * @param timeout 过期时间
+     * @return  是否 set
+     */
+
+    public <T> boolean setCacheIfAbsent(final String key, T value, long timeout) {
+        return setCacheIfAbsent(key, value, timeout, TimeUnit.SECONDS);
+    }
+
+    /**
+     * 当缓存不存在时，则 set
+     *
+     * @param key 缓存的 key
+     * @param value 被缓存的值
+     * @param timeout 过期时间
+     * @param timeUnit 过期时间的单位
+     * @return  是否 set
+     */
+    public <T> boolean setCacheIfAbsent(final String key, T value, long timeout, TimeUnit timeUnit) {
+        String json = getJson(value);
+        if (json == null) return false;
+        boolean result;
+        if (timeout <= 0) {
+            result = Boolean.TRUE.equals(redisTemplate.opsForValue().setIfAbsent(key, json));
+        } else {
+            result = Boolean.TRUE.equals(redisTemplate.opsForValue().setIfAbsent(key, json, timeout, timeUnit));
+        }
+        return result;
+    }
+
     public <T> void addSet(final String key, Collection<T> set, long timeout) {
         addSet(key, set, timeout, TimeUnit.SECONDS);
     }

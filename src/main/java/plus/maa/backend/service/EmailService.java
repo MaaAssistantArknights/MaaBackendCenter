@@ -76,10 +76,11 @@ public class EmailService {
      */
 
     public void sendVCode(String email) {
-        // 限制请求间隔
-        Integer interval = redisCache.getCache("HasBeenSentVCode:" + email, Integer.class);
-        if (interval != null) {
-            throw new MaaResultException(403, String.format("发送验证码的请求至少需要间隔 %d 秒", interval));
+        // 一个过期周期最多重发十条，记录已发送的邮箱以及间隔时间
+        final int timeout = expire / 10;
+        if (!redisCache.setCacheIfAbsent("HasBeenSentVCode:" + email , timeout, timeout)) {
+            // 设置失败，说明 key 已存在
+            throw new MaaResultException(403, String.format("发送验证码的请求至少需要间隔 %d 秒", timeout));
         }
         // 调用注入的代理类执行异步任务
         emailService.asyncSendVCode(email);
@@ -100,8 +101,6 @@ public class EmailService {
         }
         // 存redis
         redisCache.setCache("vCodeEmail:" + email, vcode, expire);
-        // 一个过期周期最多重发十条，记录已发送的邮箱以及间隔时间
-        redisCache.setCache("HasBeenSentVCode:" + email, expire / 10, expire / 10);
     }
 
     /**
