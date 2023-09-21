@@ -26,7 +26,9 @@ public class SecurityConfig {
     private static final String[] URL_WHITELIST = {
             "/user/login",
             "/user/register",
-            "/user/sendRegistrationToken"
+            "/user/sendRegistrationToken",
+            "/oidc/authorization/maa-account",
+            "/oidc/callback/maa-account"
     };
 
     private static final String[] URL_PERMIT_ALL = {
@@ -70,6 +72,7 @@ public class SecurityConfig {
     private final JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter;
     private final AuthenticationEntryPointImpl authenticationEntryPoint;
     private final AccessDeniedHandlerImpl accessDeniedHandler;
+    private final OidcAuthenticationSuccessHandler oidcAuthenticationSuccessHandler;
 
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
@@ -98,12 +101,28 @@ public class SecurityConfig {
                         //此处用于管理员操作接口
                         .requestMatchers(URL_AUTHENTICATION_2).hasAuthority("2")
                         .anyRequest().authenticated());
+
+        http.oauth2Login(login -> {
+            // 以下的链接默认值以配置文件中使用 maa-account 作为 OIDC 服务器时为例
+            // Get 请求访问 "/oidc/authorization/maa-account" 将自动配置参数并跳转到 OIDC 认证页面
+            login.authorizationEndpoint(
+                    endpoint -> endpoint.baseUri("/oidc/authorization")
+            );
+            // 回调接口，默认为 "/oidc/callback/maa-account"
+            login.redirectionEndpoint(
+                    redirection -> redirection.baseUri("/oidc/callback/*")
+            );
+            // 登录异常处理器
+            login.failureHandler(authenticationEntryPoint::commence);
+            // 登录成功处理器
+            login.successHandler(oidcAuthenticationSuccessHandler);
+        });
+
         //添加过滤器
         http.addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
         //配置异常处理器，处理认证失败的JSON响应
         http.exceptionHandling(exceptionHandling -> exceptionHandling.authenticationEntryPoint(authenticationEntryPoint).accessDeniedHandler(accessDeniedHandler));
-
         //开启跨域请求
         http.cors(withDefaults());
         return http.build();

@@ -59,6 +59,11 @@ public class UserService {
             throw new MaaResultException(401, "用户不存在或者密码错误");
         }
 
+        return maaLoginRsp(user);
+    }
+
+    @NotNull
+    public MaaLoginRsp maaLoginRsp(MaaUser user) {
         var jwtId = UUID.randomUUID().toString();
         var jwtIds = user.getRefreshJwtIds();
         jwtIds.add(jwtId);
