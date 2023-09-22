@@ -72,7 +72,9 @@ public class SecurityConfig {
     private final JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter;
     private final AuthenticationEntryPointImpl authenticationEntryPoint;
     private final AccessDeniedHandlerImpl accessDeniedHandler;
-    private final OidcAuthenticationSuccessHandler oidcAuthenticationSuccessHandler;
+    private final OIDCAuthenticationSuccessHandler oidcAuthenticationSuccessHandler;
+    private final OIDCRedirectStrategy oidcRedirectStrategy;
+    private final RedisOAuth2AuthorizationRequestRepository redisOAuth2AuthorizationRequestRepository;
 
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
@@ -106,7 +108,13 @@ public class SecurityConfig {
             // 以下的链接默认值以配置文件中使用 maa-account 作为 OIDC 服务器时为例
             // Get 请求访问 "/oidc/authorization/maa-account" 将自动配置参数并跳转到 OIDC 认证页面
             login.authorizationEndpoint(
-                    endpoint -> endpoint.baseUri("/oidc/authorization")
+                    endpoint -> {
+                        endpoint.baseUri("/oidc/authorization");
+                        // 请求 OIDC 认证时不再自动重定向
+                        endpoint.authorizationRedirectStrategy(oidcRedirectStrategy);
+                        // 不再使用 Session 储存信息
+                        endpoint.authorizationRequestRepository(redisOAuth2AuthorizationRequestRepository);
+                    }
             );
             // 回调接口，默认为 "/oidc/callback/maa-account"
             login.redirectionEndpoint(

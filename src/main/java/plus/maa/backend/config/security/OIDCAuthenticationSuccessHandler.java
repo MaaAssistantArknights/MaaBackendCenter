@@ -24,10 +24,16 @@ import plus.maa.backend.service.UserService;
 
 import java.io.IOException;
 
+/**
+ * 适配 Maa Account
+ *
+ * @author lixuhuilll
+ * Date 2023/9/22
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class OidcAuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
+public class OIDCAuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final ObjectMapper objectMapper;
     private final UserRepository userRepository;
@@ -43,7 +49,7 @@ public class OidcAuthenticationSuccessHandler extends SimpleUrlAuthenticationSuc
             throw e;
         } catch (RuntimeException e) {
             // 将运行时异常转换为 AuthenticationException 的子类型，触发统一的异常响应
-            throw new OidcAuthenticationException(e.getMessage());
+            throw new OIDCAuthenticationException(e.getMessage());
         } finally {
             // 删除在身份验证过程中可能已存储在会话中的临时身份验证相关数据
             clearAuthenticationAttributes(request);
@@ -52,7 +58,7 @@ public class OidcAuthenticationSuccessHandler extends SimpleUrlAuthenticationSuc
 
     public void authenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         if (!(authentication instanceof OAuth2AuthenticationToken oauth2Token)) {
-            throw new OidcAuthenticationException("无法取得授权信息");
+            throw new OIDCAuthenticationException("无法取得授权信息");
         }
 
         OAuth2User oAuth2User = oauth2Token.getPrincipal();
@@ -78,8 +84,8 @@ public class OidcAuthenticationSuccessHandler extends SimpleUrlAuthenticationSuc
         WebUtils.renderString(response, json, 200);
     }
 
-    static class OidcAuthenticationException extends AuthenticationException {
-        public OidcAuthenticationException(String msg) {
+    static class OIDCAuthenticationException extends AuthenticationException {
+        public OIDCAuthenticationException(String msg) {
             super(msg);
         }
     }
