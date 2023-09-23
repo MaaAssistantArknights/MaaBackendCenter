@@ -69,48 +69,61 @@ test {
     useJUnitPlatform()
 }
 
-def swagger_output_dir = '$buildDir/docs'
+def swagger_output_dir = "$buildDir/docs"
 def swagger_output_name = 'swagger.json'
 
+
 openApi {
-    apiDocsUrl.set('http://localhost:8848/v3/api-docs')
+    apiDocsUrl.set("http://localhost:8848/v3/api-docs")
     outputDir.set(file(swagger_output_dir))
     outputFileName.set(swagger_output_name)
     waitTimeInSeconds.set(30)
 }
 
 swaggerSources {
+    def client_dir = "$buildDir/clients"
     TsFetch {
-        inputFile = file('$swagger_output_dir/$swagger_output_name')
+        inputFile = file("$swagger_output_dir/$swagger_output_name")
         code {
             language = 'typescript-fetch'
             configFile = file('client-config/ts-fetch.json')
-            rawOptions = ['-e', 'mustache']
-            outputDir = file('$client_dir/ts-fetch-client')
+//            templateDir = file('client-config/typescript-fetch')
+            rawOptions = ["-e", "mustache"]
+            outputDir = file("$client_dir/ts-fetch-client")
         }
     }
     CSharp {
-        inputFile = file('$swagger_output_dir/$swagger_output_name')
+        inputFile = file("$swagger_output_dir/$swagger_output_name")
         code {
             language = 'csharp-netcore'
             configFile = file('client-config/csharp-netcore.json')
-            outputDir = file('$client_dir/csharp-client')
+            outputDir = file("$client_dir/csharp-client")
+//            rawOptions = [
+//                    "--type-mappings", "binary=System.IO.Stream"
+//            ]
         }
     }
     Cpp {
-        inputFile = file('$swagger_output_dir/$swagger_output_name')
+        inputFile = file("$swagger_output_dir/$swagger_output_name")
         code {
             language = 'cpp-restsdk'
             configFile = file('client-config/cpp.json')
-            outputDir = file('$client_dir/cpp-client')
+            outputDir = file("$client_dir/cpp-client")
         }
     }
     Rust {
-        inputFile = file('$swagger_output_dir/$swagger_output_name')
+        inputFile = file("$swagger_output_dir/$swagger_output_name")
         code {
             language = 'rust'
             configFile = file('client-config/rust.json')
-            outputDir = file('$client_dir/rust-client')
+            outputDir = file("$client_dir/rust-client")
         }
+    }
+}
+
+rootProject.afterEvaluate(){
+    def forkedSpringBootRun = project.tasks.named("forkedSpringBootRun")
+    forkedSpringBootRun.configure {
+        doNotTrackState("See https://github.com/springdoc/springdoc-openapi-gradle-plugin/issues/102")
     }
 }
