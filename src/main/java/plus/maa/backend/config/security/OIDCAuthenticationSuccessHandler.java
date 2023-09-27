@@ -77,7 +77,12 @@ public class OIDCAuthenticationSuccessHandler extends SimpleUrlAuthenticationSuc
                     .setEmail(email)
                     .setStatus(1);
             maaUser = userRepository.save(maaUser);
+        } else if (maaUser.getStatus() == null || maaUser.getStatus() == 0) {
+            // 存在对应邮箱的用户但未激活时，自动激活
+            maaUser.setStatus(1);
+            userRepository.save(maaUser);
         }
+
         // 响应登录数据
         MaaResult<MaaLoginRsp> result = MaaResult.success("登陆成功", userService.maaLoginRsp(maaUser));
         String json = objectMapper.writeValueAsString(result);
