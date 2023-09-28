@@ -11,30 +11,30 @@ spring:
       port: 6379
       host: localhost
 
-  security:
-    oauth2:
-      client:
-        # OIDC 配置内容属于私密信息，需要妥善储存，这里只是样例
-        registration:
-          maa-account:
-            # 配置连接到 maa-account 所使用的 ID 和 secret
-            client-id: $I_Am_The_Bone_Of_My_Sword!Steel_Is_My_Body_And_Fire_Is_My_Blood!$
-            client-secret: $I_Am_The_Bone_Of_My_Sword!Steel_Is_My_Body_And_Fire_Is_My_Blood!$
-            # 回调地址，需要在 maa-account 的回调 URL 白名单内，默认为 "/oidc/callback/{registrationId}"
-            redirect-uri: ${maa-copilot.info.frontend-domain}/oidc/callback/maa-account
-            # 验证客户和提供者的方法
-            client-authentication-method: client_secret_post
-            # 授权模式
-            authorization-grant-type: authorization_code
-            # 可访问的作用域
-            scope:
-              - email
-              - openid
-              - profile
-        provider:
-          maa-account:
-            # OpenID 配置颁发者 URL
-            issuer-uri: $I_Am_The_Bone_Of_My_Sword!Steel_Is_My_Body_And_Fire_Is_My_Blood!$
+#  security:
+#    oauth2:
+#      client:
+#        # OIDC 配置内容属于私密信息，需要妥善储存，这里只是样例
+#        registration:
+#          maa-account:
+#            # 配置连接到 maa-account 所使用的 ID 和 secret
+#            client-id: $I_Am_The_Bone_Of_My_Sword!Steel_Is_My_Body_And_Fire_Is_My_Blood!$
+#            client-secret: $I_Am_The_Bone_Of_My_Sword!Steel_Is_My_Body_And_Fire_Is_My_Blood!$
+#            # 回调地址，需要在 maa-account 的回调 URL 白名单内，默认为 "/oidc/callback/{registrationId}"
+#            redirect-uri: ${maa-copilot.info.frontend-domain}/oidc/callback/maa-account
+#            # 验证客户和提供者的方法
+#            client-authentication-method: client_secret_post
+#            # 授权模式
+#            authorization-grant-type: authorization_code
+#            # 可访问的作用域
+#            scope:
+#              - email
+#              - openid
+#              - profile
+#        provider:
+#          maa-account:
+#            # OpenID 配置颁发者 URL
+#            issuer-uri: $I_Am_The_Bone_Of_My_Sword!Steel_Is_My_Body_And_Fire_Is_My_Blood!$
 
 maa-copilot:
   backup:
