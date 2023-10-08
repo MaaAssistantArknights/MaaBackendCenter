@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +15,7 @@ import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
+import org.springframework.security.jackson2.SecurityJackson2Modules;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -41,12 +41,17 @@ public class RedisCache {
 
     private final StringRedisTemplate redisTemplate;
 
-    //  添加 JSR310 模块，以便顺利序列化 LocalDateTime 等类型
     private final ObjectMapper writeMapper = JsonMapper.builder()
-            .addModule(new JavaTimeModule())
+            // 适配 Spring Security 权限验证中用到的类
+            .addModules(SecurityJackson2Modules.getModules(null))
+            // 阻止 SecurityJackson2Modules 强制全局插入 @class 类型信息的行为
+            .deactivateDefaultTyping()
             .build();
     private final ObjectMapper readMapper = JsonMapper.builder()
-            .addModule(new JavaTimeModule())
+            // 适配 Spring Security 权限验证中用到的类
+            .addModules(SecurityJackson2Modules.getModules(null))
+            // 阻止 SecurityJackson2Modules 强制全局插入 @class 类型信息的行为
+            .deactivateDefaultTyping()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .build();
 

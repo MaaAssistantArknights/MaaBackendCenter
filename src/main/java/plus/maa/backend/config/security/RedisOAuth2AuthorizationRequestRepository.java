@@ -3,14 +3,13 @@ package plus.maa.backend.config.security;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.Getter;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.RedisSerializer;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
+import plus.maa.backend.repository.RedisCache;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -24,6 +23,7 @@ import java.util.concurrent.TimeUnit;
  */
 
 @Component
+@RequiredArgsConstructor
 public class RedisOAuth2AuthorizationRequestRepository
         implements AuthorizationRequestRepository<OAuth2AuthorizationRequest> {
 
@@ -34,19 +34,7 @@ public class RedisOAuth2AuthorizationRequestRepository
     // 默认缓存 20 分钟，超过 20 分钟后，授权必然失败，用户需要在 20 分钟内从 Maa Account 回调回来
     private static final int TIMEOUT = 60 * 20;
 
-    // 不使用 RedisCache 是因为 Jackson 默认无法反序列化 OAuth2AuthorizationRequest
-    private final RedisTemplate<String, OAuth2AuthorizationRequest> redisTemplate;
-
-    public RedisOAuth2AuthorizationRequestRepository(RedisConnectionFactory redisConnectionFactory) {
-        RedisTemplate<String, OAuth2AuthorizationRequest> redisTemplate = new RedisTemplate<>();
-        redisTemplate.setConnectionFactory(redisConnectionFactory);
-        // Key 使用字符串类型的序列化程序，其他则使用 Java 序列化程序
-        redisTemplate.setDefaultSerializer(RedisSerializer.java());
-        redisTemplate.setKeySerializer(RedisSerializer.string());
-        // 手动初始化
-        redisTemplate.afterPropertiesSet();
-        this.redisTemplate = redisTemplate;
-    }
+    private final RedisCache redisCache;
 
     @Override
     public OAuth2AuthorizationRequest loadAuthorizationRequest(HttpServletRequest request) {
@@ -70,9 +58,10 @@ public class RedisOAuth2AuthorizationRequestRepository
         }
         String state = authorizationRequest.getState();
         Assert.hasText(state, "authorizationRequest.state cannot be empty");
+        // 不再使用 Session
         String serial = UUID.randomUUID().toString();
         request.setAttribute(REQUEST_KEY, serial);
-        redisTemplate.opsForValue().set(REDIS_KEY_PREFIX + serial, authorizationRequest, TIMEOUT, TimeUnit.SECONDS);
+        redisCache.setCache(REDIS_KEY_PREFIX + serial, authorizationRequest, TIMEOUT, TimeUnit.SECONDS);
     }
 
     @Override
@@ -80,7 +69,7 @@ public class RedisOAuth2AuthorizationRequestRepository
         Assert.notNull(response, "response cannot be null");
         OAuth2AuthorizationRequest authorizationRequest = loadAuthorizationRequest(request);
         if (authorizationRequest != null) {
-            redisTemplate.delete(REDIS_KEY_PREFIX + getSerial(request));
+            redisCache.removeCache(REDIS_KEY_PREFIX + getSerial(request));
         }
         return authorizationRequest;
     }
@@ -99,6 +88,6 @@ public class RedisOAuth2AuthorizationRequestRepository
 
     private OAuth2AuthorizationRequest getAuthorizationRequest(HttpServletRequest request) {
         String serial = getSerial(request);
-        return redisTemplate.opsForValue().get(REDIS_KEY_PREFIX + serial);
+        return redisCache.getCache(REDIS_KEY_PREFIX + serial, OAuth2AuthorizationRequest.class);
     }
 }
