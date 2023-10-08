@@ -18,6 +18,7 @@ public class PasswordResetDTO {
     /**
      * 邮箱
      */
+    @NotBlank(message = "邮箱格式错误")
     @Email(message = "邮箱格式错误")
     private String email;
     /**

@@ -60,6 +60,8 @@ public class RedisCache {
         实际大小这么设计是为了避免频繁的 ZREMRANGEBYRANK 操作
      */
     private final RedisScript<Object> incZSetRedisScript = RedisScript.of(new ClassPathResource("redis-lua/incZSet.lua"));
+    // 比较与输入的键值对是否相同，相同则删除
+    private final RedisScript<Boolean> removeKVIfEqualsScript = RedisScript.of(new ClassPathResource("redis-lua/removeKVIfEquals.lua"), Boolean.class);
 
     public <T> void setData(final String key, T value) {
         setCache(key, value, 0, TimeUnit.SECONDS);
@@ -74,20 +76,59 @@ public class RedisCache {
     }
 
     public <T> void setCache(final String key, T value, long timeout, TimeUnit timeUnit) {
-        String json;
-        try {
-            json = writeMapper.writeValueAsString(value);
-        } catch (JsonProcessingException e) {
-            if (log.isDebugEnabled()) {
-                log.debug(e.getMessage(), e);
-            }
-            return;
-        }
+        String json = getJson(value);
+        if (json == null) return;
         if (timeout <= 0) {
             redisTemplate.opsForValue().set(key, json);
         } else {
             redisTemplate.opsForValue().set(key, json, timeout, timeUnit);
         }
+    }
+
+    /**
+     * 当缓存不存在时，则 set
+     *
+     * @param key 缓存的 key
+     * @param value 被缓存的值
+     * @return  是否 set
+     */
+
+    public <T> boolean setCacheIfAbsent(final String key, T value) {
+        return setCacheIfAbsent(key, value, expire);
+    }
+
+    /**
+     * 当缓存不存在时，则 set
+     *
+     * @param key 缓存的 key
+     * @param value 被缓存的值
+     * @param timeout 过期时间
+     * @return  是否 set
+     */
+
+    public <T> boolean setCacheIfAbsent(final String key, T value, long timeout) {
+        return setCacheIfAbsent(key, value, timeout, TimeUnit.SECONDS);
+    }
+
+    /**
+     * 当缓存不存在时，则 set
+     *
+     * @param key 缓存的 key
+     * @param value 被缓存的值
+     * @param timeout 过期时间
+     * @param timeUnit 过期时间的单位
+     * @return  是否 set
+     */
+    public <T> boolean setCacheIfAbsent(final String key, T value, long timeout, TimeUnit timeUnit) {
+        String json = getJson(value);
+        if (json == null) return false;
+        boolean result;
+        if (timeout <= 0) {
+            result = Boolean.TRUE.equals(redisTemplate.opsForValue().setIfAbsent(key, json));
+        } else {
+            result = Boolean.TRUE.equals(redisTemplate.opsForValue().setIfAbsent(key, json, timeout, timeUnit));
+        }
+        return result;
     }
 
     public <T> void addSet(final String key, Collection<T> set, long timeout) {
@@ -99,17 +140,13 @@ public class RedisCache {
             return;
         }
         String[] jsonList = new String[set.size()];
-        try {
-            int i = 0;
-            for (T t : set) {
-                jsonList[i++] = writeMapper.writeValueAsString(t);
-            }
-        } catch (JsonProcessingException e) {
-            if (log.isDebugEnabled()) {
-                log.debug(e.getMessage(), e);
-            }
-            return;
+        int i = 0;
+        for (T t : set) {
+            String json = getJson(t);
+            if (json == null) return;
+            jsonList[i++] = json;
         }
+
         if (timeout <= 0) {
             redisTemplate.opsForSet().add(key, jsonList);
         } else {
@@ -149,12 +186,9 @@ public class RedisCache {
 
     public <T> boolean valueMemberInSet(final String key, T value) {
         try {
-            String json = writeMapper.writeValueAsString(value);
+            String json = getJson(value);
+            if (json == null) return false;
             return Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(key, json));
-        } catch (JsonProcessingException e) {
-            if (log.isDebugEnabled()) {
-                log.debug(e.getMessage(), e);
-            }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
@@ -250,6 +284,21 @@ public class RedisCache {
     }
 
     /**
+     * 相同则删除键值对
+     *
+     * @param key 待比较和删除的键
+     * @param value 待比较的值
+     * @return 是否删除
+     */
+    public <T> boolean removeKVIfEquals(String key, T value) {
+        String json = getJson(value);
+        if (json == null) return false;
+        return Boolean.TRUE.equals(
+                redisTemplate.execute(removeKVIfEqualsScript, List.of(key), json)
+        );
+    }
+
+    /**
      * 模糊删除缓存。
      *
      * @param pattern 待删除的 Key 表达式，例如 "home:*" 表示删除 Key 以 "home:" 开头的所有缓存
@@ -286,5 +335,20 @@ public class RedisCache {
         if (!keysToDelete.isEmpty()) {
             redisTemplate.delete(keysToDelete);
         }
+    }
+
+
+    @Nullable
+    private <T> String getJson(T value) {
+        String json;
+        try {
+            json = writeMapper.writeValueAsString(value);
+        } catch (JsonProcessingException e) {
+            if (log.isDebugEnabled()) {
+                log.debug(e.getMessage(), e);
+            }
+            return null;
+        }
+        return json;
     }
 }

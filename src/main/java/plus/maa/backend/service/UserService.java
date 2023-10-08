@@ -1,6 +1,5 @@
 package plus.maa.backend.service;
 
-import cn.hutool.core.lang.Assert;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +38,6 @@ public class UserService {
     // 未来转为配置项
     private static final int LOGIN_LIMIT = 1;
 
-    private final RedisCache redisCache;
     private final UserRepository userRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
@@ -57,6 +55,10 @@ public class UserService {
         var user = userRepository.findByEmail(loginDTO.getEmail());
         if (user == null || !passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
             throw new MaaResultException(401, "用户不存在或者密码错误");
+        }
+        // 未激活的用户
+        if (Objects.equals(user.getStatus(), 0)) {
+            throw new MaaResultException(MaaStatusCode.MAA_USER_NOT_ENABLED);
         }
 
         return maaLoginRsp(user);
@@ -110,14 +112,14 @@ public class UserService {
     public MaaUserInfo register(RegisterDTO registerDTO) {
         String encode = passwordEncoder.encode(registerDTO.getPassword());
 
+        // 校验验证码
+        emailService.verifyVCode(registerDTO.getEmail(), registerDTO.getRegistrationToken());
+
         MaaUser user = new MaaUser();
         BeanUtils.copyProperties(registerDTO, user);
         user.setPassword(encode);
         user.setStatus(1);
         MaaUserInfo userInfo;
-        if (!emailService.verifyVCode2(user.getEmail(), registerDTO.getRegistrationToken(), false)) {
-            throw new MaaResultException(MaaStatusCode.MAA_REGISTRATION_CODE_NOT_FOUND);
-        }
         try {
             MaaUser save = userRepository.save(user);
             userInfo = new MaaUserInfo(save);
@@ -125,22 +127,6 @@ public class UserService {
             throw new MaaResultException(MaaStatusCode.MAA_USER_EXISTS);
         }
         return userInfo;
-    }
-
-    /**
-     * 通过传入的JwtToken来获取当前用户的信息
-     *
-     * @param userId      当前用户
-     * @param activateDTO 邮箱激活码
-     */
-    public void activateUser(@NotNull String userId, ActivateDTO activateDTO) {
-        userRepository.findById(userId).ifPresent((maaUser) -> {
-            if (1 == maaUser.getStatus()) return;
-            var email = maaUser.getEmail();
-            emailService.verifyVCode(email, activateDTO.getToken());
-            maaUser.setStatus(1);
-            userRepository.save(maaUser);
-        });
     }
 
     /**
@@ -153,19 +139,6 @@ public class UserService {
         userRepository.findById(userId).ifPresent((maaUser) -> {
             maaUser.updateAttribute(updateDTO);
             userRepository.save(maaUser);
-        });
-    }
-
-    /**
-     * 为用户发送激活验证码
-     *
-     * @param userId 用户 id
-     */
-    public void sendActiveCodeByEmail(String userId) {
-        userRepository.findById(userId).ifPresent((maaUser) -> {
-            Assert.state(Objects.equals(maaUser.getStatus(), 0),
-                    "用户已经激活，无法再次发送验证码");
-            emailService.sendVCode(maaUser.getEmail());
         });
     }
 
@@ -232,29 +205,17 @@ public class UserService {
     }
 
     /**
-     * 激活账户
-     *
-     * @param activateDTO uuid
+     * 注册时发送验证码
      */
-    public void activateAccount(EmailActivateReq activateDTO) {
-        String uuid = activateDTO.getNonce();
-        String email = redisCache.getCache("UUID:" + uuid, String.class);
-        Assert.notNull(email, "链接已过期");
-        MaaUser user = userRepository.findByEmail(email);
-
-        try {
-            if (Objects.equals(user.getStatus(), 1)) {
-                return;
-            }
-            // 激活账户
-            user.setStatus(1);
-            userRepository.save(user);
-
-            // 清除缓存
-        } finally {
-            redisCache.removeCache("UUID:" + uuid);
+    public void sendRegistrationToken(SendRegistrationTokenDTO regDTO) {
+        // 判断用户是否存在
+        MaaUser maaUser = userRepository.findByEmail(regDTO.getEmail());
+        if (maaUser != null) {
+            // 用户已存在
+            throw new MaaResultException(MaaStatusCode.MAA_USER_EXISTS);
         }
+        // 发送验证码
+        emailService.sendVCode(regDTO.getEmail());
     }
-
 
 }
