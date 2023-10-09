@@ -1,9 +1,13 @@
 package plus.maa.backend.repository;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.InvalidTypeIdException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -41,17 +45,17 @@ public class RedisCache {
 
     private final StringRedisTemplate redisTemplate;
 
-    private final ObjectMapper writeMapper = JsonMapper.builder()
-            // 适配 Spring Security 权限验证中用到的类
-            .addModules(SecurityJackson2Modules.getModules(null))
-            // 阻止 SecurityJackson2Modules 强制全局插入 @class 类型信息的行为
-            .deactivateDefaultTyping()
+    private final ObjectMapper oldObjectMapper = JsonMapper.builder()
+            .addModule(new JavaTimeModule())
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .build();
-    private final ObjectMapper readMapper = JsonMapper.builder()
+
+    private final ObjectMapper objectMapper = JsonMapper.builder()
+            // 序列化添加类型信息，并信任 Redis 中内容的反序列化
+            .activateDefaultTyping(LaissezFaireSubTypeValidator.instance,
+                    ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY)
             // 适配 Spring Security 权限验证中用到的类
             .addModules(SecurityJackson2Modules.getModules(null))
-            // 阻止 SecurityJackson2Modules 强制全局插入 @class 类型信息的行为
-            .deactivateDefaultTyping()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .build();
 
@@ -236,7 +240,7 @@ public class RedisCache {
                     return null;
                 }
             }
-            result = readMapper.readValue(json, valueType);
+            result = readJsonValue(json, valueType);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             return null;
@@ -260,7 +264,7 @@ public class RedisCache {
                 if (StringUtils.isEmpty(json)) {
                     result = defaultValue;
                 } else {
-                    result = readMapper.readValue(json, valueType);
+                    result = readJsonValue(json, valueType);
                 }
                 result = onUpdate.apply(result);
                 setCache(key, result, timeout, timeUnit);
@@ -342,7 +346,7 @@ public class RedisCache {
     private <T> String getJson(T value) {
         String json;
         try {
-            json = writeMapper.writeValueAsString(value);
+            json = objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException e) {
             if (log.isDebugEnabled()) {
                 log.debug(e.getMessage(), e);
@@ -350,5 +354,14 @@ public class RedisCache {
             return null;
         }
         return json;
+    }
+
+    private <T> T readJsonValue(String json, Class<T> valueType) throws JsonProcessingException {
+        try {
+            return objectMapper.readValue(json, valueType);
+        } catch (InvalidTypeIdException e) {
+            // 缺少类型信息时，回退到旧版本
+            return oldObjectMapper.readValue(json, valueType);
+        }
     }
 }
