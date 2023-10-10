@@ -49,7 +49,7 @@ public class MaaEtagHeaderFilter extends ShallowEtagHeaderFilter {
             filterChain.doFilter(request, response);
             return;
         }
-        // 其他接口默认处理即可
+        // 其他接口默认处理即可，注意默认操作相当于牺牲 CPU 来节约网络带宽，不适用于结果变更过快的接口
         super.doFilterInternal(request, response, filterChain);
     }
 }
