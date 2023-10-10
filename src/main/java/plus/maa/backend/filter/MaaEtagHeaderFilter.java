@@ -24,8 +24,7 @@ import java.io.IOException;
 // 配置需要使用 Etag 机制的 URL，注意和 Spring 的 UrlPattern 语法不太一样
 @WebFilter(urlPatterns = {
         "/arknights/level",
-        "/copilot/query",
-        "/copilot/get/*"
+        "/copilot/query"
 })
 @RequiredArgsConstructor
 public class MaaEtagHeaderFilter extends ShallowEtagHeaderFilter {
