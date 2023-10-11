@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.filter.ShallowEtagHeaderFilter;
 
@@ -35,7 +36,7 @@ public class MaaEtagHeaderFilter extends ShallowEtagHeaderFilter {
             return;
         }
         // 允许使用 Etag （实际是避免默认添加的 no-store）
-        response.setHeader("Cache-Control", "no-cache, max-age=0, must-revalidate");
+        response.setHeader(HttpHeaders.CACHE_CONTROL, "no-cache, max-age=0, must-revalidate");
         // 其他接口默认处理即可，注意默认操作相当于牺牲 CPU 来节约网络带宽，不适用于结果变更过快的接口
         super.doFilterInternal(request, response, filterChain);
     }
