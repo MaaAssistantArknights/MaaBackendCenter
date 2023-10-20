@@ -36,7 +36,7 @@
 1. 安装 jdk17，可以考虑从 [zuluJDK](https://www.azul.com/downloads/?version=java-17-lts&package=jdk) 或者 [libreicaJDK](https://bell-sw.com/pages/downloads/#/java-17-lts) 下载
 2. clone 此项目 `git clone https://github.com/MaaAssistantArknights/MaaBackendCenter.git`
 3. 进入此项目目录 `cd MaaBackendCenter`
-4. 编译项目 `./gradlew bootJar`，windows环境下请使用 `gradlew.bat bootJar`
+4. 编译项目 `./gradlew bootJar -x processAot`，windows环境下请使用 `gradlew.bat bootJar -x processAot`
 5. 获得编译后的 jar 文件 `cp ./build/libs/MaaBackendCenter-1.0-SNAPSHOT.jar .`
 6. 复制一份配置文件 `cp ./build/resources/main/application-template.yml ./application-prod.yml`
 7. 修改配置文件 `application-prod.yml`
