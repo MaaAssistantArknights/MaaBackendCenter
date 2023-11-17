@@ -26,4 +26,6 @@ public class MaaCopilotProperties {
     private Mail mail;
     @NestedConfigurationProperty
     private SensitiveWord sensitiveWord;
+    @NestedConfigurationProperty
+    private Copilot copilot;
 }

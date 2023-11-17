@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -65,6 +66,10 @@ public class CopilotService {
 
     private final CopilotConverter copilotConverter;
     private final AtomicLong copilotIncrementId = new AtomicLong(20000);
+
+    // 评分总数少于指定值时显示评分不足
+    @Value("${maa-copilot.copilot.min-value-show-not-enough-rating:100}")
+    private int minValueShowNotEnoughRating;
 
     /*
         首页分页查询缓存配置
@@ -525,7 +530,7 @@ public class CopilotService {
             info.setRatingType(ratingType.getDisplay());
         }
         // 评分数少于一定数量
-        info.setNotEnoughRating(copilot.getLikeCount() + copilot.getDislikeCount() <= 5);
+        info.setNotEnoughRating(copilot.getLikeCount() + copilot.getDislikeCount() <= minValueShowNotEnoughRating);
 
         info.setAvailable(true);
 
