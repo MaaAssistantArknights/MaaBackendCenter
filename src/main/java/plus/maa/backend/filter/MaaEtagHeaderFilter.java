@@ -29,6 +29,13 @@ import java.io.IOException;
 public class MaaEtagHeaderFilter extends ShallowEtagHeaderFilter {
 
     @Override
+    protected void initFilterBean() throws ServletException {
+        super.initFilterBean();
+        // Etag 必须使用弱校验才能与自动压缩兼容
+        setWriteWeakETag(true);
+    }
+
+    @Override
     protected void doFilterInternal(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull FilterChain filterChain) throws ServletException, IOException {
         if (!HttpMethod.GET.matches(request.getMethod())) {
             // ETag 只处理安全的请求
