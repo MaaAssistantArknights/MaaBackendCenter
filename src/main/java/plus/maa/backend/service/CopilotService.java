@@ -68,7 +68,7 @@ public class CopilotService {
     private final AtomicLong copilotIncrementId = new AtomicLong(20000);
 
     // 评分总数少于指定值时显示评分不足
-    @Value("${maa-copilot.copilot.min-value-show-not-enough-rating:100}")
+    @Value("#{maaCopilotProperties.copilot.minValueShowNotEnoughRating}")
     private int minValueShowNotEnoughRating;
 
     /*
