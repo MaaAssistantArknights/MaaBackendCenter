@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -20,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import plus.maa.backend.common.utils.converter.CopilotConverter;
+import plus.maa.backend.config.external.MaaCopilotProperties;
 import plus.maa.backend.controller.request.copilot.CopilotCUDRequest;
 import plus.maa.backend.controller.request.copilot.CopilotDTO;
 import plus.maa.backend.controller.request.copilot.CopilotQueriesRequest;
@@ -63,13 +63,10 @@ public class CopilotService {
     private final RedisCache redisCache;
     private final UserRepository userRepository;
     private final CommentsAreaRepository commentsAreaRepository;
+    private final MaaCopilotProperties properties;
 
     private final CopilotConverter copilotConverter;
     private final AtomicLong copilotIncrementId = new AtomicLong(20000);
-
-    // 评分总数少于指定值时显示评分不足
-    @Value("#{maaCopilotProperties.copilot.minValueShowNotEnoughRating}")
-    private int minValueShowNotEnoughRating;
 
     /*
         首页分页查询缓存配置
@@ -530,7 +527,7 @@ public class CopilotService {
             info.setRatingType(ratingType.getDisplay());
         }
         // 评分数少于一定数量
-        info.setNotEnoughRating(copilot.getLikeCount() + copilot.getDislikeCount() <= minValueShowNotEnoughRating);
+        info.setNotEnoughRating(copilot.getLikeCount() + copilot.getDislikeCount() <= properties.getCopilot().getMinValueShowNotEnoughRating());
 
         info.setAvailable(true);
 
