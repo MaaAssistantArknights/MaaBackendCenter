@@ -5,10 +5,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.server.PathContainer;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.ShallowEtagHeaderFilter;
+import org.springframework.web.util.pattern.PathPattern;
+import org.springframework.web.util.pattern.PathPatternParser;
 
 import java.io.InputStream;
+import java.util.List;
 import java.util.Set;
 
 
@@ -21,13 +25,21 @@ import java.util.Set;
 @Component
 public class MaaEtagHeaderFilter extends ShallowEtagHeaderFilter {
 
-    private static final String CACHE_HEAD = "private, no-cache, max-age=0, must-revalidate";
-
-    // 配置需要使用 Etag 机制的 URI，注意和 Spring 的 UrlPattern 语法不太一样
+    /**
+     * 配置需要使用 Etag 机制的 URI，采用 PathPatter 语法
+     *
+     * @see PathPattern
+     */
     private static final Set<String> CACHE_URI = Set.of(
             "/arknights/level",
             "/copilot/query"
     );
+
+    private static final String CACHE_HEAD = "private, no-cache, max-age=0, must-revalidate";
+
+    private static final List<PathPattern> CACHE_URI_PATTERNS = CACHE_URI.stream()
+            .map(PathPatternParser.defaultInstance::parse)
+            .toList();
 
     @Override
     protected void initFilterBean() throws ServletException {
@@ -40,8 +52,16 @@ public class MaaEtagHeaderFilter extends ShallowEtagHeaderFilter {
     protected boolean isEligibleForEtag(HttpServletRequest request, HttpServletResponse response,
                                         int responseStatusCode, InputStream inputStream) {
 
-        if (CACHE_URI.contains(request.getRequestURI()) &&
-                !response.isCommitted() &&
+        boolean isMatch = false;
+
+        for (PathPattern pattern : CACHE_URI_PATTERNS) {
+            if (pattern.matches(PathContainer.parsePath(request.getRequestURI()))) {
+                isMatch = true;
+                break;
+            }
+        }
+
+        if (isMatch && !response.isCommitted() &&
                 responseStatusCode >= 200 && responseStatusCode < 300 &&
                 HttpMethod.GET.matches(request.getMethod())) {
 
