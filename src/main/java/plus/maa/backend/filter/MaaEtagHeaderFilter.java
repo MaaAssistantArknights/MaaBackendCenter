@@ -54,16 +54,21 @@ public class MaaEtagHeaderFilter extends ShallowEtagHeaderFilter {
 
         boolean isMatch = false;
 
-        for (PathPattern pattern : CACHE_URI_PATTERNS) {
-            if (pattern.matches(PathContainer.parsePath(request.getRequestURI()))) {
-                isMatch = true;
-                break;
+        if (HttpMethod.GET.matches(request.getMethod())) {
+
+            PathContainer pathContainer = PathContainer.parsePath(request.getRequestURI());
+
+            for (PathPattern pattern : CACHE_URI_PATTERNS) {
+
+                if (pattern.matches(pathContainer)) {
+                    isMatch = true;
+                    break;
+                }
             }
         }
 
         if (isMatch && !response.isCommitted() &&
-                responseStatusCode >= 200 && responseStatusCode < 300 &&
-                HttpMethod.GET.matches(request.getMethod())) {
+                responseStatusCode >= 200 && responseStatusCode < 300) {
 
             String cacheControl = response.getHeader(HttpHeaders.CACHE_CONTROL);
             if (cacheControl == null) {
