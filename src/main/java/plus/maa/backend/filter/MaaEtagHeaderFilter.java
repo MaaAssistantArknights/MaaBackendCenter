@@ -1,14 +1,13 @@
 package plus.maa.backend.filter;
 
-import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.ShallowEtagHeaderFilter;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Set;
 
@@ -38,18 +37,23 @@ public class MaaEtagHeaderFilter extends ShallowEtagHeaderFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        if (CACHE_URI.contains(request.getRequestURI())) {
-            response.setHeader(HttpHeaders.CACHE_CONTROL, CACHE_HEAD);
-        }
-        // 其他接口默认处理即可，注意默认操作相当于牺牲 CPU 来节约网络带宽，不适用于结果变更过快的接口
-        super.doFilterInternal(request, response, filterChain);
-    }
-
-    @Override
     protected boolean isEligibleForEtag(HttpServletRequest request, HttpServletResponse response,
                                         int responseStatusCode, InputStream inputStream) {
-        return CACHE_URI.contains(request.getRequestURI()) &&
-                super.isEligibleForEtag(request, response, responseStatusCode, inputStream);
+
+        if (CACHE_URI.contains(request.getRequestURI()) &&
+                !response.isCommitted() &&
+                responseStatusCode >= 200 && responseStatusCode < 300 &&
+                HttpMethod.GET.matches(request.getMethod())) {
+
+            String cacheControl = response.getHeader(HttpHeaders.CACHE_CONTROL);
+            if (cacheControl == null) {
+                response.setHeader(HttpHeaders.CACHE_CONTROL, CACHE_HEAD);
+                return true;
+            }
+
+            return !cacheControl.contains("no-store");
+        }
+
+        return false;
     }
 }
