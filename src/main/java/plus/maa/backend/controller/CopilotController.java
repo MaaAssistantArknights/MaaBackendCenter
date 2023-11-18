@@ -78,8 +78,8 @@ public class CopilotController {
     public MaaResult<CopilotPageInfo> queriesCopilot(
             @Parameter(description = "作业查询请求") @Valid CopilotQueriesRequest parsed
     ) {
-        // 两秒防抖，缓解前端重复请求问题
-        response.setHeader(HttpHeaders.CACHE_CONTROL, "private, max-age=2, must-revalidate");
+        // 三秒防抖，缓解前端重复请求问题
+        response.setHeader(HttpHeaders.CACHE_CONTROL, "private, max-age=3, must-revalidate");
         return MaaResult.success(copilotService.queriesCopilot(helper.getUserId(), parsed));
     }
 
