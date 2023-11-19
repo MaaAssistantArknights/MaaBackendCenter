@@ -1,10 +1,8 @@
 package plus.maa.backend.filter;
 
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.server.PathContainer;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.ShallowEtagHeaderFilter;
@@ -18,6 +16,10 @@ import java.util.Set;
 
 /**
  * 提供基于 Etag 机制的 HTTP 缓存，有助于降低网络传输的压力
+ * <p>
+ * 同时还解决了 GZIP 无法对 JSON 响应正常处理 min-response-size 的问题，
+ * 借助了 ETag 处理流程中的 Response 包装类包装所有响应，
+ * 从而正常获取 Content-Length
  *
  * @author lixuhuilll
  */
@@ -42,8 +44,7 @@ public class MaaEtagHeaderFilter extends ShallowEtagHeaderFilter {
             .toList();
 
     @Override
-    protected void initFilterBean() throws ServletException {
-        super.initFilterBean();
+    protected void initFilterBean() {
         // Etag 必须使用弱校验才能与自动压缩兼容
         setWriteWeakETag(true);
     }
@@ -52,31 +53,22 @@ public class MaaEtagHeaderFilter extends ShallowEtagHeaderFilter {
     protected boolean isEligibleForEtag(HttpServletRequest request, HttpServletResponse response,
                                         int responseStatusCode, InputStream inputStream) {
 
-        boolean isMatch = false;
+        if (super.isEligibleForEtag(request, response, responseStatusCode, inputStream)) {
 
-        if (HttpMethod.GET.matches(request.getMethod())) {
-
+            // 如果该请求符合产生 ETag 的条件，判断是否为需要使用 ETag 机制的 URI
             PathContainer pathContainer = PathContainer.parsePath(request.getRequestURI());
-
             for (PathPattern pattern : CACHE_URI_PATTERNS) {
 
                 if (pattern.matches(pathContainer)) {
-                    isMatch = true;
-                    break;
+                    // 如果是需要使用 ETag 机制的 URI，若其响应中不存在缓存控制头，则配置默认值
+                    String cacheControl = response.getHeader(HttpHeaders.CACHE_CONTROL);
+                    if (cacheControl == null) {
+                        response.setHeader(HttpHeaders.CACHE_CONTROL, CACHE_HEAD);
+                    }
+                    // 不论是否进行默认值处理，均返回 true
+                    return true;
                 }
             }
-        }
-
-        if (isMatch && !response.isCommitted() &&
-                responseStatusCode >= 200 && responseStatusCode < 300) {
-
-            String cacheControl = response.getHeader(HttpHeaders.CACHE_CONTROL);
-            if (cacheControl == null) {
-                response.setHeader(HttpHeaders.CACHE_CONTROL, CACHE_HEAD);
-                return true;
-            }
-
-            return !cacheControl.contains("no-store");
         }
 
         return false;
