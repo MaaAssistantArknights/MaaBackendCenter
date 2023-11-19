@@ -1,10 +1,13 @@
 package plus.maa.backend.config.external;
 
+import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.stereotype.Component;
 
+@Data
+@Component
 @ConfigurationProperties("maa-copilot")
-@lombok.Data
 public class MaaCopilotProperties {
     @NestedConfigurationProperty
     private Jwt jwt;
@@ -26,4 +29,6 @@ public class MaaCopilotProperties {
     private Mail mail;
     @NestedConfigurationProperty
     private SensitiveWord sensitiveWord;
+    @NestedConfigurationProperty
+    private Copilot copilot = new Copilot();
 }
