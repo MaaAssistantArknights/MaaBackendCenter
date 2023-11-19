@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.ShallowEtagHeaderFilter;
 import org.springframework.web.util.ContentCachingResponseWrapper;
@@ -20,6 +21,7 @@ import java.io.InputStream;
  */
 
 @Component
+@ConditionalOnProperty(name = "server.compression.enabled", havingValue = "true")
 public class ContentLengthRepairFilter extends ShallowEtagHeaderFilter {
 
     @Override
