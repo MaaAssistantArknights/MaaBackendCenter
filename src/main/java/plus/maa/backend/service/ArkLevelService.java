@@ -30,10 +30,7 @@ import plus.maa.backend.repository.entity.github.GithubTrees;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -204,12 +201,14 @@ public class ArkLevelService {
 
             Set<String> stageIds = stagesList.stream()
                     .map(stage -> (String) stage.get("stageId"))
+                    .filter(Objects::nonNull)
                     // 去除复刻后缀
                     .map(stageId -> stageId.replace("_perm", ""))
                     .collect(Collectors.toUnmodifiableSet());
 
             Set<String> codes = stagesList.stream()
                     .map(stage -> (String) stage.get("code"))
+                    .filter(Objects::nonNull)
                     // 提取地图的系列名，例如 GT、OF
                     .map(code -> code.split("-")[0])
                     .collect(Collectors.toUnmodifiableSet());
@@ -221,6 +220,7 @@ public class ArkLevelService {
                 for (ArkLevel arkLevel : arkLevelPage) {
                     if (stageIds.contains(arkLevel.getStageId()) ||
                             codes.contains(arkLevel.getCatThree().split("-")[0])) {
+
                         arkLevel.setIsOpen(true);
                     } else if (arkLevel.getIsOpen() != null) {
                         // Maa 仓库的数据存在部分缺失，因此地图此前必须被匹配过，才会认为其关闭
