@@ -1,5 +1,6 @@
 package plus.maa.backend.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,8 @@ import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -20,6 +23,7 @@ import plus.maa.backend.repository.entity.ArkLevel;
 import plus.maa.backend.repository.entity.ArkLevelSha;
 import plus.maa.backend.repository.entity.gamedata.ArkTilePos;
 import plus.maa.backend.repository.entity.github.GithubCommit;
+import plus.maa.backend.repository.entity.github.GithubContent;
 import plus.maa.backend.repository.entity.github.GithubTree;
 import plus.maa.backend.repository.entity.github.GithubTrees;
 
@@ -28,6 +32,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -159,6 +165,83 @@ public class ArkLevelService {
             }
         });
         levelTrees.forEach(tree -> download(task, tree));
+    }
+
+    /**
+     * 更新地图开放状态
+     */
+    public void updateLevelOpenStatus() {
+        log.info("[LEVEL-OPEN-STATUS]准备更新地图开放状态");
+        GithubContent stages = githubRepo.getContents(githubToken, "resource").stream()
+                .filter(content -> content.isFile() && "stages.json".equals(content.getName()))
+                .findFirst()
+                .orElse(null);
+        if (stages == null) {
+            log.info("[LEVEL-OPEN-STATUS]地图开放状态数据不存在");
+            return;
+        }
+
+        String lastStagesSha = redisCache.getCache("level:stages:sha", String.class);
+        if (lastStagesSha != null && lastStagesSha.equals(stages.getSha())) {
+            log.info("[LEVEL-OPEN-STATUS]地图开放状态已是最新");
+            return;
+        }
+
+        log.info("[LEVEL-OPEN-STATUS]开始更新地图开放状态");
+        // 就一个文件，直接在当前线程下载数据
+        try (Response response = okHttpClient
+                .newCall(new Request.Builder().url(stages.getDownloadUrl()).build())
+                .execute()) {
+
+            if (!response.isSuccessful() || response.body() == null) {
+                log.error("[LEVEL-OPEN-STATUS]地图开放状态下载失败");
+                return;
+            }
+
+            String body = response.body().string();
+            List<Map<String, Object>> stagesList = mapper.readValue(body, new TypeReference<>() {
+            });
+
+            Set<String> stageIds = stagesList.stream()
+                    .map(stage -> (String) stage.get("stageId"))
+                    // 去除复刻后缀
+                    .map(stageId -> stageId.replace("_perm", ""))
+                    .collect(Collectors.toUnmodifiableSet());
+
+            Set<String> codes = stagesList.stream()
+                    .map(stage -> (String) stage.get("code"))
+                    // 提取地图的系列名，例如 GT、OF
+                    .map(code -> code.split("-")[0])
+                    .collect(Collectors.toUnmodifiableSet());
+
+            // 分页修改
+            Pageable pageable = Pageable.ofSize(1000);
+            Page<ArkLevel> arkLevelPage = arkLevelRepo.findAll(pageable);
+            while (arkLevelPage.hasContent()) {
+                for (ArkLevel arkLevel : arkLevelPage) {
+                    if (stageIds.contains(arkLevel.getStageId()) ||
+                            codes.contains(arkLevel.getCatThree().split("-")[0])) {
+                        arkLevel.setIsOpen(true);
+                    } else if (arkLevel.getIsOpen() != null) {
+                        // Maa 仓库的数据存在部分缺失，因此地图此前必须被匹配过，才会认为其关闭
+                        arkLevel.setIsOpen(false);
+                    }
+                }
+                arkLevelRepo.saveAll(arkLevelPage);
+
+                if (!arkLevelPage.hasNext()) {
+                    // 没有下一页了，跳出循环
+                    break;
+                }
+                pageable = arkLevelPage.nextPageable();
+                arkLevelPage = arkLevelRepo.findAll(pageable);
+            }
+
+            redisCache.setData("level:stages:sha", stages.getSha());
+            log.info("[LEVEL-OPEN-STATUS]地图开放状态更新完成");
+        } catch (Exception e) {
+            log.error("[LEVEL-OPEN-STATUS]地图开放状态更新失败", e);
+        }
     }
 
     /**

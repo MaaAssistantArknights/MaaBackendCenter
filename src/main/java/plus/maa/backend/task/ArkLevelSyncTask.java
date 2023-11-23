@@ -1,9 +1,8 @@
 package plus.maa.backend.task;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
-import lombok.RequiredArgsConstructor;
 import plus.maa.backend.service.ArkLevelService;
 
 @Component
@@ -19,6 +18,15 @@ public class ArkLevelSyncTask {
     @Scheduled(cron = "${maa-copilot.task-cron.ark-level:-}")
     public void syncArkLevels() {
         arkLevelService.runSyncLevelDataTask();
+    }
+
+    /**
+     * 更新地图开放状态，每天凌晨执行，最好和热度值刷入任务保持相对顺序
+     * 4:00、4:15 各执行一次，避免网络波动导致更新失败
+     */
+    @Scheduled(cron = "0 0-15/15 4 * * ?")
+    public void updateArkLevelsOpenStatus() {
+        arkLevelService.updateLevelOpenStatus();
     }
 
 }

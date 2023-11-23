@@ -10,10 +10,12 @@ import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import plus.maa.backend.controller.response.copilot.ArkLevelInfo;
 import plus.maa.backend.repository.CopilotRepository;
 import plus.maa.backend.repository.RedisCache;
 import plus.maa.backend.repository.entity.Copilot;
 import plus.maa.backend.repository.entity.Rating;
+import plus.maa.backend.service.ArkLevelService;
 import plus.maa.backend.service.CopilotService;
 import plus.maa.backend.service.model.RatingCount;
 import plus.maa.backend.service.model.RatingType;
@@ -36,14 +38,15 @@ import java.util.stream.Collectors;
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class CopilotScoreRefreshTask {
 
+    ArkLevelService arkLevelService;
     RedisCache redisCache;
     CopilotRepository copilotRepository;
     MongoTemplate mongoTemplate;
 
     /**
-     * 热度值刷入任务，每日三点执行
+     * 热度值刷入任务，每日四点三十执行（实际可能会更晚，因为需要等待之前启动的定时任务完成）
      */
-    @Scheduled(cron = "0 0 3 * * ?")
+    @Scheduled(cron = "0 30 4 * * ?")
     public void refreshHotScores() {
         // 分页获取所有未删除的作业
         Pageable pageable = Pageable.ofSize(1000);
@@ -105,6 +108,12 @@ public class CopilotScoreRefreshTask {
             long likeCount = likeCountMap.getOrDefault(Long.toString(copilot.getCopilotId()), 1L);
             long dislikeCount = dislikeCountMap.getOrDefault(Long.toString(copilot.getCopilotId()), 0L);
             double hotScore = CopilotService.getHotScore(copilot, likeCount, dislikeCount);
+            // 判断关卡是否开放
+            ArkLevelInfo arkLevelInfo = arkLevelService.findByLevelIdFuzzy(copilot.getStageName());
+            if (arkLevelInfo != null && Boolean.FALSE.equals(arkLevelInfo.getIsOpen())) {
+                // 非开放关卡打入冷宫
+                hotScore += Integer.MIN_VALUE;
+            }
             copilot.setHotScore(hotScore);
         }
         // 批量更新热度值
