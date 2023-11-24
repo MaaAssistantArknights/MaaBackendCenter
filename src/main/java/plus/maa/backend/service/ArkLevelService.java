@@ -214,16 +214,20 @@ public class ArkLevelService {
             Pageable pageable = Pageable.ofSize(1000);
             Page<ArkLevel> arkLevelPage = arkLevelRepo.findAll(pageable);
             while (arkLevelPage.hasContent()) {
-                for (ArkLevel arkLevel : arkLevelPage) {
-                    // 只考虑地图系列名，例如 GT、OF
-                    if (codes.contains(arkLevel.getCatThree().split("-")[0])) {
 
-                        arkLevel.setIsOpen(true);
-                    } else if (arkLevel.getIsOpen() != null) {
-                        // 数据可能存在部分缺失，因此地图此前必须被匹配过，才会认为其关闭
-                        arkLevel.setIsOpen(false);
-                    }
-                }
+                arkLevelPage.stream()
+                        .filter(arkLevel -> Objects.nonNull(arkLevel.getCatThree()))
+                        .forEach(arkLevel -> {
+                            // 只考虑地图系列名，例如 GT、OF
+                            if (codes.contains(arkLevel.getCatThree().split("-")[0])) {
+
+                                arkLevel.setIsOpen(true);
+                            } else if (arkLevel.getIsOpen() != null) {
+                                // 数据可能存在部分缺失，因此地图此前必须被匹配过，才会认为其关闭
+                                arkLevel.setIsOpen(false);
+                            }
+                        });
+
                 arkLevelRepo.saveAll(arkLevelPage);
 
                 if (!arkLevelPage.hasNext()) {
