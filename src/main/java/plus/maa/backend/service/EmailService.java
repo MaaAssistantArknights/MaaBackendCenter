@@ -2,14 +2,13 @@ package plus.maa.backend.service;
 
 import cn.hutool.extra.mail.MailAccount;
 import jakarta.annotation.PostConstruct;
-import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import plus.maa.backend.common.bo.EmailBusinessObject;
 import plus.maa.backend.config.external.MaaCopilotProperties;
@@ -44,9 +43,7 @@ public class EmailService {
 
     private final MailAccount MAIL_ACCOUNT = new MailAccount();
 
-    // 注入自身代理类的延迟加载代理类
-    @Lazy
-    @Resource
+    // 注入自身代理类
     private EmailService emailService;
 
     /**
@@ -138,6 +135,34 @@ public class EmailService {
                 .setMailAccount(MAIL_ACCOUNT)
                 .setEmail(email)
                 .sendCommentNotification(map);
+
+    }
+
+    /**
+     * 注入 EmailService 的代理类
+     * <p>
+     * 不得为 private，否则静态内部类只会修改内部类作用域内的副本而不是本类
+     *
+     * @param emailService 被注入的 EmailService
+     */
+    void setEmailService(EmailService emailService) {
+        synchronized (this) {
+            if (this.emailService == null) {
+                this.emailService = emailService;
+            }
+        }
+    }
+
+    @Component
+    @RequiredArgsConstructor
+    public static class EmailServiceInject {
+
+        private final EmailService emailService;
+
+        @PostConstruct
+        private void init() {
+            emailService.setEmailService(emailService);
+        }
 
     }
 }
