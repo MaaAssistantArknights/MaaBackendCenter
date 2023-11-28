@@ -14,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import plus.maa.backend.common.utils.ArkLevelUtil;
 import plus.maa.backend.common.utils.converter.ArkLevelConverter;
 import plus.maa.backend.controller.response.copilot.ArkLevelInfo;
 import plus.maa.backend.repository.ArkLevelRepository;
@@ -27,13 +28,15 @@ import plus.maa.backend.repository.entity.github.GithubCommit;
 import plus.maa.backend.repository.entity.github.GithubContent;
 import plus.maa.backend.repository.entity.github.GithubTree;
 import plus.maa.backend.repository.entity.github.GithubTrees;
+import plus.maa.backend.service.model.ArkLevelType;
 
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -203,11 +206,10 @@ public class ArkLevelService {
             List<MaaArkStage> stagesList = mapper.readValue(body, new TypeReference<>() {
             });
 
-            Set<String> codes = stagesList.stream()
-                    .map(MaaArkStage::getCode)
-                    .filter(Objects::nonNull)
-                    // 提取地图的系列名，例如 GT、OF
-                    .map(code -> code.split("-")[0])
+            Set<String> keyInfos = stagesList.stream()
+                    .map(MaaArkStage::getStageId)
+                    // 提取地图系列的唯一标识
+                    .map(ArkLevelUtil::getKeyInfoById)
                     .collect(Collectors.toUnmodifiableSet());
 
             // 分页修改
@@ -216,10 +218,11 @@ public class ArkLevelService {
             while (arkLevelPage.hasContent()) {
 
                 arkLevelPage.stream()
-                        .filter(arkLevel -> Objects.nonNull(arkLevel.getCatThree()))
+                        // 不处理危机合约
+                        .filter(arkLevel -> !ArkLevelType.RUNE.getDisplay().equals(arkLevel.getCatOne()))
                         .forEach(arkLevel -> {
-                            // 只考虑地图系列名，例如 GT、OF
-                            if (codes.contains(arkLevel.getCatThree().split("-")[0])) {
+                            // 只考虑地图系列的唯一标识
+                            if (keyInfos.contains(ArkLevelUtil.getKeyInfoById(arkLevel.getStageId()))) {
 
                                 arkLevel.setIsOpen(true);
                             } else if (arkLevel.getIsOpen() != null) {
@@ -243,6 +246,38 @@ public class ArkLevelService {
         } catch (Exception e) {
             log.error("[LEVEL-OPEN-STATUS]地图开放状态更新失败", e);
         }
+    }
+
+    public void updateCrisisV2OpenStatus() {
+        log.info("[CRISIS-V2-OPEN-STATUS]准备更新危机合约开放状态");
+        // 同步危机合约信息
+        gameDataService.syncCrisisV2Info();
+
+        // 分页修改
+        Pageable pageable = Pageable.ofSize(1000);
+        Page<ArkLevel> arkCrisisV2Page = arkLevelRepo.findAllByCatOne(ArkLevelType.RUNE.getDisplay(), pageable);
+
+        // 获取当前时间
+        Instant nowInstant = Instant.now();
+
+        while (arkCrisisV2Page.hasContent()) {
+
+            arkCrisisV2Page.forEach(arkCrisisV2 -> Optional
+                    .ofNullable(gameDataService.findCrisisV2InfoById(arkCrisisV2.getStageId()))
+                    .map(crisisV2Info -> Instant.ofEpochSecond(crisisV2Info.getEndTs()))
+                    .ifPresent(endInstant -> arkCrisisV2.setIsOpen(endInstant.isAfter(nowInstant)))
+            );
+
+            arkLevelRepo.saveAll(arkCrisisV2Page);
+
+            if (!arkCrisisV2Page.hasNext()) {
+                // 没有下一页了，跳出循环
+                break;
+            }
+            pageable = arkCrisisV2Page.nextPageable();
+            arkCrisisV2Page = arkLevelRepo.findAllByCatOne(ArkLevelType.RUNE.getDisplay(), pageable);
+        }
+        log.info("[CRISIS-V2-OPEN-STATUS]危机合约开放状态更新完毕");
     }
 
     /**

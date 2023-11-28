@@ -21,12 +21,13 @@ public class ArkLevelSyncTask {
     }
 
     /**
-     * 更新地图开放状态，每天凌晨执行，最好和热度值刷入任务保持相对顺序
+     * 更新开放状态，每天凌晨执行，最好和热度值刷入任务保持相对顺序
      * 4:00、4:15 各执行一次，避免网络波动导致更新失败
      */
     @Scheduled(cron = "0 0-15/15 4 * * ?")
-    public void updateArkLevelsOpenStatus() {
+    public void updateOpenStatus() {
         arkLevelService.updateLevelOpenStatus();
+        arkLevelService.updateCrisisV2OpenStatus();
     }
 
 }
