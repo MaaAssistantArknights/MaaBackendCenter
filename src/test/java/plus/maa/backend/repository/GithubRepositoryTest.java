@@ -30,7 +30,7 @@ class GithubRepositoryTest {
     }
 
     @Test
-    void getContents() {
+    void testGetContents() {
         var contents = repository.getContents(properties.getGithub().getToken(),"");
         assertNotNull(contents);
         assertFalse(contents.isEmpty());
