@@ -219,12 +219,16 @@ public class ArkLevelService {
             Page<ArkLevel> arkLevelPage = arkLevelRepo.findAllByCatOne(catOne, pageable);
             while (arkLevelPage.hasContent()) {
 
-                // 未匹配一律视为已关闭
-                arkLevelPage.forEach(arkLevel -> arkLevel.setIsOpen(
-                                keyInfos.contains(
-                                        ArkLevelUtil.getKeyInfoById(arkLevel.getStageId()))
-                        )
-                );
+                arkLevelPage.forEach(arkLevel -> {
+                    // 只考虑地图系列的唯一标识
+                    if (keyInfos.contains(ArkLevelUtil.getKeyInfoById(arkLevel.getStageId()))) {
+
+                        arkLevel.setIsOpen(true);
+                    } else if (arkLevel.getIsOpen() != null) {
+                        // 数据可能存在部分缺失，因此地图此前必须被匹配过，才会认为其关闭
+                        arkLevel.setIsOpen(false);
+                    }
+                });
 
                 arkLevelRepo.saveAll(arkLevelPage);
 
@@ -259,7 +263,7 @@ public class ArkLevelService {
         while (arkCrisisV2Page.hasContent()) {
 
             arkCrisisV2Page.forEach(arkCrisisV2 -> {
-                // 未匹配一律视为已关闭
+                // 危机合约信息比较准，因此未匹配一律视为已关闭
                 arkCrisisV2.setIsOpen(false);
                 Optional.ofNullable(gameDataService.findCrisisV2InfoById(arkCrisisV2.getStageId()))
                         .map(crisisV2Info -> Instant.ofEpochSecond(crisisV2Info.getEndTs()))
