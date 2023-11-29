@@ -112,7 +112,7 @@ public class CopilotScoreRefreshTask {
             ArkLevelInfo arkLevelInfo = arkLevelService.findByLevelIdFuzzy(copilot.getStageName());
             if (arkLevelInfo != null && Boolean.FALSE.equals(arkLevelInfo.getIsOpen())) {
                 // 非开放关卡打入冷宫
-                hotScore += Integer.MIN_VALUE;
+                hotScore /= 3;
             }
             copilot.setHotScore(hotScore);
         }

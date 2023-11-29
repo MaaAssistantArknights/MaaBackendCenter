@@ -172,33 +172,33 @@ public class ArkLevelService {
     }
 
     /**
-     * 更新地图开放状态
+     * 更新活动地图开放状态
      */
-    public void updateLevelOpenStatus() {
-        log.info("[LEVEL-OPEN-STATUS]准备更新地图开放状态");
+    public void updateActivitiesOpenStatus() {
+        log.info("[ACTIVITIES-OPEN-STATUS]准备更新活动地图开放状态");
         GithubContent stages = githubRepo.getContents(githubToken, "resource").stream()
                 .filter(content -> content.isFile() && "stages.json".equals(content.getName()))
                 .findFirst()
                 .orElse(null);
         if (stages == null) {
-            log.info("[LEVEL-OPEN-STATUS]地图开放状态数据不存在");
+            log.info("[ACTIVITIES-OPEN-STATUS]活动地图开放状态数据不存在");
             return;
         }
 
         String lastStagesSha = redisCache.getCache("level:stages:sha", String.class);
         if (lastStagesSha != null && lastStagesSha.equals(stages.getSha())) {
-            log.info("[LEVEL-OPEN-STATUS]地图开放状态已是最新");
+            log.info("[ACTIVITIES-OPEN-STATUS]活动地图开放状态已是最新");
             return;
         }
 
-        log.info("[LEVEL-OPEN-STATUS]开始更新地图开放状态");
+        log.info("[ACTIVITIES-OPEN-STATUS]开始更新活动地图开放状态");
         // 就一个文件，直接在当前线程下载数据
         try (Response response = okHttpClient
                 .newCall(new Request.Builder().url(stages.getDownloadUrl()).build())
                 .execute()) {
 
             if (!response.isSuccessful() || response.body() == null) {
-                log.error("[LEVEL-OPEN-STATUS]地图开放状态下载失败");
+                log.error("[ACTIVITIES-OPEN-STATUS]活动地图开放状态下载失败");
                 return;
             }
 
@@ -212,24 +212,19 @@ public class ArkLevelService {
                     .map(ArkLevelUtil::getKeyInfoById)
                     .collect(Collectors.toUnmodifiableSet());
 
+            // 修改活动地图
+            final String catOne = ArkLevelType.ACTIVITIES.getDisplay();
             // 分页修改
             Pageable pageable = Pageable.ofSize(1000);
-            Page<ArkLevel> arkLevelPage = arkLevelRepo.findAll(pageable);
+            Page<ArkLevel> arkLevelPage = arkLevelRepo.findAllByCatOne(catOne, pageable);
             while (arkLevelPage.hasContent()) {
 
-                arkLevelPage.stream()
-                        // 不处理危机合约
-                        .filter(arkLevel -> !ArkLevelType.RUNE.getDisplay().equals(arkLevel.getCatOne()))
-                        .forEach(arkLevel -> {
-                            // 只考虑地图系列的唯一标识
-                            if (keyInfos.contains(ArkLevelUtil.getKeyInfoById(arkLevel.getStageId()))) {
-
-                                arkLevel.setIsOpen(true);
-                            } else if (arkLevel.getIsOpen() != null) {
-                                // 数据可能存在部分缺失，因此地图此前必须被匹配过，才会认为其关闭
-                                arkLevel.setIsOpen(false);
-                            }
-                        });
+                // 未匹配一律视为已关闭
+                arkLevelPage.forEach(arkLevel -> arkLevel.setIsOpen(
+                                keyInfos.contains(
+                                        ArkLevelUtil.getKeyInfoById(arkLevel.getStageId()))
+                        )
+                );
 
                 arkLevelRepo.saveAll(arkLevelPage);
 
@@ -238,13 +233,13 @@ public class ArkLevelService {
                     break;
                 }
                 pageable = arkLevelPage.nextPageable();
-                arkLevelPage = arkLevelRepo.findAll(pageable);
+                arkLevelPage = arkLevelRepo.findAllByCatOne(catOne, pageable);
             }
 
             redisCache.setData("level:stages:sha", stages.getSha());
-            log.info("[LEVEL-OPEN-STATUS]地图开放状态更新完成");
+            log.info("[ACTIVITIES-OPEN-STATUS]活动地图开放状态更新完成");
         } catch (Exception e) {
-            log.error("[LEVEL-OPEN-STATUS]地图开放状态更新失败", e);
+            log.error("[ACTIVITIES-OPEN-STATUS]活动地图开放状态更新失败", e);
         }
     }
 
@@ -253,20 +248,24 @@ public class ArkLevelService {
         // 同步危机合约信息
         gameDataService.syncCrisisV2Info();
 
+        final String catOne = ArkLevelType.RUNE.getDisplay();
         // 分页修改
         Pageable pageable = Pageable.ofSize(1000);
-        Page<ArkLevel> arkCrisisV2Page = arkLevelRepo.findAllByCatOne(ArkLevelType.RUNE.getDisplay(), pageable);
+        Page<ArkLevel> arkCrisisV2Page = arkLevelRepo.findAllByCatOne(catOne, pageable);
 
         // 获取当前时间
         Instant nowInstant = Instant.now();
 
         while (arkCrisisV2Page.hasContent()) {
 
-            arkCrisisV2Page.forEach(arkCrisisV2 -> Optional
-                    .ofNullable(gameDataService.findCrisisV2InfoById(arkCrisisV2.getStageId()))
-                    .map(crisisV2Info -> Instant.ofEpochSecond(crisisV2Info.getEndTs()))
-                    .ifPresent(endInstant -> arkCrisisV2.setIsOpen(endInstant.isAfter(nowInstant)))
-            );
+            arkCrisisV2Page.forEach(arkCrisisV2 -> {
+                // 未匹配一律视为已关闭
+                arkCrisisV2.setIsOpen(false);
+                Optional.ofNullable(gameDataService.findCrisisV2InfoById(arkCrisisV2.getStageId()))
+                        .map(crisisV2Info -> Instant.ofEpochSecond(crisisV2Info.getEndTs()))
+                        .ifPresent(endInstant -> arkCrisisV2.setIsOpen(endInstant.isAfter(nowInstant)));
+
+            });
 
             arkLevelRepo.saveAll(arkCrisisV2Page);
 
@@ -275,7 +274,7 @@ public class ArkLevelService {
                 break;
             }
             pageable = arkCrisisV2Page.nextPageable();
-            arkCrisisV2Page = arkLevelRepo.findAllByCatOne(ArkLevelType.RUNE.getDisplay(), pageable);
+            arkCrisisV2Page = arkLevelRepo.findAllByCatOne(catOne, pageable);
         }
         log.info("[CRISIS-V2-OPEN-STATUS]危机合约开放状态更新完毕");
     }

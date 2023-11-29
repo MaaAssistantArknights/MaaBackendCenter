@@ -16,7 +16,8 @@ class ArkLevelUtilTest {
                 "level_crisis_v2_01-07", "crisis_v2_season_1_1",
                 "a001_01_perm", "a001_ex05",
                 "act11d0_ex08#f#", "act11d0_s02",
-                "act11mini_03#f#", "act11mini_04"
+                "act11mini_03#f#", "act11mini_04",
+                "act17side_01", "act17side_s01_a"
         );
 
         for (var entity : ids.entrySet()) {

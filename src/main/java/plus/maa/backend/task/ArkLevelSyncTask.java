@@ -26,7 +26,7 @@ public class ArkLevelSyncTask {
      */
     @Scheduled(cron = "0 0-15/15 4 * * ?")
     public void updateOpenStatus() {
-        arkLevelService.updateLevelOpenStatus();
+        arkLevelService.updateActivitiesOpenStatus();
         arkLevelService.updateCrisisV2OpenStatus();
     }
 
