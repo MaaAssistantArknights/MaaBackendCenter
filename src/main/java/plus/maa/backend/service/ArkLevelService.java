@@ -160,7 +160,10 @@ public class ArkLevelService {
             return;
         }
         //同步GameData仓库数据
-        gameDataService.syncGameData();
+        if (!gameDataService.syncGameData()) {
+            log.error("[LEVEL]GameData仓库数据同步失败");
+            return;
+        }
 
         DownloadTask task = new DownloadTask(levelTrees.size(), (t) -> {
             //仅在全部下载任务成功后更新commit缓存
@@ -250,7 +253,10 @@ public class ArkLevelService {
     public void updateCrisisV2OpenStatus() {
         log.info("[CRISIS-V2-OPEN-STATUS]准备更新危机合约开放状态");
         // 同步危机合约信息
-        gameDataService.syncCrisisV2Info();
+        if (!gameDataService.syncCrisisV2Info()) {
+            log.error("[CRISIS-V2-OPEN-STATUS]同步危机合约信息失败");
+            return;
+        }
 
         final String catOne = ArkLevelType.RUNE.getDisplay();
         // 分页修改
