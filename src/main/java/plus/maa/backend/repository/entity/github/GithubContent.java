@@ -1,7 +1,5 @@
 package plus.maa.backend.repository.entity.github;
 
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
@@ -12,7 +10,6 @@ import java.util.Objects;
  * created on 2022/12/23
  */
 @Data
-@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class GithubContent {
 
     // 文件名
