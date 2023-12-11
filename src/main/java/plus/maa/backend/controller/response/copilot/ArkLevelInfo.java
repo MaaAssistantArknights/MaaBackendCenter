@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 
@@ -25,4 +26,7 @@ public class ArkLevelInfo implements Serializable {
     private String name;
     private int width;
     private int height;
+    // 当前版本地图是否开放
+    @Nullable
+    private Boolean isOpen;
 }
