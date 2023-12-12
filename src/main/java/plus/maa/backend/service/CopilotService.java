@@ -29,10 +29,7 @@ import plus.maa.backend.controller.response.copilot.ArkLevelInfo;
 import plus.maa.backend.controller.response.copilot.CopilotInfo;
 import plus.maa.backend.controller.response.copilot.CopilotPageInfo;
 import plus.maa.backend.repository.*;
-import plus.maa.backend.repository.entity.CommentsArea;
-import plus.maa.backend.repository.entity.Copilot;
-import plus.maa.backend.repository.entity.MaaUser;
-import plus.maa.backend.repository.entity.Rating;
+import plus.maa.backend.repository.entity.*;
 import plus.maa.backend.service.model.RatingCache;
 import plus.maa.backend.service.model.RatingType;
 
@@ -119,7 +116,7 @@ public class CopilotService {
                     .setName(action.getName() == null ? null : action.getName().replaceAll("[\"“”]", "")));
         }
         // 使用stageId存储作业关卡信息
-        ArkLevelInfo level = levelService.findByLevelIdFuzzy(copilotDTO.getStageName());
+        ArkLevel level = levelService.findByLevelIdFuzzy(copilotDTO.getStageName());
         if (level != null) {
             copilotDTO.setStageName(level.getStageId());
         }
@@ -286,7 +283,7 @@ public class CopilotService {
 
         //关卡名、关卡类型、关卡编号
         if (StringUtils.isNotBlank(request.getLevelKeyword())) {
-            List<ArkLevelInfo> levelInfo = levelService.queryLevelByKeyword(request.getLevelKeyword());
+            List<ArkLevelInfo> levelInfo = levelService.queryLevelInfosByKeyword(request.getLevelKeyword());
             if (levelInfo.isEmpty()) {
                 andQueries.add(Criteria.where("stageName").regex(caseInsensitive(request.getLevelKeyword())));
             } else {

@@ -79,7 +79,7 @@ public class ArkLevelService {
 
     private final List<String> bypassFileNames = List.of("overview.json");
 
-    @Cacheable("arkLevels")
+    @Cacheable("arkLevelInfos")
     public List<ArkLevelInfo> getArkLevelInfos() {
         return arkLevelRepo.findAll()
                 .stream()
@@ -88,13 +88,12 @@ public class ArkLevelService {
     }
 
     @Cacheable("arkLevel")
-    public ArkLevelInfo findByLevelIdFuzzy(String levelId) {
-        ArkLevel level = arkLevelRepo.findByLevelIdFuzzy(levelId).findAny().orElse(null);
-        return arkLevelConverter.convert(level);
+    public ArkLevel findByLevelIdFuzzy(String levelId) {
+        return arkLevelRepo.findByLevelIdFuzzy(levelId).findAny().orElse(null);
     }
 
 
-    public List<ArkLevelInfo> queryLevelByKeyword(String keyword) {
+    public List<ArkLevelInfo> queryLevelInfosByKeyword(String keyword) {
         List<ArkLevel> levels = arkLevelRepo.queryLevelByKeyword(keyword).collect(Collectors.toList());
         return arkLevelConverter.convert(levels);
     }
