@@ -110,7 +110,13 @@ public class CopilotScoreRefreshTask {
             double hotScore = CopilotService.getHotScore(copilot, likeCount, dislikeCount);
             // 判断关卡是否开放
             ArkLevelInfo arkLevelInfo = arkLevelService.findByLevelIdFuzzy(copilot.getStageName());
-            if (arkLevelInfo != null && Boolean.FALSE.equals(arkLevelInfo.getIsOpen())) {
+            // 关卡已关闭，且作业在关闭前上传
+            if (arkLevelInfo != null &&
+                    arkLevelInfo.getCloseTime() != null &&
+                    copilot.getFirstUploadTime() != null &&
+                    Boolean.FALSE.equals(arkLevelInfo.getIsOpen()) &&
+                    copilot.getFirstUploadTime().isBefore(arkLevelInfo.getCloseTime())) {
+
                 // 非开放关卡打入冷宫
                 hotScore /= 3;
             }

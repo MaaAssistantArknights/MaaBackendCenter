@@ -34,6 +34,8 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -220,6 +222,10 @@ public class ArkLevelService {
             // 分页修改
             Pageable pageable = Pageable.ofSize(1000);
             Page<ArkLevel> arkLevelPage = arkLevelRepo.findAllByCatOne(catOne, pageable);
+
+            // 获取当前时间
+            LocalDateTime nowTime = LocalDateTime.now();
+
             while (arkLevelPage.hasContent()) {
 
                 arkLevelPage.forEach(arkLevel -> {
@@ -227,9 +233,15 @@ public class ArkLevelService {
                     if (keyInfos.contains(ArkLevelUtil.getKeyInfoById(arkLevel.getStageId()))) {
 
                         arkLevel.setIsOpen(true);
+                        // 如果一个旧地图重新开放，关闭时间也需要另算
+                        arkLevel.setCloseTime(null);
                     } else if (arkLevel.getIsOpen() != null) {
                         // 数据可能存在部分缺失，因此地图此前必须被匹配过，才会认为其关闭
                         arkLevel.setIsOpen(false);
+                        // 不能每天都变更关闭时间
+                        if (arkLevel.getCloseTime() == null) {
+                            arkLevel.setCloseTime(nowTime);
+                        }
                     }
                 });
 
@@ -265,6 +277,7 @@ public class ArkLevelService {
 
         // 获取当前时间
         Instant nowInstant = Instant.now();
+        LocalDateTime nowTime = LocalDateTime.ofInstant(nowInstant, ZoneId.systemDefault());
 
         while (arkCrisisV2Page.hasContent()) {
 
@@ -275,6 +288,11 @@ public class ArkLevelService {
                         .map(crisisV2Info -> Instant.ofEpochSecond(crisisV2Info.getEndTs()))
                         .ifPresent(endInstant -> arkCrisisV2.setIsOpen(endInstant.isAfter(nowInstant)));
 
+                if (arkCrisisV2.getCloseTime() == null &&
+                        Boolean.FALSE.equals(arkCrisisV2.getIsOpen())) {
+                    // 危机合约应该不存在赛季重新开放的问题，只要不每天变动关闭时间即可
+                    arkCrisisV2.setCloseTime(nowTime);
+                }
             });
 
             arkLevelRepo.saveAll(arkCrisisV2Page);
