@@ -31,6 +31,8 @@ server:
   tomcat:
     #限制post表单最大为30KB
     max-http-form-post-size: 30KB
+  compression:
+    enabled: true
 
 logging:
   file:

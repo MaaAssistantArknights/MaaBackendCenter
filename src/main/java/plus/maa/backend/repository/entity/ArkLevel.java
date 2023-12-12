@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -38,4 +39,7 @@ public class ArkLevel {
     private String name;
     private int width;
     private int height;
+    // 当前版本地图是否开放
+    @Nullable
+    private Boolean isOpen;
 }

@@ -5,7 +5,7 @@ plugins {
     id 'io.freefair.lombok' version '8.4'
     id 'org.springdoc.openapi-gradle-plugin' version '1.8.0'
     id 'org.hidetake.swagger.generator' version '2.19.2'
-    id 'org.graalvm.buildtools.native' version '0.9.28'
+//    id 'org.graalvm.buildtools.native' version '0.9.28'
 }
 
 group 'plus.maa'

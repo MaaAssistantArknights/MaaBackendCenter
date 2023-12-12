@@ -5,7 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import plus.maa.backend.config.external.MaaCopilotProperties;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest
 class GithubRepositoryTest {
@@ -28,4 +29,10 @@ class GithubRepositoryTest {
         assertFalse(commits.isEmpty());
     }
 
+    @Test
+    void testGetContents() {
+        var contents = repository.getContents(properties.getGithub().getToken(),"");
+        assertNotNull(contents);
+        assertFalse(contents.isEmpty());
+    }
 }
