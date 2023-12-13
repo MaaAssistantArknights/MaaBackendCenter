@@ -133,18 +133,15 @@ rootProject.afterEvaluate(){
 
 // 配置资源文件拷贝任务
 processResources {
-    if (grgit == null) {
-        logger.error('项目中不存在 Git 仓库')
-        return
-    }
     // 获取当前 commit
-    def commit = grgit.head()
+    def commit = grgit?.head()
     // 替换配置文件中的占位符
     filesMatching(['**/*.properties', '**/*.yml', '**/*.yaml']) { file ->
         {
             file.filter(ReplaceTokens, tokens: [
-                    'commitAbbreviatedId': commit.abbreviatedId,
-                    'commitDateTime': commit.dateTime.toString()
+                    // commit 不存在时，填充空字符串
+                    'commitAbbreviatedId': commit?.abbreviatedId ?: '',
+                    'commitDateTime'     : commit?.dateTime?.toString() ?: ''
             ])
         }
     }
