@@ -33,7 +33,7 @@ public enum ArkLevelType {
             case "activities" -> ACTIVITIES;
             case "campaign" -> CAMPAIGN;
             case "memory" -> MEMORY;
-            case "rune" -> RUNE;
+            case "rune", "crisis" -> RUNE;
             case "legion" -> LEGION;
             case "roguelike" -> ROGUELIKE;
             case "training" -> TRAINING;
