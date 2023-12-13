@@ -41,3 +41,10 @@ logging:
     rollingpolicy:
       max-history: 14
       clean-history-on-start: true
+
+maa-copilot:
+  info:
+    # 这几个参数应在编译时生成，不宜修改
+    commit:
+      abbreviated-id: @commitAbbreviatedId@
+      date-time: @commitDateTime@

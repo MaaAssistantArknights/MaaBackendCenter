@@ -38,6 +38,7 @@ public class SystemController {
         systemInfo.setTitle(info.getTitle());
         systemInfo.setDescription(info.getDescription());
         systemInfo.setVersion(info.getVersion());
+        systemInfo.setCommit(info.getCommit());
         return MaaResult.success(systemInfo);
     }
 
