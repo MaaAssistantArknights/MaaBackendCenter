@@ -57,6 +57,8 @@ public class RedisCache {
     private final RedisScript<Object> incZSetRedisScript = RedisScript.of(new ClassPathResource("redis-lua/incZSet.lua"));
     // 比较与输入的键值对是否相同，相同则删除
     private final RedisScript<Boolean> removeKVIfEqualsScript = RedisScript.of(new ClassPathResource("redis-lua/removeKVIfEquals.lua"), Boolean.class);
+    // 令牌桶限流算法
+    private final RedisScript<Boolean> tokenBucketScript = RedisScript.of(new ClassPathResource("redis-lua/tokenBucket.lua"), Boolean.class);
 
     public <T> void setData(final String key, T value) {
         setCache(key, value, 0, TimeUnit.SECONDS);
@@ -165,6 +167,24 @@ public class RedisCache {
 
     public void incZSet(final String key, String member, double incScore, long size, long timeout) {
         redisTemplate.execute(incZSetRedisScript, List.of(key), member, Double.toString(incScore), Long.toString(size), Long.toString(timeout));
+    }
+
+    /**
+     * 令牌桶限流算法
+     *
+     * @param key        令牌桶 key
+     * @param maxTokens  令牌桶的最大容量
+     * @param refillRate 令牌桶每秒填充数
+     * @return 是否申请到令牌
+     */
+    public boolean tokenBucket(final String key, long maxTokens, double refillRate) {
+        // 获取以毫秒为单位的时间戳
+        final long currentTimestamp = System.currentTimeMillis();
+        // 执行令牌桶算法
+        return Boolean.TRUE.equals(
+                redisTemplate.execute(tokenBucketScript, List.of("token_bucket:" + key),
+                        Long.toString(maxTokens), Double.toString(refillRate), Long.toString(currentTimestamp))
+        );
     }
 
     // 获取的元素是按照 score 从小到大排列的

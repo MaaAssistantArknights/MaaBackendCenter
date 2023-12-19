@@ -1,5 +1,7 @@
 package plus.maa.backend.common.utils;
 
+import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -13,10 +15,11 @@ import org.springframework.stereotype.Component;
 @Component
 @Lazy(false)
 public class SpringUtil implements ApplicationContextAware {
+    @Getter
     private static ApplicationContext applicationContext = null;
-    public static ApplicationContext getApplicationContext(){return applicationContext;}
+
     @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+    public void setApplicationContext(@NotNull ApplicationContext applicationContext) throws BeansException {
         // TODO Auto-generated method stub
         if(SpringUtil.applicationContext == null){
             SpringUtil.applicationContext = applicationContext;

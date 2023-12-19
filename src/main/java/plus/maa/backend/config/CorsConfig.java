@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import plus.maa.backend.common.utils.SpringUtil;
 import plus.maa.backend.handler.AccessLimitInterceptHandlerImpl;
 
 /**
@@ -33,6 +34,6 @@ public class CorsConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(new AccessLimitInterceptHandlerImpl());
+        registry.addInterceptor(SpringUtil.getBean(AccessLimitInterceptHandlerImpl.class));
     }
 }
