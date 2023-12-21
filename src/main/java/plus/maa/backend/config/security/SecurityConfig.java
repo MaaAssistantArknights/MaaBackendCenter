@@ -82,9 +82,12 @@ public class SecurityConfig {
     private final OIDCRedirectStrategy oidcRedirectStrategy;
     private final RedisOAuth2AuthorizationRequestRepository redisOAuth2AuthorizationRequestRepository;
 
-    @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+    @Configuration(proxyBeanMethods = false)
+    public static class PasswordEncoderCreate {
+        @Bean
+        public BCryptPasswordEncoder passwordEncoder() {
+            return new BCryptPasswordEncoder();
+        }
     }
 
     @Bean

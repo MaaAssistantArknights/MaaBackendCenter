@@ -2,13 +2,11 @@ package plus.maa.backend.config.security;
 
 import cn.hutool.core.lang.Assert;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.Resource;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -37,9 +35,7 @@ public class OIDCAuthenticationSuccessHandler extends SimpleUrlAuthenticationSuc
 
     private final ObjectMapper objectMapper;
     private final UserRepository userRepository;
-    @Lazy   // 解决循环依赖
-    @Resource
-    private UserService userService;
+    private final UserService userService;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
