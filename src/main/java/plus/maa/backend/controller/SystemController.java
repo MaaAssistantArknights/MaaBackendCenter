@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.info.GitProperties;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,7 +21,9 @@ import plus.maa.backend.controller.response.MaaSystemInfo;
 @RestController
 @RequiredArgsConstructor
 public class SystemController {
+
     private final MaaCopilotProperties properties;
+    private final GitProperties gitProperties;
 
     @GetMapping("/")
     @Operation(summary = "Tests if the server is ready.")
@@ -38,7 +41,7 @@ public class SystemController {
         systemInfo.setTitle(info.getTitle());
         systemInfo.setDescription(info.getDescription());
         systemInfo.setVersion(info.getVersion());
-        systemInfo.setCommit(info.getCommit());
+        systemInfo.setGit(gitProperties);
         return MaaResult.success(systemInfo);
     }
 
