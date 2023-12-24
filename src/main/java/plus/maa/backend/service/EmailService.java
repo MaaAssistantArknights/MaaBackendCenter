@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import plus.maa.backend.common.bo.EmailBusinessObject;
@@ -44,10 +44,8 @@ public class EmailService {
 
     private final MailAccount MAIL_ACCOUNT = new MailAccount();
 
-    // 注入自身代理类的延迟加载代理类
-    @Lazy
-    @Resource
-    private EmailService emailService;
+    @Resource(name = "emailTaskExecutor")
+    private final AsyncTaskExecutor emailTaskExecutor;
 
     /**
      * 初始化邮件账户信息
@@ -82,25 +80,26 @@ public class EmailService {
             // 设置失败，说明 key 已存在
             throw new MaaResultException(403, String.format("发送验证码的请求至少需要间隔 %d 秒", timeout));
         }
-        // 调用注入的代理类执行异步任务
-        emailService.asyncSendVCode(email);
+        // 执行异步任务
+        asyncSendVCode(email);
     }
 
-    @Async
-    protected void asyncSendVCode(String email) {
-        // 6位随机数验证码
-        String vcode = RandomStringUtils.random(6, true, true).toUpperCase();
-        if (flagNoSend) {
-            log.debug("vcode is " + vcode);
-            log.warn("Email not sent, no-send enabled");
-        } else {
-            EmailBusinessObject.builder()
-                    .setMailAccount(MAIL_ACCOUNT)
-                    .setEmail(email)
-                    .sendVerificationCodeMessage(vcode);
-        }
-        // 存redis
-        redisCache.setCache("vCodeEmail:" + email, vcode, expire);
+    private void asyncSendVCode(String email) {
+        emailTaskExecutor.execute(() -> {
+            // 6位随机数验证码
+            String vcode = RandomStringUtils.random(6, true, true).toUpperCase();
+            if (flagNoSend) {
+                log.debug("vcode is " + vcode);
+                log.warn("Email not sent, no-send enabled");
+            } else {
+                EmailBusinessObject.builder()
+                        .setMailAccount(MAIL_ACCOUNT)
+                        .setEmail(email)
+                        .sendVerificationCodeMessage(vcode);
+            }
+            // 存redis
+            redisCache.setCache("vCodeEmail:" + email, vcode, expire);
+        });
     }
 
     /**
@@ -115,7 +114,7 @@ public class EmailService {
         }
     }
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendCommentNotification(String email, CommentNotification commentNotification) {
         int limit = 25;
 
