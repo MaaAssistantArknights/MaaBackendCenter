@@ -10,9 +10,9 @@ import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import plus.maa.backend.controller.response.copilot.ArkLevelInfo;
 import plus.maa.backend.repository.CopilotRepository;
 import plus.maa.backend.repository.RedisCache;
+import plus.maa.backend.repository.entity.ArkLevel;
 import plus.maa.backend.repository.entity.Copilot;
 import plus.maa.backend.repository.entity.Rating;
 import plus.maa.backend.service.ArkLevelService;
@@ -109,8 +109,14 @@ public class CopilotScoreRefreshTask {
             long dislikeCount = dislikeCountMap.getOrDefault(Long.toString(copilot.getCopilotId()), 0L);
             double hotScore = CopilotService.getHotScore(copilot, likeCount, dislikeCount);
             // 判断关卡是否开放
-            ArkLevelInfo arkLevelInfo = arkLevelService.findByLevelIdFuzzy(copilot.getStageName());
-            if (arkLevelInfo != null && Boolean.FALSE.equals(arkLevelInfo.getIsOpen())) {
+            ArkLevel level = arkLevelService.findByLevelIdFuzzy(copilot.getStageName());
+            // 关卡已关闭，且作业在关闭前上传
+            if (level != null &&
+                    level.getCloseTime() != null &&
+                    copilot.getFirstUploadTime() != null &&
+                    Boolean.FALSE.equals(level.getIsOpen()) &&
+                    copilot.getFirstUploadTime().isBefore(level.getCloseTime())) {
+
                 // 非开放关卡打入冷宫
                 hotScore /= 3;
             }
