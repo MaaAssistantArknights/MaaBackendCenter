@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.info.GitProperties;
+import org.springframework.lang.Nullable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,6 +24,7 @@ import plus.maa.backend.controller.response.MaaSystemInfo;
 public class SystemController {
 
     private final MaaCopilotProperties properties;
+    @Nullable   // 非必须字段，当 Git 仓库不存在时为 null
     private final GitProperties gitProperties;
 
     @GetMapping("/")

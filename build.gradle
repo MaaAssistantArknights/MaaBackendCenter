@@ -6,10 +6,8 @@ plugins {
     id 'org.springdoc.openapi-gradle-plugin' version '1.8.0'
     id 'org.hidetake.swagger.generator' version '2.19.2'
 //    id 'org.graalvm.buildtools.native' version '0.9.28'
-    id 'org.ajoberstar.grgit' version '5.2.1'
+    id 'com.gorylenko.gradle-git-properties' version '2.4.1'
 }
-
-apply from: 'git.properties.gradle'
 
 group 'plus.maa'
 version '1.0-SNAPSHOT'
@@ -129,4 +127,9 @@ rootProject.afterEvaluate(){
     forkedSpringBootRun.configure {
         doNotTrackState("See https://github.com/springdoc/springdoc-openapi-gradle-plugin/issues/102")
     }
+}
+
+gitProperties {
+    failOnNoGitDirectory = false
+    keys = ["git.branch", "git.commit.id", "git.commit.id.abbrev", "git.commit.time"]
 }
