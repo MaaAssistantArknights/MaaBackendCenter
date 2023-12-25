@@ -1,5 +1,3 @@
-import org.apache.tools.ant.filters.ReplaceTokens
-
 plugins {
     id 'java'
     id 'org.springframework.boot' version '3.1.5'
@@ -8,7 +6,7 @@ plugins {
     id 'org.springdoc.openapi-gradle-plugin' version '1.8.0'
     id 'org.hidetake.swagger.generator' version '2.19.2'
 //    id 'org.graalvm.buildtools.native' version '0.9.28'
-    id 'org.ajoberstar.grgit' version '5.2.1'
+    id 'com.gorylenko.gradle-git-properties' version '2.4.1'
 }
 
 group 'plus.maa'
@@ -131,18 +129,7 @@ rootProject.afterEvaluate(){
     }
 }
 
-// 配置资源文件拷贝任务
-processResources {
-    // 获取当前 commit
-    def commit = grgit?.head()
-    // 替换配置文件中的占位符
-    filesMatching(['**/*.properties', '**/*.yml', '**/*.yaml']) { file ->
-        {
-            file.filter(ReplaceTokens, tokens: [
-                    // commit 不存在时，填充空字符串
-                    'commitAbbreviatedId': commit?.abbreviatedId ?: '',
-                    'commitDateTime'     : commit?.dateTime?.toString() ?: ''
-            ])
-        }
-    }
+gitProperties {
+    failOnNoGitDirectory = false
+    keys = ["git.branch", "git.commit.id", "git.commit.id.abbrev", "git.commit.time"]
 }

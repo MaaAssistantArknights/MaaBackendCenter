@@ -1,7 +1,7 @@
 package plus.maa.backend.controller.response;
 
 import lombok.Data;
-import plus.maa.backend.config.external.Commit;
+import org.springframework.boot.info.GitProperties;
 
 /**
  * @author AnselYuki
@@ -11,5 +11,5 @@ public class MaaSystemInfo {
     private String title;
     private String description;
     private String version;
-    private Commit commit;
+    private GitProperties git;
 }
