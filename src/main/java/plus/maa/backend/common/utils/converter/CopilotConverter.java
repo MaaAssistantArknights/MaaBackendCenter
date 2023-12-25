@@ -52,7 +52,8 @@ public interface CopilotConverter {
     @Mapping(target = "uploadTime", source = "now")
     @Mapping(target = "firstUploadTime", source = "now")
     @Mapping(target = "uploaderId", source = "userId")
-    Copilot toCopilot(CopilotDTO copilotDto, String userId, LocalDateTime now, Long copilotId, String content);
+    @Mapping(target = "copilotId", ignore = true)
+    Copilot toCopilot(CopilotDTO copilotDto, String userId, LocalDateTime now, String content);
 
     @Mapping(target = "ratingType", ignore = true)
     @Mapping(target = "ratingRatio", ignore = true)

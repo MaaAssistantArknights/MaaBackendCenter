@@ -3,7 +3,6 @@ package plus.maa.backend.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -18,6 +17,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
+import plus.maa.backend.common.utils.IdComponent;
 import plus.maa.backend.common.utils.converter.CopilotConverter;
 import plus.maa.backend.config.external.MaaCopilotProperties;
 import plus.maa.backend.controller.request.copilot.CopilotCUDRequest;
@@ -58,12 +58,12 @@ public class CopilotService {
     private final ObjectMapper mapper;
     private final ArkLevelService levelService;
     private final RedisCache redisCache;
+    private final IdComponent idComponent;
     private final UserRepository userRepository;
     private final CommentsAreaRepository commentsAreaRepository;
     private final MaaCopilotProperties properties;
 
     private final CopilotConverter copilotConverter;
-    private final AtomicLong copilotIncrementId = new AtomicLong(20000);
 
     /*
         首页分页查询缓存配置
@@ -75,17 +75,6 @@ public class CopilotService {
             "views", 3600L,
             "id", 300L
     );
-
-    @PostConstruct
-    public void init() {
-        // 初始化copilotId, 从数据库中获取最大的copilotId
-        // 如果数据库中没有数据, 则从20000开始
-        copilotRepository.findFirstByOrderByCopilotIdDesc()
-                .map(Copilot::getCopilotId)
-                .ifPresent(last -> copilotIncrementId.set(last + 1));
-
-        log.info("作业自增ID初始化完成: {}", copilotIncrementId.get());
-    }
 
     /**
      * 并修正前端的冗余部分
@@ -156,8 +145,9 @@ public class CopilotService {
         // 将其转换为数据库存储对象
         Copilot copilot = copilotConverter.toCopilot(
                 copilotDTO, loginUserId,
-                LocalDateTime.now(), copilotIncrementId.getAndIncrement(),
+                LocalDateTime.now(),
                 content);
+        copilot.setCopilotId(idComponent.getId(copilot));
         copilotRepository.insert(copilot);
         return copilot.getCopilotId();
     }

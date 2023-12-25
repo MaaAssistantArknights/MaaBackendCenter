@@ -25,7 +25,7 @@ import java.util.List;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @Accessors(chain = true)
 @Document("maa_copilot")
-public class Copilot implements Serializable {
+public class Copilot implements Serializable, SeqGenerated {
     @Id
     // 作业id
     private String id;
@@ -84,6 +84,16 @@ public class Copilot implements Serializable {
     private LocalDateTime deleteTime;
     @JsonIgnore
     private Boolean notification;
+
+    @Override
+    public Long getGeneratedId() {
+        return copilotId;
+    }
+
+    @Override
+    public String getIdFieldName() {
+        return "copilotId";
+    }
 
     @Data
     @NoArgsConstructor
