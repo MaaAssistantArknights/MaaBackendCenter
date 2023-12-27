@@ -17,7 +17,11 @@ import java.util.List;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @Accessors(chain = true)
 @Document("maa_copilot_set")
-public class CopilotSet implements Serializable, SeqGenerated {
+public class CopilotSet implements Serializable {
+
+    public static final CollectionMeta<CopilotSet> META = new CollectionMeta<>(CopilotSet::getId,
+            "id", CopilotSet.class);
+
     /**
      * 作业集id
      */
@@ -36,12 +40,4 @@ public class CopilotSet implements Serializable, SeqGenerated {
      */
     private String uploaderId;
 
-    @Override
-    public Long getGeneratedId() {
-        return id;
-    }
-
-    public String getIdFieldName() {
-        return "id";
-    }
 }

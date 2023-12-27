@@ -143,11 +143,8 @@ public class CopilotService {
     public Long upload(String loginUserId, String content) {
         CopilotDTO copilotDTO = correctCopilot(parseToCopilotDto(content));
         // 将其转换为数据库存储对象
-        Copilot copilot = copilotConverter.toCopilot(
-                copilotDTO, loginUserId,
-                LocalDateTime.now(),
-                content);
-        copilot.setCopilotId(idComponent.getId(copilot));
+        Copilot copilot = copilotConverter.toCopilot(copilotDTO,
+                idComponent.getId(Copilot.META), loginUserId, LocalDateTime.now(), content);
         copilotRepository.insert(copilot);
         return copilot.getCopilotId();
     }
