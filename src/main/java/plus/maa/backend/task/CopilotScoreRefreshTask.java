@@ -68,7 +68,7 @@ public class CopilotScoreRefreshTask {
         }
 
         // 移除首页热度缓存
-        redisCache.removeCacheByPattern("home:hot:*");
+        redisCache.syncRemoveCacheByPattern("home:hot:*");
     }
 
     /**
@@ -91,9 +91,9 @@ public class CopilotScoreRefreshTask {
         refresh(copilotIdSTRs, copilots);
 
         // 移除近期评分变化量缓存
-        redisCache.removeCacheByPattern("rate:hot:copilotIds");
+        redisCache.removeCache("rate:hot:copilotIds");
         // 移除首页热度缓存
-        redisCache.removeCacheByPattern("home:hot:*");
+        redisCache.syncRemoveCacheByPattern("home:hot:*");
     }
 
     private void refresh(Collection<String> copilotIdSTRs, Iterable<Copilot> copilots) {
