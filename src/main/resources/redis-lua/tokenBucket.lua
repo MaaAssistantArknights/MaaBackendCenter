@@ -15,12 +15,9 @@ end
 local last_refill_time = tonumber(redis.call('HGET', key, 'last_refill_time') or 0)
 
 -- 计算令牌量
-local current_tokens
+local current_tokens = max_tokens
 -- 判断是否为初始化访问
-if last_refill_time == 0 then
-    -- 令牌桶初始化为满
-    current_tokens = max_tokens
-else
+if last_refill_time ~= 0 then
     -- 计算自从上次填充以来生成的不考虑上限的令牌数量
     local no_limit_tokens = (current_timestamp - last_refill_time) / 1000.0 * refill_rate
 
@@ -34,14 +31,16 @@ end
 -- 更新令牌桶填入时间
 redis.call('HSET', key, 'last_refill_time', current_timestamp)
 
--- 令牌桶视为从空桶开始，如果直到填满都未被使用，自动过期
-redis.call('EXPIRE', key, math.ceil(max_tokens / refill_rate))
-
 -- 如果可以消费一个令牌返回true，否则返回false
-if current_tokens >= 1 then
+local result = current_tokens >= 1
+
+if result then
     redis.call('HSET', key, 'tokens', current_tokens - 1)
-    return true
 else
     redis.call('HSET', key, 'tokens', current_tokens)
-    return false
 end
+
+-- 令牌桶视为从空桶开始，如果直到填满都未被使用，自动过期
+redis.call('EXPIRE', key, math.floor(max_tokens / refill_rate) + 1)
+
+return result

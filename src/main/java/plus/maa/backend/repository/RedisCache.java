@@ -51,10 +51,10 @@ public class RedisCache {
             .build();
 
     /*
-        使用 lua 脚本插入数据，维持 ZSet 的相对大小（size <= 实际大小 <= size + 50）以及过期时间
+        使用 lua 脚本插入数据，维持 ZSet 的相对大小（size <= 实际大小 <= size * 1.5）以及过期时间
         实际大小这么设计是为了避免频繁的 ZREMRANGEBYRANK 操作
      */
-    private final RedisScript<Object> incZSetRedisScript = RedisScript.of(new ClassPathResource("redis-lua/incZSet.lua"));
+    private final RedisScript<Void> incZSetRedisScript = RedisScript.of(new ClassPathResource("redis-lua/incZSet.lua"));
     // 比较与输入的键值对是否相同，相同则删除
     private final RedisScript<Boolean> removeKVIfEqualsScript = RedisScript.of(new ClassPathResource("redis-lua/removeKVIfEquals.lua"), Boolean.class);
     // 令牌桶限流算法
@@ -155,8 +155,8 @@ public class RedisCache {
 
     /**
      * ZSet 中元素的 score += incScore，如果元素不存在则插入 <br>
-     * 会维持 ZSet 的相对大小（size <= 实际大小 <= size + 50）以及过期时间 <br>
-     * 当大小超出 size + 50 时，会优先删除 score 最小的元素，直到大小等于 size
+     * 会维持 ZSet 的相对大小（size <= 实际大小 <= size * 1.5）以及过期时间 <br>
+     * 当大小超出 size * 1.5 时，会优先删除 score 最小的元素，直到大小等于 size
      *
      * @param key      ZSet 的 key
      * @param member   ZSet 的 member
