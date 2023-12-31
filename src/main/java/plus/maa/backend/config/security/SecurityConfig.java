@@ -14,8 +14,12 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.annotation.web.configurers.oauth2.client.OAuth2LoginConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import java.util.HashMap;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -84,9 +88,21 @@ public class SecurityConfig {
 
     @Configuration(proxyBeanMethods = false)
     public static class PasswordEncoderCreate {
+
+        private static final String BCRYPT = "bcrypt";
+
         @Bean
-        public BCryptPasswordEncoder passwordEncoder() {
-            return new BCryptPasswordEncoder();
+        public PasswordEncoder passwordEncoder() {
+            // 被用于委托的密码编码器，其中一个会用于密码编码，其他的则用于密码匹配
+            var encoders = new HashMap<String, PasswordEncoder>();
+            encoders.put(BCRYPT, new BCryptPasswordEncoder());
+
+            // 创建委托密码编码器，指定用于密码编码的编码器 id，以及被委托的编码器映射
+            var delegating = new DelegatingPasswordEncoder(BCRYPT, encoders);
+
+            // 兼容旧数据中直接裸使用 BCrypt 编码器的密码
+            delegating.setDefaultPasswordEncoderForMatches(encoders.get(BCRYPT));
+            return delegating;
         }
     }
 
