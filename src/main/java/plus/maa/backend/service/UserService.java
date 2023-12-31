@@ -14,7 +14,6 @@ import plus.maa.backend.controller.request.user.*;
 import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.controller.response.user.MaaLoginRsp;
 import plus.maa.backend.controller.response.user.MaaUserInfo;
-import plus.maa.backend.repository.RedisCache;
 import plus.maa.backend.repository.UserRepository;
 import plus.maa.backend.repository.entity.MaaUser;
 import plus.maa.backend.service.jwt.JwtExpiredException;
@@ -55,6 +54,11 @@ public class UserService {
         var user = userRepository.findByEmail(loginDTO.getEmail());
         if (user == null || !passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
             throw new MaaResultException(401, "用户不存在或者密码错误");
+        }
+        // 待升级的密码编码方式
+        if (passwordEncoder.upgradeEncoding(user.getPassword())) {
+            user.setPassword(passwordEncoder.encode(loginDTO.getPassword()));
+            userRepository.save(user);
         }
         // 未激活的用户
         if (Objects.equals(user.getStatus(), 0)) {
