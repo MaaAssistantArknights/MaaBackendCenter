@@ -26,7 +26,7 @@ public class IdComponent {
      * @param meta 集合元数据
      * @return 新的id
      */
-    public <T> Long getId(CollectionMeta<T> meta) {
+    public <T> long getId(CollectionMeta<T> meta) {
         Class<T> cls = meta.entityClass();
         String collectionName = mongoTemplate.getCollectionName(cls);
         AtomicLong v = CURRENT_ID_MAP.get(collectionName);

@@ -1,5 +1,6 @@
 package plus.maa.backend.repository.entity;
 
+import java.io.Serializable;
 import java.util.function.Function;
 
 /**
@@ -9,5 +10,7 @@ import java.util.function.Function;
  * @author dragove
  * created on 2023-12-27
  */
-public record CollectionMeta<T>(Function<T, Long> idGetter, String incIdField, Class<T> entityClass) {
+public record CollectionMeta<T>(Function<T, Long> idGetter, String incIdField, Class<T> entityClass)
+        implements Serializable {
+
 }

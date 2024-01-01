@@ -7,8 +7,10 @@ import lombok.experimental.Accessors;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
+import plus.maa.backend.service.model.CopilotSetStatus;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -28,7 +30,7 @@ public class CopilotSet implements Serializable {
      * 作业集id
      */
     @Id
-    private Long id;
+    private long id;
 
     /**
      * 作业集名称
@@ -50,12 +52,22 @@ public class CopilotSet implements Serializable {
     /**
      * 上传者id
      */
-    private String uploaderId;
+    private String creatorId;
+
+    /**
+     * 创建时间
+     */
+    private LocalDateTime createTime;
+
+    /**
+     * 更新时间
+     */
+    private LocalDateTime updateTime;
 
     /**
      * 作业状态
      * {@link plus.maa.backend.service.model.CopilotSetStatus}
      */
-    private Integer status;
+    private CopilotSetStatus status;
 
 }
