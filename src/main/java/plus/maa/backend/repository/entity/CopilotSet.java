@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
@@ -19,6 +20,7 @@ import java.util.List;
 @Document("maa_copilot_set")
 public class CopilotSet implements Serializable {
 
+    @Transient
     public static final CollectionMeta<CopilotSet> META = new CollectionMeta<>(CopilotSet::getId,
             "id", CopilotSet.class);
 
@@ -27,6 +29,16 @@ public class CopilotSet implements Serializable {
      */
     @Id
     private Long id;
+
+    /**
+     * 作业集名称
+     */
+    private String name;
+
+    /**
+     * 额外描述
+     */
+    private String description;
 
     /**
      * 作业id列表
@@ -39,5 +51,11 @@ public class CopilotSet implements Serializable {
      * 上传者id
      */
     private String uploaderId;
+
+    /**
+     * 作业状态
+     * {@link plus.maa.backend.service.model.CopilotSetStatus}
+     */
+    private Integer status;
 
 }
