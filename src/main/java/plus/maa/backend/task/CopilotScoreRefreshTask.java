@@ -12,8 +12,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import plus.maa.backend.repository.CopilotRepository;
 import plus.maa.backend.repository.RedisCache;
+import plus.maa.backend.repository.entity.ArkLevel;
 import plus.maa.backend.repository.entity.Copilot;
 import plus.maa.backend.repository.entity.Rating;
+import plus.maa.backend.service.ArkLevelService;
 import plus.maa.backend.service.CopilotService;
 import plus.maa.backend.service.model.RatingCount;
 import plus.maa.backend.service.model.RatingType;
@@ -36,14 +38,15 @@ import java.util.stream.Collectors;
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class CopilotScoreRefreshTask {
 
+    ArkLevelService arkLevelService;
     RedisCache redisCache;
     CopilotRepository copilotRepository;
     MongoTemplate mongoTemplate;
 
     /**
-     * 热度值刷入任务，每日三点执行
+     * 热度值刷入任务，每日四点三十执行（实际可能会更晚，因为需要等待之前启动的定时任务完成）
      */
-    @Scheduled(cron = "0 0 3 * * ?")
+    @Scheduled(cron = "0 30 4 * * ?")
     public void refreshHotScores() {
         // 分页获取所有未删除的作业
         Pageable pageable = Pageable.ofSize(1000);
@@ -65,7 +68,7 @@ public class CopilotScoreRefreshTask {
         }
 
         // 移除首页热度缓存
-        redisCache.removeCacheByPattern("home:hot:*");
+        redisCache.syncRemoveCacheByPattern("home:hot:*");
     }
 
     /**
@@ -88,9 +91,9 @@ public class CopilotScoreRefreshTask {
         refresh(copilotIdSTRs, copilots);
 
         // 移除近期评分变化量缓存
-        redisCache.removeCacheByPattern("rate:hot:copilotIds");
+        redisCache.removeCache("rate:hot:copilotIds");
         // 移除首页热度缓存
-        redisCache.removeCacheByPattern("home:hot:*");
+        redisCache.syncRemoveCacheByPattern("home:hot:*");
     }
 
     private void refresh(Collection<String> copilotIdSTRs, Iterable<Copilot> copilots) {
@@ -105,6 +108,18 @@ public class CopilotScoreRefreshTask {
             long likeCount = likeCountMap.getOrDefault(Long.toString(copilot.getCopilotId()), 1L);
             long dislikeCount = dislikeCountMap.getOrDefault(Long.toString(copilot.getCopilotId()), 0L);
             double hotScore = CopilotService.getHotScore(copilot, likeCount, dislikeCount);
+            // 判断关卡是否开放
+            ArkLevel level = arkLevelService.findByLevelIdFuzzy(copilot.getStageName());
+            // 关卡已关闭，且作业在关闭前上传
+            if (level != null &&
+                    level.getCloseTime() != null &&
+                    copilot.getFirstUploadTime() != null &&
+                    Boolean.FALSE.equals(level.getIsOpen()) &&
+                    copilot.getFirstUploadTime().isBefore(level.getCloseTime())) {
+
+                // 非开放关卡打入冷宫
+                hotScore /= 3;
+            }
             copilot.setHotScore(hotScore);
         }
         // 批量更新热度值

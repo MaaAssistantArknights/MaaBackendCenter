@@ -4,9 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.time.LocalDateTime;
 
 /**
  * 地图数据
@@ -38,4 +41,10 @@ public class ArkLevel {
     private String name;
     private int width;
     private int height;
+    // 只是服务器认为的当前版本地图是否开放
+    @Nullable
+    private Boolean isOpen;
+    // 非实际意义上的活动地图关闭时间，只是服务器认为的关闭时间
+    @Nullable
+    private LocalDateTime closeTime;
 }

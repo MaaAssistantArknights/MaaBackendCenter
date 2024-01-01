@@ -10,6 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import plus.maa.backend.common.MaaStatusCode;
 import plus.maa.backend.common.utils.converter.MaaUserConverter;
+import plus.maa.backend.config.external.MaaCopilotProperties;
 import plus.maa.backend.controller.request.user.*;
 import plus.maa.backend.controller.response.MaaResultException;
 import plus.maa.backend.controller.response.user.MaaLoginRsp;
@@ -33,16 +34,13 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-
-    // 未来转为配置项
-    private static final int LOGIN_LIMIT = 1;
-
     private final UserRepository userRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final UserDetailServiceImpl userDetailService;
     private final JwtService jwtService;
     private final MaaUserConverter maaUserConverter;
+    private final MaaCopilotProperties properties;
 
     /**
      * 登录方法
@@ -73,7 +71,7 @@ public class UserService {
         var jwtId = UUID.randomUUID().toString();
         var jwtIds = user.getRefreshJwtIds();
         jwtIds.add(jwtId);
-        while (jwtIds.size() > LOGIN_LIMIT) jwtIds.remove(0);
+        while (jwtIds.size() > properties.getJwt().getMaxLogin()) jwtIds.remove(0);
         userRepository.save(user);
 
         var authorities = userDetailService.collectAuthoritiesFor(user);

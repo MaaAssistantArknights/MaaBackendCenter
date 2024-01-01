@@ -37,6 +37,10 @@ public class GithubContent {
         return Objects.equals(type, "dir");
     }
 
+    public boolean isFile() {
+        return Objects.equals(type, "file");
+    }
+
     public String getFileExtension() {
         return name == null ?
                 StringUtils.EMPTY :

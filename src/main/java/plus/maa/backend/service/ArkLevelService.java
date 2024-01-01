@@ -1,5 +1,6 @@
 package plus.maa.backend.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -8,9 +9,12 @@ import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import plus.maa.backend.common.utils.ArkLevelUtil;
 import plus.maa.backend.common.utils.converter.ArkLevelConverter;
 import plus.maa.backend.controller.response.copilot.ArkLevelInfo;
 import plus.maa.backend.repository.ArkLevelRepository;
@@ -19,15 +23,23 @@ import plus.maa.backend.repository.RedisCache;
 import plus.maa.backend.repository.entity.ArkLevel;
 import plus.maa.backend.repository.entity.ArkLevelSha;
 import plus.maa.backend.repository.entity.gamedata.ArkTilePos;
+import plus.maa.backend.repository.entity.gamedata.MaaArkStage;
 import plus.maa.backend.repository.entity.github.GithubCommit;
+import plus.maa.backend.repository.entity.github.GithubContent;
 import plus.maa.backend.repository.entity.github.GithubTree;
 import plus.maa.backend.repository.entity.github.GithubTrees;
+import plus.maa.backend.service.model.ArkLevelType;
 
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -67,7 +79,7 @@ public class ArkLevelService {
 
     private final List<String> bypassFileNames = List.of("overview.json");
 
-    @Cacheable("arkLevels")
+    @Cacheable("arkLevelInfos")
     public List<ArkLevelInfo> getArkLevelInfos() {
         return arkLevelRepo.findAll()
                 .stream()
@@ -76,13 +88,12 @@ public class ArkLevelService {
     }
 
     @Cacheable("arkLevel")
-    public ArkLevelInfo findByLevelIdFuzzy(String levelId) {
-        ArkLevel level = arkLevelRepo.findByLevelIdFuzzy(levelId).findAny().orElse(null);
-        return arkLevelConverter.convert(level);
+    public ArkLevel findByLevelIdFuzzy(String levelId) {
+        return arkLevelRepo.findByLevelIdFuzzy(levelId).findAny().orElse(null);
     }
 
 
-    public List<ArkLevelInfo> queryLevelByKeyword(String keyword) {
+    public List<ArkLevelInfo> queryLevelInfosByKeyword(String keyword) {
         List<ArkLevel> levels = arkLevelRepo.queryLevelByKeyword(keyword).collect(Collectors.toList());
         return arkLevelConverter.convert(levels);
     }
@@ -150,7 +161,10 @@ public class ArkLevelService {
             return;
         }
         //同步GameData仓库数据
-        gameDataService.syncGameData();
+        if (!gameDataService.syncGameData()) {
+            log.error("[LEVEL]GameData仓库数据同步失败");
+            return;
+        }
 
         DownloadTask task = new DownloadTask(levelTrees.size(), (t) -> {
             //仅在全部下载任务成功后更新commit缓存
@@ -159,6 +173,137 @@ public class ArkLevelService {
             }
         });
         levelTrees.forEach(tree -> download(task, tree));
+    }
+
+    /**
+     * 更新活动地图开放状态
+     */
+    public void updateActivitiesOpenStatus() {
+        log.info("[ACTIVITIES-OPEN-STATUS]准备更新活动地图开放状态");
+        GithubContent stages = githubRepo.getContents(githubToken, "resource").stream()
+                .filter(content -> content.isFile() && "stages.json".equals(content.getName()))
+                .findFirst()
+                .orElse(null);
+        if (stages == null) {
+            log.info("[ACTIVITIES-OPEN-STATUS]活动地图开放状态数据不存在");
+            return;
+        }
+
+        String lastStagesSha = redisCache.getCache("level:stages:sha", String.class);
+        if (lastStagesSha != null && lastStagesSha.equals(stages.getSha())) {
+            log.info("[ACTIVITIES-OPEN-STATUS]活动地图开放状态已是最新");
+            return;
+        }
+
+        log.info("[ACTIVITIES-OPEN-STATUS]开始更新活动地图开放状态");
+        // 就一个文件，直接在当前线程下载数据
+        try (Response response = okHttpClient
+                .newCall(new Request.Builder().url(stages.getDownloadUrl()).build())
+                .execute()) {
+
+            if (!response.isSuccessful() || response.body() == null) {
+                log.error("[ACTIVITIES-OPEN-STATUS]活动地图开放状态下载失败");
+                return;
+            }
+
+            var body = response.body().charStream();
+            List<MaaArkStage> stagesList = mapper.readValue(body, new TypeReference<>() {
+            });
+
+            Set<String> keyInfos = stagesList.stream()
+                    .map(MaaArkStage::getStageId)
+                    // 提取地图系列的唯一标识
+                    .map(ArkLevelUtil::getKeyInfoById)
+                    .collect(Collectors.toUnmodifiableSet());
+
+            // 修改活动地图
+            final String catOne = ArkLevelType.ACTIVITIES.getDisplay();
+            // 分页修改
+            Pageable pageable = Pageable.ofSize(1000);
+            Page<ArkLevel> arkLevelPage = arkLevelRepo.findAllByCatOne(catOne, pageable);
+
+            // 获取当前时间
+            LocalDateTime nowTime = LocalDateTime.now();
+
+            while (arkLevelPage.hasContent()) {
+
+                arkLevelPage.forEach(arkLevel -> {
+                    // 只考虑地图系列的唯一标识
+                    if (keyInfos.contains(ArkLevelUtil.getKeyInfoById(arkLevel.getStageId()))) {
+
+                        arkLevel.setIsOpen(true);
+                        // 如果一个旧地图重新开放，关闭时间也需要另算
+                        arkLevel.setCloseTime(null);
+                    } else if (arkLevel.getIsOpen() != null) {
+                        // 数据可能存在部分缺失，因此地图此前必须被匹配过，才会认为其关闭
+                        arkLevel.setIsOpen(false);
+                        // 不能每天都变更关闭时间
+                        if (arkLevel.getCloseTime() == null) {
+                            arkLevel.setCloseTime(nowTime);
+                        }
+                    }
+                });
+
+                arkLevelRepo.saveAll(arkLevelPage);
+
+                if (!arkLevelPage.hasNext()) {
+                    // 没有下一页了，跳出循环
+                    break;
+                }
+                pageable = arkLevelPage.nextPageable();
+                arkLevelPage = arkLevelRepo.findAllByCatOne(catOne, pageable);
+            }
+
+            redisCache.setData("level:stages:sha", stages.getSha());
+            log.info("[ACTIVITIES-OPEN-STATUS]活动地图开放状态更新完成");
+        } catch (Exception e) {
+            log.error("[ACTIVITIES-OPEN-STATUS]活动地图开放状态更新失败", e);
+        }
+    }
+
+    public void updateCrisisV2OpenStatus() {
+        log.info("[CRISIS-V2-OPEN-STATUS]准备更新危机合约开放状态");
+        // 同步危机合约信息
+        if (!gameDataService.syncCrisisV2Info()) {
+            log.error("[CRISIS-V2-OPEN-STATUS]同步危机合约信息失败");
+            return;
+        }
+
+        final String catOne = ArkLevelType.RUNE.getDisplay();
+        // 分页修改
+        Pageable pageable = Pageable.ofSize(1000);
+        Page<ArkLevel> arkCrisisV2Page = arkLevelRepo.findAllByCatOne(catOne, pageable);
+
+        // 获取当前时间
+        Instant nowInstant = Instant.now();
+        LocalDateTime nowTime = LocalDateTime.ofInstant(nowInstant, ZoneId.systemDefault());
+
+        while (arkCrisisV2Page.hasContent()) {
+
+            arkCrisisV2Page.forEach(arkCrisisV2 -> {
+                // 危机合约信息比较准，因此未匹配一律视为已关闭
+                arkCrisisV2.setIsOpen(false);
+                Optional.ofNullable(gameDataService.findCrisisV2InfoById(arkCrisisV2.getStageId()))
+                        .map(crisisV2Info -> Instant.ofEpochSecond(crisisV2Info.getEndTs()))
+                        .ifPresent(endInstant -> arkCrisisV2.setIsOpen(endInstant.isAfter(nowInstant)));
+
+                if (arkCrisisV2.getCloseTime() == null &&
+                        Boolean.FALSE.equals(arkCrisisV2.getIsOpen())) {
+                    // 危机合约应该不存在赛季重新开放的问题，只要不每天变动关闭时间即可
+                    arkCrisisV2.setCloseTime(nowTime);
+                }
+            });
+
+            arkLevelRepo.saveAll(arkCrisisV2Page);
+
+            if (!arkCrisisV2Page.hasNext()) {
+                // 没有下一页了，跳出循环
+                break;
+            }
+            pageable = arkCrisisV2Page.nextPageable();
+            arkCrisisV2Page = arkLevelRepo.findAllByCatOne(catOne, pageable);
+        }
+        log.info("[CRISIS-V2-OPEN-STATUS]危机合约开放状态更新完毕");
     }
 
     /**

@@ -15,11 +15,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.data.redis.RedisSystemException;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.security.jackson2.SecurityJackson2Modules;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -27,6 +30,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -58,6 +62,9 @@ public class RedisCache {
             .addModules(SecurityJackson2Modules.getModules(null))
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .build();
+
+
+    private final AtomicBoolean supportUnlink = new AtomicBoolean(true);
 
     /*
         使用 lua 脚本插入数据，维持 ZSet 的相对大小（size <= 实际大小 <= size + 50）以及过期时间
@@ -284,7 +291,38 @@ public class RedisCache {
     }
 
     public void removeCache(String key) {
-        redisTemplate.delete(key);
+        removeCache(key, false);
+    }
+
+    public void removeCache(String key, boolean notUseUnlink) {
+        removeCache(List.of(key), notUseUnlink);
+    }
+
+    public void removeCache(Collection<String> keys) {
+        removeCache(keys, false);
+    }
+
+    public void removeCache(Collection<String> keys, boolean notUseUnlink) {
+
+        if (!notUseUnlink && supportUnlink.get()) {
+            try {
+                redisTemplate.unlink(keys);
+                return;
+            } catch (InvalidDataAccessApiUsageException | RedisSystemException e) {
+                // Redisson、Jedis、Lettuce
+                Throwable cause = e.getCause();
+                if (cause == null || !StringUtils.containsAny(
+                        cause.getMessage(), "unknown command", "not support")) {
+                    throw e;
+                }
+                if (supportUnlink.compareAndSet(true, false)) {
+                    log.warn("当前连接的 Redis Service 可能不支持 Unlink 命令，切换为 Del");
+                }
+            }
+        }
+
+        // 兜底的 Del 命令
+        redisTemplate.delete(keys);
     }
 
     /**
@@ -303,14 +341,28 @@ public class RedisCache {
     }
 
     /**
-     * 模糊删除缓存。
+     * 模糊删除缓存。不保证立即删除，不保证完全删除。<br>
+     * 异步，因为 Scan 虽然不会阻塞 Redis，但客户端会阻塞
      *
      * @param pattern 待删除的 Key 表达式，例如 "home:*" 表示删除 Key 以 "home:" 开头的所有缓存
      * @author Lixuhuilll
      */
+    @Async
     public void removeCacheByPattern(String pattern) {
+        syncRemoveCacheByPattern(pattern);
+    }
+
+    /**
+     * 模糊删除缓存。不保证立即删除，不保证完全删除。<br>
+     * 同步调用 Scan，不会长时间阻塞 Redis，但会阻塞客户端，阻塞时间视 Redis 中 key 的数量而定。
+     * 删除期间，其他线程或客户端可对 Redis 进行 CURD（因为不阻塞 Redis），因此不保证删除的时机，也不保证完全删除干净
+     *
+     * @param pattern 待删除的 Key 表达式，例如 "home:*" 表示删除 Key 以 "home:" 开头的所有缓存
+     * @author Lixuhuilll
+     */
+    public void syncRemoveCacheByPattern(String pattern) {
         // 批量删除的阈值
-        final int batchSize = 10000;
+        final int batchSize = 2000;
         // 构造 ScanOptions
         ScanOptions scanOptions = ScanOptions.scanOptions()
                 .count(batchSize)
@@ -318,7 +370,7 @@ public class RedisCache {
                 .build();
 
         // 保存要删除的键
-        List<String> keysToDelete = new ArrayList<>();
+        List<String> keysToDelete = new ArrayList<>(batchSize);
 
         // try-with-resources 自动关闭 SCAN
         try (Cursor<String> cursor = redisTemplate.scan(scanOptions)) {
@@ -329,7 +381,7 @@ public class RedisCache {
 
                 // 如果达到批量删除的阈值，则执行批量删除
                 if (keysToDelete.size() >= batchSize) {
-                    redisTemplate.delete(keysToDelete);
+                    removeCache(keysToDelete);
                     keysToDelete.clear();
                 }
             }
@@ -337,7 +389,7 @@ public class RedisCache {
 
         // 删除剩余的键（不足 batchSize 的最后一批）
         if (!keysToDelete.isEmpty()) {
-            redisTemplate.delete(keysToDelete);
+            removeCache(keysToDelete);
         }
     }
 

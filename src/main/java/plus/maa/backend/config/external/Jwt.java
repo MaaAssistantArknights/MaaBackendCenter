@@ -19,4 +19,8 @@ public class Jwt {
      * JwtToken的加密密钥
      */
     private String secret;
+    /**
+     * Jwt 最大同时登录设备数
+     */
+    private int maxLogin = 1;
 }

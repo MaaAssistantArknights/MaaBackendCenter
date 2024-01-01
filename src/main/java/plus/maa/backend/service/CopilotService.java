@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import plus.maa.backend.common.utils.converter.CopilotConverter;
+import plus.maa.backend.config.external.MaaCopilotProperties;
 import plus.maa.backend.controller.request.copilot.CopilotCUDRequest;
 import plus.maa.backend.controller.request.copilot.CopilotDTO;
 import plus.maa.backend.controller.request.copilot.CopilotQueriesRequest;
@@ -28,10 +29,7 @@ import plus.maa.backend.controller.response.copilot.ArkLevelInfo;
 import plus.maa.backend.controller.response.copilot.CopilotInfo;
 import plus.maa.backend.controller.response.copilot.CopilotPageInfo;
 import plus.maa.backend.repository.*;
-import plus.maa.backend.repository.entity.CommentsArea;
-import plus.maa.backend.repository.entity.Copilot;
-import plus.maa.backend.repository.entity.MaaUser;
-import plus.maa.backend.repository.entity.Rating;
+import plus.maa.backend.repository.entity.*;
 import plus.maa.backend.service.model.RatingCache;
 import plus.maa.backend.service.model.RatingType;
 
@@ -62,6 +60,7 @@ public class CopilotService {
     private final RedisCache redisCache;
     private final UserRepository userRepository;
     private final CommentsAreaRepository commentsAreaRepository;
+    private final MaaCopilotProperties properties;
 
     private final CopilotConverter copilotConverter;
     private final AtomicLong copilotIncrementId = new AtomicLong(20000);
@@ -117,7 +116,7 @@ public class CopilotService {
                     .setName(action.getName() == null ? null : action.getName().replaceAll("[\"“”]", "")));
         }
         // 使用stageId存储作业关卡信息
-        ArkLevelInfo level = levelService.findByLevelIdFuzzy(copilotDTO.getStageName());
+        ArkLevel level = levelService.findByLevelIdFuzzy(copilotDTO.getStageName());
         if (level != null) {
             copilotDTO.setStageName(level.getStageId());
         }
@@ -284,7 +283,7 @@ public class CopilotService {
 
         //关卡名、关卡类型、关卡编号
         if (StringUtils.isNotBlank(request.getLevelKeyword())) {
-            List<ArkLevelInfo> levelInfo = levelService.queryLevelByKeyword(request.getLevelKeyword());
+            List<ArkLevelInfo> levelInfo = levelService.queryLevelInfosByKeyword(request.getLevelKeyword());
             if (levelInfo.isEmpty()) {
                 andQueries.add(Criteria.where("stageName").regex(caseInsensitive(request.getLevelKeyword())));
             } else {
@@ -525,7 +524,7 @@ public class CopilotService {
             info.setRatingType(ratingType.getDisplay());
         }
         // 评分数少于一定数量
-        info.setNotEnoughRating(copilot.getLikeCount() + copilot.getDislikeCount() <= 5);
+        info.setNotEnoughRating(copilot.getLikeCount() + copilot.getDislikeCount() <= properties.getCopilot().getMinValueShowNotEnoughRating());
 
         info.setAvailable(true);
 

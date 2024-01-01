@@ -5,9 +5,11 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.JsonSchema;
 import plus.maa.backend.common.annotation.SensitiveWordDetection;
@@ -33,6 +35,7 @@ import plus.maa.backend.service.CopilotService;
 public class CopilotController {
     private final CopilotService copilotService;
     private final AuthenticationHelper helper;
+    private final HttpServletResponse response;
 
     @Operation(summary = "上传作业")
     @ApiResponse(description = "上传作业结果")
@@ -75,6 +78,8 @@ public class CopilotController {
     public MaaResult<CopilotPageInfo> queriesCopilot(
             @Parameter(description = "作业查询请求") @Valid CopilotQueriesRequest parsed
     ) {
+        // 三秒防抖，缓解前端重复请求问题
+        response.setHeader(HttpHeaders.CACHE_CONTROL, "private, max-age=3, must-revalidate");
         return MaaResult.success(copilotService.queriesCopilot(helper.getUserId(), parsed));
     }
 
