@@ -6,10 +6,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import plus.maa.backend.common.utils.IdComponent;
 import plus.maa.backend.common.utils.converter.CopilotSetConverter;
-import plus.maa.backend.controller.request.copilotset.CopilotSetAddCopilotsReq;
 import plus.maa.backend.controller.request.copilotset.CopilotSetCreateReq;
+import plus.maa.backend.controller.request.copilotset.CopilotSetModCopilotsReq;
 import plus.maa.backend.repository.CopilotSetRepository;
 import plus.maa.backend.repository.entity.CopilotSet;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author dragove
@@ -38,7 +41,10 @@ public class CopilotSetService {
         return id;
     }
 
-    public void addCopilotIds(CopilotSetAddCopilotsReq req, String userId) {
+    /**
+     * 往作业集中加入作业id列表
+     */
+    public void addCopilotIds(CopilotSetModCopilotsReq req, String userId) {
         CopilotSet copilotSet = repository.findById(req.getId())
                 .orElseThrow(() -> new IllegalArgumentException("作业集不存在"));
         Assert.state(copilotSet.getCreatorId().equals(userId), "您不是该作业集的创建者，无权修改该作业集");
@@ -46,4 +52,17 @@ public class CopilotSetService {
         copilotSet.setCopilotIds(copilotSet.getDistinctIdsAndCheck());
         repository.save(copilotSet);
     }
+
+    /**
+     * 往作业集中删除作业id列表
+     */
+    public void removeCopilotIds(CopilotSetModCopilotsReq req, String userId) {
+        CopilotSet copilotSet = repository.findById(req.getId())
+                .orElseThrow(() -> new IllegalArgumentException("作业集不存在"));
+        Assert.state(copilotSet.getCreatorId().equals(userId), "您不是该作业集的创建者，无权修改该作业集");
+        Set<Long> removeIds = new HashSet<>(req.getCopilotIds());
+        copilotSet.getCopilotIds().removeIf(removeIds::contains);
+        repository.save(copilotSet);
+    }
+
 }

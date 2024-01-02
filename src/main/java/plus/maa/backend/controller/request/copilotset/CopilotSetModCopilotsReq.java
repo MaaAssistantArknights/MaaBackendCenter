@@ -15,14 +15,14 @@ import java.util.List;
 @Getter
 @Setter
 @Schema(title = "作业集新增作业列表请求")
-public class CopilotSetAddCopilotsReq {
+public class CopilotSetModCopilotsReq {
 
     @NotNull(message = "作业集id必填")
     @Schema(title = "作业集id")
     private long id;
 
-    @NotEmpty(message = "添加作业id列表不可为空")
-    @Schema(title = "新添加到收藏的作业id列表")
+    @NotEmpty(message = "添加/删除作业id列表不可为空")
+    @Schema(title = "添加/删除收藏的作业id列表")
     private List<Long> copilotIds;
 
 }

@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import plus.maa.backend.config.SpringDocConfig;
 import plus.maa.backend.config.security.AuthenticationHelper;
-import plus.maa.backend.controller.request.copilotset.CopilotSetAddCopilotsReq;
+import plus.maa.backend.controller.request.copilotset.CopilotSetModCopilotsReq;
 import plus.maa.backend.controller.request.copilotset.CopilotSetCreateReq;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.service.CopilotSetService;
@@ -44,8 +44,17 @@ public class CopilotSetController {
     @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
     @PostMapping("/add")
     public MaaResult<Void> addCopilotIds(
-            @Parameter(description = "作业集中加入新作业请求") @Valid @RequestBody CopilotSetAddCopilotsReq req) {
+            @Parameter(description = "作业集中加入新作业请求") @Valid @RequestBody CopilotSetModCopilotsReq req) {
         service.addCopilotIds(req, helper.getUserId());
+        return MaaResult.success();
+    }
+
+    @Operation(summary = "添加作业集作业列表")
+    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @PostMapping("/remove")
+    public MaaResult<Void> removeCopilotIds(
+            @Parameter(description = "作业集中删除作业请求") @Valid @RequestBody CopilotSetModCopilotsReq req) {
+        service.removeCopilotIds(req, helper.getUserId());
         return MaaResult.success();
     }
 
