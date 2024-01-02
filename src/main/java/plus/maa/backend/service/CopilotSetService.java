@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import plus.maa.backend.common.utils.IdComponent;
 import plus.maa.backend.common.utils.converter.CopilotSetConverter;
+import plus.maa.backend.controller.request.CopilotSetUpdateReq;
 import plus.maa.backend.controller.request.copilotset.CopilotSetCreateReq;
 import plus.maa.backend.controller.request.copilotset.CopilotSetModCopilotsReq;
 import plus.maa.backend.repository.CopilotSetRepository;
@@ -65,4 +66,16 @@ public class CopilotSetService {
         repository.save(copilotSet);
     }
 
+    /**
+     * 更新作业集信息
+     */
+    public void update(CopilotSetUpdateReq req, String userId) {
+        CopilotSet copilotSet = repository.findById(req.getId())
+                .orElseThrow(() -> new IllegalArgumentException("作业集不存在"));
+        Assert.state(copilotSet.getCreatorId().equals(userId), "您不是该作业集的创建者，无权修改该作业集");
+        copilotSet.setName(req.getName());
+        copilotSet.setDescription(req.getDescription());
+        copilotSet.setStatus(req.getStatus());
+        repository.save(copilotSet);
+    }
 }

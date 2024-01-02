@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import plus.maa.backend.config.SpringDocConfig;
 import plus.maa.backend.config.security.AuthenticationHelper;
+import plus.maa.backend.controller.request.CopilotSetUpdateReq;
 import plus.maa.backend.controller.request.copilotset.CopilotSetModCopilotsReq;
 import plus.maa.backend.controller.request.copilotset.CopilotSetCreateReq;
 import plus.maa.backend.controller.response.MaaResult;
@@ -55,6 +56,15 @@ public class CopilotSetController {
     public MaaResult<Void> removeCopilotIds(
             @Parameter(description = "作业集中删除作业请求") @Valid @RequestBody CopilotSetModCopilotsReq req) {
         service.removeCopilotIds(req, helper.getUserId());
+        return MaaResult.success();
+    }
+
+    @Operation(summary = "更新作业集信息")
+    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @PostMapping("/update")
+    public MaaResult<Void> updateCopilotSet(
+            @Parameter(description = "更新作业集信息请求") @Valid @RequestBody CopilotSetUpdateReq req) {
+        service.update(req, helper.getUserId());
         return MaaResult.success();
     }
 
