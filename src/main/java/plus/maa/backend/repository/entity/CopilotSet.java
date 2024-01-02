@@ -7,6 +7,7 @@ import lombok.experimental.Accessors;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
+import plus.maa.backend.common.model.CopilotSetType;
 import plus.maa.backend.service.model.CopilotSetStatus;
 
 import java.io.Serializable;
@@ -20,7 +21,7 @@ import java.util.List;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @Accessors(chain = true)
 @Document("maa_copilot_set")
-public class CopilotSet implements Serializable {
+public class CopilotSet implements Serializable, CopilotSetType {
 
     @Transient
     public static final CollectionMeta<CopilotSet> META = new CollectionMeta<>(CopilotSet::getId,

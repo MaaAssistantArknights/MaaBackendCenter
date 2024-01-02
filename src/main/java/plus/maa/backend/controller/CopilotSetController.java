@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import plus.maa.backend.config.SpringDocConfig;
 import plus.maa.backend.config.security.AuthenticationHelper;
+import plus.maa.backend.controller.request.copilotset.CopilotSetAddCopilotsReq;
 import plus.maa.backend.controller.request.copilotset.CopilotSetCreateReq;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.service.CopilotSetService;
@@ -36,6 +37,15 @@ public class CopilotSetController {
     public MaaResult<Long> createSet(
             @Parameter(description = "作业集新增请求") @RequestBody CopilotSetCreateReq req) {
         return MaaResult.success(service.create(req, helper.getUserId()));
+    }
+
+    @Operation(summary = "添加作业集作业列表")
+    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @PostMapping("/add")
+    public MaaResult<Void> addCopilotIds(
+            @Parameter(description = "作业集中加入新作业请求") @RequestBody CopilotSetAddCopilotsReq req) {
+        service.addCopilotIds(req, helper.getUserId());
+        return MaaResult.success();
     }
 
 }
