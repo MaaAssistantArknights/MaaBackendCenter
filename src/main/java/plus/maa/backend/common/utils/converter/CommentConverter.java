@@ -18,15 +18,15 @@ public interface CommentConverter {
     @Mapping(target = "like", source = "commentsArea.likeCount")
     @Mapping(target = "dislike", source = "commentsArea.dislikeCount")
     @Mapping(target = "uploader", source = "maaUser.userName")
-    @Mapping(target = "commentId", source = "id")
+    @Mapping(target = "commentId", source = "commentsArea.id")
     @Mapping(target = "subCommentsInfos", ignore = true)
-    CommentsInfo toCommentsInfo(CommentsArea commentsArea, String id, MaaUser maaUser);
+    CommentsInfo toCommentsInfo(CommentsArea commentsArea, MaaUser maaUser);
 
 
     @Mapping(target = "like", source = "commentsArea.likeCount")
     @Mapping(target = "dislike", source = "commentsArea.dislikeCount")
     @Mapping(target = "uploader", source = "maaUser.userName")
-    @Mapping(target = "commentId", source = "id")
-    @Mapping(target = "deleted", source = "delete")
-    SubCommentsInfo toSubCommentsInfo(CommentsArea commentsArea, String id, MaaUser maaUser, boolean delete);
+    @Mapping(target = "commentId", source = "commentsArea.id")
+    @Mapping(target = "deleted", source = "commentsArea.delete")
+    SubCommentsInfo toSubCommentsInfo(CommentsArea commentsArea, MaaUser maaUser);
 }

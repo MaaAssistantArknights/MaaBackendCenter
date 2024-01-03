@@ -340,7 +340,6 @@ public class CommentsAreaService {
                     commentConverter
                             .toCommentsInfo(
                                     mainComment
-                                    , mainComment.getId()
                                     , maaUserMap.getOrDefault(
                                             mainComment.getUploaderId()
                                             , UNKNOWN_USER
@@ -354,13 +353,11 @@ public class CommentsAreaService {
                             commentConverter
                                     .toSubCommentsInfo(
                                             subComment
-                                            , subComment.getId()
                                             //填充评论用户名
                                             , maaUserMap.getOrDefault(
                                                     subComment.getUploaderId(),
                                                     UNKNOWN_USER
                                             )
-                                            , subComment.isDelete()
                                     )
                     ).toList();
 
