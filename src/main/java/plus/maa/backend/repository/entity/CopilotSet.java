@@ -1,5 +1,6 @@
 package plus.maa.backend.repository.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.Data;
@@ -70,5 +71,11 @@ public class CopilotSet implements Serializable, CopilotSetType {
      * {@link plus.maa.backend.service.model.CopilotSetStatus}
      */
     private CopilotSetStatus status;
+
+    @JsonIgnore
+    private boolean delete;
+
+    @JsonIgnore
+    private LocalDateTime deleteTime;
 
 }

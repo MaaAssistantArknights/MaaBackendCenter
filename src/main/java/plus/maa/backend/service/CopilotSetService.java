@@ -12,6 +12,7 @@ import plus.maa.backend.controller.request.copilotset.CopilotSetModCopilotsReq;
 import plus.maa.backend.repository.CopilotSetRepository;
 import plus.maa.backend.repository.entity.CopilotSet;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -76,6 +77,21 @@ public class CopilotSetService {
         copilotSet.setName(req.getName());
         copilotSet.setDescription(req.getDescription());
         copilotSet.setStatus(req.getStatus());
+        repository.save(copilotSet);
+    }
+
+    /**
+     * 删除作业集信息（逻辑删除，保留详情接口查询结果）
+     * @param id 作业集id
+     * @param userId 登陆用户id
+     */
+    public void delete(long id, String userId) {
+        log.info("delete copilot set for id: {}, userId: {}", id, userId);
+        CopilotSet copilotSet = repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("作业集不存在"));
+        Assert.state(copilotSet.getCreatorId().equals(userId), "您不是该作业集的创建者，无权删除该作业集");
+        copilotSet.setDelete(true);
+        copilotSet.setDeleteTime(LocalDateTime.now());
         repository.save(copilotSet);
     }
 }
