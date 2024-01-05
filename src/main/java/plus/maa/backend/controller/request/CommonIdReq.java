@@ -10,7 +10,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-public class CommonIdInput<T> {
+public class CommonIdReq<T> {
 
     @NotNull(message = "id必填")
     private T id;
