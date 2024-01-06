@@ -5,6 +5,7 @@ import plus.maa.backend.repository.entity.MaaUser;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -19,6 +20,8 @@ public interface UserRepository extends MongoRepository<MaaUser, String> {
      * @return 查询用户
      */
     MaaUser findByEmail(String email);
+
+    Optional<MaaUser> findByUserId(String userId);
 
     default Map<String, MaaUser> findByUsersId(List<String> userId) {
         return findAllById(userId)

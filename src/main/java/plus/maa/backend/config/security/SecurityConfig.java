@@ -43,6 +43,7 @@ public class SecurityConfig {
             "/arknights/level",
             "/copilot/query",
             "/set/query",
+            "/set/get",
             "/copilot/get/**",
             "/copilot/rating",
             "/comments/query",

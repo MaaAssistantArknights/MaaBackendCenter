@@ -3,6 +3,7 @@ package plus.maa.backend.common.utils.converter;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import plus.maa.backend.controller.request.copilotset.CopilotSetCreateReq;
+import plus.maa.backend.controller.response.CopilotSetRes;
 import plus.maa.backend.controller.response.user.CopilotSetListRes;
 import plus.maa.backend.repository.entity.CopilotSet;
 
@@ -26,5 +27,7 @@ public interface CopilotSetConverter {
 
     @Mapping(target = "creator", ignore = true)
     CopilotSetListRes convert(CopilotSet copilotSet, String creator);
+
+    CopilotSetRes convertDetail(CopilotSet copilotSet, String creator);
 
 }

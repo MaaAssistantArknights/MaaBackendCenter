@@ -15,6 +15,7 @@ import plus.maa.backend.controller.request.CopilotSetUpdateReq;
 import plus.maa.backend.controller.request.copilotset.CopilotSetCreateReq;
 import plus.maa.backend.controller.request.copilotset.CopilotSetModCopilotsReq;
 import plus.maa.backend.controller.response.CopilotSetPageRes;
+import plus.maa.backend.controller.response.CopilotSetRes;
 import plus.maa.backend.repository.CopilotSetRepository;
 import plus.maa.backend.repository.UserRepository;
 import plus.maa.backend.repository.entity.CopilotSet;
@@ -131,5 +132,12 @@ public class CopilotSetService {
                     return converter.convert(cs, user.getUserName());
                 }).toList());
 
+    }
+
+    public CopilotSetRes get(long id) {
+        return repository.findById(id).map($ -> {
+            String userName = userRepository.findByUserId($.getCreatorId()).orElse(MaaUser.UNKNOWN).getUserName();
+            return converter.convertDetail($, userName);
+        }).orElseThrow(() -> new IllegalArgumentException("作业不存在"));
     }
 }
