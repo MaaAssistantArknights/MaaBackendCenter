@@ -3,18 +3,25 @@ package plus.maa.backend.service;
 import cn.hutool.core.lang.Assert;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import plus.maa.backend.common.utils.IdComponent;
 import plus.maa.backend.common.utils.converter.CopilotSetConverter;
+import plus.maa.backend.controller.request.CopilotSetQuery;
 import plus.maa.backend.controller.request.CopilotSetUpdateReq;
 import plus.maa.backend.controller.request.copilotset.CopilotSetCreateReq;
 import plus.maa.backend.controller.request.copilotset.CopilotSetModCopilotsReq;
+import plus.maa.backend.controller.response.CopilotSetPageRes;
 import plus.maa.backend.repository.CopilotSetRepository;
+import plus.maa.backend.repository.UserRepository;
 import plus.maa.backend.repository.entity.CopilotSet;
+import plus.maa.backend.repository.entity.MaaUser;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author dragove
@@ -28,10 +35,13 @@ public class CopilotSetService {
     private final IdComponent idComponent;
     private final CopilotSetConverter converter;
     private final CopilotSetRepository repository;
+    private final UserRepository userRepository;
+    private final Sort DEFAULT_SORT = Sort.by("id").descending();
 
     /**
      * 创建作业集
-     * @param req 作业集创建请求
+     *
+     * @param req    作业集创建请求
      * @param userId 创建者用户id
      * @return 作业集id
      */
@@ -82,7 +92,8 @@ public class CopilotSetService {
 
     /**
      * 删除作业集信息（逻辑删除，保留详情接口查询结果）
-     * @param id 作业集id
+     *
+     * @param id     作业集id
      * @param userId 登陆用户id
      */
     public void delete(long id, String userId) {
@@ -93,5 +104,32 @@ public class CopilotSetService {
         copilotSet.setDelete(true);
         copilotSet.setDeleteTime(LocalDateTime.now());
         repository.save(copilotSet);
+    }
+
+    public CopilotSetPageRes query(CopilotSetQuery req) {
+        PageRequest pageRequest = PageRequest.of(req.getPage() - 1, req.getLimit(), DEFAULT_SORT);
+
+        String keyword = req.getKeyword();
+        Page<CopilotSet> copilotSets;
+        if (StringUtils.isBlank(keyword)) {
+            copilotSets = repository.findAll(pageRequest);
+        } else {
+            copilotSets = repository.findByKeyword(keyword, pageRequest);
+        }
+
+        List<String> userIds = copilotSets.stream().map(CopilotSet::getCreatorId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<String, MaaUser> userById = userRepository.findByUsersId(userIds);
+        return new CopilotSetPageRes()
+                .setPage(copilotSets.getNumber() + 1)
+                .setTotal(copilotSets.getTotalElements())
+                .setHasNext(copilotSets.getTotalPages() > req.getPage())
+                .setData(copilotSets.stream().map(cs -> {
+                    MaaUser user = userById.getOrDefault(cs.getCreatorId(), MaaUser.UNKNOWN);
+                    return converter.convert(cs, user.getUserName());
+                }).toList());
+
     }
 }

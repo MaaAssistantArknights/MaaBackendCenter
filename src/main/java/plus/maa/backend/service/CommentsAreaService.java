@@ -53,8 +53,6 @@ public class CommentsAreaService {
 
     private final MaaCopilotProperties maaCopilotProperties;
 
-    private final MaaUser UNKNOWN_USER = new MaaUser().setUserName("未知用户:(");
-
     private final CommentConverter commentConverter;
 
 
@@ -121,8 +119,8 @@ public class CommentsAreaService {
                 CommentNotification commentNotification = new CommentNotification();
 
 
-                String authorName = maaUserMap.getOrDefault(replyUserId, UNKNOWN_USER).getUserName();
-                String reName = maaUserMap.getOrDefault(userId, UNKNOWN_USER).getUserName();
+                String authorName = maaUserMap.getOrDefault(replyUserId, MaaUser.UNKNOWN).getUserName();
+                String reName = maaUserMap.getOrDefault(userId, MaaUser.UNKNOWN).getUserName();
 
                 String title = isCopilotAuthor ? copilot.getDoc().getTitle() : commentsArea.getMessage();
 
@@ -332,7 +330,7 @@ public class CommentsAreaService {
                                     , (int) mainComment.getLikeCount()
                                     , maaUserMap.getOrDefault(
                                             mainComment.getUploaderId()
-                                            , UNKNOWN_USER
+                                            , MaaUser.UNKNOWN
                                     )
                             );
 
@@ -348,7 +346,7 @@ public class CommentsAreaService {
                                             //填充评论用户名
                                             , maaUserMap.getOrDefault(
                                                     subComment.getUploaderId(),
-                                                    UNKNOWN_USER
+                                                    MaaUser.UNKNOWN
                                             )
                                             , subComment.isDelete()
                                     )

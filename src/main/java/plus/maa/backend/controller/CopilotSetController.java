@@ -14,9 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 import plus.maa.backend.config.SpringDocConfig;
 import plus.maa.backend.config.security.AuthenticationHelper;
 import plus.maa.backend.controller.request.CommonIdReq;
+import plus.maa.backend.controller.request.CopilotSetQuery;
 import plus.maa.backend.controller.request.CopilotSetUpdateReq;
 import plus.maa.backend.controller.request.copilotset.CopilotSetModCopilotsReq;
 import plus.maa.backend.controller.request.copilotset.CopilotSetCreateReq;
+import plus.maa.backend.controller.response.CopilotSetPageRes;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.service.CopilotSetService;
 
@@ -32,6 +34,14 @@ public class CopilotSetController {
 
     private final CopilotSetService service;
     private final AuthenticationHelper helper;
+
+    @Operation(summary = "查询作业集列表")
+    @ApiResponse(description = "作业集id")
+    @PostMapping("/query")
+    public MaaResult<CopilotSetPageRes> querySets(
+            @Parameter(description = "作业集列表查询请求") @Valid @RequestBody CopilotSetQuery req) {
+        return MaaResult.success(service.query(req));
+    }
 
     @Operation(summary = "创建作业集")
     @ApiResponse(description = "作业集id")
