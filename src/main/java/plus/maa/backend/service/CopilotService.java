@@ -1,5 +1,6 @@
 package plus.maa.backend.service;
 
+import cn.hutool.core.collection.CollectionUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
@@ -201,7 +202,7 @@ public class CopilotService {
 
             // 新评分系统
             RatingType ratingType = ratingRepository.findByTypeAndKeyAndUserId(Rating.KeyType.COPILOT,
-                    Long.toString(copilot.getCopilotId()), userIdOrIpAddress)
+                            Long.toString(copilot.getCopilotId()), userIdOrIpAddress)
                     .map(Rating::getRating)
                     .orElse(null);
             // 用户点进作业会显示点赞信息
@@ -225,7 +226,8 @@ public class CopilotService {
         AtomicReference<String> setKey = new AtomicReference<>();
         // 只缓存默认状态下热度和访问量排序的结果，并且最多只缓存前三页
         if (request.getPage() <= 3 && request.getDocument() == null && request.getLevelKeyword() == null &&
-                request.getUploaderId() == null && request.getOperator() == null) {
+                request.getUploaderId() == null && request.getOperator() == null &&
+                CollectionUtil.isEmpty(request.getCopilotIds())) {
 
             Optional<CopilotPageInfo> cacheOptional = Optional.ofNullable(request.getOrderBy())
                     .filter(StringUtils::isNotBlank)
@@ -277,6 +279,11 @@ public class CopilotService {
                 andQueries.add(Criteria.where("stageName").in(levelInfo.stream()
                         .map(ArkLevelInfo::getStageId).collect(Collectors.toSet())));
             }
+        }
+
+        // 作业id列表
+        if (CollectionUtil.isNotEmpty(request.getCopilotIds())) {
+            andQueries.add(Criteria.where("copilotId").in(request.getCopilotIds()));
         }
 
         //标题、描述、神秘代码
@@ -341,9 +348,9 @@ public class CopilotService {
         // 新版评分系统
         // 反正目前首页和搜索不会直接展示当前用户有没有点赞，干脆直接不查，要用户点进作业才显示自己是否点赞
         List<CopilotInfo> infos = copilots.stream().map(copilot ->
-                formatCopilot(copilot, null,
-                        maaUsers.get(copilot.getUploaderId()).getUserName(),
-                        commentsCount.get(copilot.getCopilotId())))
+                        formatCopilot(copilot, null,
+                                maaUsers.get(copilot.getUploaderId()).getUserName(),
+                                commentsCount.get(copilot.getCopilotId())))
                 .toList();
 
         // 计算页面
