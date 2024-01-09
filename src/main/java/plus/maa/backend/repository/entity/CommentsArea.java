@@ -35,6 +35,8 @@ public class CommentsArea implements Serializable {
 
     private long likeCount;
 
+    private long dislikeCount;
+
     private LocalDateTime uploadTime = LocalDateTime.now();
 
     // 是否将该评论置顶

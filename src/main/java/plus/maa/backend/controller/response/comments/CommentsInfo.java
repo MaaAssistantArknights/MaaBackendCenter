@@ -26,7 +26,8 @@ public class CommentsInfo {
     //评论内容
     private String message;
     private LocalDateTime uploadTime;
-    private int like;
+    private long like;
+    private long dislike;
     private boolean topping;
     private List<SubCommentsInfo> subCommentsInfos = new ArrayList<>();
 }

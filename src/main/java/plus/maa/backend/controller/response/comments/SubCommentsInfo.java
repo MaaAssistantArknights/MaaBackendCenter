@@ -24,7 +24,8 @@ public class SubCommentsInfo {
     //评论内容
     private String message;
     private LocalDateTime uploadTime;
-    private int like;
+    private long like;
+    private long dislike;
     private String fromCommentId;
     private String mainCommentId;
     private boolean deleted;

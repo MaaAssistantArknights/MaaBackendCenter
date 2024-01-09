@@ -193,7 +193,9 @@ public class CommentsAreaService {
 
         CommentsArea commentsArea = findCommentsById(commentsRatingDTO.getCommentId());
 
-        long change;
+        long likeCountChange;
+        long dislikeCountChange;
+
         Optional<Rating> ratingOptional = ratingRepository.findByTypeAndKeyAndUserId(Rating.KeyType.COMMENT, commentsArea.getId(), userId);
         // 判断该用户是否存在评分
         if (ratingOptional.isPresent()) {
@@ -204,8 +206,10 @@ public class CommentsAreaService {
                 ratingOptional.get().setRateTime(LocalDateTime.now());
                 RatingType newRatingType = ratingRepository.save(ratingOptional.get()).getRating();
                 // 更新评分后更新评论的点赞数
-                change = newRatingType == RatingType.LIKE ? 1 :
+                likeCountChange = newRatingType == RatingType.LIKE ? 1 :
                         (oldRatingType != RatingType.LIKE ? 0 : -1);
+                dislikeCountChange = newRatingType == RatingType.DISLIKE ? 1 :
+                        (oldRatingType != RatingType.DISLIKE ? 0 : -1);
             } else {
                 // 如果评分未发生变化则结束
                 return;
@@ -220,15 +224,23 @@ public class CommentsAreaService {
                     .setRateTime(LocalDateTime.now());
 
             ratingRepository.insert(newRating);
-            change = newRating.getRating() == RatingType.LIKE ? 1 : 0;
+            likeCountChange = newRating.getRating() == RatingType.LIKE ? 1 : 0;
+            dislikeCountChange = newRating.getRating() == RatingType.DISLIKE ? 1 : 0;
         }
 
         // 点赞数不需要在高并发下特别精准，大概就行，但是也得避免特别离谱的数字
-        long likeCount = commentsArea.getLikeCount() + change;
+        long likeCount = commentsArea.getLikeCount() + likeCountChange;
         if (likeCount < 0) {
             likeCount = 0;
         }
+
+        long dislikeCount = commentsArea.getDislikeCount() + dislikeCountChange;
+        if (dislikeCount < 0) {
+            dislikeCount = 0;
+        }
+
         commentsArea.setLikeCount(likeCount);
+        commentsArea.setDislikeCount(dislikeCount);
 
         commentsAreaRepository.save(commentsArea);
     }
@@ -328,8 +340,6 @@ public class CommentsAreaService {
                     commentConverter
                             .toCommentsInfo(
                                     mainComment
-                                    , mainComment.getId()
-                                    , (int) mainComment.getLikeCount()
                                     , maaUserMap.getOrDefault(
                                             mainComment.getUploaderId()
                                             , UNKNOWN_USER
@@ -343,14 +353,11 @@ public class CommentsAreaService {
                             commentConverter
                                     .toSubCommentsInfo(
                                             subComment
-                                            , subComment.getId()
-                                            , (int) subComment.getLikeCount()
                                             //填充评论用户名
                                             , maaUserMap.getOrDefault(
                                                     subComment.getUploaderId(),
                                                     UNKNOWN_USER
                                             )
-                                            , subComment.isDelete()
                                     )
                     ).toList();
 
