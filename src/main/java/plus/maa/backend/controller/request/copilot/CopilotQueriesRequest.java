@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /**
  * @author LoMu
  * Date  2022-12-26 2:48
@@ -25,6 +27,7 @@ public class CopilotQueriesRequest {
     private boolean desc = true;
     private String orderBy;
     private String language;
+    private List<Long> copilotIds;
 
     /*
      * 这里为了正确接收前端的下划线风格，手动写了三个 setter 用于起别名
@@ -33,17 +36,27 @@ public class CopilotQueriesRequest {
      * （吐槽一下，同样是Get请求，怎么CommentsQueries是驼峰命名，到了CopilotQueries就成了下划线命名）
      */
     @JsonIgnore
+    @SuppressWarnings("unused")
     public void setLevel_keyword(String levelKeyword) {
         this.levelKeyword = levelKeyword;
     }
 
     @JsonIgnore
+    @SuppressWarnings("unused")
     public void setUploader_id(String uploaderId) {
         this.uploaderId = uploaderId;
     }
 
     @JsonIgnore
+    @SuppressWarnings("unused")
     public void setOrder_by(String orderBy) {
         this.orderBy = orderBy;
     }
+
+    @JsonIgnore
+    @SuppressWarnings("unused")
+    public void setCopilot_ids(List<Long> copilotIds) {
+        this.copilotIds = copilotIds;
+    }
+
 }

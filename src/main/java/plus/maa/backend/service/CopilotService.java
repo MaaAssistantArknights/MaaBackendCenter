@@ -1,9 +1,9 @@
 package plus.maa.backend.service;
 
+import cn.hutool.core.collection.CollectionUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -18,6 +18,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
+import plus.maa.backend.common.utils.IdComponent;
 import plus.maa.backend.common.utils.converter.CopilotConverter;
 import plus.maa.backend.config.external.MaaCopilotProperties;
 import plus.maa.backend.controller.request.copilot.CopilotCUDRequest;
@@ -58,12 +59,12 @@ public class CopilotService {
     private final ObjectMapper mapper;
     private final ArkLevelService levelService;
     private final RedisCache redisCache;
+    private final IdComponent idComponent;
     private final UserRepository userRepository;
     private final CommentsAreaRepository commentsAreaRepository;
     private final MaaCopilotProperties properties;
 
     private final CopilotConverter copilotConverter;
-    private final AtomicLong copilotIncrementId = new AtomicLong(20000);
 
     /*
         首页分页查询缓存配置
@@ -75,17 +76,6 @@ public class CopilotService {
             "views", 3600L,
             "id", 300L
     );
-
-    @PostConstruct
-    public void init() {
-        // 初始化copilotId, 从数据库中获取最大的copilotId
-        // 如果数据库中没有数据, 则从20000开始
-        copilotRepository.findFirstByOrderByCopilotIdDesc()
-                .map(Copilot::getCopilotId)
-                .ifPresent(last -> copilotIncrementId.set(last + 1));
-
-        log.info("作业自增ID初始化完成: {}", copilotIncrementId.get());
-    }
 
     /**
      * 并修正前端的冗余部分
@@ -154,10 +144,8 @@ public class CopilotService {
     public Long upload(String loginUserId, String content) {
         CopilotDTO copilotDTO = correctCopilot(parseToCopilotDto(content));
         // 将其转换为数据库存储对象
-        Copilot copilot = copilotConverter.toCopilot(
-                copilotDTO, loginUserId,
-                LocalDateTime.now(), copilotIncrementId.getAndIncrement(),
-                content);
+        Copilot copilot = copilotConverter.toCopilot(copilotDTO,
+                idComponent.getId(Copilot.META), loginUserId, LocalDateTime.now(), content);
         copilotRepository.insert(copilot);
         return copilot.getCopilotId();
     }
@@ -214,7 +202,7 @@ public class CopilotService {
 
             // 新评分系统
             RatingType ratingType = ratingRepository.findByTypeAndKeyAndUserId(Rating.KeyType.COPILOT,
-                    Long.toString(copilot.getCopilotId()), userIdOrIpAddress)
+                            Long.toString(copilot.getCopilotId()), userIdOrIpAddress)
                     .map(Rating::getRating)
                     .orElse(null);
             // 用户点进作业会显示点赞信息
@@ -238,7 +226,8 @@ public class CopilotService {
         AtomicReference<String> setKey = new AtomicReference<>();
         // 只缓存默认状态下热度和访问量排序的结果，并且最多只缓存前三页
         if (request.getPage() <= 3 && request.getDocument() == null && request.getLevelKeyword() == null &&
-                request.getUploaderId() == null && request.getOperator() == null) {
+                request.getUploaderId() == null && request.getOperator() == null &&
+                CollectionUtil.isEmpty(request.getCopilotIds())) {
 
             Optional<CopilotPageInfo> cacheOptional = Optional.ofNullable(request.getOrderBy())
                     .filter(StringUtils::isNotBlank)
@@ -290,6 +279,11 @@ public class CopilotService {
                 andQueries.add(Criteria.where("stageName").in(levelInfo.stream()
                         .map(ArkLevelInfo::getStageId).collect(Collectors.toSet())));
             }
+        }
+
+        // 作业id列表
+        if (CollectionUtil.isNotEmpty(request.getCopilotIds())) {
+            andQueries.add(Criteria.where("copilotId").in(request.getCopilotIds()));
         }
 
         //标题、描述、神秘代码
@@ -354,9 +348,9 @@ public class CopilotService {
         // 新版评分系统
         // 反正目前首页和搜索不会直接展示当前用户有没有点赞，干脆直接不查，要用户点进作业才显示自己是否点赞
         List<CopilotInfo> infos = copilots.stream().map(copilot ->
-                formatCopilot(copilot, null,
-                        maaUsers.get(copilot.getUploaderId()).getUserName(),
-                        commentsCount.get(copilot.getCopilotId())))
+                        formatCopilot(copilot, null,
+                                maaUsers.get(copilot.getUploaderId()).getUserName(),
+                                commentsCount.get(copilot.getCopilotId())))
                 .toList();
 
         // 计算页面

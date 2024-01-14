@@ -64,9 +64,9 @@ public class GlobalExceptionHandler {
     public MaaResult<String> methodArgumentNotValidException(MethodArgumentNotValidException e) {
         FieldError fieldError = e.getBindingResult().getFieldError();
         if (fieldError != null) {
-            return MaaResult.fail(400, String.format("参数校验错误:%s", fieldError.getDefaultMessage()));
+            return MaaResult.fail(400, String.format("参数校验错误: %s", fieldError.getDefaultMessage()));
         }
-        return MaaResult.fail(400, String.format("参数校验错误:%s", e.getMessage()));
+        return MaaResult.fail(400, String.format("参数校验错误: %s", e.getMessage()));
     }
 
     /**

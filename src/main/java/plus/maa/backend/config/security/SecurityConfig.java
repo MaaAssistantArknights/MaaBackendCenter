@@ -42,6 +42,8 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/arknights/level",
             "/copilot/query",
+            "/set/query",
+            "/set/get",
             "/copilot/get/**",
             "/copilot/rating",
             "/comments/query",

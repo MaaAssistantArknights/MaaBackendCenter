@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -26,6 +27,11 @@ import java.util.List;
 @Accessors(chain = true)
 @Document("maa_copilot")
 public class Copilot implements Serializable {
+
+    @Transient
+    public static final CollectionMeta<Copilot> META = new CollectionMeta<>(Copilot::getCopilotId,
+            "copilotId", Copilot.class);
+
     @Id
     // 作业id
     private String id;

@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import plus.maa.backend.controller.request.user.UserInfoUpdateDTO;
@@ -25,6 +26,8 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Document("maa_user")
 public class MaaUser implements Serializable {
+    @Transient
+    public static final MaaUser UNKNOWN = new MaaUser().setUserName("未知用户:(");
     @Id
     private String userId;
     private String userName;
