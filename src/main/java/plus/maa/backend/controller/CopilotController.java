@@ -3,7 +3,6 @@ package plus.maa.backend.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -13,7 +12,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 import plus.maa.backend.common.annotation.JsonSchema;
 import plus.maa.backend.common.annotation.SensitiveWordDetection;
-import plus.maa.backend.config.SpringDocConfig;
+import plus.maa.backend.config.doc.RequireJwt;
 import plus.maa.backend.config.security.AuthenticationHelper;
 import plus.maa.backend.controller.request.copilot.CopilotCUDRequest;
 import plus.maa.backend.controller.request.copilot.CopilotQueriesRequest;
@@ -39,7 +38,7 @@ public class CopilotController {
 
     @Operation(summary = "上传作业")
     @ApiResponse(description = "上传作业结果")
-    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @RequireJwt
     @JsonSchema
     @SensitiveWordDetection("#request.content != null ? #objectMapper.readTree(#request.content).get('doc')?.toString() : null")
     @PostMapping("/upload")
@@ -51,7 +50,7 @@ public class CopilotController {
 
     @Operation(summary = "删除作业")
     @ApiResponse(description = "删除作业结果")
-    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @RequireJwt
     @PostMapping("/delete")
     public MaaResult<Void> deleteCopilot(
             @Parameter(description = "作业操作请求") @RequestBody CopilotCUDRequest request
@@ -85,7 +84,7 @@ public class CopilotController {
 
     @Operation(summary = "更新作业")
     @ApiResponse(description = "更新结果")
-    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @RequireJwt
     @JsonSchema
     @SensitiveWordDetection("#copilotCUDRequest.content != null ? #objectMapper.readTree(#copilotCUDRequest.content).get('doc')?.toString() : null")
     @PostMapping("/update")
@@ -107,7 +106,7 @@ public class CopilotController {
         return MaaResult.success("评分成功");
     }
 
-    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @RequireJwt
     @Operation(summary = "修改通知状态")
     @ApiResponse(description = "success")
     @GetMapping("/status")

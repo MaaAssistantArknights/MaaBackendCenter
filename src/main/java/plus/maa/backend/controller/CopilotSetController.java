@@ -3,12 +3,11 @@ package plus.maa.backend.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import plus.maa.backend.config.SpringDocConfig;
+import plus.maa.backend.config.doc.RequireJwt;
 import plus.maa.backend.config.security.AuthenticationHelper;
 import plus.maa.backend.controller.request.CommonIdReq;
 import plus.maa.backend.controller.request.CopilotSetQuery;
@@ -51,7 +50,7 @@ public class CopilotSetController {
 
     @Operation(summary = "创建作业集")
     @ApiResponse(description = "作业集id")
-    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @RequireJwt
     @PostMapping("/create")
     public MaaResult<Long> createSet(
             @Parameter(description = "作业集新增请求") @Valid @RequestBody CopilotSetCreateReq req) {
@@ -59,7 +58,7 @@ public class CopilotSetController {
     }
 
     @Operation(summary = "添加作业集作业列表")
-    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @RequireJwt
     @PostMapping("/add")
     public MaaResult<Void> addCopilotIds(
             @Parameter(description = "作业集中加入新作业请求") @Valid @RequestBody CopilotSetModCopilotsReq req) {
@@ -68,7 +67,7 @@ public class CopilotSetController {
     }
 
     @Operation(summary = "添加作业集作业列表")
-    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @RequireJwt
     @PostMapping("/remove")
     public MaaResult<Void> removeCopilotIds(
             @Parameter(description = "作业集中删除作业请求") @Valid @RequestBody CopilotSetModCopilotsReq req) {
@@ -77,7 +76,7 @@ public class CopilotSetController {
     }
 
     @Operation(summary = "更新作业集信息")
-    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @RequireJwt
     @PostMapping("/update")
     public MaaResult<Void> updateCopilotSet(
             @Parameter(description = "更新作业集信息请求") @Valid @RequestBody CopilotSetUpdateReq req) {
@@ -86,7 +85,7 @@ public class CopilotSetController {
     }
 
     @Operation(summary = "删除作业集")
-    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @RequireJwt
     @PostMapping("/delete")
     public MaaResult<Void> deleteCopilotSet(
             @Parameter(description = "删除作业集信息请求") @Valid @RequestBody CommonIdReq<Long> req) {

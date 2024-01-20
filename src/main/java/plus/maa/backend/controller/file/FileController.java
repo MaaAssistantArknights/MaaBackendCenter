@@ -6,7 +6,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import plus.maa.backend.common.annotation.AccessLimit;
-import plus.maa.backend.config.SpringDocConfig;
+import plus.maa.backend.config.doc.RequireJwt;
 import plus.maa.backend.config.security.AuthenticationHelper;
 import plus.maa.backend.controller.response.MaaResult;
 import plus.maa.backend.service.FileService;
@@ -55,7 +54,7 @@ public class FileController {
             responseCode = "200",
             content = @Content(mediaType = "application/zip", schema = @Schema(type = "string", format = "binary"))
     )
-    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @RequireJwt
     @AccessLimit
     @GetMapping("/download")
     public void downloadSpecifiedDateFile(
@@ -72,7 +71,7 @@ public class FileController {
             responseCode = "200",
             content = @Content(mediaType = "application/zip", schema = @Schema(type = "string", format = "binary"))
     )
-    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @RequireJwt
     @PostMapping("/download")
     public void downloadFile(@RequestBody @Valid
                              ImageDownloadDTO imageDownloadDTO,
@@ -81,7 +80,7 @@ public class FileController {
     }
 
     @Operation(summary = "设置上传文件功能状态")
-    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @RequireJwt
     @PostMapping("/upload_ability")
     public MaaResult<Void> setUploadAbility(@RequestBody UploadAbility request) {
         fileService.setUploadEnabled(request.enabled);
@@ -89,14 +88,14 @@ public class FileController {
     }
 
     @Operation(summary = "获取上传文件功能状态")
-    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @RequireJwt
     @GetMapping("/upload_ability")
     public MaaResult<UploadAbility> getUploadAbility() {
         return MaaResult.success(new UploadAbility(fileService.isUploadEnabled()));
     }
 
     @Operation(summary = "关闭uploadfile接口")
-    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @RequireJwt
     @PostMapping("/disable")
     public MaaResult<String> disable(@RequestBody boolean status) {
         if (!status) {
@@ -106,7 +105,7 @@ public class FileController {
     }
 
     @Operation(summary = "开启uploadfile接口")
-    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @RequireJwt
     @PostMapping("/enable")
     public MaaResult<String> enable(@RequestBody boolean status) {
         if (!status) {

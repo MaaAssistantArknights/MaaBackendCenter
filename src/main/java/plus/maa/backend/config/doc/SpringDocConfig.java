@@ -1,4 +1,4 @@
-package plus.maa.backend.config;
+package plus.maa.backend.config.doc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.core.jackson.ModelResolver;
@@ -38,7 +38,7 @@ public class SpringDocConfig {
     @Value("${maa-copilot.jwt.header}")
     private String securitySchemeHeader;
 
-    public static final String SECURITY_SCHEME_NAME = "Bearer";
+    public static final String SECURITY_SCHEME_JWT = "Jwt";
 
     @Bean
     public OpenAPI emergencyLogistics() {
@@ -48,7 +48,7 @@ public class SpringDocConfig {
                         .description("GitHub repo")
                         .url("https://github.com/MaaAssistantArknights/MaaBackendCenter"))
                 .components(new Components()
-                        .addSecuritySchemes(SECURITY_SCHEME_NAME,
+                        .addSecuritySchemes(SECURITY_SCHEME_JWT,
                                 new SecurityScheme()
                                         .type(SecurityScheme.Type.HTTP)
                                         .scheme("bearer")
@@ -68,13 +68,13 @@ public class SpringDocConfig {
                 if (parameter.hasParameterAnnotation(CurrentUser.class)) {
                     var security = Optional.ofNullable(operation.getSecurity());
                     // 已有 security scheme
-                    if (security.stream().flatMap(List::stream).anyMatch(s -> s.containsKey(SECURITY_SCHEME_NAME))) {
+                    if (security.stream().flatMap(List::stream).anyMatch(s -> s.containsKey(SECURITY_SCHEME_JWT))) {
                         break;
                     }
 
                     // 添加 security scheme
                     operation.setSecurity(security.orElseGet(ArrayList::new));
-                    operation.getSecurity().add(new SecurityRequirement().addList(SECURITY_SCHEME_NAME));
+                    operation.getSecurity().add(new SecurityRequirement().addList(SECURITY_SCHEME_JWT));
                     break;
                 }
             }

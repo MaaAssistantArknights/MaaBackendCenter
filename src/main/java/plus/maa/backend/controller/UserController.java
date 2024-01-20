@@ -3,7 +3,6 @@ package plus.maa.backend.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.Data;
@@ -14,7 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import plus.maa.backend.config.SpringDocConfig;
+import plus.maa.backend.config.doc.RequireJwt;
 import plus.maa.backend.config.external.MaaCopilotProperties;
 import plus.maa.backend.config.security.AuthenticationHelper;
 import plus.maa.backend.controller.request.user.*;
@@ -52,7 +51,7 @@ public class UserController {
      */
     @Operation(summary = "修改当前用户密码", description = "根据原密码")
     @ApiResponse(description = "修改密码结果")
-    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @RequireJwt
     @PostMapping("/update/password")
     public MaaResult<Void> updatePassword(
             @Parameter(description = "修改密码请求") @RequestBody @Valid PasswordUpdateDTO updateDTO
@@ -69,7 +68,7 @@ public class UserController {
      */
     @Operation(summary = "更新用户详细信息")
     @ApiResponse(description = "更新结果")
-    @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_NAME)
+    @RequireJwt
     @PostMapping("/update/info")
     public MaaResult<Void> updateInfo(
             @Parameter(description = "更新用户详细信息请求") @Valid @RequestBody UserInfoUpdateDTO updateDTO
