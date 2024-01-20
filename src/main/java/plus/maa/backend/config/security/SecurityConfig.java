@@ -1,22 +1,32 @@
 package plus.maa.backend.config.security;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.oauth2.client.OAuth2LoginConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import java.util.HashMap;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
 /**
  * @author AnselYuki
  */
+@Slf4j
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
@@ -26,7 +36,9 @@ public class SecurityConfig {
     private static final String[] URL_WHITELIST = {
             "/user/login",
             "/user/register",
-            "/user/sendRegistrationToken"
+            "/user/sendRegistrationToken",
+            "/oidc/authorization/maa-account",
+            "/oidc/callback/maa-account"
     };
 
     private static final String[] URL_PERMIT_ALL = {
@@ -72,10 +84,28 @@ public class SecurityConfig {
     private final JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter;
     private final AuthenticationEntryPointImpl authenticationEntryPoint;
     private final AccessDeniedHandlerImpl accessDeniedHandler;
+    private final OIDCAuthenticationSuccessHandler oidcAuthenticationSuccessHandler;
+    private final OIDCRedirectStrategy oidcRedirectStrategy;
+    private final RedisOAuth2AuthorizationRequestRepository redisOAuth2AuthorizationRequestRepository;
 
-    @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+    @Configuration(proxyBeanMethods = false)
+    public static class PasswordEncoderCreate {
+
+        private static final String BCRYPT = "bcrypt";
+
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+            // 被用于委托的密码编码器，其中一个会用于密码编码，其他的则用于密码匹配
+            var encoders = new HashMap<String, PasswordEncoder>();
+            encoders.put(BCRYPT, new BCryptPasswordEncoder());
+
+            // 创建委托密码编码器，指定用于密码编码的编码器 id，以及被委托的编码器映射
+            var delegating = new DelegatingPasswordEncoder(BCRYPT, encoders);
+
+            // 兼容旧数据中直接裸使用 BCrypt 编码器的密码
+            delegating.setDefaultPasswordEncoderForMatches(encoders.get(BCRYPT));
+            return delegating;
+        }
     }
 
     @Bean
@@ -100,14 +130,55 @@ public class SecurityConfig {
                         //此处用于管理员操作接口
                         .requestMatchers(URL_AUTHENTICATION_2).hasAuthority("2")
                         .anyRequest().authenticated());
+
+
+        // 存在 Maa Account 配置时，才启用 OIDC
+        Customizer<OAuth2LoginConfigurer<HttpSecurity>> oauth2LoginCustomizer = null;
+
+        try {
+            // 依赖于 CGLIB 子类处理，proxyBeanMethods 需要为 true
+            oauth2LoginCustomizer = oauth2LoginCustomizer();
+        } catch (NoSuchBeanDefinitionException e) {
+            log.info("Maa Account 配置不存在，已关闭 OIDC 认证");
+        }
+
+        if (oauth2LoginCustomizer != null) {
+            http.oauth2Login(oauth2LoginCustomizer);
+        }
+
         //添加过滤器
         http.addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
         //配置异常处理器，处理认证失败的JSON响应
         http.exceptionHandling(exceptionHandling -> exceptionHandling.authenticationEntryPoint(authenticationEntryPoint).accessDeniedHandler(accessDeniedHandler));
-
         //开启跨域请求
         http.cors(withDefaults());
         return http.build();
+    }
+
+    @Bean
+    @ConditionalOnProperty("spring.security.oauth2.client.provider.maa-account.issuer-uri")
+    public Customizer<OAuth2LoginConfigurer<HttpSecurity>> oauth2LoginCustomizer() {
+        return login -> {
+            // 以下的链接默认值以配置文件中使用 maa-account 作为 OIDC 服务器时为例
+            // Get 请求访问 "/oidc/authorization/maa-account" 将自动配置参数并跳转到 OIDC 认证页面
+            login.authorizationEndpoint(
+                    endpoint -> {
+                        endpoint.baseUri("/oidc/authorization");
+                        // 请求 OIDC 认证时不再自动重定向
+                        endpoint.authorizationRedirectStrategy(oidcRedirectStrategy);
+                        // 不再使用 Session 储存信息
+                        endpoint.authorizationRequestRepository(redisOAuth2AuthorizationRequestRepository);
+                    }
+            );
+            // 回调接口，默认为 "/oidc/callback/maa-account"
+            login.redirectionEndpoint(
+                    redirection -> redirection.baseUri("/oidc/callback/*")
+            );
+            // 登录异常处理器
+            login.failureHandler(authenticationEntryPoint::commence);
+            // 登录成功处理器
+            login.successHandler(oidcAuthenticationSuccessHandler);
+        };
     }
 }

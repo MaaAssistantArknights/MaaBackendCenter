@@ -53,11 +53,21 @@ public class UserService {
         if (user == null || !passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
             throw new MaaResultException(401, "用户不存在或者密码错误");
         }
+        // 待升级的密码编码方式
+        if (passwordEncoder.upgradeEncoding(user.getPassword())) {
+            user.setPassword(passwordEncoder.encode(loginDTO.getPassword()));
+            userRepository.save(user);
+        }
         // 未激活的用户
         if (Objects.equals(user.getStatus(), 0)) {
             throw new MaaResultException(MaaStatusCode.MAA_USER_NOT_ENABLED);
         }
 
+        return maaLoginRsp(user);
+    }
+
+    @NotNull
+    public MaaLoginRsp maaLoginRsp(MaaUser user) {
         var jwtId = UUID.randomUUID().toString();
         var jwtIds = user.getRefreshJwtIds();
         jwtIds.add(jwtId);
