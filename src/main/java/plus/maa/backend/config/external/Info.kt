@@ -1,10 +1,10 @@
-package plus.maa.backend.config.external;
+package plus.maa.backend.config.external
 
-@lombok.Data
-public class Info {
-    private String title;
-    private String description;
-    private String version;
-    private String domain;
-    private String frontendDomain;
-}
+
+data class Info(
+        var title: String = "MAA Copilot Center API",
+        var description: String = "MAA Copilot Backend Center",
+        var version: String = "v1.0.0",
+        var domain: String = "https://prts.maa.plus",
+        var frontendDomain: String = "https://prts.plus",
+)

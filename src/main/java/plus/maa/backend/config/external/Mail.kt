@@ -1,19 +1,13 @@
-package plus.maa.backend.config.external;
+package plus.maa.backend.config.external
 
-import lombok.Data;
 
-/**
- * @author LoMu
- * Date  2023-03-04 14:49
- */
-@Data
-public class Mail {
-    private String host;
-    private Integer port;
-    private String from;
-    private String user;
-    private String pass;
-    private Boolean starttls;
-    private Boolean ssl;
-    private Boolean notification;
-}
+data class Mail(
+        var host: String = "smtp.qq.com",
+        var port: Int = 465,
+        var from: String = "2842775752@qq.com",
+        var user: String = "2842775752",
+        var pass: String = "123456789",
+        var starttls: Boolean = true,
+        var ssl: Boolean = false,
+        var notification: Boolean = true,
+)

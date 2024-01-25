@@ -1,26 +1,24 @@
-package plus.maa.backend.config.external;
+package plus.maa.backend.config.external
 
-@lombok.Data
-public class Jwt {
-    /**
-     * Header name
-     */
-    private String header;
-    /**
-     * 默认的JwtToken过期时间，以秒为单位
-     */
-    private long expire = 21600;
-
-    /*
-     * 默认的 Refresh Token 过期时间，以秒为单位
-     */
-    private long refreshExpire = 30 * 24 * 60 * 60;
-    /**
-     * JwtToken的加密密钥
-     */
-    private String secret;
-    /**
-     * Jwt 最大同时登录设备数
-     */
-    private int maxLogin = 1;
-}
+data class Jwt(
+        /**
+         * Header name
+         */
+        var header: String = "Authorization",
+        /**
+         * 默认的JwtToken过期时间，以秒为单位
+         */
+        var expire: Long = 21600,
+        /*
+        * 默认的 Refresh Token 过期时间，以秒为单位
+        */
+        var refreshExpire: Long = (30 * 24 * 60 * 60).toLong(),
+        /**
+         * JwtToken的加密密钥
+         */
+        var secret: String = "",
+        /**
+         * Jwt 最大同时登录设备数
+         */
+        var maxLogin: Int = 1,
+)

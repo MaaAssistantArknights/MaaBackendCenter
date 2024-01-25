@@ -1,6 +1,6 @@
-package plus.maa.backend.config.external;
+package plus.maa.backend.config.external
 
-@lombok.Data
-public class Cache {
-    private long defaultExpire;
-}
+
+data class Cache (
+    var defaultExpire: Long = 0
+)

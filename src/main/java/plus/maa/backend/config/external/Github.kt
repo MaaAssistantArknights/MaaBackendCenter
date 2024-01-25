@@ -1,9 +1,9 @@
-package plus.maa.backend.config.external;
+package plus.maa.backend.config.external
 
-@lombok.Data
-public class Github {
-    /**
-     * GitHub api token
-     */
-    private String token;
-}
+
+data class Github(
+        /**
+         * GitHub api token
+         */
+        var token: String = "github_pat_xxx"
+)

@@ -1,34 +1,42 @@
-package plus.maa.backend.config.external;
+package plus.maa.backend.config.external
 
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
-import org.springframework.stereotype.Component;
+import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.boot.context.properties.NestedConfigurationProperty
+import org.springframework.stereotype.Component
 
-@Data
 @Component
 @ConfigurationProperties("maa-copilot")
-public class MaaCopilotProperties {
-    @NestedConfigurationProperty
-    private Jwt jwt;
-    @NestedConfigurationProperty
-    private Github github;
-    @NestedConfigurationProperty
-    private Info info;
-    @NestedConfigurationProperty
-    private Vcode vcode;
-    @NestedConfigurationProperty
-    private Cache cache;
-    @NestedConfigurationProperty
-    private ArkLevelGit arkLevelGit;
-    @NestedConfigurationProperty
-    private TaskCron taskCron;
-    @NestedConfigurationProperty
-    private CopilotBackup backup;
-    @NestedConfigurationProperty
-    private Mail mail;
-    @NestedConfigurationProperty
-    private SensitiveWord sensitiveWord;
-    @NestedConfigurationProperty
-    private Copilot copilot = new Copilot();
-}
+data class MaaCopilotProperties(
+        @NestedConfigurationProperty
+        var jwt: Jwt = Jwt(),
+
+        @NestedConfigurationProperty
+        var github: Github = Github(),
+
+        @NestedConfigurationProperty
+        var info: Info = Info(),
+
+        @NestedConfigurationProperty
+        var vcode: Vcode = Vcode(),
+
+        @NestedConfigurationProperty
+        var cache: Cache = Cache(),
+
+        @NestedConfigurationProperty
+        var arkLevelGit: ArkLevelGit = ArkLevelGit(),
+
+        @NestedConfigurationProperty
+        var taskCron: TaskCron = TaskCron(),
+
+        @NestedConfigurationProperty
+        var backup: CopilotBackup = CopilotBackup(),
+
+        @NestedConfigurationProperty
+        var mail: Mail = Mail(),
+
+        @NestedConfigurationProperty
+        var sensitiveWord: SensitiveWord = SensitiveWord(),
+
+        @NestedConfigurationProperty
+        var copilot: Copilot = Copilot()
+)

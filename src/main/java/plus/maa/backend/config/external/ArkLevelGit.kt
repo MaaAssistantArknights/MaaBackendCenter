@@ -1,9 +1,8 @@
-package plus.maa.backend.config.external;
+package plus.maa.backend.config.external
 
 
-@lombok.Data
-public class ArkLevelGit {
-    private String repository;
-    private String localRepository;
-    private String jsonPath;
-}
+data class ArkLevelGit(
+        var repository: String = "https://github.com/MaaAssistantArknights/MaaAssistantArknights.git",
+        var localRepository: String = "./MaaAssistantArknights",
+        var jsonPath: String = "resource/Arknights-Tile-Pos/",
+)

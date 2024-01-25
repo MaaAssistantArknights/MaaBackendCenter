@@ -62,7 +62,7 @@ public class CopilotBackupTask {
     @PostConstruct
     public void initGit() {
         CopilotBackup backup = config.getBackup();
-        if (backup.isDisabled()) {
+        if (backup.getDisabled()) {
             return;
         }
         File repoDir = new File(backup.getDir());
@@ -95,7 +95,7 @@ public class CopilotBackupTask {
      */
     @Scheduled(cron = "${maa-copilot.task-cron.copilot-update:-}")
     public void backupCopilots() {
-        if (config.getBackup().isDisabled() || Objects.isNull(git)) {
+        if (config.getBackup().getDisabled() || Objects.isNull(git)) {
             return;
         }
         try {

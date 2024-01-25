@@ -1,32 +1,36 @@
-package plus.maa.backend.controller.response;
+package plus.maa.backend.controller.response
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-
-import java.io.Serializable;
+import com.fasterxml.jackson.annotation.JsonInclude
 
 /**
  * @author AnselYuki
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record MaaResult<T>(int statusCode, String message, T data) implements Serializable {
-    public static <T> MaaResult<T> success(T data) {
-        return success(null, data);
-    }
+data class MaaResult<T>(val statusCode: Int, val message: String?, val data: T) {
+    companion object {
+        @JvmStatic
+        fun <T> success(data: T): MaaResult<T> {
+            return success(null, data)
+        }
 
-    public static <T> MaaResult<T> success() {
-        return success(null, null);
-    }
+        @JvmStatic
+        fun <T> success(): MaaResult<T?> {
+            return success(null, null)
+        }
 
-    public static <T> MaaResult<T> success(String msg, T data) {
-        return new MaaResult<>(200, msg, data);
-    }
+        @JvmStatic
+        fun <T> success(msg: String?, data: T): MaaResult<T> {
+            return MaaResult(200, msg, data)
+        }
 
-    public static <T> MaaResult<T> fail(int code, String msg) {
-        return fail(code, msg, null);
-    }
+        @JvmStatic
+        fun <T> fail(code: Int, msg: String?): MaaResult<T?> {
+            return fail(code, msg, null)
+        }
 
-    public static <T> MaaResult<T> fail(int code, String msg, T data) {
-        return new MaaResult<>(code, msg, data);
+        @JvmStatic
+        fun <T> fail(code: Int, msg: String?, data: T): MaaResult<T> {
+            return MaaResult(code, msg, data)
+        }
     }
-
 }
