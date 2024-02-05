@@ -39,7 +39,7 @@ class ArkLevelParserService(private val parsers: List<ArkLevelParser>) {
     private fun parseLevel(level: ArkLevel, tilePos: ArkTilePos): ArkLevel? {
         val type = ArkLevelType.fromLevelId(level.levelId)
         if (ArkLevelType.UNKNOWN == type) {
-            log.warn { "${"[PARSER]未知关卡类型:{}"} ${level.levelId}" }
+            log.warn { "[PARSER]未知关卡类型:${level.levelId}" }
             return null
         }
         val parser = parsers.stream()

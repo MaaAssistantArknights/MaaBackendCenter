@@ -66,12 +66,12 @@ class ArkGameDataService(private val okHttpClient: OkHttpClient) {
     fun findZone(levelId: String, code: String, stageId: String): ArkZone? {
         val stage = findStage(levelId, code, stageId)
         if (stage == null) {
-            log.error { "${"[DATA]stage不存在:{}, Level: {}"} $stageId $levelId" }
+            log.error { "[DATA]stage不存在:$stageId, Level: $levelId" }
             return null
         }
         val zone = zoneMap[stage.zoneId]
         if (zone == null) {
-            log.error { "${"[DATA]zone不存在:{}, Level: {}"} ${stage.zoneId} $levelId" }
+            log.error { "[DATA]zone不存在:${stage.zoneId}, Level: $levelId" }
         }
         return zone
     }
@@ -122,7 +122,7 @@ class ArkGameDataService(private val okHttpClient: OkHttpClient) {
                         levelStageMap[it.lowercase(Locale.getDefault())] = v
                     }
                 }
-                log.info { "${"[DATA]获取stage数据成功, 共{}条"} ${levelStageMap.size}" }
+                log.info { "[DATA]获取stage数据成功, 共${levelStageMap.size}条" }
             }
         } catch (e: Exception) {
             log.error(e) { "[DATA]同步stage数据异常" }
@@ -145,7 +145,7 @@ class ArkGameDataService(private val okHttpClient: OkHttpClient) {
                 val temp = mapper.convertValue(zonesNode, object : TypeReference<Map<String, ArkZone>>() {})
                 zoneMap.clear()
                 zoneMap.putAll(temp)
-                log.info { "${"[DATA]获取zone数据成功, 共{}条"} ${zoneMap.size}" }
+                log.info { "[DATA]获取zone数据成功, 共${zoneMap.size}条" }
             }
         } catch (e: Exception) {
             log.error(e) { "[DATA]同步zone数据异常" }
@@ -178,7 +178,7 @@ class ArkGameDataService(private val okHttpClient: OkHttpClient) {
                 }
                 zoneActivityMap.clear()
                 zoneActivityMap.putAll(temp)
-                log.info { "${"[DATA]获取activity数据成功, 共{}条"} ${zoneActivityMap.size}" }
+                log.info { "[DATA]获取activity数据成功, 共${zoneActivityMap.size}条" }
             }
         } catch (e: Exception) {
             log.error(e) { "[DATA]同步activity数据异常" }
@@ -212,7 +212,7 @@ class ArkGameDataService(private val okHttpClient: OkHttpClient) {
                     }
                     arkCharacterMap[ids[2]] = c
                 }
-                log.info { "${"[DATA]获取character数据成功, 共{}条"} ${arkCharacterMap.size}" }
+                log.info { "[DATA]获取character数据成功, 共${arkCharacterMap.size}条" }
             }
         } catch (e: Exception) {
             log.error(e) { "[DATA]同步character数据异常" }
@@ -235,7 +235,7 @@ class ArkGameDataService(private val okHttpClient: OkHttpClient) {
                 val towerNode = node.get("towers")
                 arkTowerMap.clear()
                 arkTowerMap.putAll(mapper.convertValue(towerNode, object : TypeReference<Map<String, ArkTower>>() {}))
-                log.info { "${"[DATA]获取tower数据成功, 共{}条"} ${arkTowerMap.size}" }
+                log.info { "[DATA]获取tower数据成功, 共${arkTowerMap.size}条" }
             }
         } catch (e: Exception) {
             log.error(e) { "[DATA]同步tower数据异常" }
@@ -262,7 +262,7 @@ class ArkGameDataService(private val okHttpClient: OkHttpClient) {
                 crisisV2InfoMap.forEach { (k, v) -> temp[ArkLevelUtil.getKeyInfoById(k)] = v }
                 arkCrisisV2InfoMap.clear()
                 arkCrisisV2InfoMap.putAll(temp)
-                log.info { "${"[DATA]获取crisisV2Info数据成功, 共{}条"} ${arkCrisisV2InfoMap.size}" }
+                log.info { "[DATA]获取crisisV2Info数据成功, 共${arkCrisisV2InfoMap.size}条" }
             }
         } catch (e: Exception) {
             log.error(e) { "[DATA]同步crisisV2Info数据异常" }
