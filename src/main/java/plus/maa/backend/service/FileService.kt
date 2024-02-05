@@ -1,225 +1,228 @@
-package plus.maa.backend.service;
+package plus.maa.backend.service
 
+import com.mongodb.client.gridfs.GridFSFindIterable
+import jakarta.servlet.http.HttpServletResponse
+import org.apache.commons.lang3.StringUtils
+import org.bson.Document
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.gridfs.GridFsCriteria
+import org.springframework.data.mongodb.gridfs.GridFsOperations
+import org.springframework.stereotype.Service
+import org.springframework.util.Assert
+import org.springframework.web.multipart.MultipartException
+import org.springframework.web.multipart.MultipartFile
+import plus.maa.backend.controller.file.ImageDownloadDTO
+import plus.maa.backend.controller.response.MaaResultException
+import plus.maa.backend.repository.RedisCache
+import java.io.IOException
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.*
+import java.util.concurrent.TimeUnit
+import java.util.regex.Pattern
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
-import com.mongodb.client.gridfs.GridFSFindIterable;
-import com.mongodb.client.gridfs.model.GridFSFile;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
-import org.bson.Document;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.gridfs.GridFsCriteria;
-import org.springframework.data.mongodb.gridfs.GridFsOperations;
-import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
-import org.springframework.web.multipart.MultipartException;
-import org.springframework.web.multipart.MultipartFile;
-import plus.maa.backend.controller.file.ImageDownloadDTO;
-import plus.maa.backend.controller.response.MaaResultException;
-import plus.maa.backend.repository.RedisCache;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 /**
  * @author LoMu
  * Date  2023-04-16 23:21
  */
-
-@RequiredArgsConstructor
 @Service
-public class FileService {
-    private final GridFsOperations gridFsOperations;
-    private final RedisCache redisCache;
+class FileService(
+    private val gridFsOperations: GridFsOperations,
+    private val redisCache: RedisCache
+) {
 
-    public void uploadFile(MultipartFile file,
-                           String type,
-                           String version,
-                           String classification,
-                           String label,
-                           String ip) {
-
+    fun uploadFile(
+        file: MultipartFile,
+        type: String?,
+        version: String,
+        classification: String?,
+        label: String?,
+        ip: String?
+    ) {
         //redis持久化
-        if (redisCache.getCache("NotEnable:UploadFile", String.class) != null) {
-            throw new MaaResultException(403, "closed uploadfile");
+
+        var version = version
+        if (redisCache.getCache("NotEnable:UploadFile", String::class.java) != null) {
+            throw MaaResultException(403, "closed uploadfile")
         }
 
         //文件小于1024Bytes不接收
-        if (file.getSize() < 1024) {
-            throw new MultipartException("Minimum upload size exceeded");
+        if (file.size < 1024) {
+            throw MultipartException("Minimum upload size exceeded")
         }
-        Assert.notNull(file.getOriginalFilename(), "文件名不可为空");
+        Assert.notNull(file.originalFilename, "文件名不可为空")
 
-        String antecedentVersion = null;
+        var antecedentVersion: String? = null
         if (version.contains("-")) {
-            String[] split = version.split("-");
-            version = split[0];
-            antecedentVersion = split[1];
+            val split = version.split("-".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            version = split[0]
+            antecedentVersion = split[1]
         }
 
-        Document document = new Document();
-        document.put("version", version);
-        document.put("antecedentVersion", antecedentVersion);
-        document.put("label", label);
-        document.put("classification", classification);
-        document.put("type", type);
-        document.put("ip", ip);
+        val document = Document()
+        document["version"] = version
+        document["antecedentVersion"] = antecedentVersion
+        document["label"] = label
+        document["classification"] = classification
+        document["type"] = type
+        document["ip"] = ip
 
-        int index = file.getOriginalFilename().lastIndexOf(".");
-        String fileType = "";
+        val index = file.originalFilename!!.lastIndexOf(".")
+        var fileType = ""
         if (index != -1) {
-            fileType = file.getOriginalFilename().substring(index);
+            fileType = file.originalFilename!!.substring(index)
         }
 
-        String fileName = "Maa-" + UUID.randomUUID().toString().replaceAll("-", "") + fileType;
+        val fileName = "Maa-" + UUID.randomUUID().toString().replace("-".toRegex(), "") + fileType
 
         try {
-            gridFsOperations.store(file.getInputStream(), fileName, document);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            gridFsOperations.store(file.inputStream, fileName, document)
+        } catch (e: IOException) {
+            throw RuntimeException(e)
         }
     }
 
 
-    public void downloadDateFile(String date, String beLocated, boolean delete, HttpServletResponse response) {
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-        Date d;
-        Query query;
+    fun downloadDateFile(date: String?, beLocated: String, delete: Boolean, response: HttpServletResponse) {
+        val formatter = SimpleDateFormat("yyyy-MM-dd")
+        val query: Query
 
-        if (StringUtils.isBlank(date)) {
-            d = new Date(System.currentTimeMillis());
+        val d = if (StringUtils.isBlank(date)) {
+            Date(System.currentTimeMillis())
         } else {
             try {
-                d = formatter.parse(date);
-            } catch (ParseException e) {
-                throw new RuntimeException(e);
+                formatter.parse(date)
+            } catch (e: ParseException) {
+                throw RuntimeException(e)
             }
         }
 
-        if (StringUtils.isBlank(beLocated) || Objects.equals("after", beLocated.toLowerCase())) {
-            query = new Query(Criteria.where("metadata").gte(d));
+        query = if (StringUtils.isBlank(beLocated) || "after" == beLocated.lowercase(Locale.getDefault())) {
+            Query(Criteria.where("metadata").gte(d))
         } else {
-            query = new Query(Criteria.where("uploadDate").lte(d));
+            Query(Criteria.where("uploadDate").lte(d))
         }
-        GridFSFindIterable files = gridFsOperations.find(query);
+        val files = gridFsOperations.find(query)
 
-        response.addHeader("Content-Disposition", "attachment;filename=" + System.currentTimeMillis() + ".zip");
+        response.addHeader("Content-Disposition", "attachment;filename=" + System.currentTimeMillis() + ".zip")
 
-        gzip(response, files);
+        gzip(response, files)
 
         if (delete) {
-            gridFsOperations.delete(query);
+            gridFsOperations.delete(query)
         }
     }
 
 
-    public void downloadFile(ImageDownloadDTO imageDownloadDTO, HttpServletResponse response) {
-        Query query = new Query();
-        Set<Criteria> criteriaSet = new HashSet<>();
+    fun downloadFile(imageDownloadDTO: ImageDownloadDTO, response: HttpServletResponse) {
+        val query = Query()
+        val criteriaSet: MutableSet<Criteria> = HashSet()
 
 
         //图片类型
-        criteriaSet.add(GridFsCriteria.whereMetaData("type").regex(Pattern.compile(imageDownloadDTO.getType(), Pattern.CASE_INSENSITIVE)));
+        criteriaSet.add(
+            GridFsCriteria.whereMetaData("type").regex(Pattern.compile(imageDownloadDTO.type, Pattern.CASE_INSENSITIVE))
+        )
 
         //指定下载某个类型的图片
-        if (StringUtils.isNotBlank(imageDownloadDTO.getClassification())) {
-            criteriaSet.add(GridFsCriteria.whereMetaData("classification").regex(Pattern.compile(imageDownloadDTO.getClassification(), Pattern.CASE_INSENSITIVE)));
+        if (StringUtils.isNotBlank(imageDownloadDTO.classification)) {
+            criteriaSet.add(
+                GridFsCriteria.whereMetaData("classification")
+                    .regex(Pattern.compile(imageDownloadDTO.classification, Pattern.CASE_INSENSITIVE))
+            )
         }
 
         //指定版本或指定范围版本
-        if (!Objects.isNull(imageDownloadDTO.getVersion())) {
-            List<String> version = imageDownloadDTO.getVersion();
+        if (!Objects.isNull(imageDownloadDTO.version)) {
+            val version = imageDownloadDTO.version
 
-            if (version.size() == 1) {
-                String antecedentVersion = null;
-                if (version.get(0).contains("-")) {
-                    String[] split = version.get(0).split("-");
-                    antecedentVersion = split[1];
+            if (version.size == 1) {
+                var antecedentVersion: String? = null
+                if (version[0].contains("-")) {
+                    val split = version[0].split("-".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                    antecedentVersion = split[1]
                 }
-                criteriaSet.add(GridFsCriteria.whereMetaData("version").is(version.get(0)).and("antecedentVersion").is(antecedentVersion));
-
-            } else if (version.size() == 2) {
-                criteriaSet.add(GridFsCriteria.whereMetaData("version").gte(version.get(0)).lte(version.get(1)));
+                criteriaSet.add(
+                    GridFsCriteria.whereMetaData("version").`is`(version[0]).and("antecedentVersion")
+                        .`is`(antecedentVersion)
+                )
+            } else if (version.size == 2) {
+                criteriaSet.add(GridFsCriteria.whereMetaData("version").gte(version[0]).lte(version[1]))
             }
         }
 
-        if (StringUtils.isNotBlank(imageDownloadDTO.getLabel())) {
-            criteriaSet.add(GridFsCriteria.whereMetaData("label").regex(Pattern.compile(imageDownloadDTO.getLabel(), Pattern.CASE_INSENSITIVE)));
+        if (StringUtils.isNotBlank(imageDownloadDTO.label)) {
+            criteriaSet.add(
+                GridFsCriteria.whereMetaData("label")
+                    .regex(Pattern.compile(imageDownloadDTO.label, Pattern.CASE_INSENSITIVE))
+            )
         }
 
-        Criteria criteria = new Criteria().andOperator(criteriaSet);
-        query.addCriteria(criteria);
+        val criteria = Criteria().andOperator(criteriaSet)
+        query.addCriteria(criteria)
 
 
-        GridFSFindIterable gridFSFiles = gridFsOperations.find(query);
+        val gridFSFiles = gridFsOperations.find(query)
 
-        response.addHeader("Content-Disposition", "attachment;filename=" + "Maa-" + imageDownloadDTO.getType() + ".zip");
+        response.addHeader("Content-Disposition", "attachment;filename=" + "Maa-" + imageDownloadDTO.type + ".zip")
 
-        gzip(response, gridFSFiles);
+        gzip(response, gridFSFiles)
 
-        if (imageDownloadDTO.isDelete()) {
-            gridFsOperations.delete(query);
-        }
-
-    }
-
-    public String disable() {
-        setUploadEnabled(false);
-        return "已关闭";
-    }
-
-    public String enable() {
-        setUploadEnabled(true);
-        return "已启用";
-    }
-
-    public boolean isUploadEnabled() {
-        return redisCache.getCache("NotEnable:UploadFile", String.class) == null;
-    }
-
-    /**
-     * 设置上传功能状态
-     * @param enabled 是否开启
-     */
-    public void setUploadEnabled(boolean enabled) {
-        // Fixme: redis recovery solution should be added, or change to another storage
-        if (enabled) {
-            redisCache.removeCache("NotEnable:UploadFile");
-        } else {
-            redisCache.setCache("NotEnable:UploadFile", "1", 0, TimeUnit.DAYS);
+        if (imageDownloadDTO.isDelete) {
+            gridFsOperations.delete(query)
         }
     }
 
+    fun disable(): String {
+        isUploadEnabled = false
+        return "已关闭"
+    }
 
-    private void gzip(HttpServletResponse response, GridFSFindIterable files) {
-        try (ZipOutputStream zipOutputStream = new ZipOutputStream(response.getOutputStream())) {
+    fun enable(): String {
+        isUploadEnabled = true
+        return "已启用"
+    }
 
-            for (GridFSFile file : files) {
+    var isUploadEnabled: Boolean
+        get() = redisCache.getCache("NotEnable:UploadFile", String::class.java) == null
+        /**
+         * 设置上传功能状态
+         * @param enabled 是否开启
+         */
+        set(enabled) {
+            // Fixme: redis recovery solution should be added, or change to another storage
+            if (enabled) {
+                redisCache.removeCache("NotEnable:UploadFile")
+            } else {
+                redisCache.setCache("NotEnable:UploadFile", "1", 0, TimeUnit.DAYS)
+            }
+        }
 
-                ZipEntry zipEntry = new ZipEntry(file.getFilename());
-                try (InputStream inputStream = gridFsOperations.getResource(file).getInputStream()) {
-                    //添加压缩文件
-                    zipOutputStream.putNextEntry(zipEntry);
 
-                    byte[] bytes = new byte[1024];
-                    int len;
-                    while ((len = inputStream.read(bytes)) != -1) {
-                        zipOutputStream.write(bytes, 0, len);
-                        zipOutputStream.flush();
+    private fun gzip(response: HttpServletResponse, files: GridFSFindIterable) {
+        try {
+            ZipOutputStream(response.outputStream).use { zipOutputStream ->
+                for (file in files) {
+                    val zipEntry = ZipEntry(file.filename)
+                    gridFsOperations.getResource(file).inputStream.use { inputStream ->
+                        //添加压缩文件
+                        zipOutputStream.putNextEntry(zipEntry)
+
+                        val bytes = ByteArray(1024)
+                        var len: Int
+                        while ((inputStream.read(bytes).also { len = it }) != -1) {
+                            zipOutputStream.write(bytes, 0, len)
+                            zipOutputStream.flush()
+                        }
                     }
                 }
             }
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (e: IOException) {
+            throw RuntimeException(e)
         }
     }
 }
