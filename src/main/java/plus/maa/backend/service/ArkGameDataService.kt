@@ -92,7 +92,7 @@ class ArkGameDataService(private val okHttpClient: OkHttpClient) {
      * @param id stageId 或者 seasonId
      * @return 危机合约信息，包含合约名、开始时间、结束时间等
      */
-    fun findCrisisV2InfoById(id: String) = findCrisisV2InfoByKeyInfo(ArkLevelUtil.getKeyInfoById(id))
+    fun findCrisisV2InfoById(id: String?) = findCrisisV2InfoByKeyInfo(ArkLevelUtil.getKeyInfoById(id))
 
     /**
      * 通过地图系列的唯一标识提取危机合约信息

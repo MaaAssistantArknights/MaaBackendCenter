@@ -1,44 +1,37 @@
-package plus.maa.backend.repository;
+package plus.maa.backend.repository
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.stereotype.Repository;
-import plus.maa.backend.repository.entity.CommentsArea;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Stream;
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
+import org.springframework.data.mongodb.repository.MongoRepository
+import org.springframework.stereotype.Repository
+import plus.maa.backend.repository.entity.CommentsArea
 
 /**
  * @author LoMu
  * Date  2023-02-17 15:06
  */
-
 @Repository
-public interface CommentsAreaRepository extends MongoRepository<CommentsArea, String> {
+interface CommentsAreaRepository : MongoRepository<CommentsArea, String> {
+    fun findByMainCommentId(commentsId: String): List<CommentsArea>
 
+    fun findByCopilotIdAndDeleteAndMainCommentIdExists(
+        copilotId: Long,
+        delete: Boolean,
+        exists: Boolean,
+        pageable: Pageable
+    ): Page<CommentsArea>
 
-    List<CommentsArea> findByMainCommentId(String commentsId);
+    fun findByCopilotIdAndUploaderIdAndDeleteAndMainCommentIdExists(
+        copilotId: Long,
+        uploaderId: String,
+        delete: Boolean,
+        exists: Boolean,
+        pageable: Pageable
+    ): Page<CommentsArea>
 
-    Page<CommentsArea> findByCopilotIdAndDeleteAndMainCommentIdExists(
-            Long copilotId,
-            boolean delete,
-            boolean exists,
-            Pageable pageable
-    );
+    fun findByCopilotIdInAndDelete(copilotIds: Collection<Long>, delete: Boolean): List<CommentsArea>
 
-    Page<CommentsArea> findByCopilotIdAndUploaderIdAndDeleteAndMainCommentIdExists(Long copilotId,
-                                                                                   String uploaderId,
-                                                                                   boolean delete,
-                                                                                   boolean exists,
-                                                                                   Pageable pageable);
+    fun findByMainCommentIdIn(ids: List<String>): List<CommentsArea>
 
-    Stream<CommentsArea> findByCopilotIdInAndDelete(Collection<Long> copilotIds, boolean delete);
-
-    List<CommentsArea> findByMainCommentIdIn(List<String> ids);
-
-    Long countByCopilotIdAndDelete(Long copilotId, boolean delete);
-
-
+    fun countByCopilotIdAndDelete(copilotId: Long, delete: Boolean): Long
 }
