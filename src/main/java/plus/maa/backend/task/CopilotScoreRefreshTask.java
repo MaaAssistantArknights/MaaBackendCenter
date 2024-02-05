@@ -107,7 +107,7 @@ public class CopilotScoreRefreshTask {
         for (Copilot copilot : copilots) {
             long likeCount = likeCountMap.getOrDefault(Long.toString(copilot.getCopilotId()), 1L);
             long dislikeCount = dislikeCountMap.getOrDefault(Long.toString(copilot.getCopilotId()), 0L);
-            double hotScore = CopilotService.Companion.getHotScore(copilot, likeCount, dislikeCount);
+            double hotScore = CopilotService.getHotScore(copilot, likeCount, dislikeCount);
             // 判断关卡是否开放
             ArkLevel level = arkLevelService.findByLevelIdFuzzy(copilot.getStageName());
             // 关卡已关闭，且作业在关闭前上传

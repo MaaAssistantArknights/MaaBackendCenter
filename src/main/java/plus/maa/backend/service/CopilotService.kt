@@ -553,6 +553,7 @@ class CopilotService(
             "id", 300L
         )
 
+        @JvmStatic
         fun getHotScore(copilot: Copilot, lastWeekLike: Long, lastWeekDislike: Long): Double {
             val now = LocalDateTime.now()
             val uploadTime = copilot.uploadTime
