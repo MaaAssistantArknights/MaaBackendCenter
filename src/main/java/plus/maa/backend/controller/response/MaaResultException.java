@@ -21,7 +21,7 @@ public class MaaResultException extends RuntimeException {
     }
 
     public MaaResultException(MaaStatusCode statusCode) {
-        this.code = statusCode.code;
-        this.msg = statusCode.message;
+        this.code = statusCode.getCode();
+        this.msg = statusCode.getMessage();
     }
 }

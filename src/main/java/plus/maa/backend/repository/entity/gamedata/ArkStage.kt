@@ -1,28 +1,24 @@
-package plus.maa.backend.repository.entity.gamedata;
+package plus.maa.backend.repository.entity.gamedata
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class ArkStage {
+data class ArkStage(
     /**
-     * 关卡ID, 需转换为全小写后使用<br>
+     * 关卡ID, 需转换为全小写后使用<br></br>
      * 例: Activities/ACT5D0/level_act5d0_ex08
      */
-    private String levelId;
+    val levelId: String,
+
     /**
      * 例: act14d7_zone2
      */
-    private String zoneId;
+    val zoneId: String,
+
     /**
      * 例:  act5d0_ex08
      */
-    private String stageId;
+    val stageId: String,
+
     /**
      * 例: CB-EX8
      */
-    private String code;
-}
+    val code: String
+)

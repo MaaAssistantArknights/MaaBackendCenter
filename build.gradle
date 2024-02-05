@@ -54,6 +54,9 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-reflect"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
 
+    // kotlin-logging
+    implementation 'io.github.oshai:kotlin-logging-jvm:5.1.0'
+
     implementation 'com.squareup.okhttp3:okhttp:4.10.0'
     implementation 'com.sun.mail:javax.mail:1.6.2'
     // 双引号才能使用变量
