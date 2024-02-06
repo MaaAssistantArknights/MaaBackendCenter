@@ -41,9 +41,7 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
-import java.util.function.Consumer
 import java.util.regex.Pattern
-import java.util.stream.Collectors
 import kotlin.collections.component1
 import kotlin.math.ceil
 import kotlin.math.ln
@@ -87,16 +85,16 @@ class CopilotService(
                 }
         }
         if (copilotDTO.opers != null) {
-            copilotDTO.opers.forEach(Consumer { operator: Copilot.Operators ->
+            copilotDTO.opers.forEach{ operator: Copilot.Operators ->
                 operator.name = operator.name?.replace("[\"“”]".toRegex(), "")
-            })
+            }
         }
 
         // actions name 不是必须
         if (copilotDTO.actions != null) {
-            copilotDTO.actions.forEach(Consumer { action: Copilot.Action ->
+            copilotDTO.actions.forEach{ action: Copilot.Action ->
                 action.name = if (action.name == null) null else action.name.replace("[\"“”]".toRegex(), "")
-            })
+            }
         }
         // 使用stageId存储作业关卡信息
         val level = levelService.findByLevelIdFuzzy(copilotDTO.stageName)
@@ -280,8 +278,7 @@ class CopilotService(
             } else {
                 andQueries.add(
                     Criteria.where("stageName").`in`(
-                        levelInfo.stream()
-                            .map { obj: ArkLevelInfo -> obj.stageId }.collect(Collectors.toSet())
+                        levelInfo.map { obj: ArkLevelInfo -> obj.stageId }.toSet()
                     )
                 )
             }
