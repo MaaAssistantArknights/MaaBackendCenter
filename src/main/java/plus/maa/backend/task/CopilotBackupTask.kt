@@ -1,184 +1,180 @@
-package plus.maa.backend.task;
+package plus.maa.backend.task
 
-import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.Status;
-import org.eclipse.jgit.api.TransportConfigCallback;
-import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.lib.PersonIdent;
-import org.eclipse.jgit.transport.SshTransport;
-import org.eclipse.jgit.transport.sshd.SshdSessionFactoryBuilder;
-import org.eclipse.jgit.util.FS;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
-import plus.maa.backend.config.external.CopilotBackup;
-import plus.maa.backend.config.external.MaaCopilotProperties;
-import plus.maa.backend.repository.CopilotRepository;
-import plus.maa.backend.repository.entity.ArkLevel;
-import plus.maa.backend.repository.entity.Copilot;
-import plus.maa.backend.service.ArkLevelService;
+import io.github.oshai.kotlinlogging.KotlinLogging
+import jakarta.annotation.PostConstruct
+import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.TransportConfigCallback
+import org.eclipse.jgit.api.errors.GitAPIException
+import org.eclipse.jgit.lib.PersonIdent
+import org.eclipse.jgit.transport.SshTransport
+import org.eclipse.jgit.transport.Transport
+import org.eclipse.jgit.transport.sshd.SshdSessionFactoryBuilder
+import org.eclipse.jgit.util.FS
+import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.stereotype.Component
+import plus.maa.backend.config.external.MaaCopilotProperties
+import plus.maa.backend.repository.CopilotRepository
+import plus.maa.backend.repository.entity.Copilot
+import plus.maa.backend.service.ArkLevelService
+import java.io.File
+import java.io.IOException
+import java.nio.file.Files
+import java.time.LocalDate
+import java.util.*
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Stream;
+private val log = KotlinLogging.logger {  }
 
 /**
  * CopilotBackupTask
  */
-@Slf4j
 @Component
-@RequiredArgsConstructor
-public class CopilotBackupTask {
+class CopilotBackupTask(
+    private val config: MaaCopilotProperties,
+    private val copilotRepository: CopilotRepository,
+    private val levelService: ArkLevelService,
+) {
 
-    private final MaaCopilotProperties config;
-
-    private final CopilotRepository copilotRepository;
-
-    private final ArkLevelService levelService;
-
-    private Git git;
-    private static final File DEFAULT_SSH_DIR = new File(FS.DETECTED.userHome(), "/.ssh");
-
-    private static final TransportConfigCallback sshCallback = transport -> {
-        if (transport instanceof SshTransport sshTransport) {
-            sshTransport.setSshSessionFactory(new SshdSessionFactoryBuilder()
-                    .setPreferredAuthentications("publickey")
-                    .setHomeDirectory(FS.DETECTED.userHome())
-                    .setSshDirectory(DEFAULT_SSH_DIR)
-                    .build(null));
-        }
-    };
+    private lateinit var git: Git
 
     /**
      * 初始化Git对象，如果目录已经存在且存在文件，则直接当作git仓库，如果不存在则clone仓库
      */
     @PostConstruct
-    public void initGit() {
-        CopilotBackup backup = config.getBackup();
-        if (backup.getDisabled()) {
-            return;
+    fun initGit() {
+        val backup = config.backup
+        if (backup.disabled) {
+            return
         }
-        File repoDir = new File(backup.getDir());
+        val repoDir = File(backup.dir)
         if (repoDir.mkdirs()) {
-            log.info("directory not exist, created: {}", backup.getDir());
+            log.info { "directory not exist, created: ${backup.dir}" }
         } else {
-            log.info("directory already exists, dir: {}", backup.getDir());
+            log.info { "directory already exists, dir: ${backup.dir}" }
         }
-        if (!repoDir.isDirectory()) {
-            return;
+        if (!repoDir.isDirectory) {
+            return
         }
-        try (Stream<Path> fileList = Files.list(repoDir.toPath())) {
-            if (fileList.findFirst().isEmpty()) {
-                // 不存在文件则初始化
-                git = Git.cloneRepository()
-                        .setURI(backup.getUri())
+        try {
+            Files.list(repoDir.toPath()).use { fileList ->
+                git = if (fileList.findFirst().isEmpty) {
+                    // 不存在文件则初始化
+                    Git.cloneRepository()
+                        .setURI(backup.uri)
                         .setDirectory(repoDir)
                         .setTransportConfigCallback(sshCallback)
-                        .call();
-            } else {
-                git = Git.open(repoDir);
+                        .call()
+                } else {
+                    Git.open(repoDir)
+                }
             }
-        } catch (IOException | GitAPIException e) {
-            log.error("init copilot backup repo failed, repoDir: {}", repoDir, e);
+        } catch (e: IOException) {
+            log.error { "init copilot backup repo failed, repoDir: $repoDir, $e"}
+        } catch (e: GitAPIException) {
+            log.error { "init copilot backup repo failed, repoDir: $repoDir, $e" }
         }
     }
 
     /**
      * copilot数据同步定时任务，每天执行一次
      */
-    @Scheduled(cron = "${maa-copilot.task-cron.copilot-update:-}")
-    public void backupCopilots() {
-        if (config.getBackup().getDisabled() || Objects.isNull(git)) {
-            return;
+    @Scheduled(cron = "\${maa-copilot.task-cron.copilot-update:-}")
+    fun backupCopilots() {
+        if (config.backup.disabled || Objects.isNull(git)) {
+            return
         }
         try {
-            git.pull().call();
-        } catch (GitAPIException e) {
-            log.error("git pull execute failed, msg: {}", e.getMessage(), e);
+            git.pull().call()
+        } catch (e: GitAPIException) {
+            log.error { "git pull execute failed, msg: ${e.message}, $e" }
         }
 
-        File baseDirectory = git.getRepository().getWorkTree();
-        List<Copilot> copilots = copilotRepository.findAll();
-        copilots.forEach(copilot -> {
-            ArkLevel level = levelService.findByLevelIdFuzzy(copilot.getStageName());
-            if (Objects.isNull(level)) {
-                return;
-            }
+        val baseDirectory = git.repository.workTree
+        val copilots = copilotRepository.findAll()
+        copilots.forEach{ copilot: Copilot ->
+            val level = levelService.findByLevelIdFuzzy(copilot.stageName) ?: return@forEach
             // 暂时使用 copilotId 作为文件名
-            File filePath = new File(String.join(File.separator, baseDirectory.getPath(), level.getCatOne(),
-                    level.getCatTwo(), level.getCatThree(), copilot.getCopilotId() + ".json"));
-            String content = copilot.getContent();
-            if (Objects.isNull(content)) {
-                return;
-            }
-            if (copilot.isDelete()) {
+            val filePath = File(
+                java.lang.String.join(
+                    File.separator, baseDirectory.path, level.catOne,
+                    level.catTwo, level.catThree, copilot.copilotId.toString() + ".json"
+                )
+            )
+            val content = copilot.content ?: return@forEach
+            if (copilot.isDelete) {
                 // 删除文件
-                deleteCopilot(filePath);
+                deleteCopilot(filePath)
             } else {
                 // 创建或者修改文件
-                upsertCopilot(filePath, content);
+                upsertCopilot(filePath, content)
             }
-        });
+        }
 
-        doCommitAndPush();
+        doCommitAndPush()
     }
 
-    private void upsertCopilot(File file, String content) {
+    private fun upsertCopilot(file: File, content: String) {
         if (!file.exists()) {
-            if (!file.getParentFile().mkdirs()) {
-                log.warn("folder may exists, mkdir failed");
+            if (!file.parentFile.mkdirs()) {
+                log.warn { "folder may exists, mkdir failed" }
             }
         }
         try {
-            Files.writeString(file.toPath(), content);
-        } catch (IOException e) {
-            log.error("write file failed, path: {}, message: {}", file.getPath(), e.getMessage(), e);
+            Files.writeString(file.toPath(), content)
+        } catch (e: IOException) {
+            log.error { "write file failed, path: ${file.path}, message: ${e.message}, $e" }
         }
     }
 
-    private void deleteCopilot(File file) {
+    private fun deleteCopilot(file: File) {
         if (file.exists()) {
             if (file.delete()) {
-                log.info("delete copilot file: {}", file.getPath());
+                log.info { "delete copilot file: ${file.path}" }
             } else {
-                log.error("delete copilot failed, file: {}", file.getPath());
+                log.error { "delete copilot failed, file: ${file.path}" }
             }
         } else {
-            log.info("file does not exists, no need to delete");
+            log.info { "file does not exists, no need to delete" }
         }
     }
 
-    private void doCommitAndPush() {
+    private fun doCommitAndPush() {
         try {
-            Status status = git.status().call();
-            if (status.getAdded().isEmpty() &&
-                    status.getChanged().isEmpty() &&
-                    status.getRemoved().isEmpty() &&
-                    status.getUntracked().isEmpty() &&
-                    status.getModified().isEmpty() &&
-                    status.getAdded().isEmpty()) {
-                log.info("copilot backup with no new added or changes");
-                return;
+            val status = git.status().call()
+            if (status.added.isEmpty() &&
+                status.changed.isEmpty() &&
+                status.removed.isEmpty() &&
+                status.untracked.isEmpty() &&
+                status.modified.isEmpty() &&
+                status.added.isEmpty()
+            ) {
+                log.info { "copilot backup with no new added or changes" }
+                return
             }
-            git.add().addFilepattern(".").call();
-            CopilotBackup backup = config.getBackup();
-            PersonIdent committer = new PersonIdent(backup.getUsername(), backup.getEmail());
+            git.add().addFilepattern(".").call()
+            val backup = config.backup
+            val committer = PersonIdent(backup.username, backup.email)
             git.commit().setCommitter(committer)
-                    .setMessage(LocalDate.now().toString())
-                    .call();
+                .setMessage(LocalDate.now().toString())
+                .call()
             git.push()
-                    .setTransportConfigCallback(sshCallback)
-                    .call();
-        } catch (GitAPIException e) {
-            log.error("git committing failed, msg: {}", e.getMessage(), e);
+                .setTransportConfigCallback(sshCallback)
+                .call()
+        } catch (e: GitAPIException) {
+            log.error { "git committing failed, msg: ${e.message}, $e" }
         }
     }
 
+    companion object {
+        private val DEFAULT_SSH_DIR = File(FS.DETECTED.userHome(), "/.ssh")
+
+        private val sshCallback = TransportConfigCallback { transport: Transport ->
+            if (transport is SshTransport) {
+                transport.sshSessionFactory = SshdSessionFactoryBuilder()
+                    .setPreferredAuthentications("publickey")
+                    .setHomeDirectory(FS.DETECTED.userHome())
+                    .setSshDirectory(DEFAULT_SSH_DIR)
+                    .build(null)
+            }
+        }
+    }
 }

@@ -75,7 +75,7 @@ class ArkLevelService(
             .toList()
 
     @Cacheable("arkLevel")
-    fun findByLevelIdFuzzy(levelId: String?): ArkLevel {
+    fun findByLevelIdFuzzy(levelId: String?): ArkLevel? {
         return arkLevelRepo.findByLevelIdFuzzy(levelId).findAny().orElse(null)
     }
 
