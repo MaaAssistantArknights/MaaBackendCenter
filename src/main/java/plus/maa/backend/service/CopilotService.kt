@@ -70,7 +70,6 @@ class CopilotService(
     private val copilotConverter: CopilotConverter
 ) {
 
-
     /**
      * 并修正前端的冗余部分
      *
@@ -78,36 +77,32 @@ class CopilotService(
      */
     private fun correctCopilot(copilotDTO: CopilotDTO): CopilotDTO {
         // 去除name的冗余部分
-        // todo 优化空处理代码美观程度
-
         if (copilotDTO.groups != null) {
-            copilotDTO.groups.forEach(
-                Consumer { group: Copilot.Groups ->
+            copilotDTO.groups.forEach{ group: Copilot.Groups ->
                     if (group.opers != null) {
-                        group.opers.forEach(Consumer { oper: OperationGroup ->
-                            oper
-                                .setName(if (oper.name == null) null else oper.name.replace("[\"“”]".toRegex(), ""))
-                        })
+                        group.opers.forEach{ oper: OperationGroup ->
+                            oper.name = oper.name?.replace("[\"“”]".toRegex(), "")
+                        }
                     }
-                })
+                }
         }
         if (copilotDTO.opers != null) {
             copilotDTO.opers.forEach(Consumer { operator: Copilot.Operators ->
-                operator
-                    .setName(if (operator.name == null) null else operator.name.replace("[\"“”]".toRegex(), ""))
+                operator.name = operator.name?.replace("[\"“”]".toRegex(), "")
             })
         }
 
         // actions name 不是必须
         if (copilotDTO.actions != null) {
             copilotDTO.actions.forEach(Consumer { action: Copilot.Action ->
-                action
-                    .setName(if (action.name == null) null else action.name.replace("[\"“”]".toRegex(), ""))
+                action.name = if (action.name == null) null else action.name.replace("[\"“”]".toRegex(), "")
             })
         }
         // 使用stageId存储作业关卡信息
         val level = levelService.findByLevelIdFuzzy(copilotDTO.stageName)
-        copilotDTO.stageName = level.stageId
+        level?.stageId?.let {
+            copilotDTO.stageName = it
+        }
         return copilotDTO
     }
 
@@ -156,7 +151,7 @@ class CopilotService(
     fun delete(loginUserId: String, request: CopilotCUDRequest) {
         copilotRepository.findByCopilotId(request.id).ifPresent { copilot: Copilot ->
             Assert.state(copilot.uploaderId == loginUserId, "您无法修改不属于您的作业")
-            copilot.setDelete(true)
+            copilot.isDelete = true
             copilotRepository.save(copilot)
             /*
              * 删除作业时，如果被删除的项在 Redis 首页缓存中存在，则清空对应的首页缓存
@@ -349,7 +344,6 @@ class CopilotService(
         // 分页排序查询
         val copilots = mongoTemplate.find(queryObj.with(pageable), Copilot::class.java)
 
-
         // 填充前端所需信息
         val copilotIds = copilots.map {
             it.copilotId
@@ -404,7 +398,7 @@ class CopilotService(
         copilotRepository.findByCopilotId(id).ifPresent { copilot: Copilot ->
             val copilotDTO = correctCopilot(parseToCopilotDto(content))
             Assert.state(copilot.uploaderId == loginUserId, "您无法修改不属于您的作业")
-            copilot.setUploadTime(LocalDateTime.now())
+            copilot.uploadTime = LocalDateTime.now()
             copilotConverter.updateCopilotFromDto(copilotDTO, content, copilot)
             copilotRepository.save(copilot)
         }
@@ -528,7 +522,7 @@ class CopilotService(
         info.isAvailable = true
 
         // 兼容客户端, 将作业ID替换为数字ID
-        copilot.setId(copilot.copilotId.toString())
+        copilot.id = copilot.copilotId.toString()
         return info
     }
 
@@ -537,7 +531,7 @@ class CopilotService(
         Assert.isTrue(copilotOptional.isPresent, "copilot不存在")
         val copilot = copilotOptional.get()
         Assert.isTrue(userId == copilot.uploaderId, "您没有权限修改")
-        copilot.setNotification(status)
+        copilot.notification = status
         copilotRepository.save(copilot)
     }
 
