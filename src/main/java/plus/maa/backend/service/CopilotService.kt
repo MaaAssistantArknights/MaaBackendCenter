@@ -147,7 +147,7 @@ class CopilotService(
      * 根据作业id删除作业
      */
     fun delete(loginUserId: String, request: CopilotCUDRequest) {
-        copilotRepository.findByCopilotId(request.id).ifPresent { copilot: Copilot ->
+        copilotRepository.findByCopilotId(request.id)?.let { copilot: Copilot ->
             Assert.state(copilot.uploaderId == loginUserId, "您无法修改不属于您的作业")
             copilot.isDelete = true
             copilotRepository.save(copilot)
@@ -168,10 +168,10 @@ class CopilotService(
     /**
      * 指定查询
      */
-    fun getCopilotById(userIdOrIpAddress: String, id: Long): Optional<CopilotInfo> {
+    fun getCopilotById(userIdOrIpAddress: String, id: Long): CopilotInfo? {
         // 根据ID获取作业, 如作业不存在则抛出异常返回
         val copilotOptional = copilotRepository.findByCopilotIdAndDeleteIsFalse(id)
-        return copilotOptional.map { copilot: Copilot ->
+        return copilotOptional?.let { copilot: Copilot ->
             // 60分钟内限制同一个用户对访问量的增加
             val cache = redisCache.getCache("views:$userIdOrIpAddress", RatingCache::class.java)
             if (Objects.isNull(cache) || Objects.isNull(cache!!.copilotIds) ||
@@ -392,7 +392,7 @@ class CopilotService(
     fun update(loginUserId: String, copilotCUDRequest: CopilotCUDRequest) {
         val content = copilotCUDRequest.content
         val id = copilotCUDRequest.id
-        copilotRepository.findByCopilotId(id).ifPresent { copilot: Copilot ->
+        copilotRepository.findByCopilotId(id)?.let { copilot: Copilot ->
             val copilotDTO = correctCopilot(parseToCopilotDto(content))
             Assert.state(copilot.uploaderId == loginUserId, "您无法修改不属于您的作业")
             copilot.uploadTime = LocalDateTime.now()
@@ -523,10 +523,10 @@ class CopilotService(
         return info
     }
 
-    fun notificationStatus(userId: String, copilotId: Long?, status: Boolean) {
+    fun notificationStatus(userId: String?, copilotId: Long, status: Boolean) {
         val copilotOptional = copilotRepository.findByCopilotId(copilotId)
-        Assert.isTrue(copilotOptional.isPresent, "copilot不存在")
-        val copilot = copilotOptional.get()
+        Assert.isTrue(copilotOptional!=null, "copilot不存在")
+        val copilot = copilotOptional!!
         Assert.isTrue(userId == copilot.uploaderId, "您没有权限修改")
         copilot.notification = status
         copilotRepository.save(copilot)

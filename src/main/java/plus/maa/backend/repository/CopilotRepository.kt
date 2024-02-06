@@ -1,31 +1,24 @@
-package plus.maa.backend.repository;
+package plus.maa.backend.repository
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.mongodb.repository.MongoRepository;
-import plus.maa.backend.repository.entity.Copilot;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
+import org.springframework.data.mongodb.repository.MongoRepository
+import plus.maa.backend.repository.entity.Copilot
 
 /**
  * @author LoMu
  * Date  2022-12-27 10:28
  */
+interface CopilotRepository : MongoRepository<Copilot, String> {
+    fun findAllByDeleteIsFalse(pageable: Pageable): Page<Copilot>
 
-public interface CopilotRepository extends MongoRepository<Copilot, String> {
+    fun findFirstByOrderByCopilotIdDesc(): Copilot?
 
-    Page<Copilot> findAllByDeleteIsFalse(Pageable pageable);
+    fun findByCopilotIdAndDeleteIsFalse(copilotId: Long): Copilot?
 
-    Optional<Copilot> findFirstByOrderByCopilotIdDesc();
+    fun findByCopilotIdInAndDeleteIsFalse(copilotIds: Collection<Long>): List<Copilot>
 
-    Optional<Copilot> findByCopilotIdAndDeleteIsFalse(Long copilotId);
+    fun findByCopilotId(copilotId: Long): Copilot?
 
-    List<Copilot> findByCopilotIdInAndDeleteIsFalse(Collection<Long> copilotIds);
-
-    Optional<Copilot> findByCopilotId(Long copilotId);
-
-    boolean existsCopilotsByCopilotId(Long copilotId);
-
+    fun existsCopilotsByCopilotId(copilotId: Long): Boolean
 }

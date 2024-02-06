@@ -1,4 +1,3 @@
-package plus.maa.backend.service.session;
+package plus.maa.backend.service.session
 
-public class UserSession {
-}
+class UserSession

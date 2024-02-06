@@ -75,11 +75,11 @@ class ArkLevelService(
             .toList()
 
     @Cacheable("arkLevel")
-    fun findByLevelIdFuzzy(levelId: String?): ArkLevel? {
-        return arkLevelRepo.findByLevelIdFuzzy(levelId).findAny().orElse(null)
+    fun findByLevelIdFuzzy(levelId: String): ArkLevel? {
+        return arkLevelRepo.findByLevelIdFuzzy(levelId).firstOrNull()
     }
 
-    fun queryLevelInfosByKeyword(keyword: String?): List<ArkLevelInfo> {
+    fun queryLevelInfosByKeyword(keyword: String): List<ArkLevelInfo> {
         val levels = arkLevelRepo.queryLevelByKeyword(keyword).toList()
         return arkLevelConverter.convert(levels)
     }
