@@ -9,7 +9,6 @@ import org.springframework.cache.annotation.Cacheable
 import org.springframework.data.domain.Pageable
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
-import org.springframework.util.CollectionUtils
 import plus.maa.backend.common.utils.ArkLevelUtil
 import plus.maa.backend.common.utils.converter.ArkLevelConverter
 import plus.maa.backend.controller.response.copilot.ArkLevelInfo
@@ -75,11 +74,11 @@ class ArkLevelService(
             .toList()
 
     @Cacheable("arkLevel")
-    fun findByLevelIdFuzzy(levelId: String?): ArkLevel {
-        return arkLevelRepo.findByLevelIdFuzzy(levelId).findAny().orElse(null)
+    fun findByLevelIdFuzzy(levelId: String): ArkLevel? {
+        return arkLevelRepo.findByLevelIdFuzzy(levelId).firstOrNull()
     }
 
-    fun queryLevelInfosByKeyword(keyword: String?): List<ArkLevelInfo> {
+    fun queryLevelInfosByKeyword(keyword: String): List<ArkLevelInfo> {
         val levels = arkLevelRepo.queryLevelByKeyword(keyword).toList()
         return arkLevelConverter.convert(levels)
     }
@@ -92,39 +91,35 @@ class ArkLevelService(
         log.info { "[LEVEL]开始同步地图数据" }
         //获取地图文件夹最新的commit, 用于判断是否需要更新
         val commits = githubRepo.getCommits(githubToken)
-        if (CollectionUtils.isEmpty(commits)) {
+        if (commits.isEmpty()) {
             log.info { "[LEVEL]获取地图数据最新commit失败" }
             return
         }
         //与缓存的commit比较，如果相同则不更新
         val commit = commits[0]
         val lastCommit = redisCache.cacheLevelCommit
-        if (lastCommit != null && lastCommit == commit!!.sha) {
+        if (lastCommit != null && lastCommit == commit.sha) {
             log.info { "[LEVEL]地图数据已是最新" }
             return
         }
         //获取根目录文件列表
         var trees: GithubTrees?
-        val files = Arrays.stream(tilePosPath.split("/".toRegex()).dropLastWhile { it.isEmpty() }
-            .toTypedArray()).toList()
-        trees = githubRepo.getTrees(githubToken, commit!!.sha)
+        val files = tilePosPath.split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray().toList()
+        trees = githubRepo.getTrees(githubToken, commit.sha)
         //根据路径获取文件列表
         for (file in files) {
-            if (trees == null || CollectionUtils.isEmpty(trees.tree)) {
+            if (trees == null || trees.tree.isEmpty()) {
                 log.info { "[LEVEL]地图数据获取失败" }
                 return
             }
-            val tree = trees.tree.stream()
-                .filter { t: GithubTree -> t.path == file && t.type == "tree" }
-                .findFirst()
-                .orElse(null)
+            val tree = trees.tree.firstOrNull { t: GithubTree -> t.path == file && t.type == "tree" }
             if (tree == null) {
                 log.info { "[LEVEL]地图数据获取失败, 未找到文件夹$file" }
                 return
             }
             trees = githubRepo.getTrees(githubToken, tree.sha)
         }
-        if (trees == null || CollectionUtils.isEmpty(trees.tree)) {
+        if (trees == null || trees.tree.isEmpty()) {
             log.info { "[LEVEL]地图数据获取失败, 未找到文件夹$tilePosPath" }
             return
         }
@@ -135,7 +130,7 @@ class ArkLevelService(
         log.info { "[LEVEL]已发现${levelTrees.size}份地图数据" }
 
         //根据sha筛选无需更新的地图
-        val shaList = arkLevelRepo.findAllShaBy().stream().map { obj: ArkLevelSha -> obj.sha }.toList()
+        val shaList = arkLevelRepo.findAllShaBy().map { obj: ArkLevelSha -> obj.sha }.toList()
         levelTrees.removeIf { t: GithubTree -> shaList.contains(t.sha) }
         // 排除overview文件、肉鸽、训练关卡和 Guide? 不知道是啥
         levelTrees.removeIf { t: GithubTree ->
@@ -169,10 +164,8 @@ class ArkLevelService(
      */
     fun updateActivitiesOpenStatus() {
         log.info { "[ACTIVITIES-OPEN-STATUS]准备更新活动地图开放状态" }
-        val stages = githubRepo.getContents(githubToken, "resource").stream()
-            .filter { content: GithubContent -> content.isFile && "stages.json" == content.name }
-            .findFirst()
-            .orElse(null)
+        val stages = githubRepo.getContents(githubToken, "resource").firstOrNull { content: GithubContent -> content.isFile && "stages.json" == content.name }
+
         if (stages == null) {
             log.info { "[ACTIVITIES-OPEN-STATUS]活动地图开放状态数据不存在" }
             return

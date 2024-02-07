@@ -24,7 +24,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-@Accessors(chain = true)
 @Document("maa_copilot")
 public class Copilot implements Serializable {
 

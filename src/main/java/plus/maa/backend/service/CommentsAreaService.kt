@@ -59,7 +59,7 @@ class CommentsAreaService(
         val message = commentsAddDTO.message
         val copilotOptional = copilotRepository.findByCopilotId(copilotId)
         Assert.isTrue(StringUtils.isNotBlank(message), "评论不可为空")
-        Assert.isTrue(copilotOptional.isPresent, "作业表不存在")
+        Assert.isTrue(copilotOptional!=null, "作业表不存在")
 
 
         var fromCommentsId: String? = null
@@ -93,7 +93,7 @@ class CommentsAreaService(
 
         //判断是否需要通知
         if (Objects.nonNull(isCopilotAuthor) && maaCopilotProperties.mail.notification) {
-            val copilot = copilotOptional.get()
+            val copilot = copilotOptional!!
 
             //通知作业作者或是评论作者
             val replyUserId = if (isCopilotAuthor!!) copilot.uploaderId else commentsArea!!.uploaderId
@@ -144,8 +144,7 @@ class CommentsAreaService(
     fun deleteComments(userId: String, commentsId: String) {
         val commentsArea = findCommentsById(commentsId)
         //允许作者删除评论
-        copilotRepository.findByCopilotId(commentsArea.copilotId)
-            .ifPresent { copilot: Copilot ->
+        copilotRepository.findByCopilotId(commentsArea.copilotId)?.let { copilot: Copilot ->
                 Assert.isTrue(
                     userId == copilot.uploaderId || userId == commentsArea.uploaderId,
                     "您无法删除不属于您的评论"
@@ -244,8 +243,7 @@ class CommentsAreaService(
         val commentsArea = findCommentsById(commentsToppingDTO.commentId)
         Assert.isTrue(!commentsArea.isDelete, "评论不存在")
         // 只允许作者置顶评论
-        copilotRepository.findByCopilotId(commentsArea.copilotId)
-            .ifPresent { copilot: Copilot ->
+        copilotRepository.findByCopilotId(commentsArea.copilotId)?.let { copilot: Copilot ->
                 Assert.isTrue(
                     userId == copilot.uploaderId,
                     "只有作者才能置顶评论"

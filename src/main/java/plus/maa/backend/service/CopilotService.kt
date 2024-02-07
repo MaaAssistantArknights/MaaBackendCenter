@@ -1,6 +1,5 @@
 package plus.maa.backend.service
 
-import cn.hutool.core.collection.CollectionUtil
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.collect.Sets
@@ -41,9 +40,7 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
-import java.util.function.Consumer
 import java.util.regex.Pattern
-import java.util.stream.Collectors
 import kotlin.collections.component1
 import kotlin.math.ceil
 import kotlin.math.ln
@@ -70,7 +67,6 @@ class CopilotService(
     private val copilotConverter: CopilotConverter
 ) {
 
-
     /**
      * 并修正前端的冗余部分
      *
@@ -78,36 +74,32 @@ class CopilotService(
      */
     private fun correctCopilot(copilotDTO: CopilotDTO): CopilotDTO {
         // 去除name的冗余部分
-        // todo 优化空处理代码美观程度
-
         if (copilotDTO.groups != null) {
-            copilotDTO.groups.forEach(
-                Consumer { group: Copilot.Groups ->
+            copilotDTO.groups.forEach{ group: Copilot.Groups ->
                     if (group.opers != null) {
-                        group.opers.forEach(Consumer { oper: OperationGroup ->
-                            oper
-                                .setName(if (oper.name == null) null else oper.name.replace("[\"“”]".toRegex(), ""))
-                        })
+                        group.opers.forEach{ oper: OperationGroup ->
+                            oper.name = oper.name?.replace("[\"“”]".toRegex(), "")
+                        }
                     }
-                })
+                }
         }
         if (copilotDTO.opers != null) {
-            copilotDTO.opers.forEach(Consumer { operator: Copilot.Operators ->
-                operator
-                    .setName(if (operator.name == null) null else operator.name.replace("[\"“”]".toRegex(), ""))
-            })
+            copilotDTO.opers.forEach{ operator: Copilot.Operators ->
+                operator.name = operator.name?.replace("[\"“”]".toRegex(), "")
+            }
         }
 
         // actions name 不是必须
         if (copilotDTO.actions != null) {
-            copilotDTO.actions.forEach(Consumer { action: Copilot.Action ->
-                action
-                    .setName(if (action.name == null) null else action.name.replace("[\"“”]".toRegex(), ""))
-            })
+            copilotDTO.actions.forEach{ action: Copilot.Action ->
+                action.name = if (action.name == null) null else action.name.replace("[\"“”]".toRegex(), "")
+            }
         }
         // 使用stageId存储作业关卡信息
         val level = levelService.findByLevelIdFuzzy(copilotDTO.stageName)
-        copilotDTO.stageName = level.stageId
+        level?.stageId?.let {
+            copilotDTO.stageName = it
+        }
         return copilotDTO
     }
 
@@ -154,9 +146,9 @@ class CopilotService(
      * 根据作业id删除作业
      */
     fun delete(loginUserId: String, request: CopilotCUDRequest) {
-        copilotRepository.findByCopilotId(request.id).ifPresent { copilot: Copilot ->
+        copilotRepository.findByCopilotId(request.id)?.let { copilot: Copilot ->
             Assert.state(copilot.uploaderId == loginUserId, "您无法修改不属于您的作业")
-            copilot.setDelete(true)
+            copilot.isDelete = true
             copilotRepository.save(copilot)
             /*
              * 删除作业时，如果被删除的项在 Redis 首页缓存中存在，则清空对应的首页缓存
@@ -175,10 +167,10 @@ class CopilotService(
     /**
      * 指定查询
      */
-    fun getCopilotById(userIdOrIpAddress: String, id: Long): Optional<CopilotInfo> {
+    fun getCopilotById(userIdOrIpAddress: String, id: Long): CopilotInfo? {
         // 根据ID获取作业, 如作业不存在则抛出异常返回
         val copilotOptional = copilotRepository.findByCopilotIdAndDeleteIsFalse(id)
-        return copilotOptional.map { copilot: Copilot ->
+        return copilotOptional?.let { copilot: Copilot ->
             // 60分钟内限制同一个用户对访问量的增加
             val cache = redisCache.getCache("views:$userIdOrIpAddress", RatingCache::class.java)
             if (Objects.isNull(cache) || Objects.isNull(cache!!.copilotIds) ||
@@ -231,35 +223,27 @@ class CopilotService(
         val setKey = AtomicReference<String>()
         // 只缓存默认状态下热度和访问量排序的结果，并且最多只缓存前三页
         if (request.page <= 3 && request.document == null && request.levelKeyword == null && request.uploaderId == null && request.operator == null &&
-            CollectionUtil.isEmpty(request.copilotIds)
+            request.copilotIds.isNullOrEmpty()
         ) {
-            val cacheOptional = Optional.ofNullable<String>(request.orderBy)
-                .filter { cs: String? -> StringUtils.isNotBlank(cs) }
-                .map<Long?> { key: String? -> HOME_PAGE_CACHE_CONFIG[key] }
-                .map<CopilotPageInfo?> { t: Long? ->
-                    cacheTimeout.set(t!!)
+            request.orderBy?.takeIf { orderBy -> orderBy.isNotBlank() }
+                ?.let { key -> HOME_PAGE_CACHE_CONFIG[key] }
+                ?.let { t ->
+                    cacheTimeout.set(t)
                     setKey.set(String.format("home:%s:copilotIds", request.orderBy))
                     cacheKey.set(String.format("home:%s:%s", request.orderBy, request.hashCode()))
                     redisCache.getCache(cacheKey.get(), CopilotPageInfo::class.java)
-                }
-
-            // 如果缓存存在则直接返回
-            if (cacheOptional.isPresent) {
-                return cacheOptional.get()
-            }
+                }?.let { return it }
         }
 
         val sortOrder = Sort.Order(
-            if (request.isDesc) Sort.Direction.DESC else Sort.Direction.ASC,
-            Optional.ofNullable(request.orderBy)
-                .filter { cs: String? -> StringUtils.isNotBlank(cs) }
-                .map { ob: String? ->
-                    when (ob) {
-                        "hot" -> "hotScore"
-                        "id" -> "copilotId"
-                        else -> request.orderBy
-                    }
-                }.orElse("copilotId")
+            if (request.desc) Sort.Direction.DESC else Sort.Direction.ASC,
+            request.orderBy?.takeIf { orderBy -> orderBy.isNotBlank() }?.let { ob ->
+                when (ob) {
+                    "hot" -> "hotScore"
+                    "id" -> "copilotId"
+                    else -> request.orderBy
+                }
+            }?: "copilotId"
         )
         // 判断是否有值 无值则为默认
         val page = if (request.page > 0) request.page else 1
@@ -278,27 +262,27 @@ class CopilotService(
 
 
         //关卡名、关卡类型、关卡编号
-        if (StringUtils.isNotBlank(request.levelKeyword)) {
-            val levelInfo = levelService.queryLevelInfosByKeyword(request.levelKeyword)
+        if (!request.levelKeyword.isNullOrBlank()) {
+            val keyword = request.levelKeyword!!
+            val levelInfo = levelService.queryLevelInfosByKeyword(keyword)
             if (levelInfo.isEmpty()) {
-                andQueries.add(Criteria.where("stageName").regex(caseInsensitive(request.levelKeyword)))
+                andQueries.add(Criteria.where("stageName").regex(caseInsensitive(keyword)))
             } else {
                 andQueries.add(
                     Criteria.where("stageName").`in`(
-                        levelInfo.stream()
-                            .map { obj: ArkLevelInfo -> obj.stageId }.collect(Collectors.toSet())
+                        levelInfo.map { obj: ArkLevelInfo -> obj.stageId }.toSet()
                     )
                 )
             }
         }
 
         // 作业id列表
-        if (CollectionUtil.isNotEmpty(request.copilotIds)) {
-            andQueries.add(Criteria.where("copilotId").`in`(request.copilotIds))
+        if (!request.copilotIds.isNullOrEmpty()) {
+            andQueries.add(Criteria.where("copilotId").`in`(request.copilotIds!!))
         }
 
         //标题、描述、神秘代码
-        if (StringUtils.isNotBlank(request.document)) {
+        if (!request.document.isNullOrBlank()) {
             orQueries.add(Criteria.where("doc.title").regex(caseInsensitive(request.document)))
             orQueries.add(Criteria.where("doc.details").regex(caseInsensitive(request.document)))
         }
@@ -306,7 +290,7 @@ class CopilotService(
 
         //包含或排除干员
         var oper = request.operator
-        if (StringUtils.isNotBlank(oper)) {
+        if (!oper.isNullOrBlank()) {
             oper = oper.replace("[“\"”]".toRegex(), "")
             val operators = oper.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
             for (operator in operators) {
@@ -348,7 +332,6 @@ class CopilotService(
 
         // 分页排序查询
         val copilots = mongoTemplate.find(queryObj.with(pageable), Copilot::class.java)
-
 
         // 填充前端所需信息
         val copilotIds = copilots.map {
@@ -401,10 +384,10 @@ class CopilotService(
     fun update(loginUserId: String, copilotCUDRequest: CopilotCUDRequest) {
         val content = copilotCUDRequest.content
         val id = copilotCUDRequest.id
-        copilotRepository.findByCopilotId(id).ifPresent { copilot: Copilot ->
+        copilotRepository.findByCopilotId(id)?.let { copilot: Copilot ->
             val copilotDTO = correctCopilot(parseToCopilotDto(content))
             Assert.state(copilot.uploaderId == loginUserId, "您无法修改不属于您的作业")
-            copilot.setUploadTime(LocalDateTime.now())
+            copilot.uploadTime = LocalDateTime.now()
             copilotConverter.updateCopilotFromDto(copilotDTO, content, copilot)
             copilotRepository.save(copilot)
         }
@@ -528,16 +511,16 @@ class CopilotService(
         info.isAvailable = true
 
         // 兼容客户端, 将作业ID替换为数字ID
-        copilot.setId(copilot.copilotId.toString())
+        copilot.id = copilot.copilotId.toString()
         return info
     }
 
-    fun notificationStatus(userId: String, copilotId: Long?, status: Boolean) {
+    fun notificationStatus(userId: String?, copilotId: Long, status: Boolean) {
         val copilotOptional = copilotRepository.findByCopilotId(copilotId)
-        Assert.isTrue(copilotOptional.isPresent, "copilot不存在")
-        val copilot = copilotOptional.get()
+        Assert.isTrue(copilotOptional!=null, "copilot不存在")
+        val copilot = copilotOptional!!
         Assert.isTrue(userId == copilot.uploaderId, "您没有权限修改")
-        copilot.setNotification(status)
+        copilot.notification = status
         copilotRepository.save(copilot)
     }
 
