@@ -1,21 +1,20 @@
-package plus.maa.backend.common.utils;
+package plus.maa.backend.common.utils
 
-import jakarta.servlet.http.HttpServletResponse;
-
-import java.io.IOException;
+import jakarta.servlet.http.HttpServletResponse
+import java.io.IOException
 
 /**
  * @author AnselYuki
  */
-public class WebUtils {
-    public static void renderString(HttpServletResponse response, String json, int code) {
+object WebUtils {
+    fun renderString(response: HttpServletResponse, json: String?, code: Int) {
         try {
-            response.setStatus(code);
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
-            response.getWriter().println(json);
-        } catch (IOException e) {
-            e.printStackTrace();
+            response.status = code
+            response.contentType = "application/json"
+            response.characterEncoding = "UTF-8"
+            response.writer.println(json)
+        } catch (e: IOException) {
+            e.printStackTrace()
         }
     }
 }

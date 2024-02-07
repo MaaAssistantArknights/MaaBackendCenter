@@ -1,10 +1,10 @@
-package plus.maa.backend.common.utils;
+package plus.maa.backend.common.utils
 
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Component;
+import org.springframework.beans.BeansException
+import org.springframework.context.ApplicationContext
+import org.springframework.context.ApplicationContextAware
+import org.springframework.context.annotation.Lazy
+import org.springframework.stereotype.Component
 
 /**
  * @Author leaves
@@ -12,26 +12,29 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Lazy(false)
-public class SpringUtil implements ApplicationContextAware {
-    private static ApplicationContext applicationContext = null;
-    public static ApplicationContext getApplicationContext(){return applicationContext;}
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+class SpringUtil : ApplicationContextAware {
+    @Throws(BeansException::class)
+    override fun setApplicationContext(applicationContext: ApplicationContext) {
         // TODO Auto-generated method stub
-        if(SpringUtil.applicationContext == null){
-            SpringUtil.applicationContext = applicationContext;
+        if (Companion.applicationContext == null) {
+            Companion.applicationContext = applicationContext
         }
     }
 
-    public static Object getBean(String name) {
-        return getApplicationContext().getBean(name);
-    }
+    companion object {
+        var applicationContext: ApplicationContext? = null
+            private set
 
-    public static <T> T getBean(Class<T> clazz) {
-        return getApplicationContext().getBean(clazz);
-    }
+        fun getBean(name: String?): Any {
+            return applicationContext!!.getBean(name)
+        }
 
-    public static <T> T getBean(String name, Class<T> clazz) {
-        return getApplicationContext().getBean(name, clazz);
+        fun <T> getBean(clazz: Class<T>?): T {
+            return applicationContext!!.getBean(clazz)
+        }
+
+        fun <T> getBean(name: String?, clazz: Class<T>?): T {
+            return applicationContext!!.getBean(name, clazz)
+        }
     }
 }

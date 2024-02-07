@@ -48,8 +48,7 @@ class AccessLimitInterceptHandlerImpl : HandlerInterceptor {
                 if (!method.isAnnotationPresent(AccessLimit::class.java)) {
                     return true
                 }
-                val stringRedisTemplate = SpringUtil.getApplicationContext()
-                    .getBean(StringRedisTemplate::class.java)
+                val stringRedisTemplate = SpringUtil.applicationContext!!.getBean(StringRedisTemplate::class.java)
 
                 // 获取注解上的内容
                 val accessLimit = method.getAnnotation(AccessLimit::class.java) ?: return true

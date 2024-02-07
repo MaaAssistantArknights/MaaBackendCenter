@@ -1,53 +1,50 @@
-package plus.maa.backend.common.utils;
+package plus.maa.backend.common.utils
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.stereotype.Component;
-import plus.maa.backend.repository.entity.CollectionMeta;
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.stereotype.Component
+import plus.maa.backend.repository.entity.CollectionMeta
+import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
+private val log = KotlinLogging.logger {  }
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
-public class IdComponent {
-    private final MongoTemplate mongoTemplate;
-    private final Map<String, AtomicLong> CURRENT_ID_MAP = new ConcurrentHashMap<>();
+class IdComponent(
+    private val mongoTemplate: MongoTemplate
+) {
+    private val currentIdMap: MutableMap<String, AtomicLong> = ConcurrentHashMap()
 
     /**
      * 获取id数据
      * @param meta 集合元数据
      * @return 新的id
      */
-    public <T> long getId(CollectionMeta<T> meta) {
-        Class<T> cls = meta.entityClass();
-        String collectionName = mongoTemplate.getCollectionName(cls);
-        AtomicLong v = CURRENT_ID_MAP.get(collectionName);
+    fun <T> getId(meta: CollectionMeta<T>): Long {
+        val cls = meta.entityClass
+        val collectionName = mongoTemplate.getCollectionName(cls)
+        var v = currentIdMap[collectionName]
         if (v == null) {
-            synchronized (cls) {
-                v = CURRENT_ID_MAP.get(collectionName);
+            synchronized(cls) {
+                v = currentIdMap[collectionName]
                 if (v == null) {
-                    v = new AtomicLong(getMax(cls, meta.idGetter(), meta.incIdField()));
-                    log.info("初始化获取 collection: {} 的最大 id，id: {}", collectionName, v.get());
-                    CURRENT_ID_MAP.put(collectionName, v);
+                    v = AtomicLong(getMax(cls, meta.idGetter, meta.incIdField))
+                    log.info { "初始化获取 collection: $collectionName 的最大 id，id: ${v!!.get()}" }
+                    currentIdMap[collectionName] = v!!
                 }
             }
         }
-        return v.incrementAndGet();
+        return v!!.incrementAndGet()
     }
 
-    private <T> Long getMax(Class<T> entityClass, Function<T, Long> idGetter, String fieldName) {
-        return Optional.ofNullable(mongoTemplate.findOne(
-                        new Query().with(Sort.by(fieldName).descending()).limit(1),
-                        entityClass))
-                .map(idGetter)
-                .orElse(20000L);
-    }
+    private fun <T> getMax(entityClass: Class<T>, idGetter: (T)->Long, fieldName: String) =
+        mongoTemplate.findOne(
+            Query().with(Sort.by(fieldName).descending()).limit(1),
+            entityClass
+        )
+            ?.let(idGetter)
+            ?: 20000L
 }
