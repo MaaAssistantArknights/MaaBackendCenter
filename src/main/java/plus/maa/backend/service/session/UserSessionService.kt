@@ -3,7 +3,6 @@ package plus.maa.backend.service.session
 import org.springframework.stereotype.Service
 import plus.maa.backend.config.external.MaaCopilotProperties
 import plus.maa.backend.repository.RedisCache
-import java.util.function.Consumer
 
 @Service
 class UserSessionService(private val cache: RedisCache, properties: MaaCopilotProperties) {
@@ -17,15 +16,15 @@ class UserSessionService(private val cache: RedisCache, properties: MaaCopilotPr
         cache.setCache(buildUserCacheKey(id), session, sessionExpiration)
     }
 
-    fun setSession(id: String, consumer: Consumer<UserSession?>) {
+    fun setSession(id: String, consumer: (UserSession) -> Unit) {
         val session = UserSession()
-        consumer.accept(session)
+        consumer(session)
         cache.setCache(buildUserCacheKey(id), session, sessionExpiration)
     }
 
-    fun updateSessionIfPresent(id: String, consumer: Consumer<UserSession?>) {
+    fun updateSessionIfPresent(id: String, consumer: (UserSession) -> Unit){
         cache.updateCache(id, UserSession::class.java, null, { session: UserSession? ->
-            if (session != null) consumer.accept(session)
+            if (session != null) consumer(session)
             session
         }, sessionExpiration)
     }

@@ -2,9 +2,6 @@ package plus.maa.backend.controller.request.copilot
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.validation.constraints.Max
-import lombok.AllArgsConstructor
-import lombok.Data
-import lombok.NoArgsConstructor
 
 /**
  * @author LoMu
