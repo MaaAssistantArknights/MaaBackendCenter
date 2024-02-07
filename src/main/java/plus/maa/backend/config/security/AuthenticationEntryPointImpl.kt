@@ -16,9 +16,9 @@ import java.io.IOException
  * @author AnselYuki
  */
 @Component
-@RequiredArgsConstructor
-class AuthenticationEntryPointImpl : AuthenticationEntryPoint {
-    private val objectMapper: ObjectMapper? = null
+class AuthenticationEntryPointImpl(
+    private val objectMapper: ObjectMapper
+) : AuthenticationEntryPoint {
 
     @Throws(IOException::class)
     override fun commence(
