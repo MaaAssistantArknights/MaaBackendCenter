@@ -1,17 +1,11 @@
-package plus.maa.backend.common.annotation;
+package plus.maa.backend.common.annotation
 
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 
 /**
  * @author john180
  */
-@Target({ElementType.PARAMETER})
-@Retention(RetentionPolicy.RUNTIME)
+@Target(AnnotationTarget.VALUE_PARAMETER)
+@Retention(AnnotationRetention.RUNTIME)
 @AuthenticationPrincipal
-public @interface CurrentUser {
-}
+annotation class CurrentUser
