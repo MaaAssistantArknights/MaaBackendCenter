@@ -1,6 +1,5 @@
 package plus.maa.backend.service
 
-import cn.hutool.core.collection.CollectionUtil
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.collect.Sets
@@ -224,35 +223,27 @@ class CopilotService(
         val setKey = AtomicReference<String>()
         // 只缓存默认状态下热度和访问量排序的结果，并且最多只缓存前三页
         if (request.page <= 3 && request.document == null && request.levelKeyword == null && request.uploaderId == null && request.operator == null &&
-            CollectionUtil.isEmpty(request.copilotIds)
+            request.copilotIds.isNullOrEmpty()
         ) {
-            val cacheOptional = Optional.ofNullable<String>(request.orderBy)
-                .filter { cs: String? -> StringUtils.isNotBlank(cs) }
-                .map<Long?> { key: String? -> HOME_PAGE_CACHE_CONFIG[key] }
-                .map<CopilotPageInfo?> { t: Long? ->
-                    cacheTimeout.set(t!!)
+            request.orderBy?.takeIf { orderBy -> orderBy.isNotBlank() }
+                ?.let { key -> HOME_PAGE_CACHE_CONFIG[key] }
+                ?.let { t ->
+                    cacheTimeout.set(t)
                     setKey.set(String.format("home:%s:copilotIds", request.orderBy))
                     cacheKey.set(String.format("home:%s:%s", request.orderBy, request.hashCode()))
                     redisCache.getCache(cacheKey.get(), CopilotPageInfo::class.java)
-                }
-
-            // 如果缓存存在则直接返回
-            if (cacheOptional.isPresent) {
-                return cacheOptional.get()
-            }
+                }?.let { return it }
         }
 
         val sortOrder = Sort.Order(
-            if (request.isDesc) Sort.Direction.DESC else Sort.Direction.ASC,
-            Optional.ofNullable(request.orderBy)
-                .filter { cs: String? -> StringUtils.isNotBlank(cs) }
-                .map { ob: String? ->
-                    when (ob) {
-                        "hot" -> "hotScore"
-                        "id" -> "copilotId"
-                        else -> request.orderBy
-                    }
-                }.orElse("copilotId")
+            if (request.desc) Sort.Direction.DESC else Sort.Direction.ASC,
+            request.orderBy?.takeIf { orderBy -> orderBy.isNotBlank() }?.let { ob ->
+                when (ob) {
+                    "hot" -> "hotScore"
+                    "id" -> "copilotId"
+                    else -> request.orderBy
+                }
+            }?: "copilotId"
         )
         // 判断是否有值 无值则为默认
         val page = if (request.page > 0) request.page else 1
@@ -271,10 +262,11 @@ class CopilotService(
 
 
         //关卡名、关卡类型、关卡编号
-        if (StringUtils.isNotBlank(request.levelKeyword)) {
-            val levelInfo = levelService.queryLevelInfosByKeyword(request.levelKeyword)
+        if (!request.levelKeyword.isNullOrBlank()) {
+            val keyword = request.levelKeyword!!
+            val levelInfo = levelService.queryLevelInfosByKeyword(keyword)
             if (levelInfo.isEmpty()) {
-                andQueries.add(Criteria.where("stageName").regex(caseInsensitive(request.levelKeyword)))
+                andQueries.add(Criteria.where("stageName").regex(caseInsensitive(keyword)))
             } else {
                 andQueries.add(
                     Criteria.where("stageName").`in`(
@@ -285,12 +277,12 @@ class CopilotService(
         }
 
         // 作业id列表
-        if (CollectionUtil.isNotEmpty(request.copilotIds)) {
-            andQueries.add(Criteria.where("copilotId").`in`(request.copilotIds))
+        if (!request.copilotIds.isNullOrEmpty()) {
+            andQueries.add(Criteria.where("copilotId").`in`(request.copilotIds!!))
         }
 
         //标题、描述、神秘代码
-        if (StringUtils.isNotBlank(request.document)) {
+        if (!request.document.isNullOrBlank()) {
             orQueries.add(Criteria.where("doc.title").regex(caseInsensitive(request.document)))
             orQueries.add(Criteria.where("doc.details").regex(caseInsensitive(request.document)))
         }
@@ -298,7 +290,7 @@ class CopilotService(
 
         //包含或排除干员
         var oper = request.operator
-        if (StringUtils.isNotBlank(oper)) {
+        if (!oper.isNullOrBlank()) {
             oper = oper.replace("[“\"”]".toRegex(), "")
             val operators = oper.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
             for (operator in operators) {

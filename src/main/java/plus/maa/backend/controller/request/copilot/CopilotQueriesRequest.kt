@@ -1,33 +1,28 @@
-package plus.maa.backend.controller.request.copilot;
+package plus.maa.backend.controller.request.copilot
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.validation.constraints.Max;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore
+import jakarta.validation.constraints.Max
+import lombok.AllArgsConstructor
+import lombok.Data
+import lombok.NoArgsConstructor
 
 /**
  * @author LoMu
  * Date  2022-12-26 2:48
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class CopilotQueriesRequest {
-    private int page = 0;
-    @Max(value = 50, message = "单页大小不得超过50")
-    private int limit = 10;
-    private String levelKeyword;
-    private String operator;
-    private String content;
-    private String document;
-    private String uploaderId;
-    private boolean desc = true;
-    private String orderBy;
-    private String language;
-    private List<Long> copilotIds;
+data class CopilotQueriesRequest(
+    val page: Int = 0,
+    val limit: @Max(value = 50, message = "单页大小不得超过50") Int = 10,
+    var levelKeyword: String? = null,
+    val operator: String? = null,
+    val content: String? = null,
+    val document: String? = null,
+    var uploaderId: String? = null,
+    val desc: Boolean = true,
+    var orderBy: String? = null,
+    val language: String? = null,
+    var copilotIds: List<Long>? = null
+) {
 
     /*
      * 这里为了正确接收前端的下划线风格，手动写了三个 setter 用于起别名
@@ -36,27 +31,26 @@ public class CopilotQueriesRequest {
      * （吐槽一下，同样是Get请求，怎么CommentsQueries是驼峰命名，到了CopilotQueries就成了下划线命名）
      */
     @JsonIgnore
-    @SuppressWarnings("unused")
-    public void setLevel_keyword(String levelKeyword) {
-        this.levelKeyword = levelKeyword;
+    @Suppress("unused")
+    fun setLevel_keyword(levelKeyword: String?) {
+        this.levelKeyword = levelKeyword
     }
 
     @JsonIgnore
-    @SuppressWarnings("unused")
-    public void setUploader_id(String uploaderId) {
-        this.uploaderId = uploaderId;
+    @Suppress("unused")
+    fun setUploader_id(uploaderId: String?) {
+        this.uploaderId = uploaderId
     }
 
     @JsonIgnore
-    @SuppressWarnings("unused")
-    public void setOrder_by(String orderBy) {
-        this.orderBy = orderBy;
+    @Suppress("unused")
+    fun setOrder_by(orderBy: String?) {
+        this.orderBy = orderBy
     }
 
     @JsonIgnore
-    @SuppressWarnings("unused")
-    public void setCopilot_ids(List<Long> copilotIds) {
-        this.copilotIds = copilotIds;
+    @Suppress("unused")
+    fun setCopilot_ids(copilotIds: List<Long>?) {
+        this.copilotIds = copilotIds
     }
-
 }
