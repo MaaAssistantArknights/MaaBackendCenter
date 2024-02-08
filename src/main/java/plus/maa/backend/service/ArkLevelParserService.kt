@@ -32,7 +32,7 @@ class ArkLevelParserService(private val parsers: List<ArkLevelParser>) {
             .name(tilePos.name)
             .width(tilePos.width)
             .height(tilePos.height)
-            .build();
+            .build()
         return parseLevel(level, tilePos)
     }
 
@@ -42,10 +42,7 @@ class ArkLevelParserService(private val parsers: List<ArkLevelParser>) {
             log.warn { "[PARSER]未知关卡类型:${level.levelId}" }
             return null
         }
-        val parser = parsers.stream()
-            .filter { p: ArkLevelParser? -> p!!.supportType(type) }
-            .findFirst()
-            .orElse(null)
+        val parser = parsers.firstOrNull { it.supportType(type) }
         if (parser == null) {
             //类型存在但无对应Parser直接跳过
             return ArkLevel.EMPTY

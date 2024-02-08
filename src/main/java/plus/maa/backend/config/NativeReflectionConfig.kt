@@ -1,12 +1,14 @@
-package plus.maa.backend.config;
+package plus.maa.backend.config
 
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
-import org.springframework.context.annotation.Configuration;
-import plus.maa.backend.controller.request.copilot.CopilotDTO;
-import plus.maa.backend.repository.entity.gamedata.*;
-import plus.maa.backend.service.model.RatingCache;
-import plus.maa.backend.service.session.UserSession;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies
+import com.fasterxml.jackson.databind.PropertyNamingStrategies.LowerCamelCaseStrategy
+import org.springframework.aot.hint.annotation.RegisterReflectionForBinding
+import org.springframework.context.annotation.Configuration
+import plus.maa.backend.controller.request.copilot.CopilotDTO
+import plus.maa.backend.repository.entity.gamedata.*
+import plus.maa.backend.repository.entity.gamedata.ArkTilePos.Tile
+import plus.maa.backend.service.model.RatingCache
+import plus.maa.backend.service.session.UserSession
 
 /**
  * 添加所有需要用到反射的类到此处，用于 native image
@@ -16,14 +18,18 @@ import plus.maa.backend.service.session.UserSession;
  * created on 2023/08/18
  */
 @Configuration
-@RegisterReflectionForBinding({
-        ArkActivity.class, ArkCharacter.class, ArkStage.class,
-        ArkTilePos.class, ArkTilePos.Tile.class, ArkTower.class,
-        ArkZone.class, CopilotDTO.class, RatingCache.class,
-        UserSession.class,
-        PropertyNamingStrategies.SnakeCaseStrategy.class,
-        PropertyNamingStrategies.LowerCamelCaseStrategy.class
-})
-public class NativeReflectionConfig {
-
-}
+@RegisterReflectionForBinding(
+    ArkActivity::class,
+    ArkCharacter::class,
+    ArkStage::class,
+    ArkTilePos::class,
+    Tile::class,
+    ArkTower::class,
+    ArkZone::class,
+    CopilotDTO::class,
+    RatingCache::class,
+    UserSession::class,
+    PropertyNamingStrategies.SnakeCaseStrategy::class,
+    LowerCamelCaseStrategy::class
+)
+class NativeReflectionConfig
