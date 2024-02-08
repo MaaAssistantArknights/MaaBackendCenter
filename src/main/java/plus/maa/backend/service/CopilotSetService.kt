@@ -58,7 +58,7 @@ class CopilotSetService(
             .orElseThrow { IllegalArgumentException("作业集不存在") }
         Assert.state(copilotSet.creatorId == userId, "您不是该作业集的创建者，无权修改该作业集")
         copilotSet.copilotIds.addAll(req.copilotIds)
-        copilotSet.setCopilotIds(copilotSet.distinctIdsAndCheck)
+        copilotSet.setCopilotIds(copilotSet.getDistinctIdsAndCheck())
         repository.save(copilotSet)
     }
 
