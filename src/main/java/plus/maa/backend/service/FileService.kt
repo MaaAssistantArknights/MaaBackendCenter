@@ -91,7 +91,7 @@ class FileService(
         val formatter = SimpleDateFormat("yyyy-MM-dd")
         val query: Query
 
-        val d = if (StringUtils.isBlank(date)) {
+        val d = if (date.isNullOrBlank()) {
             Date(System.currentTimeMillis())
         } else {
             try {

@@ -1,35 +1,34 @@
-package plus.maa.backend.controller.file;
+package plus.maa.backend.controller.file
 
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import jakarta.servlet.http.HttpServletResponse
+import jakarta.validation.Valid
+import org.springframework.http.MediaType
+import org.springframework.web.bind.annotation.*
+import org.springframework.web.multipart.MultipartFile
+import plus.maa.backend.common.annotation.AccessLimit
+import plus.maa.backend.config.doc.RequireJwt
+import plus.maa.backend.config.security.AuthenticationHelper
+import plus.maa.backend.controller.response.MaaResult
+import plus.maa.backend.controller.response.MaaResult.Companion.fail
+import plus.maa.backend.controller.response.MaaResult.Companion.success
+import plus.maa.backend.service.FileService
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import plus.maa.backend.common.annotation.AccessLimit;
-import plus.maa.backend.config.doc.RequireJwt;
-import plus.maa.backend.config.security.AuthenticationHelper;
-import plus.maa.backend.controller.response.MaaResult;
-import plus.maa.backend.service.FileService;
 
 /**
  * @author LoMu
  * Date  2023-03-31 16:41
  */
-
 @RestController
 @RequestMapping("file")
-@RequiredArgsConstructor
-public class FileController {
-    private final FileService fileService;
-    private final AuthenticationHelper helper;
-
+class FileController(
+    private val fileService: FileService,
+    private val helper: AuthenticationHelper
+) {
     /**
      * 支持匿名
      *
@@ -37,81 +36,80 @@ public class FileController {
      * @return 上传成功, 数据已被接收
      */
     @AccessLimit
-    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public MaaResult<String> uploadFile(
-            @RequestPart MultipartFile file,
-            @RequestPart String type,
-            @RequestPart String version,
-            @RequestPart(required = false) String classification,
-            @RequestPart(required = false) String label
-    ) {
-        fileService.uploadFile(file, type, version, classification, label, helper.getUserIdOrIpAddress());
-        return MaaResult.success("上传成功,数据已被接收");
+    @PostMapping(value = ["/upload"], consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun uploadFile(
+        @RequestPart file: MultipartFile,
+        @RequestPart type: String?,
+        @RequestPart version: String,
+        @RequestPart(required = false) classification: String?,
+        @RequestPart(required = false) label: String
+    ): MaaResult<String> {
+        fileService.uploadFile(file, type, version, classification, label, helper.userIdOrIpAddress)
+        return success("上传成功,数据已被接收")
     }
 
     @Operation(summary = "下载文件")
     @ApiResponse(
-            responseCode = "200",
-            content = @Content(mediaType = "application/zip", schema = @Schema(type = "string", format = "binary"))
+        responseCode = "200",
+        content = [Content(mediaType = "application/zip", schema = Schema(type = "string", format = "binary"))]
     )
     @RequireJwt
     @AccessLimit
     @GetMapping("/download")
-    public void downloadSpecifiedDateFile(
-            @Parameter(description = "日期 yyyy-MM-dd") String date,
-            @Parameter(description = "在日期之前或之后[before,after]") String beLocated,
-            @Parameter(description = "对查询到的数据进行删除") boolean delete,
-            HttpServletResponse response
+    fun downloadSpecifiedDateFile(
+        @Parameter(description = "日期 yyyy-MM-dd") date: String?,
+        @Parameter(description = "在日期之前或之后[before,after]") beLocated: String,
+        @Parameter(description = "对查询到的数据进行删除") delete: Boolean,
+        response: HttpServletResponse
     ) {
-        fileService.downloadDateFile(date, beLocated, delete, response);
+        fileService.downloadDateFile(date, beLocated, delete, response)
     }
 
     @Operation(summary = "下载文件")
     @ApiResponse(
-            responseCode = "200",
-            content = @Content(mediaType = "application/zip", schema = @Schema(type = "string", format = "binary"))
+        responseCode = "200",
+        content = [Content(mediaType = "application/zip", schema = Schema(type = "string", format = "binary"))]
     )
     @RequireJwt
     @PostMapping("/download")
-    public void downloadFile(@RequestBody @Valid
-                             ImageDownloadDTO imageDownloadDTO,
-                             HttpServletResponse response) {
-        fileService.downloadFile(imageDownloadDTO, response);
+    fun downloadFile(
+        @RequestBody imageDownloadDTO: @Valid ImageDownloadDTO,
+        response: HttpServletResponse
+    ) {
+        fileService.downloadFile(imageDownloadDTO, response)
     }
 
     @Operation(summary = "设置上传文件功能状态")
     @RequireJwt
     @PostMapping("/upload_ability")
-    public MaaResult<Void> setUploadAbility(@RequestBody UploadAbility request) {
-        fileService.setUploadEnabled(request.enabled);
-        return MaaResult.success();
+    fun setUploadAbility(@RequestBody request: UploadAbility): MaaResult<Void?> {
+        fileService.isUploadEnabled = request.enabled
+        return success()
     }
 
-    @Operation(summary = "获取上传文件功能状态")
-    @RequireJwt
     @GetMapping("/upload_ability")
-    public MaaResult<UploadAbility> getUploadAbility() {
-        return MaaResult.success(new UploadAbility(fileService.isUploadEnabled()));
+    @RequireJwt
+    @Operation(summary = "获取上传文件功能状态")
+    fun getUploadAbility(): MaaResult<UploadAbility> {
+        return success(UploadAbility(fileService.isUploadEnabled))
     }
-
     @Operation(summary = "关闭uploadfile接口")
     @RequireJwt
     @PostMapping("/disable")
-    public MaaResult<String> disable(@RequestBody boolean status) {
+    fun disable(@RequestBody status: Boolean): MaaResult<String?> {
         if (!status) {
-            return MaaResult.fail(403, "Forbidden");
+            return fail(403, "Forbidden")
         }
-        return MaaResult.success(fileService.disable());
+        return success(fileService.disable())
     }
 
     @Operation(summary = "开启uploadfile接口")
     @RequireJwt
     @PostMapping("/enable")
-    public MaaResult<String> enable(@RequestBody boolean status) {
+    fun enable(@RequestBody status: Boolean): MaaResult<String?> {
         if (!status) {
-            return MaaResult.fail(403, "Forbidden");
+            return fail(403, "Forbidden")
         }
-        return MaaResult.success(fileService.enable());
+        return success(fileService.enable())
     }
-
 }
