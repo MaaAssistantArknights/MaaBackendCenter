@@ -16,7 +16,7 @@ import plus.maa.backend.controller.response.MaaResult
 @RestController
 class SystemController(
         private val properties: MaaCopilotProperties,
-        private val gitProperties: GitProperties?
+        private val gitProperties: GitProperties
 ) {
 
     /**
@@ -24,9 +24,8 @@ class SystemController(
      * @return 系统启动信息
      */
     @GetMapping("/")
-    fun test(): MaaResult<String?> {
-        return MaaResult.success("Maa Copilot Server is Running", null)
-    }
+    fun test() = MaaResult.success("Maa Copilot Server is Running", null)
+
 
     /**
      * Gets the current version of the server.
@@ -35,7 +34,7 @@ class SystemController(
     @GetMapping("version")
     fun getSystemVersion(): MaaResult<MaaSystemInfo> {
         val info = properties.info
-        val systemInfo = MaaSystemInfo(info.title, info.description, info.version, gitProperties!!)
+        val systemInfo = MaaSystemInfo(info.title, info.description, info.version, gitProperties)
         return MaaResult.success(systemInfo)
     }
 
