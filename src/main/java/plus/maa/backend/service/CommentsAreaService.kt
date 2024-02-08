@@ -310,7 +310,7 @@ class CommentsAreaService(
 
         //获取子评论
         val subCommentsList = commentsAreaRepository.findByMainCommentIdIn(
-            mainCommentsList.stream()
+            mainCommentsList
                 .map { obj: CommentsArea -> obj.id }
                 .toList()
         )
@@ -324,16 +324,16 @@ class CommentsAreaService(
 
 
         //所有评论
-        val allComments: MutableList<CommentsArea> = ArrayList(mainCommentsList.stream().toList())
+        val allComments: MutableList<CommentsArea> = ArrayList(mainCommentsList.toList())
         allComments.addAll(subCommentsList)
 
         //获取所有评论用户
-        val userId = allComments.stream().map { obj: CommentsArea -> obj.uploaderId }.distinct().toList()
+        val userId = allComments.map { obj: CommentsArea -> obj.uploaderId }.distinct().toList()
         val maaUserMap = userRepository.findByUsersId(userId)
 
 
         //转换主评论数据并填充用户名
-        val commentsInfos = mainCommentsList.stream().map { mainComment: CommentsArea ->
+        val commentsInfos = mainCommentsList.map { mainComment: CommentsArea ->
             val commentsInfo =
                 commentConverter
                     .toCommentsInfo(
@@ -343,7 +343,7 @@ class CommentsAreaService(
                             MaaUser.UNKNOWN
                         )
                     )
-            val subCommentsInfoList = subCommentsList.stream()
+            val subCommentsInfoList = subCommentsList
                 .filter { comment: CommentsArea -> commentsInfo.commentId == comment.mainCommentId } //转换子评论数据并填充用户名
                 .map { subComment: CommentsArea ->
                     commentConverter

@@ -2,7 +2,6 @@ package plus.maa.backend.service
 
 import cn.hutool.core.lang.Assert
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.apache.commons.lang3.StringUtils
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
@@ -19,7 +18,6 @@ import plus.maa.backend.repository.UserRepository
 import plus.maa.backend.repository.entity.CopilotSet
 import plus.maa.backend.repository.entity.MaaUser
 import java.time.LocalDateTime
-import java.util.*
 
 private val log = KotlinLogging.logger {  }
 
@@ -109,14 +107,14 @@ class CopilotSetService(
         val pageRequest = PageRequest.of(req.page - 1, req.limit, DEFAULT_SORT)
 
         val keyword = req.keyword
-        val copilotSets = if (StringUtils.isBlank(keyword)) {
+        val copilotSets = if (keyword.isNullOrBlank()) {
             repository.findAll(pageRequest)
         } else {
             repository.findByKeyword(keyword, pageRequest)
         }
 
-        val userIds = copilotSets.stream().map { obj: CopilotSet -> obj.creatorId }
-            .filter { obj: String? -> Objects.nonNull(obj) }
+        val userIds = copilotSets
+            .map { obj: CopilotSet -> obj.creatorId }
             .distinct()
             .toList()
         val userById = userRepository.findByUsersId(userIds)
@@ -124,7 +122,7 @@ class CopilotSetService(
             .setPage(copilotSets.number + 1)
             .setTotal(copilotSets.totalElements)
             .setHasNext(copilotSets.totalPages > req.page)
-            .setData(copilotSets.stream().map { cs: CopilotSet ->
+            .setData(copilotSets.map { cs: CopilotSet ->
                 val user = userById.getOrDefault(cs.creatorId, MaaUser.UNKNOWN)
                 converter.convert(cs, user.userName)
             }.toList())
