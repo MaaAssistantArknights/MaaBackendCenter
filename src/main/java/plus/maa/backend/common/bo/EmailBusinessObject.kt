@@ -1,74 +1,39 @@
-package plus.maa.backend.common.bo;
+package plus.maa.backend.common.bo
 
+import cn.hutool.extra.mail.MailAccount
+import cn.hutool.extra.mail.MailUtil
+import io.github.oshai.kotlinlogging.KotlinLogging
+import plus.maa.backend.common.utils.FreeMarkerUtils
+import java.io.File
+import kotlin.collections.ArrayList
+import kotlin.collections.Collection
+import kotlin.collections.MutableList
+import kotlin.collections.MutableMap
+import kotlin.collections.set
 
-import cn.hutool.extra.mail.MailAccount;
-import cn.hutool.extra.mail.MailUtil;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.experimental.Accessors;
-import lombok.extern.slf4j.Slf4j;
-import plus.maa.backend.common.utils.FreeMarkerUtils;
-
-import java.io.File;
-import java.util.*;
-
+private val log = KotlinLogging.logger {  }
 
 /**
  * @author LoMu
  * Date 2022-12-23 23:57
  */
-@Slf4j
-@Accessors(chain = true)
-@Setter
-@NoArgsConstructor
-public class EmailBusinessObject {
-
-    // 默认邮件模板
-    private static final String DEFAULT_MAIL_TEMPLATE = "mail.ftlh";
-
-
-    private static final String DEFAULT_MAIL_INCLUDE_HTML_TEMPLATE = "mail-includeHtml.ftlh";
-
-    private static final String DEFAULT_TITLE_PREFIX = "Maa Backend Center";
-
-    //发件人信息
-    private MailAccount mailAccount;
-
-    private List<String> emailList = new ArrayList<>();
-
+class EmailBusinessObject(
+    // 发件人信息
+    private val mailAccount: MailAccount,
     // 自定义标题
-    private String title = DEFAULT_TITLE_PREFIX;
-
+    private val title: String = DEFAULT_TITLE_PREFIX,
     // 邮件内容
-    private String message;
-
+    private val message: String? = null,
     // html标签是否被识别使用
-    private Boolean isHtml = true;
+    private val isHtml: Boolean = true,
 
+) {
 
-    /**
-     * 静态创建工厂
-     *
-     * @return EmailBusinessObject
-     */
-    public static EmailBusinessObject builder() {
-        return new EmailBusinessObject();
-    }
+    private val emailList: MutableList<String> = ArrayList()
 
-
-    public EmailBusinessObject setEmail(String email) {
-        emailList.add(email);
-        return this;
-    }
-
-    /**
-     * 设置邮件标题 默认为 Maa Backend Center
-     *
-     * @param title 标题
-     */
-    public EmailBusinessObject setTitle(String title) {
-        this.title = title;
-        return this;
+    fun setEmail(email: String): EmailBusinessObject {
+        emailList.add(email)
+        return this
     }
 
     /**
@@ -77,15 +42,15 @@ public class EmailBusinessObject {
      * @param content      邮件动态内容
      * @param templateName ftlh名称，例如 mail.ftlh
      */
-    public void sendCustomStaticTemplates(String content, String templateName) {
-        sendCustomStaticTemplatesFiles(content, templateName, (File[]) null);
+    fun sendCustomStaticTemplates(content: String?, templateName: String?) {
+        sendCustomStaticTemplatesFiles(content, templateName)
     }
 
     /**
      * 通过默认模板发送自定义Message内容
      */
-    public void sendCustomMessage() {
-        sendCustomStaticTemplates(message, DEFAULT_MAIL_TEMPLATE);
+    fun sendCustomMessage() {
+        sendCustomStaticTemplates(message, DEFAULT_MAIL_TEMPLATE)
     }
 
     /**
@@ -93,8 +58,8 @@ public class EmailBusinessObject {
      *
      * @param files 附件
      */
-    public void sendCustomMessageFiles(File... files) {
-        sendCustomStaticTemplatesFiles(message, DEFAULT_MAIL_TEMPLATE, files);
+    fun sendCustomMessageFiles(vararg files: File?) {
+        sendCustomStaticTemplatesFiles(message, DEFAULT_MAIL_TEMPLATE, *files)
     }
 
 
@@ -105,12 +70,14 @@ public class EmailBusinessObject {
      * @param templateName ftl路径
      * @param files        附件
      */
-    public void sendCustomStaticTemplatesFiles(String content, String templateName, File... files) {
+    fun sendCustomStaticTemplatesFiles(content: String?, templateName: String?, vararg files: File?) {
         try {
-            log.info("send email to: {}, templateName: {}, content: {}", emailList, templateName, content);
-            send(this.mailAccount, emailList, title, parseMessages(content, templateName), isHtml, files);
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
+            log.info {
+                "send email to: $emailList, templateName: $templateName, content: $content"
+            }
+            send(this.mailAccount, emailList, title, parseMessages(content, templateName), isHtml, *files)
+        } catch (ex: Exception) {
+            throw RuntimeException(ex)
         }
     }
 
@@ -118,40 +85,41 @@ public class EmailBusinessObject {
     /**
      * 发送验证码
      */
-    public void sendVerificationCodeMessage(String code) {
-
+    fun sendVerificationCodeMessage(code: String) {
         try {
-            send(this.mailAccount, this.emailList
-                    , this.title + "  验证码"
-                    , defaultMailIncludeHtmlTemplates(
-                            "mail-vCode.ftlh", code
-                    )
-                    , this.isHtml
-            );
-        } catch (Exception ex) {
-            throw new RuntimeException("邮件发送失败", ex);
+            send(
+                this.mailAccount, this.emailList,
+                this.title + "  验证码",
+                defaultMailIncludeHtmlTemplates(
+                    "mail-vCode.ftlh", code
+                ),
+                this.isHtml
+            )
+        } catch (ex: Exception) {
+            throw RuntimeException("邮件发送失败", ex)
         }
     }
 
-    public void sendCommentNotification(Map<String, String> map) {
+    fun sendCommentNotification(map: MutableMap<String, String>) {
         try {
-            send(this.mailAccount,
-                    this.emailList,
-                    this.title,
-                    defaultMailIncludeHtmlTemplates("mail-comment-notification.ftlh", map),
-                    this.isHtml
-            );
-        } catch (Exception ex) {
-            throw new RuntimeException("邮件发送失败", ex);
+            send(
+                this.mailAccount,
+                this.emailList,
+                this.title,
+                defaultMailIncludeHtmlTemplates("mail-comment-notification.ftlh", map),
+                this.isHtml
+            )
+        } catch (ex: Exception) {
+            throw RuntimeException("邮件发送失败", ex)
         }
     }
 
-    private String defaultMailIncludeHtmlTemplates(String content, String obj) {
-        return parseMessages(content, obj, DEFAULT_MAIL_INCLUDE_HTML_TEMPLATE);
+    private fun defaultMailIncludeHtmlTemplates(content: String, obj: String): String {
+        return parseMessages(content, obj, DEFAULT_MAIL_INCLUDE_HTML_TEMPLATE)
     }
 
-    private String defaultMailIncludeHtmlTemplates(String content, Map<String, String> map) {
-        return parseMessages(content, DEFAULT_MAIL_INCLUDE_HTML_TEMPLATE, map);
+    private fun defaultMailIncludeHtmlTemplates(content: String, map: MutableMap<String, String>): String {
+        return parseMessages(content, DEFAULT_MAIL_INCLUDE_HTML_TEMPLATE, map)
     }
 
 
@@ -160,8 +128,8 @@ public class EmailBusinessObject {
      * @param templateName ftlh路径
      * @return String
      */
-    private String parseMessages(String content, String templateName) {
-        return FreeMarkerUtils.parseData(Collections.singletonMap("content", content), templateName);
+    private fun parseMessages(content: String?, templateName: String?): String {
+        return FreeMarkerUtils.parseData(mapOf("content" to content), templateName)
     }
 
     /**
@@ -170,13 +138,13 @@ public class EmailBusinessObject {
      * @param content 邮件内嵌ftlh路径
      * @return String
      */
-    private String parseMessages(String content, String templateName, Map<String, String> map) {
-        map.put("content", content);
-        return FreeMarkerUtils.parseData(map, templateName);
+    private fun parseMessages(content: String, templateName: String, map: MutableMap<String, String>): String {
+        map["content"] = content
+        return FreeMarkerUtils.parseData(map, templateName)
     }
 
-    private String parseMessages(String content, String obj, String templateName) {
-        return FreeMarkerUtils.parseData(Map.of("content", content, "obj", obj), templateName);
+    private fun parseMessages(content: String, obj: String, templateName: String): String {
+        return FreeMarkerUtils.parseData(mapOf("content" to content, "obj" to obj), templateName)
     }
 
 
@@ -190,7 +158,24 @@ public class EmailBusinessObject {
      * @param isHtml      是否为HTML格式
      * @param files       附件列表
      */
-    private void send(MailAccount mailAccount, Collection<String> tos, String subject, String content, boolean isHtml, File... files) {
-        MailUtil.send(mailAccount, tos, null, null, subject, content, null, isHtml, files);
+    private fun send(
+        mailAccount: MailAccount?,
+        tos: Collection<String>,
+        subject: String,
+        content: String,
+        isHtml: Boolean,
+        vararg files: File?
+    ) {
+        MailUtil.send(mailAccount, tos, null, null, subject, content, null, isHtml, *files)
+    }
+
+    companion object {
+        // 默认邮件模板
+        private const val DEFAULT_MAIL_TEMPLATE = "mail.ftlh"
+
+
+        private const val DEFAULT_MAIL_INCLUDE_HTML_TEMPLATE = "mail-includeHtml.ftlh"
+
+        private const val DEFAULT_TITLE_PREFIX = "Maa Backend Center"
     }
 }

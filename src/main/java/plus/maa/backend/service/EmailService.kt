@@ -17,7 +17,7 @@ import plus.maa.backend.repository.RedisCache
 import plus.maa.backend.service.model.CommentNotification
 import java.util.*
 
-private val log = KotlinLogging.logger {  }
+private val log = KotlinLogging.logger { }
 
 /**
  * @author LoMu
@@ -26,19 +26,18 @@ private val log = KotlinLogging.logger {  }
 @Service
 class EmailService(
     @Value("\${maa-copilot.vcode.expire:600}")
-    private val expire:Int,
+    private val expire: Int,
     @Value("\${maa-copilot.info.domain}")
     private val domain: String,
     private val maaCopilotProperties: MaaCopilotProperties,
     @Value("\${debug.email.no-send:false}")
-    private val flagNoSend:Boolean = false,
+    private val flagNoSend: Boolean = false,
     private val redisCache: RedisCache,
     @Resource(name = "emailTaskExecutor")
     private val emailTaskExecutor: AsyncTaskExecutor
 ) {
 
     private val mainAccount = MailAccount()
-
 
 
     /**
@@ -85,10 +84,9 @@ class EmailService(
                 log.debug { "vcode is $vcode" }
                 log.warn { "Email not sent, no-send enabled" }
             } else {
-                EmailBusinessObject.builder()
-                    .setMailAccount(mainAccount)
-                    .setEmail(email)
-                    .sendVerificationCodeMessage(vcode)
+                EmailBusinessObject(
+                    mailAccount = mainAccount
+                ).setEmail(email).sendVerificationCodeMessage(vcode)
             }
             // 存redis
             redisCache.setCache("vCodeEmail:$email", vcode, expire.toLong())
@@ -108,7 +106,7 @@ class EmailService(
     }
 
     @Async("emailTaskExecutor")
-    fun sendCommentNotification(email: String?, commentNotification: CommentNotification) {
+    fun sendCommentNotification(email: String, commentNotification: CommentNotification) {
         val limit = 25
 
         var title = commentNotification.title
@@ -125,10 +123,9 @@ class EmailService(
         map["date"] = commentNotification.date
         map["title"] = title
         map["reMessage"] = commentNotification.reMessage
-        EmailBusinessObject.builder()
-            .setTitle("收到新回复 来自用户@" + commentNotification.reName + " Re: " + map["title"])
-            .setMailAccount(mainAccount)
-            .setEmail(email)
-            .sendCommentNotification(map)
+        EmailBusinessObject(
+            mailAccount = mainAccount,
+            title = "收到新回复 来自用户@" + commentNotification.reName + " Re: " + map["title"]
+        ).setEmail(email).sendCommentNotification(map)
     }
 }
