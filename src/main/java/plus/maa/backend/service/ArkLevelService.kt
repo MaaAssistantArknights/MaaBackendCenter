@@ -70,7 +70,7 @@ class ArkLevelService(
     @get:Cacheable("arkLevelInfos")
     val arkLevelInfos: List<ArkLevelInfo>
         get() = arkLevelRepo.findAll()
-            .map { arkLevel: ArkLevel? -> arkLevelConverter.convert(arkLevel) }
+            .map { arkLevel -> arkLevelConverter.convert(arkLevel) }
             .toList()
 
     @Cacheable("arkLevel")

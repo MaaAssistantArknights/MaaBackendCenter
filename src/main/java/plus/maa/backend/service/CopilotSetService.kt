@@ -44,7 +44,7 @@ class CopilotSetService(
      * @param userId 创建者用户id
      * @return 作业集id
      */
-    fun create(req: CopilotSetCreateReq?, userId: String?): Long {
+    fun create(req: CopilotSetCreateReq, userId: String?): Long {
         val id = idComponent.getId(CopilotSet.META)
         val newCopilotSet =
             converter.convert(req, id, userId)

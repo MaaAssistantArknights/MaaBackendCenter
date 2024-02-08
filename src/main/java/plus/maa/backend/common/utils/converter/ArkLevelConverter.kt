@@ -1,21 +1,16 @@
-package plus.maa.backend.common.utils.converter;
+package plus.maa.backend.common.utils.converter
 
-import org.mapstruct.Mapper;
-
-import plus.maa.backend.controller.response.copilot.ArkLevelInfo;
-import plus.maa.backend.repository.entity.ArkLevel;
-
-import java.util.List;
+import org.mapstruct.Mapper
+import plus.maa.backend.controller.response.copilot.ArkLevelInfo
+import plus.maa.backend.repository.entity.ArkLevel
 
 /**
  * @author dragove
  * created on 2022/12/26
  */
 @Mapper(componentModel = "spring")
-public interface ArkLevelConverter {
+interface ArkLevelConverter {
+    fun convert(arkLevel: ArkLevel): ArkLevelInfo
 
-    ArkLevelInfo convert(ArkLevel arkLevel);
-
-    List<ArkLevelInfo> convert(List<ArkLevel> arkLevel);
-
+    fun convert(arkLevel: List<ArkLevel>): List<ArkLevelInfo>
 }

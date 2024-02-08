@@ -131,7 +131,7 @@ class CopilotService(
      * @param content 前端编辑json作业内容
      * @return 返回_id
      */
-    fun upload(loginUserId: String?, content: String): Long {
+    fun upload(loginUserId: String, content: String): Long {
         val copilotDTO = correctCopilot(parseToCopilotDto(content))
         // 将其转换为数据库存储对象
         val copilot = copilotConverter.toCopilot(

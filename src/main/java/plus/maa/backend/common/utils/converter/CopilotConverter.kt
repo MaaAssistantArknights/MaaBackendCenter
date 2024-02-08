@@ -1,21 +1,17 @@
-package plus.maa.backend.common.utils.converter;
+package plus.maa.backend.common.utils.converter
 
-import org.mapstruct.*;
-import plus.maa.backend.controller.request.copilot.CopilotDTO;
-import plus.maa.backend.controller.response.copilot.CopilotInfo;
-import plus.maa.backend.repository.entity.Copilot;
-
-import java.time.LocalDateTime;
-
+import org.mapstruct.*
+import plus.maa.backend.controller.request.copilot.CopilotDTO
+import plus.maa.backend.controller.response.copilot.CopilotInfo
+import plus.maa.backend.repository.entity.Copilot
+import java.time.LocalDateTime
 
 /**
  * @author LoMu
  * Date  2023-01-10 19:10
  */
-
 @Mapper(componentModel = "spring")
-public interface CopilotConverter {
-
+interface CopilotConverter {
     /**
      * 实现增量更新
      * 将copilotDto 映射覆盖数据库中的 copilot
@@ -38,7 +34,7 @@ public interface CopilotConverter {
     @Mapping(target = "ratingRatio", ignore = true)
     @Mapping(target = "ratingLevel", ignore = true)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    void updateCopilotFromDto(CopilotDTO copilotDTO, String content, @MappingTarget Copilot copilot);
+    fun updateCopilotFromDto(copilotDTO: CopilotDTO, content: String, @MappingTarget copilot: Copilot)
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "deleteTime", ignore = true)
@@ -52,7 +48,13 @@ public interface CopilotConverter {
     @Mapping(target = "uploadTime", source = "now")
     @Mapping(target = "firstUploadTime", source = "now")
     @Mapping(target = "uploaderId", source = "userId")
-    Copilot toCopilot(CopilotDTO copilotDto, Long copilotId, String userId, LocalDateTime now, String content);
+    fun toCopilot(
+        copilotDto: CopilotDTO,
+        copilotId: Long,
+        userId: String,
+        now: LocalDateTime,
+        content: String
+    ): Copilot
 
     @Mapping(target = "ratingType", ignore = true)
     @Mapping(target = "ratingRatio", ignore = true)
@@ -64,5 +66,5 @@ public interface CopilotConverter {
     @Mapping(target = "like", source = "copilot.likeCount")
     @Mapping(target = "dislike", source = "copilot.dislikeCount")
     @Mapping(target = "commentsCount", conditionExpression = "java(commentsCount != null)")
-    CopilotInfo toCopilotInfo(Copilot copilot, String userName, Long copilotId, Long commentsCount);
+    fun toCopilotInfo(copilot: Copilot, userName: String, copilotId: Long, commentsCount: Long?): CopilotInfo
 }

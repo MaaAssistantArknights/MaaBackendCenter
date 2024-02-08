@@ -10,7 +10,7 @@ import plus.maa.backend.repository.entity.ArkLevelSha
 /**
  * @author john180
  */
-interface ArkLevelRepository : MongoRepository<ArkLevel?, String?> {
+interface ArkLevelRepository : MongoRepository<ArkLevel, String> {
     fun findAllShaBy(): List<ArkLevelSha>
 
     fun findAllByCatOne(catOne: String, pageable: Pageable): Page<ArkLevel>
