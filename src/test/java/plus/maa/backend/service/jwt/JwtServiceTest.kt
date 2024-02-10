@@ -1,60 +1,61 @@
-package plus.maa.backend.service.jwt;
+package plus.maa.backend.service.jwt
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import plus.maa.backend.config.external.Jwt;
-import plus.maa.backend.config.external.MaaCopilotProperties;
-
-import java.util.ArrayList;
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import plus.maa.backend.config.external.Jwt
+import plus.maa.backend.config.external.MaaCopilotProperties
 
 class JwtServiceTest {
+    private fun createService(): JwtService {
+        val properties = MaaCopilotProperties()
+        val jwtSettings = Jwt()
+        jwtSettings.secret = "whatever you want"
+        properties.jwt = jwtSettings
 
-    JwtService createService() {
-        var properties = new MaaCopilotProperties();
-        var jwtSettings = new Jwt();
-        jwtSettings.setSecret("whatever you want");
-        properties.setJwt(jwtSettings);
-
-        return new JwtService(properties);
+        return JwtService(properties)
     }
 
     @Test
-    void authTokenCodec() throws JwtExpiredException, JwtInvalidException {
-        var service = createService();
-        var subject = "some user id";
-        var jwtId = "some jwt Id";
+    @Throws(JwtExpiredException::class, JwtInvalidException::class)
+    fun authTokenCodec() {
+        val service = createService()
+        val subject = "some user id"
+        val jwtId = "some jwt Id"
 
-        var token = service.issueAuthToken(subject, jwtId, new ArrayList<>());
-        var parsedToken = service.verifyAndParseAuthToken(token.getValue());
+        val token = service.issueAuthToken(subject, jwtId, ArrayList())
+        val parsedToken = service.verifyAndParseAuthToken(token.value)
 
-        assert subject.equals(parsedToken.getSubject());
-        assert jwtId.equals(parsedToken.getJwtId());
-        assert parsedToken.isAuthenticated();
+        check(subject == parsedToken.subject)
+        check(jwtId == parsedToken.jwtId)
+        check(parsedToken.isAuthenticated)
     }
 
     @Test
-    void refreshTokenCodec() throws JwtExpiredException, JwtInvalidException {
-        var service = createService();
+    @Throws(JwtExpiredException::class, JwtInvalidException::class)
+    fun refreshTokenCodec() {
+        val service = createService()
 
-        var subject = "some user id";
-        var origin = service.issueRefreshToken(subject, null);
+        val subject = "some user id"
+        val origin = service.issueRefreshToken(subject, null)
 
-        var parsedToken = service.verifyAndParseRefreshToken(origin.getValue());
-        assert subject.equals(parsedToken.getSubject());
-
-        var newToken = service.newRefreshToken(parsedToken, null);
-        assert !newToken.getIssuedAt().isBefore(parsedToken.getIssuedAt());
-        assert !newToken.getNotBefore().isBefore(parsedToken.getNotBefore());
-        assert newToken.getExpiresAt().equals(parsedToken.getExpiresAt());
+        val parsedToken = service.verifyAndParseRefreshToken(origin.value)
+        check(subject == parsedToken.subject)
+        val newToken = service.newRefreshToken(parsedToken, null)
+        check(!newToken.issuedAt.isBefore(parsedToken.issuedAt))
+        check(!newToken.notBefore.isBefore(parsedToken.notBefore))
+        check(newToken.expiresAt == parsedToken.expiresAt)
     }
 
     @Test
-    void wrongTypeParseShouldFail() {
-        var service = createService();
-        var authToken = service.issueAuthToken("some user id", null, new ArrayList<>());
-        Assertions.assertThrows(JwtInvalidException.class, () -> service.verifyAndParseRefreshToken(authToken.getValue()));
-        var refreshToken = service.issueRefreshToken("some user id", null);
-        Assertions.assertThrows(JwtInvalidException.class, () -> service.verifyAndParseAuthToken(refreshToken.getValue()));
+    fun wrongTypeParseShouldFail() {
+        val service = createService()
+        val authToken = service.issueAuthToken("some user id", null, ArrayList())
+        assertThrows<JwtInvalidException> {
+            service.verifyAndParseRefreshToken(authToken.value)
+        }
+        val refreshToken = service.issueRefreshToken("some user id", null)
+        assertThrows<JwtInvalidException> {
+            service.verifyAndParseAuthToken(refreshToken.value)
+        }
     }
-
 }

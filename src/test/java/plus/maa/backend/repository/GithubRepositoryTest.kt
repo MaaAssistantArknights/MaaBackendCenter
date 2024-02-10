@@ -1,38 +1,29 @@
-package plus.maa.backend.repository;
+package plus.maa.backend.repository
 
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import plus.maa.backend.config.external.MaaCopilotProperties;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import plus.maa.backend.config.external.MaaCopilotProperties
 
 @SpringBootTest
-class GithubRepositoryTest {
-
-    @Autowired
-    private GithubRepository repository;
-    @Autowired
-    private MaaCopilotProperties properties;
-
+class GithubRepositoryTest(
+    @Autowired val repository: GithubRepository,
+    @Autowired val properties: MaaCopilotProperties
+) {
     @Test
-    public void testGetTrees() {
-        var maaTree = repository.getTrees(properties.getGithub().getToken(), "d989739981db071e80df1c66e473c729b50e8073");
-        assertNotNull(maaTree);
+    fun testGetTrees() {
+        repository.getTrees(properties.github.token, "d989739981db071e80df1c66e473c729b50e8073")
     }
 
     @Test
-    public void testGetCommits() {
-        var commits = repository.getCommits(properties.getGithub().getToken());
-        assertNotNull(commits);
-        assertFalse(commits.isEmpty());
+    fun testGetCommits() {
+        val commits = repository.getCommits(properties.github.token)
+        check(commits.isNotEmpty())
     }
 
     @Test
-    void testGetContents() {
-        var contents = repository.getContents(properties.getGithub().getToken(),"");
-        assertNotNull(contents);
-        assertFalse(contents.isEmpty());
+    fun testGetContents() {
+        val contents = repository.getContents(properties.github.token, "")
+        check(contents.isNotEmpty())
     }
 }

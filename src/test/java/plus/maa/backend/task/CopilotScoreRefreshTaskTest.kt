@@ -1,108 +1,132 @@
-package plus.maa.backend.task;
+package plus.maa.backend.task
 
-import org.bson.Document;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.aggregation.AggregationResults;
-import plus.maa.backend.BaseMockTest;
-import plus.maa.backend.repository.CopilotRepository;
-import plus.maa.backend.repository.RedisCache;
-import plus.maa.backend.repository.entity.Copilot;
-import plus.maa.backend.repository.entity.Rating;
-import plus.maa.backend.service.model.RatingCount;
+import io.mockk.every
+import io.mockk.mockk
+import org.bson.Document
+import org.junit.jupiter.api.Test
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.Pageable
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.aggregation.AggregationResults
+import plus.maa.backend.repository.CopilotRepository
+import plus.maa.backend.repository.RedisCache
+import plus.maa.backend.repository.entity.ArkLevel
+import plus.maa.backend.repository.entity.Copilot
+import plus.maa.backend.repository.entity.Rating
+import plus.maa.backend.service.ArkLevelService
+import plus.maa.backend.service.model.RatingCount
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Set;
+class CopilotScoreRefreshTaskTest {
+    private val copilotRepository = mockk<CopilotRepository>()
+    private val mongoTemplate = mockk<MongoTemplate>()
+    private val redisCache = mockk<RedisCache>()
+    private val arkLevelService = mockk<ArkLevelService>()
+    private val refreshTask: CopilotScoreRefreshTask = CopilotScoreRefreshTask(
+        arkLevelService,
+        redisCache,
+        copilotRepository,
+        mongoTemplate
+    )
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
-
-public class CopilotScoreRefreshTaskTest extends BaseMockTest {
-
-    @InjectMocks
-    CopilotScoreRefreshTask refreshTask;
-
-    @Mock
-    CopilotRepository copilotRepository;
-    @Mock
-    MongoTemplate mongoTemplate;
-    @Mock
-    RedisCache redisCache;
 
     @Test
-    void testRefreshScores() {
-        LocalDateTime now = LocalDateTime.now();
-        Copilot copilot1 = new Copilot();
-        copilot1.setCopilotId(1L);
-        copilot1.setViews(100L);
-        copilot1.setUploadTime(now);
-        Copilot copilot2 = new Copilot();
-        copilot2.setCopilotId(2L);
-        copilot2.setViews(200L);
-        copilot2.setUploadTime(now);
-        Copilot copilot3 = new Copilot();
-        copilot3.setCopilotId(3L);
-        copilot3.setViews(200L);
-        copilot3.setUploadTime(now);
+    fun testRefreshScores() {
+        val now = LocalDateTime.now()
+        val copilot1 = Copilot()
+        copilot1.copilotId = 1L
+        copilot1.views = 100L
+        copilot1.uploadTime = now
+        copilot1.stageName = "stage1"
+        val copilot2 = Copilot()
+        copilot2.copilotId = 2L
+        copilot2.views = 200L
+        copilot2.uploadTime = now
+        copilot2.stageName = "stage2"
+        val copilot3 = Copilot()
+        copilot3.copilotId = 3L
+        copilot3.views = 200L
+        copilot3.uploadTime = now
+        copilot3.stageName = "stage3"
+        val allCopilots = listOf(copilot1, copilot2, copilot3)
 
         // 配置copilotRepository
-        when(copilotRepository.findAllByDeleteIsFalse(any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(copilot1, copilot2, copilot3)));
+        every {
+            copilotRepository.findAllByDeleteIsFalse(any<Pageable>())
+        } returns PageImpl(allCopilots)
 
         // 配置mongoTemplate
-        when(mongoTemplate.aggregate(any(), eq(Rating.class), eq(RatingCount.class)))
-                .thenReturn(new AggregationResults<>(List.of(
-                        new RatingCount("1", 1L),
-                        new RatingCount("2", 0L),
-                        new RatingCount("3", 0L)), new Document()));
+        every {
+            mongoTemplate.aggregate(any(), Rating::class.java, RatingCount::class.java)
+        } returns AggregationResults(
+            listOf(
+                RatingCount("1", 1L),
+                RatingCount("2", 0L),
+                RatingCount("3", 0L)
+            ), Document()
+        )
 
-        refreshTask.refreshHotScores();
+        val arkLevel = ArkLevel()
+        arkLevel.isOpen = true
+        arkLevel.closeTime = LocalDateTime.now().plus(1, ChronoUnit.DAYS)
+        every { arkLevelService.findByLevelIdFuzzy(any()) } returns arkLevel
+        every { copilotRepository.saveAll(any<Iterable<Copilot>>()) } returns allCopilots
+        every { redisCache.syncRemoveCacheByPattern(any()) } returns Unit
+        refreshTask.refreshHotScores()
 
-        assertTrue(copilot1.getHotScore() > 0);
-        assertTrue(copilot2.getHotScore() > 0);
+        check(copilot1.hotScore > 0)
+        check(copilot2.hotScore > 0)
     }
 
     @Test
-    void testRefreshTop100HotScores() {
-        LocalDateTime now = LocalDateTime.now();
-        Copilot copilot1 = new Copilot();
-        copilot1.setCopilotId(1L);
-        copilot1.setViews(100L);
-        copilot1.setUploadTime(now);
-        Copilot copilot2 = new Copilot();
-        copilot2.setCopilotId(2L);
-        copilot2.setViews(200L);
-        copilot2.setUploadTime(now);
-        Copilot copilot3 = new Copilot();
-        copilot3.setCopilotId(3L);
-        copilot3.setViews(200L);
-        copilot3.setUploadTime(now);
+    fun testRefreshTop100HotScores() {
+        val now = LocalDateTime.now()
+        val copilot1 = Copilot()
+        copilot1.copilotId = 1L
+        copilot1.views = 100L
+        copilot1.uploadTime = now
+        copilot1.stageName = "stage1"
+        val copilot2 = Copilot()
+        copilot2.copilotId = 2L
+        copilot2.views = 200L
+        copilot2.uploadTime = now
+        copilot2.stageName = "stage2"
+        val copilot3 = Copilot()
+        copilot3.copilotId = 3L
+        copilot3.views = 200L
+        copilot3.uploadTime = now
+        copilot3.stageName = "stage3"
+        val allCopilots = listOf(copilot1, copilot2, copilot3)
 
         // 配置 RedisCache
-        when(redisCache.getZSetReverse("rate:hot:copilotIds", 0, 99))
-                .thenReturn(Set.of("1", "2", "3"));
+        every { redisCache.getZSetReverse("rate:hot:copilotIds", 0, 99) } returns setOf("1", "2", "3")
 
         // 配置copilotRepository
-        when(copilotRepository.findByCopilotIdInAndDeleteIsFalse(anyCollection()))
-                .thenReturn(List.of(copilot1, copilot2, copilot3));
+        every {
+            copilotRepository.findByCopilotIdInAndDeleteIsFalse(any())
+        } returns allCopilots
 
         // 配置mongoTemplate
-        when(mongoTemplate.aggregate(any(), eq(Rating.class), eq(RatingCount.class)))
-                .thenReturn(new AggregationResults<>(List.of(
-                        new RatingCount("1", 1L),
-                        new RatingCount("2", 0L),
-                        new RatingCount("3", 0L)), new Document()));
+        every {
+            mongoTemplate.aggregate(any(), Rating::class.java, RatingCount::class.java)
+        } returns AggregationResults(
+            listOf(
+                RatingCount("1", 1L),
+                RatingCount("2", 0L),
+                RatingCount("3", 0L)
+            ), Document()
+        )
+        val arkLevel = ArkLevel()
+        arkLevel.isOpen = true
+        arkLevel.closeTime = LocalDateTime.now().plus(1, ChronoUnit.DAYS)
+        every { arkLevelService.findByLevelIdFuzzy(any()) } returns arkLevel
+        every { copilotRepository.saveAll(any<Iterable<Copilot>>()) } returns allCopilots
+        every { redisCache.removeCache(any<String>()) } returns Unit
+        every { redisCache.syncRemoveCacheByPattern(any()) } returns Unit
+        refreshTask.refreshTop100HotScores()
 
-        refreshTask.refreshTop100HotScores();
-
-        assertTrue(copilot1.getHotScore() > 0);
-        assertTrue(copilot2.getHotScore() > 0);
+        check(copilot1.hotScore > 0)
+        check(copilot2.hotScore > 0)
     }
-
 }

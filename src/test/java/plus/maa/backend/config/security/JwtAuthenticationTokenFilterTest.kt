@@ -1,44 +1,38 @@
-package plus.maa.backend.config.security;
+package plus.maa.backend.config.security
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.core.context.SecurityContextHolder;
-import plus.maa.backend.config.external.Jwt;
-import plus.maa.backend.config.external.MaaCopilotProperties;
-import plus.maa.backend.service.jwt.JwtService;
+import io.mockk.every
+import io.mockk.spyk
+import jakarta.servlet.FilterChain
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
+import org.junit.jupiter.api.Test
+import org.springframework.security.core.context.SecurityContextHolder
+import plus.maa.backend.config.external.Jwt
+import plus.maa.backend.config.external.MaaCopilotProperties
+import plus.maa.backend.service.jwt.JwtService
 
-import java.util.ArrayList;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-@SpringBootTest
 class JwtAuthenticationTokenFilterTest {
-
     @Test
-    void testValidToken() {
-        var properties = new MaaCopilotProperties();
-        var jwtSettings = new Jwt();
-        jwtSettings.setSecret("whatever you want");
-        jwtSettings.setExpire(86400);
-        properties.setJwt(jwtSettings);
+    fun testValidToken() {
+        val properties = MaaCopilotProperties()
+        val jwtSettings = Jwt()
+        jwtSettings.secret = "whatever you want"
+        jwtSettings.expire = 86400
+        properties.jwt = jwtSettings
 
-        var jwtService = new JwtService(properties);
-        var userId = "some user id";
-        var authToken = jwtService.issueAuthToken(userId, null, new ArrayList<>());
-        var jwt = authToken.getValue();
+        val jwtService = JwtService(properties)
+        val userId = "some user id"
+        val authToken = jwtService.issueAuthToken(userId, null, ArrayList())
+        val jwt = authToken.value
 
-        var filter = new JwtAuthenticationTokenFilter(new AuthenticationHelper(), properties, jwtService);
-        var request = mock(HttpServletRequest.class);
-        when(request.getHeader(properties.getJwt().getHeader())).thenReturn("Bearer " + jwt);
-        var filterChain = mock(FilterChain.class);
+        val filter = JwtAuthenticationTokenFilter(AuthenticationHelper(), properties, jwtService)
+        val request = spyk<HttpServletRequest>()
+        every { request.getHeader(properties.jwt.header) } returns "Bearer $jwt"
+        val filterChain = spyk<FilterChain>()
         try {
-            filter.doFilter(request, mock(HttpServletResponse.class), filterChain);
-        } catch (Exception ignored) {
+            filter.doFilter(request, spyk<HttpServletResponse>(), filterChain)
+        } catch (ignored: Exception) {
         }
-        assert SecurityContextHolder.getContext().getAuthentication() != null;
+        requireNotNull(SecurityContextHolder.getContext().authentication)
     }
 }
