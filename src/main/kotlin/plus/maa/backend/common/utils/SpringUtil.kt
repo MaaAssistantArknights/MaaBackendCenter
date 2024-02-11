@@ -25,15 +25,15 @@ class SpringUtil : ApplicationContextAware {
         var applicationContext: ApplicationContext? = null
             private set
 
-        fun getBean(name: String?): Any {
+        fun getBean(name: String): Any {
             return applicationContext!!.getBean(name)
         }
 
-        fun <T> getBean(clazz: Class<T>?): T {
+        fun <T> getBean(clazz: Class<T>): T {
             return applicationContext!!.getBean(clazz)
         }
 
-        fun <T> getBean(name: String?, clazz: Class<T>?): T {
+        fun <T> getBean(name: String, clazz: Class<T>): T {
             return applicationContext!!.getBean(name, clazz)
         }
     }

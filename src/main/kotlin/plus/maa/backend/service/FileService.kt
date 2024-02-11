@@ -45,7 +45,7 @@ class FileService(
     ) {
         //redis持久化
 
-        var version = version
+        var realVersion = version
         if (redisCache.getCache("NotEnable:UploadFile", String::class.java) != null) {
             throw MaaResultException(403, "closed uploadfile")
         }
@@ -57,14 +57,14 @@ class FileService(
         Assert.notNull(file.originalFilename, "文件名不可为空")
 
         var antecedentVersion: String? = null
-        if (version.contains("-")) {
-            val split = version.split("-".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-            version = split[0]
+        if (realVersion.contains("-")) {
+            val split = realVersion.split("-".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            realVersion = split[0]
             antecedentVersion = split[1]
         }
 
         val document = Document()
-        document["version"] = version
+        document["version"] = realVersion
         document["antecedentVersion"] = antecedentVersion
         document["label"] = label
         document["classification"] = classification

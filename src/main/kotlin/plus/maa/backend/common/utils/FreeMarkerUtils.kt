@@ -1,38 +1,35 @@
-package plus.maa.backend.common.utils;
+package plus.maa.backend.common.utils
 
-import freemarker.template.Configuration;
-import freemarker.template.Template;
-import freemarker.template.TemplateException;
-import plus.maa.backend.controller.response.MaaResultException;
-
-import java.io.IOException;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
-import java.util.Locale;
+import freemarker.template.Configuration
+import freemarker.template.TemplateException
+import plus.maa.backend.controller.response.MaaResultException
+import java.io.IOException
+import java.io.StringWriter
+import java.nio.charset.StandardCharsets
+import java.util.*
 
 /**
  * @author dragove
  * created on 2023/1/17
  */
-public class FreeMarkerUtils {
+object FreeMarkerUtils {
+    private val cfg = Configuration(Configuration.VERSION_2_3_32)
 
-    private static final Configuration cfg = new Configuration(Configuration.VERSION_2_3_32);
-    static {
-        cfg.setClassForTemplateLoading(FreeMarkerUtils.class, "/static/templates/ftlh");
-        cfg.setEncoding(Locale.CHINA, StandardCharsets.UTF_8.name());
+    init {
+        cfg.setClassForTemplateLoading(FreeMarkerUtils::class.java, "/static/templates/ftlh")
+        cfg.setEncoding(Locale.CHINA, StandardCharsets.UTF_8.name())
     }
 
-    public static String parseData(Object dataModel, String templateName) {
+    fun parseData(dataModel: Any?, templateName: String?): String {
         try {
-            Template template = cfg.getTemplate(templateName);
-            StringWriter sw = new StringWriter();
-            template.process(dataModel, sw);
-            return sw.toString();
-        } catch (IOException e) {
-            throw new MaaResultException("获取freemarker模板失败");
-        } catch (TemplateException e) {
-            throw new MaaResultException("freemarker模板处理失败");
+            val template = cfg.getTemplate(templateName)
+            val sw = StringWriter()
+            template.process(dataModel, sw)
+            return sw.toString()
+        } catch (e: IOException) {
+            throw MaaResultException("获取freemarker模板失败")
+        } catch (e: TemplateException) {
+            throw MaaResultException("freemarker模板处理失败")
         }
     }
-
 }

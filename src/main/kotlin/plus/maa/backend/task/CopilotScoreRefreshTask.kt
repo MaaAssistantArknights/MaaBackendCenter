@@ -15,7 +15,6 @@ import plus.maa.backend.service.CopilotService.Companion.getHotScore
 import plus.maa.backend.service.model.RatingCount
 import plus.maa.backend.service.model.RatingType
 import java.time.LocalDateTime
-import kotlin.String
 
 /**
  * 作业热度值刷入任务，每日执行，用于计算基于时间的热度值
@@ -71,7 +70,7 @@ class CopilotScoreRefreshTask(
         val copilots = copilotRepository.findByCopilotIdInAndDeleteIsFalse(
             copilotIdSTRs.map { s: String? -> s!!.toLong() }
         )
-        if (copilots == null || copilots.isEmpty()) {
+        if (copilots.isEmpty()) {
             return
         }
 
@@ -106,7 +105,7 @@ class CopilotScoreRefreshTask(
 
                 hotScore /= 3.0
             }
-            copilot.setHotScore(hotScore)
+            copilot.hotScore = hotScore
         }
         // 批量更新热度值
         copilotRepository.saveAll(copilots)
