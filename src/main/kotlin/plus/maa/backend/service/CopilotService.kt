@@ -502,7 +502,7 @@ class CopilotService(
             info.ratingType = ratingType.display
         }
         // 评分数少于一定数量
-        info.isNotEnoughRating =
+        info.notEnoughRating =
             copilot.likeCount + copilot.dislikeCount <= properties.copilot.minValueShowNotEnoughRating
 
         info.available = true

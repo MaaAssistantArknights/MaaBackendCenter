@@ -14,7 +14,7 @@ data class CopilotInfo (
     val hotScore: Double = 0.0,
     var available: Boolean = false,
     var ratingLevel: Int = 0,
-    var isNotEnoughRating: Boolean = false,
+    var notEnoughRating: Boolean = false,
     var ratingRatio: Double = 0.0,
     var ratingType: Int = 0,
     val commentsCount: Long = 0,
