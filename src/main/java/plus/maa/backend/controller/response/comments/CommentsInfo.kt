@@ -1,33 +1,21 @@
-package plus.maa.backend.controller.response.comments;
+package plus.maa.backend.controller.response.comments
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDateTime
 
 /**
  * @author LoMu
  * Date  2023-02-20 17:04
  */
+data class CommentsInfo(
+    val commentId: String,
+    val uploader: String,
+    val uploaderId: String,
 
-@Data
-@NoArgsConstructor
-@Accessors(chain = true)
-@AllArgsConstructor
-public class CommentsInfo {
-    private String commentId;
-    private String uploader;
-    private String uploaderId;
-
-    //评论内容
-    private String message;
-    private LocalDateTime uploadTime;
-    private long like;
-    private long dislike;
-    private boolean topping;
-    private List<SubCommentsInfo> subCommentsInfos = new ArrayList<>();
-}
+    //评论内容,
+    val message: String,
+    val uploadTime: LocalDateTime,
+    val like: Long = 0,
+    val dislike: Long = 0,
+    val topping: Boolean = false,
+    val subCommentsInfos: List<SubCommentsInfo>,
+)

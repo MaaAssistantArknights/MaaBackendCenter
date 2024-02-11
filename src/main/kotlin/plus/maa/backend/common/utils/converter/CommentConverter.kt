@@ -17,8 +17,7 @@ interface CommentConverter {
     @Mapping(target = "dislike", source = "commentsArea.dislikeCount")
     @Mapping(target = "uploader", source = "maaUser.userName")
     @Mapping(target = "commentId", source = "commentsArea.id")
-    @Mapping(target = "subCommentsInfos", ignore = true)
-    fun toCommentsInfo(commentsArea: CommentsArea, maaUser: MaaUser): CommentsInfo
+    fun toCommentsInfo(commentsArea: CommentsArea, maaUser: MaaUser, subCommentsInfos: List<SubCommentsInfo>): CommentsInfo
 
 
     @Mapping(target = "like", source = "commentsArea.likeCount")

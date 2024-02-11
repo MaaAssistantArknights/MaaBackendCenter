@@ -1,32 +1,21 @@
-package plus.maa.backend.controller.response.comments;
+package plus.maa.backend.controller.response.comments
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
-
-import java.time.LocalDateTime;
+import java.time.LocalDateTime
 
 /**
  * @author LoMu
  * Date  2023-02-20 17:05
  */
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Accessors(chain = true)
-public class SubCommentsInfo {
-    private String commentId;
-    private String uploader;
-    private String uploaderId;
-
-    //评论内容
-    private String message;
-    private LocalDateTime uploadTime;
-    private long like;
-    private long dislike;
-    private String fromCommentId;
-    private String mainCommentId;
-    private boolean deleted;
-}
+data class SubCommentsInfo(
+    private val commentId: String,
+    private val uploader: String,
+    private val uploaderId: String,
+    //评论内容,
+    private val message: String,
+    private val uploadTime: LocalDateTime,
+    private val like: Long = 0,
+    private val dislike: Long = 0,
+    private val fromCommentId: String,
+    private val mainCommentId: String,
+    private val deleted: Boolean = false
+)

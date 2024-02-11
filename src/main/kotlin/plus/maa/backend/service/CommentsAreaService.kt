@@ -330,37 +330,29 @@ class CommentsAreaService(
 
         //转换主评论数据并填充用户名
         val commentsInfos = mainCommentsList.map { mainComment: CommentsArea ->
-            val commentsInfo =
-                commentConverter
-                    .toCommentsInfo(
-                        mainComment,
+            val subCommentsInfoList = subCommentsList
+                .filter { comment: CommentsArea -> mainComment.id == comment.mainCommentId } //转换子评论数据并填充用户名
+                .map { subComment: CommentsArea ->
+                    commentConverter.toSubCommentsInfo(
+                        subComment,  //填充评论用户名
                         maaUserMap.getOrDefault(
-                            mainComment.uploaderId,
+                            subComment.uploaderId,
                             MaaUser.UNKNOWN
                         )
                     )
-            val subCommentsInfoList = subCommentsList
-                .filter { comment: CommentsArea -> commentsInfo.commentId == comment.mainCommentId } //转换子评论数据并填充用户名
-                .map { subComment: CommentsArea ->
-                    commentConverter
-                        .toSubCommentsInfo(
-                            subComment,  //填充评论用户名
-                            maaUserMap.getOrDefault(
-                                subComment.uploaderId,
-                                MaaUser.UNKNOWN
-                            )
-                        )
                 }.toList()
-
-
-            commentsInfo.setSubCommentsInfos(subCommentsInfoList)
+            val commentsInfo = commentConverter.toCommentsInfo(
+                mainComment,
+                maaUserMap.getOrDefault(
+                    mainComment.uploaderId,
+                    MaaUser.UNKNOWN
+                ),
+                subCommentsInfoList
+            )
             commentsInfo
         }.toList()
 
-        return CommentsAreaInfo().setHasNext(hasNext)
-            .setPage(pageNumber)
-            .setTotal(count)
-            .setData(commentsInfos)
+        return CommentsAreaInfo(hasNext, pageNumber, count, commentsInfos)
     }
 
 
