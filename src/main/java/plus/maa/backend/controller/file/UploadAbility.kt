@@ -1,15 +1,11 @@
-package plus.maa.backend.controller.file;
+package plus.maa.backend.controller.file
 
-import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import jakarta.validation.constraints.NotNull
 
-@AllArgsConstructor
-@Data
-public class UploadAbility {
+class UploadAbility(
     /**
      * 是否开启上传功能
      */
-    @NotNull
-    Boolean enabled;
-}
+    @field:NotNull
+    var enabled: Boolean
+)

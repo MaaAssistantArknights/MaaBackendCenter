@@ -59,7 +59,7 @@ class CommentsAreaService(
         val message = commentsAddDTO.message
         val copilotOptional = copilotRepository.findByCopilotId(copilotId)
         Assert.isTrue(StringUtils.isNotBlank(message), "评论不可为空")
-        Assert.isTrue(copilotOptional!=null, "作业表不存在")
+        Assert.isTrue(copilotOptional != null, "作业表不存在")
 
 
         var fromCommentsId: String? = null
@@ -70,7 +70,7 @@ class CommentsAreaService(
 
 
         //代表这是一条回复评论
-        if (StringUtils.isNoneBlank(commentsAddDTO.fromCommentId)) {
+        if (!commentsAddDTO.fromCommentId.isNullOrBlank()) {
             val commentsAreaOptional = commentsAreaRepository.findById(commentsAddDTO.fromCommentId)
             Assert.isTrue(commentsAreaOptional.isPresent, "回复的评论不存在")
             commentsArea = commentsAreaOptional.get()
@@ -136,7 +136,7 @@ class CommentsAreaService(
                 .setFromCommentId(fromCommentsId)
                 .setMainCommentId(mainCommentsId)
                 .setMessage(message)
-                .setNotification(commentsAddDTO.isNotification)
+                .setNotification(commentsAddDTO.notification)
         )
     }
 
@@ -145,11 +145,11 @@ class CommentsAreaService(
         val commentsArea = findCommentsById(commentsId)
         //允许作者删除评论
         copilotRepository.findByCopilotId(commentsArea.copilotId)?.let { copilot: Copilot ->
-                Assert.isTrue(
-                    userId == copilot.uploaderId || userId == commentsArea.uploaderId,
-                    "您无法删除不属于您的评论"
-                )
-            }
+            Assert.isTrue(
+                userId == copilot.uploaderId || userId == commentsArea.uploaderId,
+                "您无法删除不属于您的评论"
+            )
+        }
         val now = LocalDateTime.now()
         commentsArea.setDelete(true)
         commentsArea.setDeleteTime(now)
@@ -244,13 +244,13 @@ class CommentsAreaService(
         Assert.isTrue(!commentsArea.isDelete, "评论不存在")
         // 只允许作者置顶评论
         copilotRepository.findByCopilotId(commentsArea.copilotId)?.let { copilot: Copilot ->
-                Assert.isTrue(
-                    userId == copilot.uploaderId,
-                    "只有作者才能置顶评论"
-                )
-                commentsArea.setTopping(commentsToppingDTO.isTopping)
-                commentsAreaRepository.save(commentsArea)
-            }
+            Assert.isTrue(
+                userId == copilot.uploaderId,
+                "只有作者才能置顶评论"
+            )
+            commentsArea.setTopping(commentsToppingDTO.topping)
+            commentsAreaRepository.save(commentsArea)
+        }
     }
 
     /**
@@ -263,16 +263,12 @@ class CommentsAreaService(
         val toppingOrder = Sort.Order.desc("topping")
 
         val sortOrder = Sort.Order(
-            if (request.isDesc) Sort.Direction.DESC else Sort.Direction.ASC,
-            Optional.ofNullable(request.orderBy)
-                .filter { cs: String? -> StringUtils.isNotBlank(cs) }
-                .map { ob: String? ->
-                    when (ob) {
-                        "hot" -> "likeCount"
-                        "id" -> "uploadTime"
-                        else -> request.orderBy
-                    }
-                }.orElse("likeCount")
+            if (request.desc) Sort.Direction.DESC else Sort.Direction.ASC,
+            when (request.orderBy) {
+                "hot" -> "likeCount"
+                "id" -> "uploadTime"
+                else -> request.orderBy ?: "likeCount"
+            }
         )
 
         val page = if (request.page > 0) request.page else 1
@@ -283,20 +279,20 @@ class CommentsAreaService(
 
 
         //主评论
-        val mainCommentsList = if (StringUtils.isNotBlank(request.justSeeId)) {
+        val mainCommentsList = if (!request.justSeeId.isNullOrBlank()) {
             commentsAreaRepository.findByCopilotIdAndUploaderIdAndDeleteAndMainCommentIdExists(
                 request.copilotId,
                 request.justSeeId,
-                false,
-                false,
-                pageable
+                delete = false,
+                exists = false,
+                pageable = pageable
             )
         } else {
             commentsAreaRepository.findByCopilotIdAndDeleteAndMainCommentIdExists(
                 request.copilotId,
-                false,
-                false,
-                pageable
+                delete = false,
+                exists = false,
+                pageable = pageable
             )
         }
 

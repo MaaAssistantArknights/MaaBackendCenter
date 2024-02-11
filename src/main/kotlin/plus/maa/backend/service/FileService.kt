@@ -129,7 +129,7 @@ class FileService(
         )
 
         //指定下载某个类型的图片
-        if (StringUtils.isNotBlank(imageDownloadDTO.classification)) {
+        if (!imageDownloadDTO.classification.isNullOrBlank()) {
             criteriaSet.add(
                 GridFsCriteria.whereMetaData("classification")
                     .regex(Pattern.compile(imageDownloadDTO.classification, Pattern.CASE_INSENSITIVE))
@@ -137,7 +137,7 @@ class FileService(
         }
 
         //指定版本或指定范围版本
-        if (!Objects.isNull(imageDownloadDTO.version)) {
+        if (!imageDownloadDTO.version.isNullOrEmpty()) {
             val version = imageDownloadDTO.version
 
             if (version.size == 1) {
@@ -155,7 +155,7 @@ class FileService(
             }
         }
 
-        if (StringUtils.isNotBlank(imageDownloadDTO.label)) {
+        if (!imageDownloadDTO.label.isNullOrBlank()) {
             criteriaSet.add(
                 GridFsCriteria.whereMetaData("label")
                     .regex(Pattern.compile(imageDownloadDTO.label, Pattern.CASE_INSENSITIVE))
@@ -172,7 +172,7 @@ class FileService(
 
         gzip(response, gridFSFiles)
 
-        if (imageDownloadDTO.isDelete) {
+        if (imageDownloadDTO.delete) {
             gridFsOperations.delete(query)
         }
     }

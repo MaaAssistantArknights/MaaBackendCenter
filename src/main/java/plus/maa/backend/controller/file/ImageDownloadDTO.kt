@@ -1,24 +1,16 @@
-package plus.maa.backend.controller.file;
+package plus.maa.backend.controller.file
 
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import org.hibernate.validator.constraints.Length;
-
-import java.util.List;
-
+import jakarta.validation.constraints.NotNull
 
 /**
  * @author LoMu
  * Date  2023-04-16 17:41
  */
-
-@Data
-public class ImageDownloadDTO {
-    @NotNull
-    private String type;
-    private String classification;
-    private List<String> version;
-    private String label;
-    private boolean delete;
-}
+data class ImageDownloadDTO(
+    @field:NotNull
+    val type: String,
+    val classification: String? = null,
+    val version: List<String>? = null,
+    val label: String? = null,
+    val delete: Boolean = false
+)

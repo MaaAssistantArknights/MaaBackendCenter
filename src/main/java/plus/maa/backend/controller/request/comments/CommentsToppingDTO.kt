@@ -1,9 +1,9 @@
-package plus.maa.backend.controller.request.comments;
+package plus.maa.backend.controller.request.comments
 
-import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.validation.constraints.NotBlank
+import lombok.AllArgsConstructor
+import lombok.Data
+import lombok.NoArgsConstructor
 
 /**
  * @author Lixuhuilll
@@ -12,9 +12,9 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CommentsToppingDTO {
-    @NotBlank(message = "评论id不可为空")
-    private String commentId;
+class CommentsToppingDTO (
+    @field:NotBlank(message = "评论id不可为空")
+    val commentId:  String,
     // 是否将指定评论置顶
-    private boolean topping = true;
-}
+    val topping: Boolean = true
+)
