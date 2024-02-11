@@ -1,16 +1,14 @@
-package plus.maa.backend.controller.request.copilot;
+package plus.maa.backend.controller.request.copilot
 
-import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
+import jakarta.validation.constraints.NotBlank
 
 /**
  * @author LoMu
  * Date  2023-01-20 16:25
  */
-@Data
-public class CopilotRatingReq {
+data class CopilotRatingReq(
     @NotBlank(message = "评分作业id不能为空")
-    private Long id;
+    val id: Long,
     @NotBlank(message = "评分不能为空")
-    private String rating;
-}
+    val rating: String
+)

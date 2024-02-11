@@ -1,13 +1,6 @@
-package plus.maa.backend.controller.request.copilot;
+package plus.maa.backend.controller.request.copilot
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class CopilotCUDRequest {
-    private String content;
-    private Long id;
-}
+data class CopilotCUDRequest (
+    val content: String? = null,
+    val id: Long? = null
+)

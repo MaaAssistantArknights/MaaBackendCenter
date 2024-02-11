@@ -1,30 +1,24 @@
-package plus.maa.backend.controller.response.copilot;
+package plus.maa.backend.controller.response.copilot
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.io.Serializable
+import java.time.LocalDateTime
 
-import java.io.Serializable;
-import java.time.LocalDateTime;
+data class CopilotInfo (
+    val id: Long,
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class CopilotInfo implements Serializable {
-    private Long id;
+    val uploadTime: LocalDateTime,
+    val uploader: String,
 
-    private LocalDateTime uploadTime;
-    private String uploader;
     //用于前端显示的格式化后的干员信息 [干员名]::[技能]
-    private int views;
-    private int hotScore;
-    private boolean available;
-    private int ratingLevel;
-    private boolean isNotEnoughRating;
-    private double ratingRatio;
-    private int ratingType;
-    private long commentsCount;
-    private String content;
-    private long like;
-    private long dislike;
-}
+    val views: Long = 0,
+    val hotScore: Double = 0.0,
+    var available: Boolean = false,
+    var ratingLevel: Int = 0,
+    var isNotEnoughRating: Boolean = false,
+    var ratingRatio: Double = 0.0,
+    var ratingType: Int = 0,
+    val commentsCount: Long = 0,
+    val content: String,
+    val like: Long = 0,
+    val dislike: Long = 0
+): Serializable

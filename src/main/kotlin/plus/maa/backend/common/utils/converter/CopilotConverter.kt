@@ -53,13 +53,13 @@ interface CopilotConverter {
         copilotId: Long,
         userId: String,
         now: LocalDateTime,
-        content: String
+        content: String?
     ): Copilot
 
     @Mapping(target = "ratingType", ignore = true)
     @Mapping(target = "ratingRatio", ignore = true)
     @Mapping(target = "ratingLevel", ignore = true)
-    @Mapping(target = "notEnoughRating", ignore = true)
+    @Mapping(target = "isNotEnoughRating", ignore = true)
     @Mapping(target = "available", ignore = true)
     @Mapping(target = "id", source = "copilotId")
     @Mapping(target = "uploader", source = "userName")

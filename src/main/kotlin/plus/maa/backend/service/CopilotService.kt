@@ -46,7 +46,7 @@ import kotlin.math.ceil
 import kotlin.math.ln
 import kotlin.math.max
 
-private val log = KotlinLogging.logger {  }
+private val log = KotlinLogging.logger { }
 
 /**
  * @author LoMu
@@ -75,23 +75,23 @@ class CopilotService(
     private fun correctCopilot(copilotDTO: CopilotDTO): CopilotDTO {
         // 去除name的冗余部分
         if (copilotDTO.groups != null) {
-            copilotDTO.groups.forEach{ group: Copilot.Groups ->
-                    if (group.opers != null) {
-                        group.opers.forEach{ oper: OperationGroup ->
-                            oper.name = oper.name?.replace("[\"“”]".toRegex(), "")
-                        }
+            copilotDTO.groups.forEach { group: Copilot.Groups ->
+                if (group.opers != null) {
+                    group.opers.forEach { oper: OperationGroup ->
+                        oper.name = oper.name?.replace("[\"“”]".toRegex(), "")
                     }
                 }
+            }
         }
         if (copilotDTO.opers != null) {
-            copilotDTO.opers.forEach{ operator: Copilot.Operators ->
+            copilotDTO.opers.forEach { operator: Copilot.Operators ->
                 operator.name = operator.name?.replace("[\"“”]".toRegex(), "")
             }
         }
 
         // actions name 不是必须
         if (copilotDTO.actions != null) {
-            copilotDTO.actions.forEach{ action: Copilot.Action ->
+            copilotDTO.actions.forEach { action: Copilot.Action ->
                 action.name = if (action.name == null) null else action.name.replace("[\"“”]".toRegex(), "")
             }
         }
@@ -109,8 +109,10 @@ class CopilotService(
      * @param content content
      * @return CopilotDTO
      */
-    private fun parseToCopilotDto(content: String): CopilotDTO {
-        Assert.notNull(content, "作业内容不可为空")
+    private fun parseToCopilotDto(content: String?): CopilotDTO {
+        requireNotNull(content) {
+            "作业内容不可为空"
+        }
         try {
             return mapper.readValue(content, CopilotDTO::class.java)
         } catch (e: JsonProcessingException) {
@@ -131,7 +133,7 @@ class CopilotService(
      * @param content 前端编辑json作业内容
      * @return 返回_id
      */
-    fun upload(loginUserId: String, content: String): Long {
+    fun upload(loginUserId: String, content: String?): Long {
         val copilotDTO = correctCopilot(parseToCopilotDto(content))
         // 将其转换为数据库存储对象
         val copilot = copilotConverter.toCopilot(
@@ -146,7 +148,7 @@ class CopilotService(
      * 根据作业id删除作业
      */
     fun delete(loginUserId: String, request: CopilotCUDRequest) {
-        copilotRepository.findByCopilotId(request.id)?.let { copilot: Copilot ->
+        copilotRepository.findByCopilotId(request.id!!)?.let { copilot: Copilot ->
             Assert.state(copilot.uploaderId == loginUserId, "您无法修改不属于您的作业")
             copilot.isDelete = true
             copilotRepository.save(copilot)
@@ -243,7 +245,7 @@ class CopilotService(
                     "id" -> "copilotId"
                     else -> request.orderBy
                 }
-            }?: "copilotId"
+            } ?: "copilotId"
         )
         // 判断是否有值 无值则为默认
         val page = if (request.page > 0) request.page else 1
@@ -338,7 +340,7 @@ class CopilotService(
             it.copilotId
         }.toSet()
         val maaUsers = userRepository.findByUsersId(copilots.map { it.uploaderId }.toList())
-        val commentsCount = commentsAreaRepository.findByCopilotIdInAndDelete(copilotIds,false)
+        val commentsCount = commentsAreaRepository.findByCopilotIdInAndDelete(copilotIds, false)
             .groupBy { it.copilotId }
             .mapValues { it.value.size.toLong() }
 
@@ -359,11 +361,7 @@ class CopilotService(
         val hasNext = count - page.toLong() * limit > 0
 
         // 封装数据
-        val data = CopilotPageInfo()
-            .setTotal(count)
-            .setHasNext(hasNext)
-            .setData(infos)
-            .setPage(pageNumber)
+        val data = CopilotPageInfo(hasNext, pageNumber, count, infos)
 
         // 决定是否缓存
         if (cacheKey.get() != null) {
@@ -383,11 +381,11 @@ class CopilotService(
     fun update(loginUserId: String, copilotCUDRequest: CopilotCUDRequest) {
         val content = copilotCUDRequest.content
         val id = copilotCUDRequest.id
-        copilotRepository.findByCopilotId(id)?.let { copilot: Copilot ->
+        copilotRepository.findByCopilotId(id!!)?.let { copilot: Copilot ->
             val copilotDTO = correctCopilot(parseToCopilotDto(content))
             Assert.state(copilot.uploaderId == loginUserId, "您无法修改不属于您的作业")
             copilot.uploadTime = LocalDateTime.now()
-            copilotConverter.updateCopilotFromDto(copilotDTO, content, copilot)
+            copilotConverter.updateCopilotFromDto(copilotDTO, content!!, copilot)
             copilotRepository.save(copilot)
         }
     }
@@ -507,7 +505,7 @@ class CopilotService(
         info.isNotEnoughRating =
             copilot.likeCount + copilot.dislikeCount <= properties.copilot.minValueShowNotEnoughRating
 
-        info.isAvailable = true
+        info.available = true
 
         // 兼容客户端, 将作业ID替换为数字ID
         copilot.id = copilot.copilotId.toString()
@@ -516,7 +514,7 @@ class CopilotService(
 
     fun notificationStatus(userId: String?, copilotId: Long, status: Boolean) {
         val copilotOptional = copilotRepository.findByCopilotId(copilotId)
-        Assert.isTrue(copilotOptional!=null, "copilot不存在")
+        Assert.isTrue(copilotOptional != null, "copilot不存在")
         val copilot = copilotOptional!!
         Assert.isTrue(userId == copilot.uploaderId, "您没有权限修改")
         copilot.notification = status
