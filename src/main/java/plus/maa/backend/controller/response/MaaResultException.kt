@@ -1,27 +1,17 @@
-package plus.maa.backend.controller.response;
+package plus.maa.backend.controller.response
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import org.springframework.http.HttpStatus;
-import plus.maa.backend.common.MaaStatusCode;
+import org.springframework.http.HttpStatus
+import plus.maa.backend.common.MaaStatusCode
 
 /**
  * @author john180
  */
-@Data
-@AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
-public class MaaResultException extends RuntimeException {
-    private final int code;
-    private final String msg;
+class MaaResultException(
+    val code: Int,
+    val msg: String?
+) : RuntimeException() {
 
-    public MaaResultException(String msg) {
-        this(HttpStatus.INTERNAL_SERVER_ERROR.value(), msg);
-    }
+    constructor(statusCode: MaaStatusCode) : this(statusCode.code, statusCode.message)
+    constructor(msg: String) : this(HttpStatus.INTERNAL_SERVER_ERROR.value(), msg)
 
-    public MaaResultException(MaaStatusCode statusCode) {
-        this.code = statusCode.getCode();
-        this.msg = statusCode.getMessage();
-    }
 }

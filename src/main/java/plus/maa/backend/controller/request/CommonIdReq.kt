@@ -1,18 +1,12 @@
-package plus.maa.backend.controller.request;
+package plus.maa.backend.controller.request
 
-import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.validation.constraints.NotNull
 
 /**
  * @author dragove
  * create on 2024-01-05
  */
-@Getter
-@Setter
-public class CommonIdReq<T> {
-
-    @NotNull(message = "id必填")
-    private T id;
-
-}
+data class CommonIdReq<T>(
+    @field:NotNull(message = "id必填")
+    val id: T
+)

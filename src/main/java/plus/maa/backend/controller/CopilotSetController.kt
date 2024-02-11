@@ -95,7 +95,7 @@ class CopilotSetController(
     fun deleteCopilotSet(
         @Parameter(description = "删除作业集信息请求") @RequestBody req: @Valid CommonIdReq<Long>
     ): MaaResult<Void?> {
-        service.delete(req.id!!, helper.userId!!)
+        service.delete(req.id, helper.userId!!)
         return success()
     }
 }
