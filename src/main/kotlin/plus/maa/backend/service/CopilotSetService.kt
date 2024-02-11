@@ -7,12 +7,12 @@ import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import plus.maa.backend.common.utils.IdComponent
 import plus.maa.backend.common.utils.converter.CopilotSetConverter
-import plus.maa.backend.controller.request.CopilotSetQuery
-import plus.maa.backend.controller.request.CopilotSetUpdateReq
 import plus.maa.backend.controller.request.copilotset.CopilotSetCreateReq
 import plus.maa.backend.controller.request.copilotset.CopilotSetModCopilotsReq
-import plus.maa.backend.controller.response.CopilotSetPageRes
-import plus.maa.backend.controller.response.CopilotSetRes
+import plus.maa.backend.controller.request.copilotset.CopilotSetQuery
+import plus.maa.backend.controller.request.copilotset.CopilotSetUpdateReq
+import plus.maa.backend.controller.response.copilotset.CopilotSetPageRes
+import plus.maa.backend.controller.response.copilotset.CopilotSetRes
 import plus.maa.backend.repository.CopilotSetRepository
 import plus.maa.backend.repository.UserRepository
 import plus.maa.backend.repository.entity.CopilotSet
@@ -33,7 +33,7 @@ class CopilotSetService(
     private val userRepository: UserRepository,
 ) {
 
-    private val DEFAULT_SORT: Sort = Sort.by("id").descending()
+    private val defaultSort: Sort = Sort.by("id").descending()
 
     /**
      * 创建作业集
@@ -43,9 +43,8 @@ class CopilotSetService(
      * @return 作业集id
      */
     fun create(req: CopilotSetCreateReq, userId: String?): Long {
-        val id = idComponent.getId(CopilotSet.META)
-        val newCopilotSet =
-            converter.convert(req, id, userId)
+        val id = idComponent.getId(CopilotSet.meta)
+        val newCopilotSet = converter.convert(req, id, userId!!)
         repository.insert(newCopilotSet)
         return id
     }
@@ -58,7 +57,7 @@ class CopilotSetService(
             .orElseThrow { IllegalArgumentException("作业集不存在") }
         Assert.state(copilotSet.creatorId == userId, "您不是该作业集的创建者，无权修改该作业集")
         copilotSet.copilotIds.addAll(req.copilotIds)
-        copilotSet.setCopilotIds(copilotSet.getDistinctIdsAndCheck())
+        copilotSet.copilotIds = copilotSet.distinctIdsAndCheck()
         repository.save(copilotSet)
     }
 
@@ -81,9 +80,9 @@ class CopilotSetService(
         val copilotSet = repository.findById(req.id)
             .orElseThrow { IllegalArgumentException("作业集不存在") }
         Assert.state(copilotSet.creatorId == userId, "您不是该作业集的创建者，无权修改该作业集")
-        copilotSet.setName(req.name)
-        copilotSet.setDescription(req.description)
-        copilotSet.setStatus(req.status)
+        copilotSet.name = req.name
+        copilotSet.description = req.description
+        copilotSet.status = req.status
         repository.save(copilotSet)
     }
 
@@ -98,13 +97,13 @@ class CopilotSetService(
         val copilotSet = repository.findById(id)
             .orElseThrow { IllegalArgumentException("作业集不存在") }
         Assert.state(copilotSet.creatorId == userId, "您不是该作业集的创建者，无权删除该作业集")
-        copilotSet.setDelete(true)
-        copilotSet.setDeleteTime(LocalDateTime.now())
+        copilotSet.delete = true
+        copilotSet.deleteTime = LocalDateTime.now()
         repository.save(copilotSet)
     }
 
     fun query(req: CopilotSetQuery): CopilotSetPageRes {
-        val pageRequest = PageRequest.of(req.page - 1, req.limit, DEFAULT_SORT)
+        val pageRequest = PageRequest.of(req.page - 1, req.limit, defaultSort)
 
         val keyword = req.keyword
         val copilotSets = if (keyword.isNullOrBlank()) {
@@ -118,14 +117,15 @@ class CopilotSetService(
             .distinct()
             .toList()
         val userById = userRepository.findByUsersId(userIds)
-        return CopilotSetPageRes()
-            .setPage(copilotSets.number + 1)
-            .setTotal(copilotSets.totalElements)
-            .setHasNext(copilotSets.totalPages > req.page)
-            .setData(copilotSets.map { cs: CopilotSet ->
+        return CopilotSetPageRes(
+            copilotSets.totalPages > req.page,
+            copilotSets.number + 1,
+            copilotSets.totalElements,
+            copilotSets.map { cs: CopilotSet ->
                 val user = userById.getOrDefault(cs.creatorId, MaaUser.UNKNOWN)
                 converter.convert(cs, user.userName)
-            }.toList())
+            }.toList()
+        )
     }
 
     fun get(id: Long): CopilotSetRes {

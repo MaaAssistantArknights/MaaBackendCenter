@@ -10,14 +10,14 @@ import org.springframework.web.bind.annotation.*
 import plus.maa.backend.config.doc.RequireJwt
 import plus.maa.backend.config.security.AuthenticationHelper
 import plus.maa.backend.controller.request.CommonIdReq
-import plus.maa.backend.controller.request.CopilotSetQuery
-import plus.maa.backend.controller.request.CopilotSetUpdateReq
 import plus.maa.backend.controller.request.copilotset.CopilotSetCreateReq
 import plus.maa.backend.controller.request.copilotset.CopilotSetModCopilotsReq
-import plus.maa.backend.controller.response.CopilotSetPageRes
-import plus.maa.backend.controller.response.CopilotSetRes
+import plus.maa.backend.controller.request.copilotset.CopilotSetQuery
+import plus.maa.backend.controller.request.copilotset.CopilotSetUpdateReq
 import plus.maa.backend.controller.response.MaaResult
 import plus.maa.backend.controller.response.MaaResult.Companion.success
+import plus.maa.backend.controller.response.copilotset.CopilotSetPageRes
+import plus.maa.backend.controller.response.copilotset.CopilotSetRes
 import plus.maa.backend.service.CopilotSetService
 
 /**

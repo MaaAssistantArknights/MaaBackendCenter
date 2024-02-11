@@ -1,81 +1,82 @@
-package plus.maa.backend.repository.entity;
+package plus.maa.backend.repository.entity
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.Transient;
-import org.springframework.data.mongodb.core.mapping.Document;
-import plus.maa.backend.common.model.CopilotSetType;
-import plus.maa.backend.service.model.CopilotSetStatus;
-
-import java.io.Serializable;
-import java.time.LocalDateTime;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.databind.PropertyNamingStrategies
+import com.fasterxml.jackson.databind.annotation.JsonNaming
+import lombok.Data
+import lombok.experimental.Accessors
+import org.springframework.data.annotation.Id
+import org.springframework.data.annotation.Transient
+import org.springframework.data.mongodb.core.mapping.Document
+import plus.maa.backend.common.model.CopilotSetType
+import plus.maa.backend.service.model.CopilotSetStatus
+import java.io.Serializable
+import java.time.LocalDateTime
 
 /**
  * 作业集数据
  */
 @Data
-@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
 @Accessors(chain = true)
 @Document("maa_copilot_set")
-public class CopilotSet implements Serializable, CopilotSetType {
-
-    @Transient
-    public static final CollectionMeta<CopilotSet> META = new CollectionMeta<>(CopilotSet::getId,
-            "id", CopilotSet.class);
-
+data class CopilotSet(
     /**
      * 作业集id
      */
-    @Id
-    private long id;
+    @field:Id
+    val id: Long = 0,
 
     /**
      * 作业集名称
      */
-    private String name;
+    var name: String,
 
     /**
      * 额外描述
      */
-    private String description;
+    var description: String,
 
     /**
      * 作业id列表
      * 使用 list 保证有序
      * 作业添加时应当保证唯一
      */
-    private List<Long> copilotIds;
+    override var copilotIds: MutableList<Long>,
 
     /**
      * 上传者id
      */
-    private String creatorId;
+    val creatorId: String,
 
     /**
      * 创建时间
      */
-    private LocalDateTime createTime;
+    val createTime: LocalDateTime,
 
     /**
      * 更新时间
      */
-    private LocalDateTime updateTime;
+    var updateTime: LocalDateTime,
 
     /**
      * 作业状态
-     * {@link plus.maa.backend.service.model.CopilotSetStatus}
+     * [plus.maa.backend.service.model.CopilotSetStatus]
      */
-    private CopilotSetStatus status;
+    var status: CopilotSetStatus,
 
-    @JsonIgnore
-    private boolean delete;
+    @field:JsonIgnore
+    var delete: Boolean = false,
 
-    @JsonIgnore
-    private LocalDateTime deleteTime;
+    @field:JsonIgnore
+    var deleteTime: LocalDateTime? = null
 
+) : Serializable, CopilotSetType {
+    companion object {
+        @field:Transient
+        val meta = CollectionMeta(
+            { obj: CopilotSet -> obj.id },
+            "id", CopilotSet::class.java
+        )
+    }
 }
