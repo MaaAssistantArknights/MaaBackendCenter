@@ -17,15 +17,15 @@ data class ArkTilePos(
     val levelId: String? = null,
     val name: String? = null,
     val stageId: String? = null,
-    private val tiles: List<List<Tile>>? = null,
-    private val view: List<List<Double>>? = null,
+    val tiles: List<List<Tile>>? = null,
+    val view: List<List<Double>>? = null,
 ) {
     @JsonNaming(LowerCamelCaseStrategy::class)
     data class Tile(
-        private val tileKey: String? = null,
-        private val heightType: Int? = null,
-        private val buildableType: Int? = null,
-        private val isStart: Boolean? = null,
-        private val isEnd: Boolean? = null,
+        val tileKey: String? = null,
+        val heightType: Int? = null,
+        val buildableType: Int? = null,
+        val isStart: Boolean? = null,
+        val isEnd: Boolean? = null,
     )
 }

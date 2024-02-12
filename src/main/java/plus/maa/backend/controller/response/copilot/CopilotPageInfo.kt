@@ -10,9 +10,9 @@ import java.io.Serializable
  */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
 data class CopilotPageInfo(
-    private val hasNext: Boolean,
-    private val page: Int,
-    private val total: Long,
-    private val data: List<CopilotInfo>
+    val hasNext: Boolean,
+    val page: Int,
+    val total: Long,
+    val data: List<CopilotInfo>
 ) : Serializable
 
