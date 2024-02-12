@@ -195,17 +195,15 @@ class CopilotService(
                     )
                 }
             }
-            val maaUser = userRepository.findByUsersId(listOf(copilot.uploaderId))
+            val maaUser = userRepository.findByUserId(copilot.uploaderId)
 
             // 新评分系统
             val ratingType = ratingRepository.findByTypeAndKeyAndUserId(
                 Rating.KeyType.COPILOT,
                 copilot.copilotId.toString(), userIdOrIpAddress
-            )
-                .map { obj: Rating -> obj.rating }
-                .orElse(null)
+            )?.rating
             formatCopilot(
-                copilot, ratingType, maaUser[copilot.uploaderId]!!.userName,
+                copilot, ratingType, maaUser!!.userName,
                 commentsAreaRepository.countByCopilotIdAndDelete(copilot.copilotId, false)
             )
         }
@@ -396,7 +394,7 @@ class CopilotService(
      * @param request           评分
      * @param userIdOrIpAddress 用于已登录用户作出评分
      */
-    fun rates(userIdOrIpAddress: String?, request: CopilotRatingReq) {
+    fun rates(userIdOrIpAddress: String, request: CopilotRatingReq) {
         val rating = request.rating
 
         Assert.isTrue(copilotRepository.existsCopilotsByCopilotId(request.id), "作业id不存在")
@@ -405,35 +403,37 @@ class CopilotService(
         var dislikeCountChange = 0
         val ratingOptional = ratingRepository.findByTypeAndKeyAndUserId(
             Rating.KeyType.COPILOT,
-            request.id.toString(), userIdOrIpAddress
+            request.id.toString(),
+            userIdOrIpAddress
         )
         // 如果评分存在则更新评分
-        if (ratingOptional.isPresent) {
-            val rating1 = ratingOptional.get()
+        if (ratingOptional != null) {
             // 如果评分相同，则不做任何操作
-            if (rating1.rating == RatingType.fromRatingType(rating)) {
+            if (ratingOptional.rating == RatingType.fromRatingType(rating)) {
                 return
             }
             // 如果评分不同则更新评分
-            val oldRatingType = rating1.rating
-            rating1.setRating(RatingType.fromRatingType(rating))
-            rating1.setRateTime(LocalDateTime.now())
-            ratingRepository.save(rating1)
+            val oldRatingType = ratingOptional.rating
+            ratingOptional.rating = RatingType.fromRatingType(rating)
+            ratingOptional.rateTime = LocalDateTime.now()
+            ratingRepository.save(ratingOptional)
             // 计算评分变化
             likeCountChange =
-                if (rating1.rating == RatingType.LIKE) 1 else (if (oldRatingType != RatingType.LIKE) 0 else -1)
+                if (ratingOptional.rating == RatingType.LIKE) 1 else (if (oldRatingType != RatingType.LIKE) 0 else -1)
             dislikeCountChange =
-                if (rating1.rating == RatingType.DISLIKE) 1 else (if (oldRatingType != RatingType.DISLIKE) 0 else -1)
+                if (ratingOptional.rating == RatingType.DISLIKE) 1 else (if (oldRatingType != RatingType.DISLIKE) 0 else -1)
         }
 
         // 不存在评分 则添加新的评分
-        if (ratingOptional.isEmpty) {
-            val newRating = Rating()
-                .setType(Rating.KeyType.COPILOT)
-                .setKey(request.id.toString())
-                .setUserId(userIdOrIpAddress)
-                .setRating(RatingType.fromRatingType(rating))
-                .setRateTime(LocalDateTime.now())
+        if (ratingOptional == null) {
+            val newRating = Rating(
+                null,
+                Rating.KeyType.COPILOT,
+                request.id.toString(),
+                userIdOrIpAddress,
+                RatingType.fromRatingType(rating),
+                LocalDateTime.now()
+            )
 
             ratingRepository.insert(newRating)
             // 计算评分变化

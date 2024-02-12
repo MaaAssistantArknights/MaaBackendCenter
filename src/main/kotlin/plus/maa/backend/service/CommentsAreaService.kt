@@ -14,10 +14,7 @@ import plus.maa.backend.controller.request.comments.CommentsQueriesDTO
 import plus.maa.backend.controller.request.comments.CommentsRatingDTO
 import plus.maa.backend.controller.request.comments.CommentsToppingDTO
 import plus.maa.backend.controller.response.comments.CommentsAreaInfo
-import plus.maa.backend.repository.CommentsAreaRepository
-import plus.maa.backend.repository.CopilotRepository
-import plus.maa.backend.repository.RatingRepository
-import plus.maa.backend.repository.UserRepository
+import plus.maa.backend.repository.*
 import plus.maa.backend.repository.entity.CommentsArea
 import plus.maa.backend.repository.entity.Copilot
 import plus.maa.backend.repository.entity.MaaUser
@@ -175,7 +172,7 @@ class CommentsAreaService(
      * @param userId            登录用户 id
      * @param commentsRatingDTO CommentsRatingDTO
      */
-    fun rates(userId: String?, commentsRatingDTO: CommentsRatingDTO) {
+    fun rates(userId: String, commentsRatingDTO: CommentsRatingDTO) {
         val rating = commentsRatingDTO.rating
 
         val commentsArea = findCommentsById(commentsRatingDTO.commentId)
@@ -186,13 +183,13 @@ class CommentsAreaService(
         val ratingOptional =
             ratingRepository.findByTypeAndKeyAndUserId(Rating.KeyType.COMMENT, commentsArea.id, userId)
         // 判断该用户是否存在评分
-        if (ratingOptional.isPresent) {
+        if (ratingOptional != null) {
             // 如果评分发生变化则更新
-            if (ratingOptional.get().rating != RatingType.fromRatingType(rating)) {
-                val oldRatingType = ratingOptional.get().rating
-                ratingOptional.get().setRating(RatingType.fromRatingType(rating))
-                ratingOptional.get().setRateTime(LocalDateTime.now())
-                val newRatingType = ratingRepository.save(ratingOptional.get()).rating
+            if (ratingOptional.rating != RatingType.fromRatingType(rating)) {
+                val oldRatingType = ratingOptional.rating
+                ratingOptional.rating = RatingType.fromRatingType(rating)
+                ratingOptional.rateTime = LocalDateTime.now()
+                val newRatingType = ratingRepository.save(ratingOptional).rating
                 // 更新评分后更新评论的点赞数
                 likeCountChange =
                     (if (newRatingType == RatingType.LIKE) 1 else (if (oldRatingType != RatingType.LIKE) 0 else -1)).toLong()
@@ -204,12 +201,14 @@ class CommentsAreaService(
             }
         } else {
             // 不存在评分则创建
-            val newRating = Rating()
-                .setType(Rating.KeyType.COMMENT)
-                .setKey(commentsArea.id)
-                .setUserId(userId)
-                .setRating(RatingType.fromRatingType(rating))
-                .setRateTime(LocalDateTime.now())
+            val newRating = Rating(
+                null,
+                Rating.KeyType.COMMENT,
+                commentsArea.id,
+                userId,
+                RatingType.fromRatingType(rating),
+                LocalDateTime.now()
+            )
 
             ratingRepository.insert(newRating)
             likeCountChange = (if (newRating.rating == RatingType.LIKE) 1 else 0).toLong()
@@ -324,8 +323,8 @@ class CommentsAreaService(
         allComments.addAll(subCommentsList)
 
         //获取所有评论用户
-        val userId = allComments.map { obj: CommentsArea -> obj.uploaderId }.distinct().toList()
-        val maaUserMap = userRepository.findByUsersId(userId)
+        val userIds = allComments.map { obj: CommentsArea -> obj.uploaderId }.distinct().toList()
+        val maaUserMap = userRepository.findByUsersId(userIds)
 
 
         //转换主评论数据并填充用户名

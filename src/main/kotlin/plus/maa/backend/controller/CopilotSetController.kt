@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
-import lombok.RequiredArgsConstructor
 import org.springframework.web.bind.annotation.*
 import plus.maa.backend.config.doc.RequireJwt
 import plus.maa.backend.config.security.AuthenticationHelper
@@ -27,7 +26,6 @@ import plus.maa.backend.service.CopilotSetService
 @Tag(name = "CopilotSet", description = "作业集相关接口")
 @RequestMapping("/set")
 @RestController
-@RequiredArgsConstructor
 class CopilotSetController(
     private val service: CopilotSetService,
     private val helper: AuthenticationHelper

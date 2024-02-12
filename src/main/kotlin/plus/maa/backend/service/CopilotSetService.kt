@@ -17,9 +17,10 @@ import plus.maa.backend.repository.CopilotSetRepository
 import plus.maa.backend.repository.UserRepository
 import plus.maa.backend.repository.entity.CopilotSet
 import plus.maa.backend.repository.entity.MaaUser
+import plus.maa.backend.repository.findByUsersId
 import java.time.LocalDateTime
 
-private val log = KotlinLogging.logger {  }
+private val log = KotlinLogging.logger { }
 
 /**
  * @author dragove
@@ -130,7 +131,7 @@ class CopilotSetService(
 
     fun get(id: Long): CopilotSetRes {
         return repository.findById(id).map { copilotSet: CopilotSet ->
-            val userName = userRepository.findByUserId(copilotSet.creatorId).orElse(MaaUser.UNKNOWN).userName
+            val userName = (userRepository.findByUserId(copilotSet.creatorId) ?: MaaUser.UNKNOWN).userName
             converter.convertDetail(copilotSet, userName)
         }.orElseThrow { IllegalArgumentException("作业不存在") }
     }

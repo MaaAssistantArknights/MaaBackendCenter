@@ -180,7 +180,7 @@ class UserService(
     fun modifyPasswordByActiveCode(passwordResetDTO: PasswordResetDTO) {
         emailService.verifyVCode(passwordResetDTO.email, passwordResetDTO.activeCode)
         val maaUser = userRepository.findByEmail(passwordResetDTO.email)
-        modifyPassword(maaUser.userId, passwordResetDTO.password)
+        modifyPassword(maaUser!!.userId, passwordResetDTO.password)
     }
 
     /**
