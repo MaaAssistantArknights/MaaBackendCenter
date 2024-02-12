@@ -1,34 +1,30 @@
-package plus.maa.backend.repository;
+package plus.maa.backend.repository
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.Nullable;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.dao.InvalidDataAccessApiUsageException;
-import org.springframework.data.redis.RedisSystemException;
-import org.springframework.data.redis.core.Cursor;
-import org.springframework.data.redis.core.ScanOptions;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.script.RedisScript;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Component;
+import com.fasterxml.jackson.core.JsonProcessingException
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import io.github.oshai.kotlinlogging.KotlinLogging
+import lombok.RequiredArgsConstructor
+import lombok.Setter
+import lombok.extern.slf4j.Slf4j
+import org.apache.commons.lang3.StringUtils
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.core.io.ClassPathResource
+import org.springframework.dao.InvalidDataAccessApiUsageException
+import org.springframework.data.redis.RedisSystemException
+import org.springframework.data.redis.core.ScanOptions
+import org.springframework.data.redis.core.StringRedisTemplate
+import org.springframework.data.redis.core.script.RedisScript
+import org.springframework.scheduling.annotation.Async
+import org.springframework.stereotype.Component
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.function.Function
+import java.util.function.Supplier
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
-import java.util.function.Supplier;
+private val log = KotlinLogging.logger { }
 
 /**
  * Redis工具类
@@ -39,51 +35,49 @@ import java.util.function.Supplier;
 @Setter
 @Component
 @RequiredArgsConstructor
-public class RedisCache {
-    @Value("${maa-copilot.cache.default-expire}")
-    private int expire;
-
-    private final StringRedisTemplate redisTemplate;
+class RedisCache(
+    @Value("\${maa-copilot.cache.default-expire}")
+    private val expire: Int = 0,
+    private val redisTemplate: StringRedisTemplate? = null
+) {
 
     //  添加 JSR310 模块，以便顺利序列化 LocalDateTime 等类型
-    private final ObjectMapper writeMapper = JsonMapper.builder()
-            .addModule(new JavaTimeModule())
-            .build();
-    private final ObjectMapper readMapper = JsonMapper.builder()
-            .addModule(new JavaTimeModule())
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .build();
+    private val writeMapper: ObjectMapper = jacksonObjectMapper()
+        .registerModules(JavaTimeModule())
+    private val readMapper: ObjectMapper = jacksonObjectMapper()
+        .registerModules(JavaTimeModule())
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
-
-    private final AtomicBoolean supportUnlink = new AtomicBoolean(true);
+    private val supportUnlink = AtomicBoolean(true)
 
     /*
         使用 lua 脚本插入数据，维持 ZSet 的相对大小（size <= 实际大小 <= size + 50）以及过期时间
         实际大小这么设计是为了避免频繁的 ZREMRANGEBYRANK 操作
      */
-    private final RedisScript<Object> incZSetRedisScript = RedisScript.of(new ClassPathResource("redis-lua/incZSet.lua"));
+    private val incZSetRedisScript: RedisScript<Any> = RedisScript.of(ClassPathResource("redis-lua/incZSet.lua"))
+
     // 比较与输入的键值对是否相同，相同则删除
-    private final RedisScript<Boolean> removeKVIfEqualsScript = RedisScript.of(new ClassPathResource("redis-lua/removeKVIfEquals.lua"), Boolean.class);
+    private val removeKVIfEqualsScript: RedisScript<Boolean> =
+        RedisScript.of(ClassPathResource("redis-lua/removeKVIfEquals.lua"), Boolean::class.java)
 
-    public <T> void setData(final String key, T value) {
-        setCache(key, value, 0, TimeUnit.SECONDS);
+    fun <T> setData(key: String, value: T) {
+        setCache(key, value, 0, TimeUnit.SECONDS)
     }
 
-    public <T> void setCache(final String key, T value) {
-        setCache(key, value, expire, TimeUnit.SECONDS);
+    fun <T> setCache(key: String, value: T) {
+        setCache(key, value, expire.toLong(), TimeUnit.SECONDS)
     }
 
-    public <T> void setCache(final String key, T value, long timeout) {
-        setCache(key, value, timeout, TimeUnit.SECONDS);
+    fun <T> setCache(key: String, value: T, timeout: Long) {
+        setCache(key, value, timeout, TimeUnit.SECONDS)
     }
 
-    public <T> void setCache(final String key, T value, long timeout, TimeUnit timeUnit) {
-        String json = getJson(value);
-        if (json == null) return;
+    fun <T> setCache(key: String, value: T, timeout: Long, timeUnit: TimeUnit) {
+        val json = getJson(value) ?: return
         if (timeout <= 0) {
-            redisTemplate.opsForValue().set(key, json);
+            redisTemplate!!.opsForValue()[key] = json
         } else {
-            redisTemplate.opsForValue().set(key, json, timeout, timeUnit);
+            redisTemplate!!.opsForValue()[key, json, timeout] = timeUnit
         }
     }
 
@@ -94,9 +88,8 @@ public class RedisCache {
      * @param value 被缓存的值
      * @return  是否 set
      */
-
-    public <T> boolean setCacheIfAbsent(final String key, T value) {
-        return setCacheIfAbsent(key, value, expire);
+    fun <T> setCacheIfAbsent(key: String, value: T): Boolean {
+        return setCacheIfAbsent(key, value, expire.toLong())
     }
 
     /**
@@ -107,9 +100,8 @@ public class RedisCache {
      * @param timeout 过期时间
      * @return  是否 set
      */
-
-    public <T> boolean setCacheIfAbsent(final String key, T value, long timeout) {
-        return setCacheIfAbsent(key, value, timeout, TimeUnit.SECONDS);
+    fun <T> setCacheIfAbsent(key: String, value: T, timeout: Long): Boolean {
+        return setCacheIfAbsent(key, value, timeout, TimeUnit.SECONDS)
     }
 
     /**
@@ -121,46 +113,43 @@ public class RedisCache {
      * @param timeUnit 过期时间的单位
      * @return  是否 set
      */
-    public <T> boolean setCacheIfAbsent(final String key, T value, long timeout, TimeUnit timeUnit) {
-        String json = getJson(value);
-        if (json == null) return false;
-        boolean result;
-        if (timeout <= 0) {
-            result = Boolean.TRUE.equals(redisTemplate.opsForValue().setIfAbsent(key, json));
+    fun <T> setCacheIfAbsent(key: String, value: T, timeout: Long, timeUnit: TimeUnit): Boolean {
+        val json = getJson(value) ?: return false
+        val result = if (timeout <= 0) {
+            java.lang.Boolean.TRUE == redisTemplate!!.opsForValue().setIfAbsent(key, json)
         } else {
-            result = Boolean.TRUE.equals(redisTemplate.opsForValue().setIfAbsent(key, json, timeout, timeUnit));
+            java.lang.Boolean.TRUE == redisTemplate!!.opsForValue().setIfAbsent(key, json, timeout, timeUnit)
         }
-        return result;
+        return result
     }
 
-    public <T> void addSet(final String key, Collection<T> set, long timeout) {
-        addSet(key, set, timeout, TimeUnit.SECONDS);
+    fun <T> addSet(key: String, set: Collection<T>, timeout: Long) {
+        addSet(key, set, timeout, TimeUnit.SECONDS)
     }
 
-    public <T> void addSet(final String key, Collection<T> set, long timeout, TimeUnit timeUnit) {
-        if (key == null || set == null || set.isEmpty()) { // Redis 会拒绝空集合
-            return;
+    fun <T> addSet(key: String, set: Collection<T>, timeout: Long, timeUnit: TimeUnit) {
+        if (set.isEmpty()) {
+            return
         }
-        String[] jsonList = new String[set.size()];
-        int i = 0;
-        for (T t : set) {
-            String json = getJson(t);
-            if (json == null) return;
-            jsonList[i++] = json;
+        val jsonList = arrayOfNulls<String>(set.size)
+        var i = 0
+        for (t in set) {
+            val json = getJson(t) ?: return
+            jsonList[i++] = json
         }
 
         if (timeout <= 0) {
-            redisTemplate.opsForSet().add(key, jsonList);
+            redisTemplate!!.opsForSet().add(key, *jsonList)
         } else {
-            redisTemplate.opsForSet().add(key, jsonList);
-            redisTemplate.expire(key, timeout, timeUnit);
+            redisTemplate!!.opsForSet().add(key, *jsonList)
+            redisTemplate.expire(key, timeout, timeUnit)
         }
     }
 
 
     /**
-     * ZSet 中元素的 score += incScore，如果元素不存在则插入 <br>
-     * 会维持 ZSet 的相对大小（size <= 实际大小 <= size + 50）以及过期时间 <br>
+     * ZSet 中元素的 score += incScore，如果元素不存在则插入 <br></br>
+     * 会维持 ZSet 的相对大小（size <= 实际大小 <= size + 50）以及过期时间 <br></br>
      * 当大小超出 size + 50 时，会优先删除 score 最小的元素，直到大小等于 size
      *
      * @param key      ZSet 的 key
@@ -169,151 +158,155 @@ public class RedisCache {
      * @param size     ZSet 的相对大小
      * @param timeout  ZSet 的过期时间
      */
-
-    public void incZSet(final String key, String member, double incScore, long size, long timeout) {
-        redisTemplate.execute(incZSetRedisScript, List.of(key), member, Double.toString(incScore), Long.toString(size), Long.toString(timeout));
+    fun incZSet(key: String, member: String?, incScore: Double, size: Long, timeout: Long) {
+        redisTemplate!!.execute(
+            incZSetRedisScript,
+            listOf(key),
+            member,
+            incScore.toString(),
+            size.toString(),
+            timeout.toString()
+        )
     }
 
     // 获取的元素是按照 score 从小到大排列的
-    @Nullable
-    public Set<String> getZSet(final String key, long start, long end) {
-        return redisTemplate.opsForZSet().range(key, start, end);
+    fun getZSet(key: String, start: Long, end: Long): Set<String>? {
+        return redisTemplate!!.opsForZSet().range(key, start, end)
     }
 
     // 获取的元素是按照 score 从大到小排列的
-    @Nullable
-    public Set<String> getZSetReverse(final String key, long start, long end) {
-        return redisTemplate.opsForZSet().reverseRange(key, start, end);
+    fun getZSetReverse(key: String, start: Long, end: Long): Set<String>? {
+        return redisTemplate!!.opsForZSet().reverseRange(key, start, end)
     }
 
-    public <T> boolean valueMemberInSet(final String key, T value) {
+    fun <T> valueMemberInSet(key: String, value: T): Boolean {
         try {
-            String json = getJson(value);
-            if (json == null) return false;
-            return Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(key, json));
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            val json = getJson(value) ?: return false
+            return java.lang.Boolean.TRUE == redisTemplate!!.opsForSet().isMember(key, json)
+        } catch (e: Exception) {
+            log.error(e) { e.message }
         }
-        return false;
+        return false
     }
 
-    @Nullable
-    public <T> T getCache(final String key, Class<T> valueType) {
-        return getCache(key, valueType, null, expire, TimeUnit.SECONDS);
+    fun <T> getCache(key: String, valueType: Class<T>): T? {
+        return getCache(key, valueType, null, expire.toLong(), TimeUnit.SECONDS)
     }
 
-    @Nullable
-    public <T> T getCache(final String key, Class<T> valueType, Supplier<T> onMiss) {
-        return getCache(key, valueType, onMiss, expire, TimeUnit.SECONDS);
+    fun <T> getCache(key: String, valueType: Class<T>, onMiss: Supplier<T>?): T? {
+        return getCache(key, valueType, onMiss, expire.toLong(), TimeUnit.SECONDS)
     }
 
-    @Nullable
-    public <T> T getCache(final String key, Class<T> valueType, Supplier<T> onMiss, long timeout) {
-        return getCache(key, valueType, onMiss, timeout, TimeUnit.SECONDS);
+    fun <T> getCache(key: String, valueType: Class<T>, onMiss: Supplier<T>?, timeout: Long): T? {
+        return getCache(key, valueType, onMiss, timeout, TimeUnit.SECONDS)
     }
 
-    @Nullable
-    public <T> T getCache(final String key, Class<T> valueType, Supplier<T> onMiss, long timeout, TimeUnit timeUnit) {
-        T result;
+    fun <T> getCache(key: String, valueType: Class<T>, onMiss: Supplier<T>?, timeout: Long, timeUnit: TimeUnit): T? {
         try {
-            String json = redisTemplate.opsForValue().get(key);
+            var json = redisTemplate!!.opsForValue()[key]
             if (StringUtils.isEmpty(json)) {
                 if (onMiss != null) {
                     //上锁
-                    synchronized (RedisCache.class) {
+                    synchronized(RedisCache::class.java) {
                         //再次查询缓存，目的是判断是否前面的线程已经set过了
-                        json = redisTemplate.opsForValue().get(key);
+                        json = redisTemplate.opsForValue()[key]
                         //第二次校验缓存是否存在
                         if (StringUtils.isEmpty(json)) {
-                            result = onMiss.get();
+                            val result = onMiss.get() ?: return null
                             //数据库中不存在
-                            if (result == null) {
-                                return null;
-                            }
-                            setCache(key, result, timeout, timeUnit);
-                            return result;
+                            setCache<T>(key, result, timeout, timeUnit)
+                            return result
                         }
                     }
                 } else {
-                    return null;
+                    return null
                 }
             }
-            result = readMapper.readValue(json, valueType);
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            return null;
+            return readMapper.readValue(json, valueType)
+        } catch (e: Exception) {
+            log.error(e) { e.message }
+            return null
         }
-        return result;
     }
 
-    public <T> void updateCache(final String key, Class<T> valueType, T defaultValue, Function<T, T> onUpdate) {
-        updateCache(key, valueType, defaultValue, onUpdate, expire, TimeUnit.SECONDS);
+    fun <T> updateCache(key: String, valueType: Class<T>, defaultValue: T, onUpdate: Function<T, T>) {
+        updateCache(key, valueType, defaultValue, onUpdate, expire.toLong(), TimeUnit.SECONDS)
     }
 
-    public <T> void updateCache(final String key, Class<T> valueType, T defaultValue, Function<T, T> onUpdate, long timeout) {
-        updateCache(key, valueType, defaultValue, onUpdate, timeout, TimeUnit.SECONDS);
+    fun <T> updateCache(key: String, valueType: Class<T>?, defaultValue: T, onUpdate: Function<T, T>, timeout: Long) {
+        updateCache(key, valueType, defaultValue, onUpdate, timeout, TimeUnit.SECONDS)
     }
 
-    public <T> void updateCache(final String key, Class<T> valueType, T defaultValue, Function<T, T> onUpdate, long timeout, TimeUnit timeUnit) {
-        T result;
+    fun <T> updateCache(
+        key: String,
+        valueType: Class<T>?,
+        defaultValue: T,
+        onUpdate: Function<T, T>,
+        timeout: Long,
+        timeUnit: TimeUnit
+    ) {
+        var result: T
         try {
-            synchronized (RedisCache.class) {
-                String json = redisTemplate.opsForValue().get(key);
-                if (StringUtils.isEmpty(json)) {
-                    result = defaultValue;
+            synchronized(RedisCache::class.java) {
+                val json = redisTemplate!!.opsForValue()[key]
+                result = if (StringUtils.isEmpty(json)) {
+                    defaultValue
                 } else {
-                    result = readMapper.readValue(json, valueType);
+                    readMapper.readValue(json, valueType)
                 }
-                result = onUpdate.apply(result);
-                setCache(key, result, timeout, timeUnit);
+                result = onUpdate.apply(result)
+                setCache(key, result, timeout, timeUnit)
             }
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
+        } catch (e: Exception) {
+            log.error(e) { e.message }
         }
     }
 
-    @Nullable
-    public String getCacheLevelCommit() {
-        return getCache("level:commit", String.class);
+    var cacheLevelCommit: String?
+        get() = getCache("level:commit", String::class.java)
+        set(commit) {
+            setData("level:commit", commit)
+        }
+
+    @JvmOverloads
+    fun removeCache(key: String, notUseUnlink: Boolean = false) {
+        removeCache(listOf(key), notUseUnlink)
     }
 
-    public void setCacheLevelCommit(String commit) {
-        setData("level:commit", commit);
-    }
-
-    public void removeCache(String key) {
-        removeCache(key, false);
-    }
-
-    public void removeCache(String key, boolean notUseUnlink) {
-        removeCache(List.of(key), notUseUnlink);
-    }
-
-    public void removeCache(Collection<String> keys) {
-        removeCache(keys, false);
-    }
-
-    public void removeCache(Collection<String> keys, boolean notUseUnlink) {
-
+    @JvmOverloads
+    fun removeCache(keys: Collection<String>, notUseUnlink: Boolean = false) {
         if (!notUseUnlink && supportUnlink.get()) {
             try {
-                redisTemplate.unlink(keys);
-                return;
-            } catch (InvalidDataAccessApiUsageException | RedisSystemException e) {
+                redisTemplate!!.unlink(keys)
+                return
+            } catch (e: InvalidDataAccessApiUsageException) {
                 // Redisson、Jedis、Lettuce
-                Throwable cause = e.getCause();
+                val cause = e.cause
                 if (cause == null || !StringUtils.containsAny(
-                        cause.getMessage(), "unknown command", "not support")) {
-                    throw e;
+                        cause.message, "unknown command", "not support"
+                    )
+                ) {
+                    throw e
                 }
                 if (supportUnlink.compareAndSet(true, false)) {
-                    log.warn("当前连接的 Redis Service 可能不支持 Unlink 命令，切换为 Del");
+                    log.warn { "当前连接的 Redis Service 可能不支持 Unlink 命令，切换为 Del" }
+                }
+            } catch (e: RedisSystemException) {
+                val cause = e.cause
+                if (cause == null || !StringUtils.containsAny(
+                        cause.message, "unknown command", "not support"
+                    )
+                ) {
+                    throw e
+                }
+                if (supportUnlink.compareAndSet(true, false)) {
+                    log.warn { "当前连接的 Redis Service 可能不支持 Unlink 命令，切换为 Del" }
                 }
             }
         }
 
         // 兜底的 Del 命令
-        redisTemplate.delete(keys);
+        redisTemplate!!.delete(keys)
     }
 
     /**
@@ -323,79 +316,73 @@ public class RedisCache {
      * @param value 待比较的值
      * @return 是否删除
      */
-    public <T> boolean removeKVIfEquals(String key, T value) {
-        String json = getJson(value);
-        if (json == null) return false;
-        return Boolean.TRUE.equals(
-                redisTemplate.execute(removeKVIfEqualsScript, List.of(key), json)
-        );
+    fun <T> removeKVIfEquals(key: String, value: T): Boolean {
+        val json = getJson(value) ?: return false
+        return java.lang.Boolean.TRUE == redisTemplate!!.execute(removeKVIfEqualsScript, listOf(key), json)
     }
 
     /**
-     * 模糊删除缓存。不保证立即删除，不保证完全删除。<br>
+     * 模糊删除缓存。不保证立即删除，不保证完全删除。<br></br>
      * 异步，因为 Scan 虽然不会阻塞 Redis，但客户端会阻塞
      *
      * @param pattern 待删除的 Key 表达式，例如 "home:*" 表示删除 Key 以 "home:" 开头的所有缓存
      * @author Lixuhuilll
      */
     @Async
-    public void removeCacheByPattern(String pattern) {
-        syncRemoveCacheByPattern(pattern);
+    fun removeCacheByPattern(pattern: String) {
+        syncRemoveCacheByPattern(pattern)
     }
 
     /**
-     * 模糊删除缓存。不保证立即删除，不保证完全删除。<br>
+     * 模糊删除缓存。不保证立即删除，不保证完全删除。<br></br>
      * 同步调用 Scan，不会长时间阻塞 Redis，但会阻塞客户端，阻塞时间视 Redis 中 key 的数量而定。
      * 删除期间，其他线程或客户端可对 Redis 进行 CURD（因为不阻塞 Redis），因此不保证删除的时机，也不保证完全删除干净
      *
      * @param pattern 待删除的 Key 表达式，例如 "home:*" 表示删除 Key 以 "home:" 开头的所有缓存
      * @author Lixuhuilll
      */
-    public void syncRemoveCacheByPattern(String pattern) {
+    fun syncRemoveCacheByPattern(pattern: String) {
         // 批量删除的阈值
-        final int batchSize = 2000;
+        val batchSize = 2000
         // 构造 ScanOptions
-        ScanOptions scanOptions = ScanOptions.scanOptions()
-                .count(batchSize)
-                .match(pattern)
-                .build();
+        val scanOptions = ScanOptions.scanOptions()
+            .count(batchSize.toLong())
+            .match(pattern)
+            .build()
 
         // 保存要删除的键
-        List<String> keysToDelete = new ArrayList<>(batchSize);
+        val keysToDelete: MutableList<String> = ArrayList(batchSize)
 
-        // try-with-resources 自动关闭 SCAN
-        try (Cursor<String> cursor = redisTemplate.scan(scanOptions)) {
+        redisTemplate!!.scan(scanOptions).use { cursor ->
             while (cursor.hasNext()) {
-                String key = cursor.next();
+                val key = cursor.next()
                 // 将要删除的键添加到列表中
-                keysToDelete.add(key);
+                keysToDelete.add(key)
 
                 // 如果达到批量删除的阈值，则执行批量删除
-                if (keysToDelete.size() >= batchSize) {
-                    removeCache(keysToDelete);
-                    keysToDelete.clear();
+                if (keysToDelete.size >= batchSize) {
+                    removeCache(keysToDelete)
+                    keysToDelete.clear()
                 }
             }
         }
-
         // 删除剩余的键（不足 batchSize 的最后一批）
         if (!keysToDelete.isEmpty()) {
-            removeCache(keysToDelete);
+            removeCache(keysToDelete)
         }
     }
 
 
-    @Nullable
-    private <T> String getJson(T value) {
-        String json;
+    private fun <T> getJson(value: T): String? {
+        val json: String
         try {
-            json = writeMapper.writeValueAsString(value);
-        } catch (JsonProcessingException e) {
+            json = writeMapper.writeValueAsString(value)
+        } catch (e: JsonProcessingException) {
             if (log.isDebugEnabled()) {
-                log.debug(e.getMessage(), e);
+                log.debug(e) { e.message }
             }
-            return null;
+            return null
         }
-        return json;
+        return json
     }
 }

@@ -183,7 +183,7 @@ class CopilotService(
                 // 增加一次views
                 update.inc("views")
                 mongoTemplate.updateFirst(query, update, Copilot::class.java)
-                if (Objects.isNull(cache)) {
+                if (cache == null) {
                     redisCache.setCache("views:$userIdOrIpAddress", RatingCache(Sets.newHashSet(id)))
                 } else {
                     redisCache.updateCache(
@@ -233,7 +233,7 @@ class CopilotService(
                     cacheTimeout.set(t)
                     setKey.set(String.format("home:%s:copilotIds", request.orderBy))
                     cacheKey.set(String.format("home:%s:%s", request.orderBy, request.hashCode()))
-                    redisCache.getCache(cacheKey.get(), CopilotPageInfo::class.java)
+                    redisCache.getCache(cacheKey.get()!!, CopilotPageInfo::class.java)
                 }?.let { return it }
         }
 
@@ -368,7 +368,7 @@ class CopilotService(
             // 记录存在的作业id
             redisCache.addSet(setKey.get(), copilotIds, cacheTimeout.get())
             // 缓存数据
-            redisCache.setCache(cacheKey.get(), data, cacheTimeout.get())
+            redisCache.setCache(cacheKey.get()!!, data, cacheTimeout.get())
         }
         return data
     }

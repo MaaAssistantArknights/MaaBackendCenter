@@ -8,7 +8,6 @@ import plus.maa.backend.controller.request.copilot.CopilotDTO
 import plus.maa.backend.repository.entity.gamedata.*
 import plus.maa.backend.repository.entity.gamedata.ArkTilePos.Tile
 import plus.maa.backend.service.model.RatingCache
-import plus.maa.backend.service.session.UserSession
 
 /**
  * 添加所有需要用到反射的类到此处，用于 native image
@@ -28,7 +27,6 @@ import plus.maa.backend.service.session.UserSession
     ArkZone::class,
     CopilotDTO::class,
     RatingCache::class,
-    UserSession::class,
     PropertyNamingStrategies.SnakeCaseStrategy::class,
     LowerCamelCaseStrategy::class
 )
