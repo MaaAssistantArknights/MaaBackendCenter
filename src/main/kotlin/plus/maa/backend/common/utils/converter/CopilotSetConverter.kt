@@ -4,7 +4,7 @@ import org.mapstruct.Mapper
 import org.mapstruct.Mapping
 import plus.maa.backend.controller.request.copilotset.CopilotSetCreateReq
 import plus.maa.backend.controller.response.copilotset.CopilotSetRes
-import plus.maa.backend.controller.response.user.CopilotSetListRes
+import plus.maa.backend.controller.response.copilotset.CopilotSetListRes
 import plus.maa.backend.repository.entity.CopilotSet
 import java.time.LocalDateTime
 

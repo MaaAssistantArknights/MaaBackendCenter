@@ -1,7 +1,6 @@
 package plus.maa.backend.controller.response.copilotset
 
 import io.swagger.v3.oas.annotations.media.Schema
-import plus.maa.backend.controller.response.user.CopilotSetListRes
 
 /**
  * @author dragove
