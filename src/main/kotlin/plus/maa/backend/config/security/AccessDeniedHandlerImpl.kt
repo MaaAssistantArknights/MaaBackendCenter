@@ -22,7 +22,7 @@ class AccessDeniedHandlerImpl : AccessDeniedHandler {
         response: HttpServletResponse,
         accessDeniedException: AccessDeniedException
     ) {
-        val result = fail<Any>(HttpStatus.FORBIDDEN.value(), "权限不足")
+        val result = fail(HttpStatus.FORBIDDEN.value(), "权限不足")
         val json = ObjectMapper().writeValueAsString(result)
         renderString(response, json, HttpStatus.FORBIDDEN.value())
     }

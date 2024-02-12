@@ -35,7 +35,7 @@ class GlobalExceptionHandler {
     fun missingServletRequestParameterException(
         e: MissingServletRequestParameterException,
         request: HttpServletRequest
-    ): MaaResult<String?> {
+    ): MaaResult<Unit> {
         logWarn(request)
         log.warn(e) { "请求参数缺失" }
         return fail(400, String.format("请求参数缺失:%s", e.parameterName))
@@ -51,7 +51,7 @@ class GlobalExceptionHandler {
     fun methodArgumentTypeMismatchException(
         e: MethodArgumentTypeMismatchException,
         request: HttpServletRequest
-    ): MaaResult<String?> {
+    ): MaaResult<Unit> {
         logWarn(request)
         log.warn(e) { "参数类型不匹配" }
         return fail(400, String.format("参数类型不匹配:%s", e.message))
@@ -64,7 +64,7 @@ class GlobalExceptionHandler {
      * @date 2022/12/23 12:02
     </java.lang.String> */
     @ExceptionHandler(MethodArgumentNotValidException::class)
-    fun methodArgumentNotValidException(e: MethodArgumentNotValidException): MaaResult<String?> {
+    fun methodArgumentNotValidException(e: MethodArgumentNotValidException): MaaResult<Unit> {
         val fieldError = e.bindingResult.fieldError
         if (fieldError != null) {
             return fail(400, String.format("参数校验错误: %s", fieldError.defaultMessage))
@@ -79,7 +79,7 @@ class GlobalExceptionHandler {
      * @date 2022/12/23 12:03
     </java.lang.String> */
     @ExceptionHandler(NoHandlerFoundException::class)
-    fun noHandlerFoundExceptionHandler(e: NoHandlerFoundException): MaaResult<String?> {
+    fun noHandlerFoundExceptionHandler(e: NoHandlerFoundException): MaaResult<Unit> {
         log.warn(e) { "请求地址不存在" }
         return fail(404, String.format("请求地址 %s 不存在", e.requestURL))
     }
@@ -94,7 +94,7 @@ class GlobalExceptionHandler {
     fun httpRequestMethodNotSupportedExceptionHandler(
         e: HttpRequestMethodNotSupportedException,
         request: HttpServletRequest
-    ): MaaResult<String?> {
+    ): MaaResult<Unit> {
         logWarn(request)
         log.warn(e) { "请求方式错误" }
         return fail(405, String.format("请求方法不正确:%s", e.message))
@@ -104,7 +104,7 @@ class GlobalExceptionHandler {
      * 处理由 [org.springframework.util.Assert] 工具产生的异常
      */
     @ExceptionHandler(IllegalArgumentException::class, IllegalStateException::class)
-    fun illegalArgumentOrStateExceptionHandler(e: RuntimeException): MaaResult<String?> {
+    fun illegalArgumentOrStateExceptionHandler(e: RuntimeException): MaaResult<Unit> {
         return fail(HttpStatus.BAD_REQUEST.value(), e.message)
     }
 
@@ -115,7 +115,7 @@ class GlobalExceptionHandler {
      * @date 2022/12/26 12:00
     </java.lang.String> */
     @ExceptionHandler(MaaResultException::class)
-    fun maaResultExceptionHandler(e: MaaResultException): MaaResult<String?> {
+    fun maaResultExceptionHandler(e: MaaResultException): MaaResult<Unit> {
         return fail(e.code, e.msg)
     }
 
@@ -124,17 +124,17 @@ class GlobalExceptionHandler {
      * @description 用户鉴权相关，异常兜底处理
      */
     @ExceptionHandler(AuthenticationException::class)
-    fun authExceptionHandler(e: AuthenticationException): MaaResult<String?> {
+    fun authExceptionHandler(e: AuthenticationException): MaaResult<Unit> {
         return fail(401, e.message)
     }
 
     @ExceptionHandler(MultipartException::class)
-    fun fileSizeThresholdHandler(e: MultipartException): MaaResult<String?> {
+    fun fileSizeThresholdHandler(e: MultipartException): MaaResult<Unit> {
         return fail(413, e.message)
     }
 
     @ExceptionHandler(ResponseStatusException::class)
-    fun handleResponseStatusException(ex: ResponseStatusException): MaaResult<String?> {
+    fun handleResponseStatusException(ex: ResponseStatusException): MaaResult<Unit> {
         return fail(ex.statusCode.value(), ex.message)
     }
 
@@ -152,7 +152,7 @@ class GlobalExceptionHandler {
     ): MaaResult<*> {
         logError(request)
         log.error(e) { "Exception: " }
-        return fail<Any?>(500, "服务器内部错误", null)
+        return fail(500, "服务器内部错误")
     }
 
     private fun logWarn(request: HttpServletRequest) {

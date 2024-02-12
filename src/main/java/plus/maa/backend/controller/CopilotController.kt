@@ -54,7 +54,7 @@ class CopilotController(
     @PostMapping("/delete")
     fun deleteCopilot(
         @Parameter(description = "作业操作请求") @RequestBody request: CopilotCUDRequest?
-    ): MaaResult<Void?> {
+    ): MaaResult<Unit> {
         copilotService.delete(helper.requireUserId(), request!!)
         return success()
     }
@@ -90,7 +90,7 @@ class CopilotController(
     @PostMapping("/update")
     fun updateCopilot(
         @Parameter(description = "作业操作请求") @RequestBody copilotCUDRequest: CopilotCUDRequest
-    ): MaaResult<Void?> {
+    ): MaaResult<Unit> {
         copilotService.update(helper.requireUserId(), copilotCUDRequest)
         return success()
     }

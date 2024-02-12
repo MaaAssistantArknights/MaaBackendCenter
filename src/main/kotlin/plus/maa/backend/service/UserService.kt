@@ -8,7 +8,6 @@ import org.springframework.dao.DuplicateKeyException
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import plus.maa.backend.common.MaaStatusCode
-import plus.maa.backend.common.utils.converter.MaaUserConverter
 import plus.maa.backend.config.external.MaaCopilotProperties
 import plus.maa.backend.controller.request.user.*
 import plus.maa.backend.controller.response.MaaResultException
@@ -34,7 +33,6 @@ class UserService(
     private val passwordEncoder: PasswordEncoder,
     private val userDetailService: UserDetailServiceImpl,
     private val jwtService: JwtService,
-    private val maaUserConverter: MaaUserConverter,
     private val properties: MaaCopilotProperties
 ) {
 
@@ -71,7 +69,7 @@ class UserService(
             refreshToken.value,
             refreshToken.expiresAt,
             refreshToken.notBefore,
-            maaUserConverter.convert(user)
+            MaaUserInfo(user)
         )
     }
 
@@ -135,7 +133,7 @@ class UserService(
      *
      * @param token token
      */
-    fun refreshToken(token: String?): MaaLoginRsp {
+    fun refreshToken(token: String): MaaLoginRsp {
         try {
             val old = jwtService.verifyAndParseRefreshToken(token)
 
@@ -163,7 +161,7 @@ class UserService(
                 refreshToken.value,
                 refreshToken.expiresAt,
                 refreshToken.notBefore,
-                maaUserConverter.convert(user)
+                MaaUserInfo(user)
             )
         } catch (e: JwtInvalidException) {
             throw MaaResultException(401, e.message)
@@ -190,7 +188,7 @@ class UserService(
      *
      * @param email 用户邮箱
      */
-    fun checkUserExistByEmail(email: String?) {
+    fun checkUserExistByEmail(email: String) {
         if (null == userRepository.findByEmail(email)) {
             throw MaaResultException(MaaStatusCode.MAA_USER_NOT_FOUND)
         }

@@ -82,7 +82,7 @@ class FileController(
     @Operation(summary = "设置上传文件功能状态")
     @RequireJwt
     @PostMapping("/upload_ability")
-    fun setUploadAbility(@RequestBody request: UploadAbility): MaaResult<Void?> {
+    fun setUploadAbility(@RequestBody request: UploadAbility): MaaResult<Unit> {
         fileService.isUploadEnabled = request.enabled
         return success()
     }

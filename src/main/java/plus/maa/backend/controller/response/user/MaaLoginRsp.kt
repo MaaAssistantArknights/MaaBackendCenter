@@ -1,18 +1,13 @@
-package plus.maa.backend.controller.response.user;
+package plus.maa.backend.controller.response.user
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import java.time.LocalDateTime
 
-import java.time.LocalDateTime;
-
-@Data
-@AllArgsConstructor
-public class MaaLoginRsp {
-    private String token;
-    private LocalDateTime validBefore;
-    private LocalDateTime  validAfter;
-    private String refreshToken;
-    private LocalDateTime   refreshTokenValidBefore;
-    private LocalDateTime    refreshTokenValidAfter;
-    private MaaUserInfo userInfo;
-}
+data class MaaLoginRsp(
+    val token: String,
+    val validBefore: LocalDateTime,
+    val validAfter: LocalDateTime,
+    val refreshToken: String,
+    val refreshTokenValidBefore: LocalDateTime,
+    val refreshTokenValidAfter: LocalDateTime,
+    val userInfo: MaaUserInfo
+)

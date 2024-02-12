@@ -64,7 +64,7 @@ class CopilotSetController(
     @PostMapping("/add")
     fun addCopilotIds(
         @Parameter(description = "作业集中加入新作业请求") @RequestBody req: @Valid CopilotSetModCopilotsReq
-    ): MaaResult<Void?> {
+    ): MaaResult<Unit> {
         service.addCopilotIds(req, helper.userId!!)
         return success()
     }
@@ -74,7 +74,7 @@ class CopilotSetController(
     @PostMapping("/remove")
     fun removeCopilotIds(
         @Parameter(description = "作业集中删除作业请求") @RequestBody req: @Valid CopilotSetModCopilotsReq
-    ): MaaResult<Void?> {
+    ): MaaResult<Unit> {
         service.removeCopilotIds(req, helper.userId!!)
         return success()
     }
@@ -84,7 +84,7 @@ class CopilotSetController(
     @PostMapping("/update")
     fun updateCopilotSet(
         @Parameter(description = "更新作业集信息请求") @RequestBody req: @Valid CopilotSetUpdateReq
-    ): MaaResult<Void?> {
+    ): MaaResult<Unit> {
         service.update(req, helper.userId!!)
         return success()
     }
@@ -94,7 +94,7 @@ class CopilotSetController(
     @PostMapping("/delete")
     fun deleteCopilotSet(
         @Parameter(description = "删除作业集信息请求") @RequestBody req: @Valid CommonIdReq<Long>
-    ): MaaResult<Void?> {
+    ): MaaResult<Unit> {
         service.delete(req.id, helper.userId!!)
         return success()
     }

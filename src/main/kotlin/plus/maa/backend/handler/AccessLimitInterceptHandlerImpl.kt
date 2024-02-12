@@ -25,8 +25,6 @@ private val log = KotlinLogging.logger {  }
  */
 @Component
 class AccessLimitInterceptHandlerImpl : HandlerInterceptor {
-    // @Resource
-    // private RedisCache redisCache;
     /**
      * 接口调用前检查对方ip是否频繁调用接口
      *
@@ -77,7 +75,7 @@ class AccessLimitInterceptHandlerImpl : HandlerInterceptor {
                 } else {
                     // 请求过于频繁
                     log.info { "$key 请求过于频繁" }
-                    val result = fail<Void>(HttpStatus.TOO_MANY_REQUESTS.value(), "请求过于频繁")
+                    val result = fail(HttpStatus.TOO_MANY_REQUESTS.value(), "请求过于频繁")
                     val json = ObjectMapper().writeValueAsString(result)
                     WebUtils.renderString(response, json, HttpStatus.TOO_MANY_REQUESTS.value())
                     return false

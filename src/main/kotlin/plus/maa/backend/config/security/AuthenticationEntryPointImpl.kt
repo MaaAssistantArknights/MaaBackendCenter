@@ -25,7 +25,7 @@ class AuthenticationEntryPointImpl(
         response: HttpServletResponse,
         authException: AuthenticationException
     ) {
-        val result = fail<Void>(HttpStatus.UNAUTHORIZED.value(), authException.message)
+        val result = fail(HttpStatus.UNAUTHORIZED.value(), authException.message)
         val json = objectMapper.writeValueAsString(result)
         renderString(response, json, HttpStatus.UNAUTHORIZED.value())
     }

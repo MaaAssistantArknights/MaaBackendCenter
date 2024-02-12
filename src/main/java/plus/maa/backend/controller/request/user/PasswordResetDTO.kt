@@ -1,34 +1,28 @@
-package plus.maa.backend.controller.request.user;
+package plus.maa.backend.controller.request.user
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
+import jakarta.validation.constraints.Email
+import jakarta.validation.constraints.NotBlank
 
 /**
  * 通过邮件修改密码请求
  */
-@Data
-@Accessors(chain = true)
-@NoArgsConstructor
-@AllArgsConstructor
-public class PasswordResetDTO {
+data class PasswordResetDTO(
     /**
      * 邮箱
      */
-    @NotBlank(message = "邮箱格式错误")
-    @Email(message = "邮箱格式错误")
-    private String email;
+    @field:NotBlank(message = "邮箱格式错误")
+    @field:Email(message = "邮箱格式错误")
+    val email: String,
+
     /**
      * 验证码
      */
-    @NotBlank(message = "请输入验证码")
-    private String activeCode;
+    @field:NotBlank(message = "请输入验证码")
+    val activeCode: String,
+
     /**
      * 修改后的密码
      */
-    @NotBlank(message = "请输入用户密码")
-    private String password;
-}
+    @field:NotBlank(message = "请输入用户密码")
+    val password: String
+)
