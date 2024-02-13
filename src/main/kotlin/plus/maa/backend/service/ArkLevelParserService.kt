@@ -8,7 +8,7 @@ import plus.maa.backend.repository.entity.gamedata.ArkTilePos
 import plus.maa.backend.service.model.ArkLevelType
 import plus.maa.backend.service.model.parser.ArkLevelParser
 
-private val log = KotlinLogging.logger {  }
+private val log = KotlinLogging.logger { }
 
 /**
  * @author john180
@@ -23,16 +23,16 @@ class ArkLevelParserService(private val parsers: List<ArkLevelParser>) {
      * TODO 完成剩余字段实现
      */
     @Nullable
-    fun parseLevel(tilePos: ArkTilePos, sha: String?): ArkLevel? {
-        val level = ArkLevel.builder()
-            .levelId(tilePos.levelId)
-            .stageId(tilePos.stageId)
-            .sha(sha)
-            .catThree(tilePos.code)
-            .name(tilePos.name)
-            .width(tilePos.width)
-            .height(tilePos.height)
-            .build()
+    fun parseLevel(tilePos: ArkTilePos, sha: String): ArkLevel? {
+        val level = ArkLevel(
+            levelId = tilePos.levelId,
+            stageId = tilePos.stageId,
+            sha = sha,
+            catThree = tilePos.code,
+            name = tilePos.name,
+            width = tilePos.width,
+            height = tilePos.height,
+        )
         return parseLevel(level, tilePos)
     }
 

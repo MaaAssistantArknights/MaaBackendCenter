@@ -48,8 +48,4 @@ interface ArkLevelRepository : MongoRepository<ArkLevel, String> {
     )
     fun queryLevelByKeyword(keyword: String): List<ArkLevel>
 
-    /**
-     * 根据stageId列表查询
-     */
-    fun findByStageIdIn(stageIds: Collection<String>): List<ArkLevel>
 }

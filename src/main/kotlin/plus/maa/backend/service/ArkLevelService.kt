@@ -180,6 +180,9 @@ class ArkLevelService(
         log.info { "[ACTIVITIES-OPEN-STATUS]开始更新活动地图开放状态" }
         // 就一个文件，直接在当前线程下载数据
         try {
+            if (stages.downloadUrl == null) {
+                return
+            }
             okHttpClient
                 .newCall(Request.Builder().url(stages.downloadUrl).build())
                 .execute().use { response ->

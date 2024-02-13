@@ -84,8 +84,8 @@ class UserService(
         if (userResult.isEmpty) return
         val maaUser = userResult.get()
         // 修改密码的逻辑，应当使用与 authentication provider 一致的编码器
-        maaUser.setPassword(passwordEncoder.encode(rawPassword))
-        maaUser.setRefreshJwtIds(ArrayList())
+        maaUser.password = passwordEncoder.encode(rawPassword)
+        maaUser.refreshJwtIds = ArrayList()
         userRepository.save(maaUser)
     }
 
@@ -101,10 +101,14 @@ class UserService(
         // 校验验证码
         emailService.verifyVCode(registerDTO.email, registerDTO.registrationToken)
 
-        val user = MaaUser()
+        val user = MaaUser(
+            userName = registerDTO.userName,
+            email = registerDTO.email,
+            password = registerDTO.password
+        )
         BeanUtils.copyProperties(registerDTO, user)
-        user.setPassword(encode)
-        user.setStatus(1)
+        user.password = encode
+        user.status = 1
         val userInfo: MaaUserInfo
         try {
             val save = userRepository.save(user)
@@ -121,7 +125,7 @@ class UserService(
      * @param userId    用户id
      * @param updateDTO 更新参数
      */
-    fun updateUserInfo(userId: String, updateDTO: UserInfoUpdateDTO?) {
+    fun updateUserInfo(userId: String, updateDTO: UserInfoUpdateDTO) {
         userRepository.findById(userId).ifPresent { maaUser: MaaUser ->
             maaUser.updateAttribute(updateDTO)
             userRepository.save(maaUser)
@@ -180,7 +184,7 @@ class UserService(
     fun modifyPasswordByActiveCode(passwordResetDTO: PasswordResetDTO) {
         emailService.verifyVCode(passwordResetDTO.email, passwordResetDTO.activeCode)
         val maaUser = userRepository.findByEmail(passwordResetDTO.email)
-        modifyPassword(maaUser!!.userId, passwordResetDTO.password)
+        modifyPassword(maaUser!!.userId!!, passwordResetDTO.password)
     }
 
     /**

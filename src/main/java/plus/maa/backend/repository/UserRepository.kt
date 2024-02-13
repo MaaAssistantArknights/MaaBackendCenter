@@ -20,6 +20,6 @@ interface UserRepository : MongoRepository<MaaUser, String> {
 }
 
 fun UserRepository.findByUsersId(userId: List<String>): Map<String, MaaUser> {
-    return findAllById(userId).associateBy { it.userId }
+    return findAllById(userId).associateBy { it.userId!! }
 }
 

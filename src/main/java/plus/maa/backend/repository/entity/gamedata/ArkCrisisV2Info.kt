@@ -1,16 +1,10 @@
-package plus.maa.backend.repository.entity.gamedata;
+package plus.maa.backend.repository.entity.gamedata
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+data class ArkCrisisV2Info (
+    val seasonId: String,
+    val name: String,
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class ArkCrisisV2Info {
-    private String seasonId;
-    private String name;
     // 时间戳，单位：秒
-    private long startTs;
-    private long endTs;
-}
+    val startTs: Long,
+    val endTs: Long
+)

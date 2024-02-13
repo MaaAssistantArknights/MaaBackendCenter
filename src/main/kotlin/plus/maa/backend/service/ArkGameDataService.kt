@@ -2,7 +2,7 @@ package plus.maa.backend.service
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -35,9 +35,8 @@ class ArkGameDataService(private val okHttpClient: OkHttpClient) {
             "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/gamedata/excel/crisis_v2_table.json"
     }
 
-    private final val mapper = jacksonMapperBuilder()
+    private final val mapper = jacksonObjectMapper()
         .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-        .build()
     private val stageMap = ConcurrentHashMap<String, ArkStage>()
     private val levelStageMap = ConcurrentHashMap<String, ArkStage>()
     private val zoneMap = ConcurrentHashMap<String, ArkZone>()

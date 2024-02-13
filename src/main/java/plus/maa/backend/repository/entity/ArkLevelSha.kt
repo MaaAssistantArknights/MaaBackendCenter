@@ -1,8 +1,8 @@
-package plus.maa.backend.repository.entity;
+package plus.maa.backend.repository.entity
 
 /**
  * @author john180
  */
-public interface ArkLevelSha {
-    String getSha();
+interface ArkLevelSha {
+    val sha: String
 }

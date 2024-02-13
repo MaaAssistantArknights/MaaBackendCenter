@@ -1,20 +1,17 @@
-package plus.maa.backend.repository.entity.gamedata;
+package plus.maa.backend.repository.entity.gamedata
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
-@Data
 // 忽略对服务器无用的数据
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class MaaArkStage {
-
+data class MaaArkStage(
     /**
      * 例: CB-EX8
      */
-    private String code;
+    val code: String,
 
     /**
      * 例:  act5d0_ex08
      */
-    private String stageId;
-}
+    val stageId: String?
+)

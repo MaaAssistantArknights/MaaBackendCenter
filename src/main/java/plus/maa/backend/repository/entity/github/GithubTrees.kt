@@ -1,19 +1,10 @@
-package plus.maa.backend.repository.entity.github;
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.util.List;
+package plus.maa.backend.repository.entity.github
 
 /**
  * @author john180
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class GithubTrees {
-    private String sha;
-    private String url;
-    private List<GithubTree> tree;
-}
+class GithubTrees (
+    val sha: String,
+    val url: String,
+    val tree: List<GithubTree>,
+)

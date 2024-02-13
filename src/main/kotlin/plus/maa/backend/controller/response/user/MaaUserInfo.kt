@@ -10,5 +10,5 @@ data class MaaUserInfo(
     val userName: String,
     val activated: Boolean = false
 ) {
-    constructor(user: MaaUser) : this(user.userId, user.userName, user.status == 1)
+    constructor(user: MaaUser) : this(user.userId!!, user.userName, user.status == 1)
 }

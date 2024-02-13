@@ -1,53 +1,37 @@
-package plus.maa.backend.repository.entity.github;
-
-import lombok.Data;
-import org.apache.commons.lang3.StringUtils;
-
-import java.util.Objects;
+package plus.maa.backend.repository.entity.github
 
 /**
  * @author dragove
  * created on 2022/12/23
  */
-@Data
-public class GithubContent {
-
+data class GithubContent(
     // 文件名
-    private String name;
+    val name: String,
+
     // 路径
-    private String path;
-    private String sha;
+    val path: String,
+    val sha: String,
+
     // 文件大小(Byte)
-    private Long size;
+    val size: Long,
+
     // 路径类型 file-文件 dir-目录
-    private String type;
+    val type: String,
+
     // 下载地址
-    private String downloadUrl;
+    val downloadUrl: String?,
+
     // 访问地址
-    private String htmlUrl;
+    val htmlUrl: String,
+
     // 对应commit地址
-    private String gitUrl;
-
-    /**
-     * 仿照File类，判断是否目录类型
-     *
-     * @return 如果是目录类型，则返回 true，文件类型则返回 false
-     */
-    public boolean isDir() {
-        return Objects.equals(type, "dir");
-    }
-
-    public boolean isFile() {
-        return Objects.equals(type, "file");
-    }
-
-    public String getFileExtension() {
-        return name == null ?
-                StringUtils.EMPTY :
-                (name.contains(".") ?
-                        name.substring(name.lastIndexOf(".") + 1) :
-                        StringUtils.EMPTY
-                );
-    }
-
+    val gitUrl: String
+) {
+    val isFile: Boolean
+        /**
+         * 仿照File类，判断是否问类型
+         *
+         * @return 如果是文件类型，则返回 true，目录类型则返回 false
+         */
+        get() = type == "file"
 }

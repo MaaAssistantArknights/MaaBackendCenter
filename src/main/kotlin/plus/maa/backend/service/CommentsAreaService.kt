@@ -70,7 +70,7 @@ class CommentsAreaService(
             val commentsAreaOptional = commentsAreaRepository.findById(commentsAddDTO.fromCommentId)
             Assert.isTrue(commentsAreaOptional.isPresent, "回复的评论不存在")
             commentsArea = commentsAreaOptional.get()
-            Assert.isTrue(!commentsArea.isDelete, "回复的评论不存在")
+            Assert.isTrue(!commentsArea.delete, "回复的评论不存在")
 
             mainCommentsId = if (StringUtils
                     .isNoneBlank(commentsArea.mainCommentId)
@@ -127,12 +127,14 @@ class CommentsAreaService(
 
         //创建评论表
         commentsAreaRepository.insert(
-            CommentsArea().setCopilotId(copilotId)
-                .setUploaderId(userId)
-                .setFromCommentId(fromCommentsId)
-                .setMainCommentId(mainCommentsId)
-                .setMessage(message)
-                .setNotification(commentsAddDTO.notification)
+            CommentsArea(
+                copilotId = copilotId,
+                uploaderId = userId,
+                fromCommentId = fromCommentsId,
+                mainCommentId = mainCommentsId,
+                message = message,
+                notification = commentsAddDTO.notification
+            )
         )
     }
 
@@ -147,16 +149,16 @@ class CommentsAreaService(
             )
         }
         val now = LocalDateTime.now()
-        commentsArea.setDelete(true)
-        commentsArea.setDeleteTime(now)
+        commentsArea.delete = true
+        commentsArea.deleteTime = now
 
         //删除所有回复
         if (StringUtils.isBlank(commentsArea.mainCommentId)) {
-            val commentsAreaList = commentsAreaRepository.findByMainCommentId(commentsArea.id)
-            commentsAreaList.forEach{ ca: CommentsArea ->
-                    ca.setDeleteTime(now)
-                        .setDelete(true)
-                }
+            val commentsAreaList = commentsAreaRepository.findByMainCommentId(commentsArea.id!!)
+            commentsAreaList.forEach { ca: CommentsArea ->
+                ca.deleteTime = now
+                ca.delete = true
+            }
             commentsAreaRepository.saveAll(commentsAreaList)
         }
         commentsAreaRepository.save(commentsArea)
@@ -178,7 +180,8 @@ class CommentsAreaService(
         val dislikeCountChange: Long
 
         val ratingOptional =
-            ratingRepository.findByTypeAndKeyAndUserId(Rating.KeyType.COMMENT, commentsArea.id, userId)
+            ratingRepository.findByTypeAndKeyAndUserId(Rating.KeyType.COMMENT,
+                commentsArea.id!!, userId)
         // 判断该用户是否存在评分
         if (ratingOptional != null) {
             // 如果评分发生变化则更新
@@ -223,8 +226,8 @@ class CommentsAreaService(
             dislikeCount = 0
         }
 
-        commentsArea.setLikeCount(likeCount)
-        commentsArea.setDislikeCount(dislikeCount)
+        commentsArea.likeCount = likeCount
+        commentsArea.dislikeCount = dislikeCount
 
         commentsAreaRepository.save(commentsArea)
     }
@@ -237,14 +240,14 @@ class CommentsAreaService(
      */
     fun topping(userId: String, commentsToppingDTO: CommentsToppingDTO) {
         val commentsArea = findCommentsById(commentsToppingDTO.commentId)
-        Assert.isTrue(!commentsArea.isDelete, "评论不存在")
+        Assert.isTrue(!commentsArea.delete, "评论不存在")
         // 只允许作者置顶评论
         copilotRepository.findByCopilotId(commentsArea.copilotId)?.let { copilot: Copilot ->
             Assert.isTrue(
                 userId == copilot.uploaderId,
                 "只有作者才能置顶评论"
             )
-            commentsArea.setTopping(commentsToppingDTO.topping)
+            commentsArea.topping = commentsToppingDTO.topping
             commentsAreaRepository.save(commentsArea)
         }
     }
@@ -303,14 +306,14 @@ class CommentsAreaService(
         //获取子评论
         val subCommentsList = commentsAreaRepository.findByMainCommentIdIn(
             mainCommentsList
-                .map { obj: CommentsArea -> obj.id }
+                .map { obj: CommentsArea -> requireNotNull(obj.id) }
                 .toList()
         )
 
         //将已删除评论内容替换为空
-        subCommentsList.forEach{ comment: CommentsArea ->
-            if (comment.isDelete) {
-                comment.setMessage("")
+        subCommentsList.forEach { comment: CommentsArea ->
+            if (comment.delete) {
+                comment.message = ""
             }
         }
 
@@ -364,7 +367,7 @@ class CommentsAreaService(
         Assert.isTrue(commentsAreaOptional.isPresent, "评论不存在")
         val commentsArea = commentsAreaOptional.get()
         Assert.isTrue(userId == commentsArea.uploaderId, "您没有权限修改")
-        commentsArea.setNotification(status)
+        commentsArea.notification = status
         commentsAreaRepository.save(commentsArea)
     }
 }

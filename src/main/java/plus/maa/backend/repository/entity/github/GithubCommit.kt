@@ -1,15 +1,8 @@
-package plus.maa.backend.repository.entity.github;
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+package plus.maa.backend.repository.entity.github
 
 /**
  * @author john180
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class GithubCommit {
-    private String sha;
-}
+data class GithubCommit(
+    val sha: String
+)
