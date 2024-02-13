@@ -24,8 +24,7 @@ import plus.maa.backend.service.model.RatingType
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
-import java.util.function.Consumer
-
+import kotlin.collections.ArrayList
 
 /**
  * @author LoMu
@@ -154,12 +153,10 @@ class CommentsAreaService(
         //删除所有回复
         if (StringUtils.isBlank(commentsArea.mainCommentId)) {
             val commentsAreaList = commentsAreaRepository.findByMainCommentId(commentsArea.id)
-            commentsAreaList.forEach(
-                Consumer { ca: CommentsArea ->
+            commentsAreaList.forEach{ ca: CommentsArea ->
                     ca.setDeleteTime(now)
                         .setDelete(true)
                 }
-            )
             commentsAreaRepository.saveAll(commentsAreaList)
         }
         commentsAreaRepository.save(commentsArea)
@@ -311,11 +308,11 @@ class CommentsAreaService(
         )
 
         //将已删除评论内容替换为空
-        subCommentsList.forEach(Consumer { comment: CommentsArea ->
+        subCommentsList.forEach{ comment: CommentsArea ->
             if (comment.isDelete) {
                 comment.setMessage("")
             }
-        })
+        }
 
 
         //所有评论

@@ -6,9 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
-import lombok.RequiredArgsConstructor
-import lombok.Setter
-import lombok.extern.slf4j.Slf4j
 import org.apache.commons.lang3.StringUtils
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.ClassPathResource
@@ -21,8 +18,6 @@ import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.function.Function
-import java.util.function.Supplier
 
 private val log = KotlinLogging.logger { }
 
@@ -31,14 +26,11 @@ private val log = KotlinLogging.logger { }
  *
  * @author AnselYuki
  */
-@Slf4j
-@Setter
 @Component
-@RequiredArgsConstructor
 class RedisCache(
     @Value("\${maa-copilot.cache.default-expire}")
-    private val expire: Int = 0,
-    private val redisTemplate: StringRedisTemplate? = null
+    private val expire: Int,
+    private val redisTemplate: StringRedisTemplate
 ) {
 
     //  添加 JSR310 模块，以便顺利序列化 LocalDateTime 等类型
@@ -75,9 +67,9 @@ class RedisCache(
     fun <T> setCache(key: String, value: T, timeout: Long, timeUnit: TimeUnit) {
         val json = getJson(value) ?: return
         if (timeout <= 0) {
-            redisTemplate!!.opsForValue()[key] = json
+            redisTemplate.opsForValue()[key] = json
         } else {
-            redisTemplate!!.opsForValue()[key, json, timeout] = timeUnit
+            redisTemplate.opsForValue()[key, json, timeout] = timeUnit
         }
     }
 
@@ -116,9 +108,9 @@ class RedisCache(
     fun <T> setCacheIfAbsent(key: String, value: T, timeout: Long, timeUnit: TimeUnit): Boolean {
         val json = getJson(value) ?: return false
         val result = if (timeout <= 0) {
-            java.lang.Boolean.TRUE == redisTemplate!!.opsForValue().setIfAbsent(key, json)
+            java.lang.Boolean.TRUE == redisTemplate.opsForValue().setIfAbsent(key, json)
         } else {
-            java.lang.Boolean.TRUE == redisTemplate!!.opsForValue().setIfAbsent(key, json, timeout, timeUnit)
+            java.lang.Boolean.TRUE == redisTemplate.opsForValue().setIfAbsent(key, json, timeout, timeUnit)
         }
         return result
     }
@@ -132,16 +124,15 @@ class RedisCache(
             return
         }
         val jsonList = arrayOfNulls<String>(set.size)
-        var i = 0
-        for (t in set) {
+        for ((i, t) in set.withIndex()) {
             val json = getJson(t) ?: return
-            jsonList[i++] = json
+            jsonList[i] = json
         }
 
         if (timeout <= 0) {
-            redisTemplate!!.opsForSet().add(key, *jsonList)
+            redisTemplate.opsForSet().add(key, *jsonList)
         } else {
-            redisTemplate!!.opsForSet().add(key, *jsonList)
+            redisTemplate.opsForSet().add(key, *jsonList)
             redisTemplate.expire(key, timeout, timeUnit)
         }
     }
@@ -159,7 +150,7 @@ class RedisCache(
      * @param timeout  ZSet 的过期时间
      */
     fun incZSet(key: String, member: String?, incScore: Double, size: Long, timeout: Long) {
-        redisTemplate!!.execute(
+        redisTemplate.execute(
             incZSetRedisScript,
             listOf(key),
             member,
@@ -171,18 +162,18 @@ class RedisCache(
 
     // 获取的元素是按照 score 从小到大排列的
     fun getZSet(key: String, start: Long, end: Long): Set<String>? {
-        return redisTemplate!!.opsForZSet().range(key, start, end)
+        return redisTemplate.opsForZSet().range(key, start, end)
     }
 
     // 获取的元素是按照 score 从大到小排列的
     fun getZSetReverse(key: String, start: Long, end: Long): Set<String>? {
-        return redisTemplate!!.opsForZSet().reverseRange(key, start, end)
+        return redisTemplate.opsForZSet().reverseRange(key, start, end)
     }
 
     fun <T> valueMemberInSet(key: String, value: T): Boolean {
         try {
             val json = getJson(value) ?: return false
-            return java.lang.Boolean.TRUE == redisTemplate!!.opsForSet().isMember(key, json)
+            return java.lang.Boolean.TRUE == redisTemplate.opsForSet().isMember(key, json)
         } catch (e: Exception) {
             log.error(e) { e.message }
         }
@@ -193,34 +184,33 @@ class RedisCache(
         return getCache(key, valueType, null, expire.toLong(), TimeUnit.SECONDS)
     }
 
-    fun <T> getCache(key: String, valueType: Class<T>, onMiss: Supplier<T>?): T? {
+    fun <T> getCache(key: String, valueType: Class<T>, onMiss: (()->T)?): T? {
         return getCache(key, valueType, onMiss, expire.toLong(), TimeUnit.SECONDS)
     }
 
-    fun <T> getCache(key: String, valueType: Class<T>, onMiss: Supplier<T>?, timeout: Long): T? {
+    fun <T> getCache(key: String, valueType: Class<T>, onMiss: (()->T)?, timeout: Long): T? {
         return getCache(key, valueType, onMiss, timeout, TimeUnit.SECONDS)
     }
 
-    fun <T> getCache(key: String, valueType: Class<T>, onMiss: Supplier<T>?, timeout: Long, timeUnit: TimeUnit): T? {
+    fun <T> getCache(key: String, valueType: Class<T>, onMiss: (()->T)?, timeout: Long, timeUnit: TimeUnit): T? {
         try {
-            var json = redisTemplate!!.opsForValue()[key]
+            var json = redisTemplate.opsForValue()[key]
             if (StringUtils.isEmpty(json)) {
-                if (onMiss != null) {
+                if (onMiss == null){
+                    return null
+                }
                     //上锁
                     synchronized(RedisCache::class.java) {
                         //再次查询缓存，目的是判断是否前面的线程已经set过了
                         json = redisTemplate.opsForValue()[key]
                         //第二次校验缓存是否存在
                         if (StringUtils.isEmpty(json)) {
-                            val result = onMiss.get() ?: return null
+                            val result = onMiss()
                             //数据库中不存在
-                            setCache<T>(key, result, timeout, timeUnit)
+                            setCache(key, result, timeout, timeUnit)
                             return result
                         }
                     }
-                } else {
-                    return null
-                }
             }
             return readMapper.readValue(json, valueType)
         } catch (e: Exception) {
@@ -229,11 +219,11 @@ class RedisCache(
         }
     }
 
-    fun <T> updateCache(key: String, valueType: Class<T>, defaultValue: T, onUpdate: Function<T, T>) {
+    fun <T> updateCache(key: String, valueType: Class<T>, defaultValue: T, onUpdate: (T)->T) {
         updateCache(key, valueType, defaultValue, onUpdate, expire.toLong(), TimeUnit.SECONDS)
     }
 
-    fun <T> updateCache(key: String, valueType: Class<T>?, defaultValue: T, onUpdate: Function<T, T>, timeout: Long) {
+    fun <T> updateCache(key: String, valueType: Class<T>?, defaultValue: T, onUpdate: (T)->T, timeout: Long) {
         updateCache(key, valueType, defaultValue, onUpdate, timeout, TimeUnit.SECONDS)
     }
 
@@ -241,20 +231,20 @@ class RedisCache(
         key: String,
         valueType: Class<T>?,
         defaultValue: T,
-        onUpdate: Function<T, T>,
+        onUpdate: (T)->T,
         timeout: Long,
         timeUnit: TimeUnit
     ) {
         var result: T
         try {
             synchronized(RedisCache::class.java) {
-                val json = redisTemplate!!.opsForValue()[key]
+                val json = redisTemplate.opsForValue()[key]
                 result = if (StringUtils.isEmpty(json)) {
                     defaultValue
                 } else {
                     readMapper.readValue(json, valueType)
                 }
-                result = onUpdate.apply(result)
+                result = onUpdate(result)
                 setCache(key, result, timeout, timeUnit)
             }
         } catch (e: Exception) {
@@ -277,7 +267,7 @@ class RedisCache(
     fun removeCache(keys: Collection<String>, notUseUnlink: Boolean = false) {
         if (!notUseUnlink && supportUnlink.get()) {
             try {
-                redisTemplate!!.unlink(keys)
+                redisTemplate.unlink(keys)
                 return
             } catch (e: InvalidDataAccessApiUsageException) {
                 // Redisson、Jedis、Lettuce
@@ -306,7 +296,7 @@ class RedisCache(
         }
 
         // 兜底的 Del 命令
-        redisTemplate!!.delete(keys)
+        redisTemplate.delete(keys)
     }
 
     /**
@@ -318,7 +308,7 @@ class RedisCache(
      */
     fun <T> removeKVIfEquals(key: String, value: T): Boolean {
         val json = getJson(value) ?: return false
-        return java.lang.Boolean.TRUE == redisTemplate!!.execute(removeKVIfEqualsScript, listOf(key), json)
+        return java.lang.Boolean.TRUE == redisTemplate.execute(removeKVIfEqualsScript, listOf(key), json)
     }
 
     /**
@@ -353,7 +343,7 @@ class RedisCache(
         // 保存要删除的键
         val keysToDelete: MutableList<String> = ArrayList(batchSize)
 
-        redisTemplate!!.scan(scanOptions).use { cursor ->
+        redisTemplate.scan(scanOptions).use { cursor ->
             while (cursor.hasNext()) {
                 val key = cursor.next()
                 // 将要删除的键添加到列表中
@@ -367,7 +357,7 @@ class RedisCache(
             }
         }
         // 删除剩余的键（不足 batchSize 的最后一批）
-        if (!keysToDelete.isEmpty()) {
+        if (keysToDelete.isNotEmpty()) {
             removeCache(keysToDelete)
         }
     }
