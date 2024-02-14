@@ -41,7 +41,7 @@ class HttpInterfaceConfig {
                 headers.add("X-GitHub-Api-Version", "2022-11-28")
             }
             .build()
-        return HttpServiceProxyFactory.builder(WebClientAdapter.forClient(client))
+        return HttpServiceProxyFactory.builderFor(WebClientAdapter.create(client))
             .build()
             .createClient(GithubRepository::class.java)
     }
