@@ -99,7 +99,7 @@ tasks.withType<Test> {
 }
 
 
-val swaggerOutputDir = "${project.layout.buildDirectory}/docs"
+val swaggerOutputDir = layout.buildDirectory.dir("docs")
 val swaggerOutputName = "swagger.json"
 
 
@@ -111,7 +111,7 @@ openApi {
 }
 
 swaggerSources {
-    val clientDir = "${project.layout.buildDirectory}/clients"
+    val clientDir = layout.buildDirectory.dir("clients").get()
     create("TsFetch") {
         setInputFile(file("$swaggerOutputDir/$swaggerOutputName"))
         code(closureOf<GenerateSwaggerCode> {
@@ -119,7 +119,7 @@ swaggerSources {
             configFile = file("client-config/ts-fetch.json")
 //            templateDir = file('client-config/typescript-fetch')
             rawOptions = listOf("-e", "mustache")
-            outputDir = file("$clientDir/ts-fetch-client")
+            outputDir = file(clientDir.dir("ts-fetch-client"))
         })
     }
     create("CSharp") {
@@ -127,7 +127,7 @@ swaggerSources {
         code(closureOf<GenerateSwaggerCode> {
             language = "csharp-netcore"
             configFile = file("client-config/csharp-netcore.json")
-            outputDir = file("$clientDir/csharp-client")
+            outputDir = file(clientDir.dir("csharp-client"))
 //            rawOptions = listOf("--type-mappings", "binary=System.IO.Stream")
         })
     }
@@ -136,7 +136,7 @@ swaggerSources {
         code(closureOf<GenerateSwaggerCode> {
             language = "cpp-restsdk"
             configFile = file("client-config/cpp.json")
-            outputDir = file("$clientDir/cpp-client")
+            outputDir = file(clientDir.dir("cpp-client"))
         })
     }
     create("Rust") {
@@ -144,7 +144,7 @@ swaggerSources {
         code(closureOf<GenerateSwaggerCode> {
             language = "rust"
             configFile = file("client-config/rust.json")
-            outputDir = file("$clientDir/rust-client")
+            outputDir = file(clientDir.dir("rust-client"))
         })
     }
 }
