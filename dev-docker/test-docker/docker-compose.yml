@@ -15,7 +15,7 @@ services:
     networks:
       - maa
   maa_backend:
-    image: dragove/maa-backend-center:latest
+    image: ghcr.io/maaassistantarknights/maabackendcenter:dev
     container_name: maa-backend
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb://mongo/MaaBackend

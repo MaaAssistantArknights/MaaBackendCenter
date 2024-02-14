@@ -79,7 +79,7 @@ dependencies {
 
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
-    swaggerCodegen("org.openapitools:openapi-generator-cli:7.3.0")
+    swaggerCodegen("org.openapitools:openapi-generator-cli:7.2.0")
 
 }
 
@@ -112,8 +112,9 @@ openApi {
 
 swaggerSources {
     val clientDir = layout.buildDirectory.dir("clients").get()
+    val swaggerOutputFile = swaggerOutputDir.get().file(swaggerOutputName)
     create("TsFetch") {
-        setInputFile(file("$swaggerOutputDir/$swaggerOutputName"))
+        setInputFile(file(swaggerOutputFile))
         code(closureOf<GenerateSwaggerCode> {
             language = "typescript-fetch"
             configFile = file("client-config/ts-fetch.json")
@@ -123,16 +124,16 @@ swaggerSources {
         })
     }
     create("CSharp") {
-        setInputFile(file("$swaggerOutputDir/$swaggerOutputName"))
+        setInputFile(file(swaggerOutputFile))
         code(closureOf<GenerateSwaggerCode> {
-            language = "csharp-netcore"
+            language = "csharp"
             configFile = file("client-config/csharp-netcore.json")
             outputDir = file(clientDir.dir("csharp-client"))
 //            rawOptions = listOf("--type-mappings", "binary=System.IO.Stream")
         })
     }
     create("Cpp") {
-        setInputFile(file("$swaggerOutputDir/$swaggerOutputName"))
+        setInputFile(file(swaggerOutputFile))
         code(closureOf<GenerateSwaggerCode> {
             language = "cpp-restsdk"
             configFile = file("client-config/cpp.json")
@@ -140,7 +141,7 @@ swaggerSources {
         })
     }
     create("Rust") {
-        setInputFile(file("$swaggerOutputDir/$swaggerOutputName"))
+        setInputFile(file(swaggerOutputFile))
         code(closureOf<GenerateSwaggerCode> {
             language = "rust"
             configFile = file("client-config/rust.json")
