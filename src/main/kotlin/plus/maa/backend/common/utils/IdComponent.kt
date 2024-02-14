@@ -33,10 +33,12 @@ class IdComponent(
                     val nv = AtomicLong(getMax(cls, meta.idGetter, meta.incIdField))
                     log.info { "初始化获取 collection: $collectionName 的最大 id，id: ${nv.get()}" }
                     currentIdMap[collectionName] = nv
+                    return nv.incrementAndGet()
                 }
+                return rv.incrementAndGet()
             }
         }
-        return v!!.incrementAndGet()
+        return v.incrementAndGet()
     }
 
     private fun <T> getMax(entityClass: Class<T>, idGetter: (T) -> Long, fieldName: String) =
