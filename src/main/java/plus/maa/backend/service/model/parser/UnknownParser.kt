@@ -1,23 +1,24 @@
-package plus.maa.backend.service.model.parser;
+package plus.maa.backend.service.model.parser
 
-import org.springframework.stereotype.Component;
-import plus.maa.backend.repository.entity.ArkLevel;
-import plus.maa.backend.repository.entity.gamedata.ArkTilePos;
-import plus.maa.backend.service.model.ArkLevelType;
+import org.springframework.stereotype.Component
+import plus.maa.backend.repository.entity.ArkLevel
+import plus.maa.backend.repository.entity.gamedata.ArkTilePos
+import plus.maa.backend.service.model.ArkLevelType
+import java.util.*
 
 @Component
-public class UnknownParser implements ArkLevelParser {
-    @Override
-    public boolean supportType(ArkLevelType type) {
-        return ArkLevelType.UNKNOWN.equals(type);
+class UnknownParser : ArkLevelParser {
+    override fun supportType(type: ArkLevelType): Boolean {
+        return ArkLevelType.UNKNOWN == type
     }
 
-    @Override
-    public ArkLevel parseLevel(ArkLevel level, ArkTilePos tilePos) {
-        String[] ids = level.getLevelId().toLowerCase().split("/");
-        String type = (ids[0].equals("obt")) ? ids[1] : ids[0];
+    override fun parseLevel(level: ArkLevel, tilePos: ArkTilePos): ArkLevel? {
+        val ids = level.levelId!!.lowercase(Locale.getDefault())
+            .split("/".toRegex()).dropLastWhile { it.isEmpty() }
+            .toTypedArray()
+        val type = if ((ids[0] == "obt")) ids[1] else ids[0]
 
-        level.setCatOne(ArkLevelType.UNKNOWN.getDisplay() + type);
-        return level;
+        level.catOne = ArkLevelType.UNKNOWN.display + type
+        return level
     }
 }

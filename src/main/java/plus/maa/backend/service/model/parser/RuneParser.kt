@@ -1,36 +1,27 @@
-package plus.maa.backend.service.model.parser;
+package plus.maa.backend.service.model.parser
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-import plus.maa.backend.repository.entity.ArkLevel;
-import plus.maa.backend.repository.entity.gamedata.ArkCrisisV2Info;
-import plus.maa.backend.repository.entity.gamedata.ArkTilePos;
-import plus.maa.backend.service.ArkGameDataService;
-import plus.maa.backend.service.model.ArkLevelType;
-
-import java.util.Optional;
+import org.springframework.stereotype.Component
+import plus.maa.backend.repository.entity.ArkLevel
+import plus.maa.backend.repository.entity.gamedata.ArkTilePos
+import plus.maa.backend.service.ArkGameDataService
+import plus.maa.backend.service.model.ArkLevelType
 
 @Component
-@RequiredArgsConstructor
-public class RuneParser implements ArkLevelParser {
+class RuneParser(
+    private val dataService: ArkGameDataService
+) : ArkLevelParser {
 
-    private final ArkGameDataService dataService;
-
-    @Override
-    public boolean supportType(ArkLevelType type) {
-        return ArkLevelType.RUNE.equals(type);
+    override fun supportType(type: ArkLevelType): Boolean {
+        return ArkLevelType.RUNE == type
     }
 
-    @Override
-    public ArkLevel parseLevel(ArkLevel level, ArkTilePos tilePos) {
-        level.setCatOne(ArkLevelType.RUNE.getDisplay());
-        level.setCatTwo(
-                Optional.ofNullable(level.getStageId())
-                        .map(dataService::findCrisisV2InfoById)
-                        .map(ArkCrisisV2Info::getName)
-                        .orElse(tilePos.getCode())
-        );
-        level.setCatThree(level.getName());
-        return level;
+    override fun parseLevel(level: ArkLevel, tilePos: ArkTilePos): ArkLevel? {
+        level.catOne = ArkLevelType.RUNE.display
+        level.catTwo = level.stageId
+            ?.let { dataService.findCrisisV2InfoById(it) }
+            ?.name ?: tilePos.code
+
+        level.catThree = level.name
+        return level
     }
 }

@@ -1,66 +1,66 @@
-package plus.maa.backend.service.model.parser;
+package plus.maa.backend.service.model.parser
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-import plus.maa.backend.repository.entity.ArkLevel;
-import plus.maa.backend.repository.entity.gamedata.ArkCharacter;
-import plus.maa.backend.repository.entity.gamedata.ArkTilePos;
-import plus.maa.backend.service.ArkGameDataService;
-import plus.maa.backend.service.model.ArkLevelType;
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.springframework.stereotype.Component
+import plus.maa.backend.repository.entity.ArkLevel
+import plus.maa.backend.repository.entity.gamedata.ArkTilePos
+import plus.maa.backend.service.ArkGameDataService
+import plus.maa.backend.service.model.ArkLevelType
+import java.util.*
+
+private val log = KotlinLogging.logger { }
 
 /**
  * @author john180
- * <p>
- * Memory level will be tagged like this:<br>
- * MEMORY -> POSITION -> OPERATOR_NAME == obt/memory/LEVEL_ID<br>
- * eg:<br>
- * 悖论模拟 -> 狙击 -> 克洛丝 == obt/memory/level_memory_kroos_1<br>
+ *
+ *
+ * Memory level will be tagged like this:<br></br>
+ * MEMORY -> POSITION -> OPERATOR_NAME == obt/memory/LEVEL_ID<br></br>
+ * eg:<br></br>
+ * 悖论模拟 -> 狙击 -> 克洛丝 == obt/memory/level_memory_kroos_1<br></br>
  */
-@Slf4j
 @Component
-@RequiredArgsConstructor
-public class MemoryParser implements ArkLevelParser {
-    private final ArkGameDataService dataService;
+class MemoryParser(
+    val dataService: ArkGameDataService
+) : ArkLevelParser {
 
-    @Override
-    public boolean supportType(ArkLevelType type) {
-        return ArkLevelType.MEMORY.equals(type);
+    override fun supportType(type: ArkLevelType): Boolean {
+        return ArkLevelType.MEMORY == type
     }
 
-    @Override
-    public ArkLevel parseLevel(ArkLevel level, ArkTilePos tilePos) {
-        level.setCatOne(ArkLevelType.MEMORY.getDisplay());
+    override fun parseLevel(level: ArkLevel, tilePos: ArkTilePos): ArkLevel? {
+        level.catOne = ArkLevelType.MEMORY.display
 
-        String[] chIdSplit = level.getStageId().split("_");     //mem_aurora_1
-        if (chIdSplit.length != 3) {
-            log.error("[PARSER]悖论模拟关卡stageId异常:{}, level:{}", level.getStageId(), level.getLevelId());
-            return null;
+        val chIdSplit =
+            level.stageId!!.split("_".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray() //mem_aurora_1
+        if (chIdSplit.size != 3) {
+            log.error { "[PARSER]悖论模拟关卡stageId异常: ${level.stageId}, level: ${level.levelId}" }
+            return null
         }
-        String chId = chIdSplit[1];     //aurora
-        ArkCharacter character = dataService.findCharacter(chId);
+        val chId = chIdSplit[1] //aurora
+        val character = dataService.findCharacter(chId)
         if (character == null) {
-            log.error("[PARSER]悖论模拟关卡未找到角色信息:{}, level:{}", level.getStageId(), level.getLevelId());
-            return null;
+            log.error { "[PARSER]悖论模拟关卡未找到角色信息: ${level.stageId}, level: ${level.levelId}" }
+            return null
         }
 
-        level.setCatTwo(parseProfession(character.getProfession()));
-        level.setCatThree(character.getName());
+        level.catTwo = parseProfession(character.profession)
+        level.catThree = character.name
 
-        return level;
+        return level
     }
 
-    private String parseProfession(String professionId) {
-        return switch (professionId.toLowerCase()) {
-            case "medic" -> "医疗";
-            case "special" -> "特种";
-            case "warrior" -> "近卫";
-            case "sniper" -> "狙击";
-            case "tank" -> "重装";
-            case "caster" -> "术师";
-            case "pioneer" -> "先锋";
-            case "support" -> "辅助";
-            default -> "未知";
-        };
+    private fun parseProfession(professionId: String): String {
+        return when (professionId.lowercase(Locale.getDefault())) {
+            "medic" -> "医疗"
+            "special" -> "特种"
+            "warrior" -> "近卫"
+            "sniper" -> "狙击"
+            "tank" -> "重装"
+            "caster" -> "术师"
+            "pioneer" -> "先锋"
+            "support" -> "辅助"
+            else -> "未知"
+        }
     }
 }

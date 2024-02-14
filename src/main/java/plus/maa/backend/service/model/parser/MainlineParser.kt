@@ -1,75 +1,75 @@
-package plus.maa.backend.service.model.parser;
+package plus.maa.backend.service.model.parser
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-import org.springframework.util.ObjectUtils;
-import plus.maa.backend.repository.entity.ArkLevel;
-import plus.maa.backend.repository.entity.gamedata.ArkTilePos;
-import plus.maa.backend.repository.entity.gamedata.ArkZone;
-import plus.maa.backend.service.ArkGameDataService;
-import plus.maa.backend.service.model.ArkLevelType;
+import org.springframework.stereotype.Component
+import org.springframework.util.ObjectUtils
+import plus.maa.backend.repository.entity.ArkLevel
+import plus.maa.backend.repository.entity.gamedata.ArkTilePos
+import plus.maa.backend.repository.entity.gamedata.ArkZone
+import plus.maa.backend.service.ArkGameDataService
+import plus.maa.backend.service.model.ArkLevelType
+import java.util.*
 
 /**
  * @author john180
- * <p>
- * Main story level will be tagged like this:<br>
- * MAINLINE -> CHAPTER_NAME -> StageCode == obt/main/LEVEL_ID<br>
- * eg:<br>
- * 主题曲 -> 序章：黑暗时代·上 -> 0-1 == obt/main/level_main_00-01<br>
- * 主题曲 -> 第四章：急性衰竭 -> S4-7 == obt/main/level_sub_04-3-1<br>
+ *
+ *
+ * Main story level will be tagged like this:<br></br>
+ * MAINLINE -> CHAPTER_NAME -> StageCode == obt/main/LEVEL_ID<br></br>
+ * eg:<br></br>
+ * 主题曲 -> 序章：黑暗时代·上 -> 0-1 == obt/main/level_main_00-01<br></br>
+ * 主题曲 -> 第四章：急性衰竭 -> S4-7 == obt/main/level_sub_04-3-1<br></br>
  */
 @Component
-@RequiredArgsConstructor
-public class MainlineParser implements ArkLevelParser {
-    private final ArkGameDataService dataService;
+class MainlineParser(
+    private val dataService: ArkGameDataService
+) : ArkLevelParser {
 
-    @Override
-    public boolean supportType(ArkLevelType type) {
-        return ArkLevelType.MAINLINE.equals(type);
+    override fun supportType(type: ArkLevelType): Boolean {
+        return ArkLevelType.MAINLINE == type
     }
 
-    @Override
-    public ArkLevel parseLevel(ArkLevel level, ArkTilePos tilePos) {
-        level.setCatOne(ArkLevelType.MAINLINE.getDisplay());
+    override fun parseLevel(level: ArkLevel, tilePos: ArkTilePos): ArkLevel? {
+        level.catOne = ArkLevelType.MAINLINE.display
 
-        String chapterLevelId = level.getLevelId().split("/")[2];                  // level_main_10-02
-        String[] chapterStrSplit = chapterLevelId.split("_");                  // level main 10-02
-        String diff = parseDifficulty(chapterStrSplit[1]);                   // easy、main
-        String stageCodeEncoded = chapterStrSplit[chapterStrSplit.length - 1];                        // 10-02  remark: obt/main/level_easy_sub_09-1-1
-        String chapterStr = stageCodeEncoded.split("-")[0];                   // 10 (str)
-        int chapter = Integer.parseInt(chapterStr);                           // 10 (int)
+        val chapterLevelId =
+            level.levelId!!.split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[2] // level_main_10-02
+        val chapterStrSplit =
+            chapterLevelId.split("_".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray() // level main 10-02
+        val diff = parseDifficulty(chapterStrSplit[1]) // easy、main
+        val stageCodeEncoded =
+            chapterStrSplit[chapterStrSplit.size - 1] // 10-02  remark: obt/main/level_easy_sub_09-1-1
+        val chapterStr =
+            stageCodeEncoded.split("-".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0] // 10 (str)
+        val chapter = chapterStr.toInt() // 10 (int)
 
-        ArkZone zone = dataService.findZone(level.getLevelId(), tilePos.getCode(), tilePos.getStageId());
-        if (zone == null) {
-            return null;
-        }
+        val zone = dataService.findZone(level.levelId, tilePos.code!!, tilePos.stageId!!) ?: return null
 
-        String catTwo = parseZoneName(zone);
-        level.setCatTwo(catTwo);
+        val catTwo = parseZoneName(zone)
+        level.catTwo = catTwo
 
-        String catThreeEx = (chapter >= 9) ? String.format("（%s）", diff) : "";
-        level.setCatThree(level.getCatThree() + catThreeEx);
+        val catThreeEx = if ((chapter >= 9)) String.format("（%s）", diff) else ""
+        level.catThree += catThreeEx
 
-        return level;
+        return level
     }
 
-    private String parseDifficulty(String diff) {
-        return switch (diff.toLowerCase()) {
-            case "easy" -> "简单";
-            case "tough" -> "磨难";
-            default -> "标准";
-        };
+    private fun parseDifficulty(diff: String): String {
+        return when (diff.lowercase(Locale.getDefault())) {
+            "easy" -> "简单"
+            "tough" -> "磨难"
+            else -> "标准"
+        }
     }
 
-    private String parseZoneName(ArkZone zone) {
-        StringBuilder builder = new StringBuilder();
-        if (!ObjectUtils.isEmpty(zone.getZoneNameFirst())) {
-            builder.append(zone.getZoneNameFirst());
+    private fun parseZoneName(zone: ArkZone): String {
+        val builder = StringBuilder()
+        if (!ObjectUtils.isEmpty(zone.zoneNameFirst)) {
+            builder.append(zone.zoneNameFirst)
         }
-        builder.append(" ");
-        if (!ObjectUtils.isEmpty(zone.getZoneNameSecond())) {
-            builder.append(zone.getZoneNameSecond());
+        builder.append(" ")
+        if (!ObjectUtils.isEmpty(zone.zoneNameSecond)) {
+            builder.append(zone.zoneNameSecond)
         }
-        return builder.toString().trim();
+        return builder.toString().trim { it <= ' ' }
     }
 }

@@ -1,30 +1,29 @@
-package plus.maa.backend.service.model.parser;
+package plus.maa.backend.service.model.parser
 
-import org.springframework.stereotype.Component;
-import plus.maa.backend.repository.entity.ArkLevel;
-import plus.maa.backend.repository.entity.gamedata.ArkTilePos;
-import plus.maa.backend.service.model.ArkLevelType;
+import org.springframework.stereotype.Component
+import plus.maa.backend.repository.entity.ArkLevel
+import plus.maa.backend.repository.entity.gamedata.ArkTilePos
+import plus.maa.backend.service.model.ArkLevelType
 
 /**
  * @author john180
- * <p>
- * Campaign level will be tagged like this:<br>
- * CAMPAIGN -> CAMPAIGN_CODE -> CAMPAIGN_NAME == obt/campaign/LEVEL_ID<br>
- * eg:<br>
- * 剿灭作战	-> 炎国 -> 龙门外环 == obt/campaign/level_camp_02<br>
+ *
+ *
+ * Campaign level will be tagged like this:<br></br>
+ * CAMPAIGN -> CAMPAIGN_CODE -> CAMPAIGN_NAME == obt/campaign/LEVEL_ID<br></br>
+ * eg:<br></br>
+ * 剿灭作战	-> 炎国 -> 龙门外环 == obt/campaign/level_camp_02<br></br>
  */
 @Component
-public class CampaignParser implements ArkLevelParser {
-    @Override
-    public boolean supportType(ArkLevelType type) {
-        return ArkLevelType.CAMPAIGN.equals(type);
+class CampaignParser : ArkLevelParser {
+    override fun supportType(type: ArkLevelType): Boolean {
+        return ArkLevelType.CAMPAIGN == type
     }
 
-    @Override
-    public ArkLevel parseLevel(ArkLevel level, ArkTilePos tilePos) {
-        level.setCatOne(ArkLevelType.CAMPAIGN.getDisplay());
-        level.setCatTwo(tilePos.getCode());
-        level.setCatThree(level.getName());
-        return level;
+    override fun parseLevel(level: ArkLevel, tilePos: ArkTilePos): ArkLevel? {
+        level.catOne = ArkLevelType.CAMPAIGN.display
+        level.catTwo = tilePos.code
+        level.catThree = level.name
+        return level
     }
 }
