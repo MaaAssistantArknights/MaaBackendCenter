@@ -24,8 +24,7 @@ open class JwtToken {
         this.payload = jwt.payloads
 
         // jwtId is nullable
-        if (null == issuedAt || requiredType != type
-        ) throw JwtInvalidException()
+        if (requiredType != type) throw JwtInvalidException()
     }
 
     constructor(
