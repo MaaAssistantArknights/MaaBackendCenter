@@ -1,7 +1,3 @@
-package plus.maa.backend.service.jwt;
+package plus.maa.backend.service.jwt
 
-public class JwtExpiredException extends Exception {
-    public JwtExpiredException(String message) {
-        super(message);
-    }
-}
+class JwtExpiredException(message: String) : Exception(message)

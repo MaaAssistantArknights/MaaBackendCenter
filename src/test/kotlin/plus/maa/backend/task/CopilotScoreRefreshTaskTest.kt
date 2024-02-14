@@ -34,17 +34,17 @@ class CopilotScoreRefreshTaskTest {
     @Test
     fun testRefreshScores() {
         val now = LocalDateTime.now()
-        val copilot1 = Copilot()
+        val copilot1 = Copilot(doc = Copilot.Doc(title = "test"))
         copilot1.copilotId = 1L
         copilot1.views = 100L
         copilot1.uploadTime = now
         copilot1.stageName = "stage1"
-        val copilot2 = Copilot()
+        val copilot2 = Copilot(doc = Copilot.Doc(title = "test"))
         copilot2.copilotId = 2L
         copilot2.views = 200L
         copilot2.uploadTime = now
         copilot2.stageName = "stage2"
-        val copilot3 = Copilot()
+        val copilot3 = Copilot(doc = Copilot.Doc(title = "test"))
         copilot3.copilotId = 3L
         copilot3.views = 200L
         copilot3.uploadTime = now
@@ -82,17 +82,17 @@ class CopilotScoreRefreshTaskTest {
     @Test
     fun testRefreshTop100HotScores() {
         val now = LocalDateTime.now()
-        val copilot1 = Copilot()
+        val copilot1 = Copilot(doc = Copilot.Doc(title = "test"))
         copilot1.copilotId = 1L
         copilot1.views = 100L
         copilot1.uploadTime = now
         copilot1.stageName = "stage1"
-        val copilot2 = Copilot()
+        val copilot2 = Copilot(doc = Copilot.Doc(title = "test"))
         copilot2.copilotId = 2L
         copilot2.views = 200L
         copilot2.uploadTime = now
         copilot2.stageName = "stage2"
-        val copilot3 = Copilot()
+        val copilot3 = Copilot(doc = Copilot.Doc(title = "test"))
         copilot3.copilotId = 3L
         copilot3.views = 200L
         copilot3.uploadTime = now

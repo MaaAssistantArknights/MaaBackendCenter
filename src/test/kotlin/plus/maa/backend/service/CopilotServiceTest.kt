@@ -14,7 +14,7 @@ class CopilotServiceTest {
         val lastWeekLikeCounts = LongArray(5)
         val lastWeekDislikeCounts = LongArray(5)
         // 一月前的作业，评分高，但是只有一条近期好评，浏览量高
-        val oldGreat = Copilot()
+        val oldGreat = Copilot(doc = Copilot.Doc(title = "test"))
         oldGreat.uploadTime = beforeWeek.minusDays(14)
         oldGreat.views = 20000L
         copilots[0] = oldGreat
@@ -22,7 +22,7 @@ class CopilotServiceTest {
         lastWeekDislikeCounts[0] = 0L
 
         // 近期作业，含有差评，但是均为近期评分
-        val newGreat = Copilot()
+        val newGreat = Copilot(doc = Copilot.Doc(title = "test"))
         newGreat.uploadTime = now
         newGreat.views = 1000L
         copilots[1] = newGreat
@@ -31,7 +31,7 @@ class CopilotServiceTest {
 
 
         // 近期作业，差评较多，均为近期评分
-        val newBad = Copilot()
+        val newBad = Copilot(doc = Copilot.Doc(title = "test"))
         newBad.uploadTime = now
         newBad.views = 500L
         copilots[2] = newBad
@@ -40,7 +40,7 @@ class CopilotServiceTest {
 
 
         // 一月前的作业，评分高，但是只有一条近期好评，浏览量尚可
-        val oldNormal = Copilot()
+        val oldNormal = Copilot(doc = Copilot.Doc(title = "test"))
         oldNormal.uploadTime = beforeWeek.minusDays(21L)
         oldNormal.views = 4000L
         copilots[3] = oldNormal
@@ -49,7 +49,7 @@ class CopilotServiceTest {
 
 
         // 新增作业，暂无评分
-        val newEmpty = Copilot()
+        val newEmpty = Copilot(doc = Copilot.Doc(title = "test"))
         newEmpty.uploadTime = now
         newEmpty.views = 100L
         copilots[4] = newEmpty
