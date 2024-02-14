@@ -1,6 +1,5 @@
 package plus.maa.backend.service
 
-import lombok.RequiredArgsConstructor
 import org.apache.commons.lang3.StringUtils
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
@@ -30,7 +29,6 @@ import java.util.*
  * Date  2023-02-17 15:00
  */
 @Service
-@RequiredArgsConstructor
 class CommentsAreaService(
     private val commentsAreaRepository: CommentsAreaRepository,
     private val ratingRepository: RatingRepository,

@@ -1,8 +1,5 @@
 package plus.maa.backend.service
 
-import lombok.RequiredArgsConstructor
-import lombok.Setter
-import lombok.extern.slf4j.Slf4j
 import org.springframework.beans.BeanUtils
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -23,10 +20,7 @@ import java.util.*
 /**
  * @author AnselYuki
  */
-@Setter
-@Slf4j
 @Service
-@RequiredArgsConstructor
 class UserService(
     private val userRepository: UserRepository,
     private val emailService: EmailService,

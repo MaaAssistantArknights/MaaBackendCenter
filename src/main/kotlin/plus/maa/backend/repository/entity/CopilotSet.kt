@@ -3,8 +3,6 @@ package plus.maa.backend.repository.entity
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.PropertyNamingStrategies
 import com.fasterxml.jackson.databind.annotation.JsonNaming
-import lombok.Data
-import lombok.experimental.Accessors
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.Transient
 import org.springframework.data.mongodb.core.mapping.Document
@@ -16,9 +14,7 @@ import java.time.LocalDateTime
 /**
  * 作业集数据
  */
-@Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
-@Accessors(chain = true)
 @Document("maa_copilot_set")
 data class CopilotSet(
     /**

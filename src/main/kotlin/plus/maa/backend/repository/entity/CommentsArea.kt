@@ -1,7 +1,5 @@
 package plus.maa.backend.repository.entity
 
-import lombok.Data
-import lombok.experimental.Accessors
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
@@ -12,8 +10,6 @@ import java.time.LocalDateTime
  * @author LoMu
  * Date  2023-02-17 14:50
  */
-@Data
-@Accessors(chain = true)
 @Document("maa_comments_area")
 class CommentsArea(
     @Id
