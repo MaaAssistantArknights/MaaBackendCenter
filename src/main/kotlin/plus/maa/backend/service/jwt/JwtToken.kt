@@ -57,7 +57,7 @@ open class JwtToken {
         get() = payload.getStr(RegisteredPayload.JWT_ID)
 
 
-    val issuedAt: LocalDateTime?
+    val issuedAt: LocalDateTime
         get() = LocalDateTime.ofInstant(
             Instant.ofEpochMilli(payload.getLong(RegisteredPayload.ISSUED_AT)),
             TimeZone.getDefault().toZoneId()
