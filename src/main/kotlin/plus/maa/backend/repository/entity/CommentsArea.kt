@@ -17,7 +17,7 @@ import java.time.LocalDateTime
 @Document("maa_comments_area")
 class CommentsArea(
     @Id
-    val id: String? = null,
+    var id: String? = null,
 
     @Indexed
     val copilotId: Long,

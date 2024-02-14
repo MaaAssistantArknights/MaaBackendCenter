@@ -100,20 +100,14 @@ class CommentsAreaService(
             if (replyUserId != userId) {
                 val time = LocalDateTime.now()
                 val timeStr = time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-                val commentNotification = CommentNotification()
 
 
                 val authorName = maaUserMap.getOrDefault(replyUserId, MaaUser.UNKNOWN).userName
                 val reName = maaUserMap.getOrDefault(userId, MaaUser.UNKNOWN).userName
 
-                val title = if (isCopilotAuthor) copilot.doc?.title else commentsArea!!.message
+                val title = if (isCopilotAuthor) copilot.doc.title else commentsArea!!.message
 
-                commentNotification
-                    .setTitle(title)
-                    .setDate(timeStr)
-                    .setAuthorName(authorName)
-                    .setReName(reName)
-                    .setReMessage(message)
+                val commentNotification = CommentNotification(authorName, reName, timeStr, title, message)
 
 
                 val maaUser = maaUserMap[replyUserId]
@@ -203,7 +197,7 @@ class CommentsAreaService(
             val newRating = Rating(
                 null,
                 Rating.KeyType.COMMENT,
-                commentsArea.id,
+                commentsArea.id!!,
                 userId,
                 RatingType.fromRatingType(rating),
                 LocalDateTime.now()

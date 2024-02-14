@@ -5,7 +5,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.Resource
 import org.apache.commons.lang3.RandomStringUtils
-import org.apache.logging.log4j.util.Strings
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.task.AsyncTaskExecutor
 import org.springframework.scheduling.annotation.Async
@@ -27,8 +26,6 @@ private val log = KotlinLogging.logger { }
 class EmailService(
     @Value("\${maa-copilot.vcode.expire:600}")
     private val expire: Int,
-    @Value("\${maa-copilot.info.domain}")
-    private val domain: String,
     private val maaCopilotProperties: MaaCopilotProperties,
     @Value("\${debug.email.no-send:false}")
     private val flagNoSend: Boolean = false,
@@ -110,7 +107,7 @@ class EmailService(
         val limit = 25
 
         var title = commentNotification.title
-        if (Strings.isNotBlank(title)) {
+        if (title.isNotBlank()) {
             if (title.length > limit) {
                 title = title.substring(0, limit) + "...."
             }

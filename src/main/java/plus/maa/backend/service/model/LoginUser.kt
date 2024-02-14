@@ -1,40 +1,28 @@
-package plus.maa.backend.service.model;
+package plus.maa.backend.service.model
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-import plus.maa.backend.repository.entity.MaaUser;
-
-import java.util.Collection;
+import com.fasterxml.jackson.annotation.JsonIgnore
+import org.springframework.security.core.GrantedAuthority
+import org.springframework.security.core.userdetails.UserDetails
+import plus.maa.backend.repository.entity.MaaUser
 
 /**
  * @author AnselYuki
  */
-public class LoginUser implements UserDetails {
-
-    private final MaaUser maaUser;
-    private final Collection<? extends GrantedAuthority> authorities;
-
-    public LoginUser(MaaUser maaUser, Collection<? extends GrantedAuthority> authorities) {
-        this.maaUser = maaUser;
-        this.authorities = authorities;
-    }
-
-    @Override
+class LoginUser(
+    private val maaUser: MaaUser,
+    private val authorities: Collection<GrantedAuthority?>) : UserDetails {
     @JsonIgnore
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return authorities;
+    override fun getAuthorities(): Collection<GrantedAuthority?> {
+        return authorities
     }
 
-    @Override
     @JsonIgnore
-    public String getPassword() {
-        return maaUser.getPassword();
+    override fun getPassword(): String {
+        return maaUser.password
     }
 
-    public String getUserId() {
-        return maaUser.getUserId();
-    }
+    val userId: String?
+        get() = maaUser.userId
 
     /**
      * Spring Security框架中的username即唯一身份标识（ID）
@@ -42,30 +30,25 @@ public class LoginUser implements UserDetails {
      *
      * @return 用户邮箱
      */
-    @Override
     @JsonIgnore
-    public String getUsername() {
-        return maaUser.getEmail();
+    override fun getUsername(): String {
+        return maaUser.email
     }
 
-    @JsonIgnore
-    public String getEmail() {
-        return maaUser.getEmail();
+    @get:JsonIgnore
+    val email: String
+        get() = maaUser.email
+
+    override fun isAccountNonExpired(): Boolean {
+        return true
     }
 
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
+    override fun isAccountNonLocked(): Boolean {
+        return true
     }
 
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
+    override fun isCredentialsNonExpired(): Boolean {
+        return true
     }
 
     /**
@@ -73,8 +56,7 @@ public class LoginUser implements UserDetails {
      *
      * @return 账户启用状态
      */
-    @Override
-    public boolean isEnabled() {
-        return true;
+    override fun isEnabled(): Boolean {
+        return true
     }
 }

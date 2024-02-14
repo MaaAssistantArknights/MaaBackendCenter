@@ -1,38 +1,28 @@
-package plus.maa.backend.service.model;
-
-import lombok.Getter;
-
+package plus.maa.backend.service.model
 
 /**
  * @author LoMu
  * Date  2023-01-22 19:48
  */
-@Getter
-public enum RatingType {
-
+enum class RatingType(val display: Int) {
     LIKE(1),
     DISLIKE(2),
     NONE(0);
 
-    private final int display;
-
-    RatingType(int display) {
-        this.display = display;
-    }
-
-    /**
-     * 将rating转换为  0 = NONE 1 = LIKE 2 = DISLIKE
-     *
-     * @param type rating
-     * @return type
-     */
-    public static RatingType fromRatingType(String type) {
-        return switch (type) {
-            case "Like" -> LIKE;
-            case "Dislike" -> DISLIKE;
-            default -> NONE;
-        };
-
+    companion object {
+        /**
+         * 将rating转换为  0 = NONE 1 = LIKE 2 = DISLIKE
+         *
+         * @param type rating
+         * @return type
+         */
+        fun fromRatingType(type: String?): RatingType {
+            return when (type) {
+                "Like" -> LIKE
+                "Dislike" -> DISLIKE
+                else -> NONE
+            }
+        }
     }
 }
 

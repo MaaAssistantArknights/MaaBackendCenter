@@ -63,7 +63,7 @@ class Copilot(
     var actions: List<Action>? = null,
 
     // 描述
-    var doc: Doc? = null,
+    var doc: Doc,
 
     var firstUploadTime: LocalDateTime? = null,
     var uploadTime: LocalDateTime? = null,
@@ -173,7 +173,7 @@ class Copilot(
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
     data class Doc(
-        var title: String? = null,
+        var title: String,
         var titleColor: String? = "Gray",
         var details: String? = "",
         var detailsColor: String? = "Gray"
