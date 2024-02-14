@@ -92,7 +92,7 @@ class CopilotService(
         // actions name 不是必须
         if (copilotDTO.actions != null) {
             copilotDTO.actions.forEach { action: Copilot.Action ->
-                action.name = if (action.name == null) null else action.name.replace("[\"“”]".toRegex(), "")
+                action.name = if (action.name == null) null else action.name!!.replace("[\"“”]".toRegex(), "")
             }
         }
         // 使用stageId存储作业关卡信息
@@ -141,7 +141,7 @@ class CopilotService(
             idComponent.getId(Copilot.META), loginUserId, LocalDateTime.now(), content
         )
         copilotRepository.insert(copilot)
-        return copilot.copilotId
+        return copilot.copilotId!!
     }
 
     /**
@@ -150,7 +150,7 @@ class CopilotService(
     fun delete(loginUserId: String, request: CopilotCUDRequest) {
         copilotRepository.findByCopilotId(request.id!!)?.let { copilot: Copilot ->
             Assert.state(copilot.uploaderId == loginUserId, "您无法修改不属于您的作业")
-            copilot.isDelete = true
+            copilot.delete = true
             copilotRepository.save(copilot)
             /*
              * 删除作业时，如果被删除的项在 Redis 首页缓存中存在，则清空对应的首页缓存
@@ -195,7 +195,7 @@ class CopilotService(
                     )
                 }
             }
-            val maaUser = userRepository.findByUserId(copilot.uploaderId)
+            val maaUser = userRepository.findByUserId(copilot.uploaderId!!)
 
             // 新评分系统
             val ratingType = ratingRepository.findByTypeAndKeyAndUserId(
@@ -204,7 +204,7 @@ class CopilotService(
             )?.rating
             formatCopilot(
                 copilot, ratingType, maaUser!!.userName,
-                commentsAreaRepository.countByCopilotIdAndDelete(copilot.copilotId, false)
+                commentsAreaRepository.countByCopilotIdAndDelete(copilot.copilotId!!, false)
             )
         }
     }
@@ -335,9 +335,9 @@ class CopilotService(
 
         // 填充前端所需信息
         val copilotIds = copilots.map {
-            it.copilotId
+            it.copilotId!!
         }.toSet()
-        val maaUsers = userRepository.findByUsersId(copilots.map { it.uploaderId }.toList())
+        val maaUsers = userRepository.findByUsersId(copilots.map { it.uploaderId!! }.toList())
         val commentsCount = commentsAreaRepository.findByCopilotIdInAndDelete(copilotIds, false)
             .groupBy { it.copilotId }
             .mapValues { it.value.size.toLong() }
@@ -492,7 +492,7 @@ class CopilotService(
         commentsCount: Long?
     ): CopilotInfo {
         val info = copilotConverter.toCopilotInfo(
-            copilot, userName, copilot.copilotId,
+            copilot, userName, copilot.copilotId!!,
             commentsCount
         )
 

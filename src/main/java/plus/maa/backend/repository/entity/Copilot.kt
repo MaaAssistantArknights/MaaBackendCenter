@@ -1,199 +1,189 @@
-package plus.maa.backend.repository.entity;
+package plus.maa.backend.repository.entity
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.Transient;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
-
-import java.io.Serializable;
-import java.time.LocalDateTime;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.databind.PropertyNamingStrategies
+import com.fasterxml.jackson.databind.annotation.JsonNaming
+import org.springframework.data.annotation.Id
+import org.springframework.data.annotation.Transient
+import org.springframework.data.mongodb.core.index.Indexed
+import org.springframework.data.mongodb.core.mapping.Document
+import java.io.Serializable
+import java.time.LocalDateTime
 
 /**
  * @author LoMu
  * Date 2022-12-25 17:56
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
 @Document("maa_copilot")
-public class Copilot implements Serializable {
-
-    @Transient
-    public static final CollectionMeta<Copilot> META = new CollectionMeta<>(Copilot::getCopilotId,
-            "copilotId", Copilot.class);
-
+class Copilot(
     @Id
-    // 作业id
-    private String id;
+    var id: String? = null,
+
     // 自增数字ID
     @Indexed(unique = true)
-    private Long copilotId;
+    var copilotId: Long? = null,
+
     // 关卡名
     @Indexed
-    private String stageName;
+    var stageName: String? = null,
 
     // 上传者id
-    private String uploaderId;
+    var uploaderId: String? = null,
 
     // 查看次数
-    private Long views = 0L;
+    var views: Long = 0L,
 
     //评级
-    private int ratingLevel;
+    var ratingLevel: Int = 0,
 
     //评级比率 十分之一代表半星
-    private double ratingRatio;
+    var ratingRatio: Double = 0.0,
 
-    private long likeCount;
+    var likeCount: Long = 0,
 
-    private long dislikeCount;
+    var dislikeCount: Long = 0,
 
     // 热度
-    private double hotScore;
+    var hotScore: Double = 0.0,
 
     // 难度
-    private int difficulty;
+    var difficulty: Int = 0,
 
     // 版本号(文档中说明:最低要求 maa 版本号，必选。保留字段)
-
-    private String minimumRequired;
+    var minimumRequired: String? = null,
 
     // 指定干员
-    private List<Operators> opers;
+    var opers: List<Operators>? = null,
+
     // 群组
-    private List<Groups> groups;
+    var groups: List<Groups>? = null,
+
     // 战斗中的操作
-    private List<Action> actions;
+    var actions: List<Action>? = null,
 
     // 描述
-    private Doc doc;
+    var doc: Doc? = null,
 
-    private LocalDateTime firstUploadTime;
-    private LocalDateTime uploadTime;
+    var firstUploadTime: LocalDateTime? = null,
+    var uploadTime: LocalDateTime? = null,
 
     // 原始数据
-    private String content;
+    var content: String? = null,
 
     @JsonIgnore
-    private boolean delete;
-    @JsonIgnore
-    private LocalDateTime deleteTime;
-    @JsonIgnore
-    private Boolean notification;
+    var delete: Boolean = false,
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-    public static class OperationGroup implements Serializable {
+    @JsonIgnore
+    var deleteTime: LocalDateTime? = null,
+
+    @JsonIgnore
+    var notification: Boolean? = null
+) : Serializable {
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
+    data class OperationGroup (
         // 干员名
-        private String name;
+        var name: String? = null,
+
         // 技能序号。可选，默认 1
-        private int skill = 1;
+        var skill: Int = 1,
+
         // 技能用法。可选，默认 0
-        private int skillUsage;
+        var skillUsage: Int = 0
 
-    }
+    ): Serializable
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-    public static class Operators implements Serializable {
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
+    data class Operators (
         // 干员名
-        private String name;
-        // 技能序号。可选，默认 1
-        private int skill = 1;
-        // 技能用法。可选，默认 0
-        private int skillUsage;
-        private Requirements requirements = new Requirements();
+        var name: String? = null,
 
-        @Data
-        @NoArgsConstructor
-        @AllArgsConstructor
-        @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-        public static class Requirements implements Serializable {
+        // 技能序号。可选，默认 1
+        var skill: Int = 1,
+
+        // 技能用法。可选，默认 0
+        var skillUsage: Int = 0,
+        var requirements: Requirements = Requirements()
+    ): Serializable {
+
+        @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
+        data class Requirements (
             // 精英化等级。可选，默认为 0, 不要求精英化等级
-            private int elite;
+            var elite: Int = 0,
+
             // 干员等级。可选，默认为 0
-            private int level;
+            var level: Int = 0,
 
             // 技能等级。可选，默认为 0
-            private int skillLevel;
+            var skillLevel: Int = 0,
+
             // 模组编号。可选，默认为 0
-            private int module;
+            var module: Int = 0,
+
             // 潜能要求。可选，默认为 0
-            private int potentiality;
-
-        }
+            var potentiality: Int = 0
+        ): Serializable
     }
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-    public static class Groups implements Serializable {
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
+    data class Groups(
         // 群组名
-        private String name;
+        var name: String? = null,
 
-        private List<OperationGroup> opers;
+        val opers: List<OperationGroup>? = null,
+        var operators: List<String>? = null
+    ) : Serializable
 
-        private List<String> operators;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-    public static class Action implements Serializable {
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
+    data class Action(
         // 操作类型，可选，默认 "Deploy"
-        private String type = "Deploy";
-        private int kills;
-        private int costs;
-        private int costChanges;
-        // 默认 -1
-        private int cooling = -1;
+        var type: String? = "Deploy",
+        var kills: Int? = 0,
+        var costs: Int? = 0,
+        var costChanges: Int? = 0,
 
-        private String name;
+        // 默认 -1
+        var cooling: Int? = -1,
+
+        var name: String? = null,
 
         // 部署干员的位置。
-        private Integer[] location;
+        var location: Array<Int>?,
+
         // 部署干员的干员朝向 中英文皆可
-        private String direction = "None";
+        var direction: String? = "None",
+
         // 修改技能用法。当 type 为 "技能用法" 时必选
-        private int skillUsage;
+        var skillUsage: Int? = 0,
+
         // 前置延时
-        private int preDelay;
+        var preDelay: Int? = 0,
+
         // 后置延时
-        private int postDelay;
+        var postDelay: Int? = 0,
+
         // maa:保留字段，暂未实现
-        private long timeout;
+        var timeout: Int? = 0,
 
         // 描述
-        private String doc = "";
-        private String docColor = "Gray";
+        var doc: String? = "",
+        var docColor: String? = "Gray"
+    ) : Serializable
 
-    }
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
+    data class Doc(
+        var title: String? = null,
+        var titleColor: String? = "Gray",
+        var details: String? = "",
+        var detailsColor: String? = "Gray"
+    ) : Serializable
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-    public static class Doc implements Serializable {
-
-        private String title;
-        private String titleColor = "Gray";
-        private String details = "";
-        private String detailsColor = "Gray";
-
+    companion object {
+        @Transient
+        val META: CollectionMeta<Copilot> = CollectionMeta(
+            { obj: Copilot -> obj.copilotId!! },
+            "copilotId", Copilot::class.java
+        )
     }
 }

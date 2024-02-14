@@ -91,7 +91,7 @@ class CopilotBackupTask(
         val baseDirectory = git.repository.workTree
         val copilots = copilotRepository.findAll()
         copilots.forEach{ copilot: Copilot ->
-            val level = levelService.findByLevelIdFuzzy(copilot.stageName) ?: return@forEach
+            val level = levelService.findByLevelIdFuzzy(copilot.stageName!!) ?: return@forEach
             // 暂时使用 copilotId 作为文件名
             val filePath = File(
                 java.lang.String.join(
@@ -100,7 +100,7 @@ class CopilotBackupTask(
                 )
             )
             val content = copilot.content ?: return@forEach
-            if (copilot.isDelete) {
+            if (copilot.delete) {
                 // 删除文件
                 deleteCopilot(filePath)
             } else {

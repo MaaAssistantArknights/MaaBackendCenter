@@ -95,11 +95,12 @@ class CopilotScoreRefreshTask(
             val dislikeCount = dislikeCountMap.getOrDefault(copilot.copilotId.toString(), 0L)
             var hotScore = getHotScore(copilot, likeCount, dislikeCount)
             // 判断关卡是否开放
-            val level = arkLevelService.findByLevelIdFuzzy(copilot.stageName)
+            val level = arkLevelService.findByLevelIdFuzzy(copilot.stageName!!)
             // 关卡已关闭，且作业在关闭前上传
-            if (level!!.closeTime != null && copilot.firstUploadTime != null && false == level.isOpen && copilot.firstUploadTime.isBefore(
-                    level.closeTime
-                )
+            if (level!!.closeTime != null
+                && copilot.firstUploadTime != null
+                && false == level.isOpen
+                && copilot.firstUploadTime!!.isBefore(level.closeTime)
             ) {
                 // 非开放关卡打入冷宫
 

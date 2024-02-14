@@ -24,7 +24,6 @@ import plus.maa.backend.service.model.RatingType
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
-import kotlin.collections.ArrayList
 
 /**
  * @author LoMu
@@ -95,7 +94,7 @@ class CommentsAreaService(
             val replyUserId = if (isCopilotAuthor!!) copilot.uploaderId else commentsArea!!.uploaderId
 
 
-            val maaUserMap = userRepository.findByUsersId(listOf(userId, replyUserId))
+            val maaUserMap = userRepository.findByUsersId(listOf(userId, replyUserId!!))
 
             //防止通知自己
             if (replyUserId != userId) {
@@ -107,7 +106,7 @@ class CommentsAreaService(
                 val authorName = maaUserMap.getOrDefault(replyUserId, MaaUser.UNKNOWN).userName
                 val reName = maaUserMap.getOrDefault(userId, MaaUser.UNKNOWN).userName
 
-                val title = if (isCopilotAuthor) copilot.doc.title else commentsArea!!.message
+                val title = if (isCopilotAuthor) copilot.doc?.title else commentsArea!!.message
 
                 commentNotification
                     .setTitle(title)
