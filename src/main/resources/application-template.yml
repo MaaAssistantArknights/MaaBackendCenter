@@ -63,7 +63,8 @@ maa-copilot:
     notification: true
   copilot:
     min-value-show-not-enough-rating: 50
-
+  sensitive-word:
+    path: "classpath:sensitive-word.txt"
 
 
 springdoc:
