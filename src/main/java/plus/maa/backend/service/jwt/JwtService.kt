@@ -1,41 +1,31 @@
-package plus.maa.backend.service.jwt;
+package plus.maa.backend.service.jwt
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.stereotype.Service;
-import plus.maa.backend.config.external.Jwt;
-import plus.maa.backend.config.external.MaaCopilotProperties;
-
-import java.time.LocalDateTime;
-import java.util.Collection;
+import org.springframework.security.core.GrantedAuthority
+import org.springframework.stereotype.Service
+import plus.maa.backend.config.external.MaaCopilotProperties
+import java.time.LocalDateTime
 
 /**
  * 基于 Jwt 的 token 服务。 可直接用于 stateless 情境下的签发和认证， 或结合数据库进行状态管理。
  * 建议 AuthToken 使用无状态方案, RefreshToken 使用有状态方案
  */
 @Service
-public class JwtService {
-    private final Jwt jwtProperties;
-    private final byte[] key;
-
-    public JwtService(MaaCopilotProperties properties) {
-        jwtProperties = properties.getJwt();
-        key = jwtProperties.getSecret().getBytes();
-    }
+class JwtService(properties: MaaCopilotProperties) {
+    private val jwtProperties = properties.jwt
+    private val key = jwtProperties.secret.toByteArray()
 
     /**
-     * 签发 AuthToken. 过期时间由配置的 {@link Jwt#getExpire()} 计算而来
+     * 签发 AuthToken. 过期时间由配置的 jwt.expire 计算而来
      *
      * @param subject     签发对象，一般设置为对象的标识符
      * @param jwtId       jwt 的 id， 一般用于 stateful 场景下
      * @param authorities 授予的权限
      * @return JwtAuthToken
      */
-    public JwtAuthToken issueAuthToken(String subject, @Nullable String jwtId, Collection<? extends GrantedAuthority> authorities) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime expireAt = now.plusSeconds(jwtProperties.getExpire());
-        return new JwtAuthToken(subject, jwtId, now, expireAt, now, authorities, key);
+    fun issueAuthToken(subject: String?, jwtId: String?, authorities: Collection<GrantedAuthority>): JwtAuthToken {
+        val now = LocalDateTime.now()
+        val expireAt = now.plusSeconds(jwtProperties.expire)
+        return JwtAuthToken(subject!!, jwtId, now, expireAt, now, authorities, key)
     }
 
     /**
@@ -46,26 +36,25 @@ public class JwtService {
      * @throws JwtInvalidException jwt不符合要求
      * @throws JwtExpiredException jwt未生效或者已过期
      */
-    @NotNull
-    public JwtAuthToken verifyAndParseAuthToken(String authToken) throws JwtInvalidException, JwtExpiredException {
-        var token = new JwtAuthToken(authToken, key);
-        token.validateDate(LocalDateTime.now());
-        token.setAuthenticated(true);
-        return token;
+    @Throws(JwtInvalidException::class, JwtExpiredException::class)
+    fun verifyAndParseAuthToken(authToken: String?): JwtAuthToken {
+        val token = JwtAuthToken(authToken, key)
+        token.validateDate(LocalDateTime.now())
+        token.isAuthenticated = true
+        return token
     }
 
     /**
-     * 签发 RefreshToken. 过期时间由配置的 {@link Jwt#getRefreshExpire()} 计算而来
+     * 签发 RefreshToken. 过期时间由配置的 Jwt.getRefreshExpire 计算而来
      *
      * @param subject 签发对象，一般设置为对象的标识符
      * @param jwtId   jwt 的 id， 一般用于 stateful 场景下
      * @return JwtAuthToken
      */
-    @NotNull
-    public JwtRefreshToken issueRefreshToken(String subject, @Nullable String jwtId) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime expireAt = now.plusSeconds(jwtProperties.getRefreshExpire());
-        return new JwtRefreshToken(subject, jwtId, now, expireAt, now, key);
+    fun issueRefreshToken(subject: String?, jwtId: String?): JwtRefreshToken {
+        val now = LocalDateTime.now()
+        val expireAt = now.plusSeconds(jwtProperties.refreshExpire)
+        return JwtRefreshToken(subject!!, jwtId, now, expireAt, now, key)
     }
 
     /**
@@ -75,10 +64,9 @@ public class JwtService {
      * @param old 原 token
      * @return 新的 RefreshToken
      */
-    @NotNull
-    public JwtRefreshToken newRefreshToken(JwtRefreshToken old, @Nullable String jwtId) {
-        LocalDateTime now = LocalDateTime.now();
-        return new JwtRefreshToken(old.getSubject(), jwtId, now, old.getExpiresAt(), now, key);
+    fun newRefreshToken(old: JwtRefreshToken, jwtId: String?): JwtRefreshToken {
+        val now = LocalDateTime.now()
+        return JwtRefreshToken(old.subject, jwtId, now, old.expiresAt, now, key)
     }
 
     /**
@@ -89,11 +77,10 @@ public class JwtService {
      * @throws JwtInvalidException jwt不符合要求
      * @throws JwtExpiredException jwt未生效或者已过期
      */
-    @NotNull
-    public JwtRefreshToken verifyAndParseRefreshToken(String refreshToken) throws JwtInvalidException, JwtExpiredException {
-        var token = new JwtRefreshToken(refreshToken, key);
-        token.validateDate(LocalDateTime.now());
-        return token;
+    @Throws(JwtInvalidException::class, JwtExpiredException::class)
+    fun verifyAndParseRefreshToken(refreshToken: String?): JwtRefreshToken {
+        val token = JwtRefreshToken(refreshToken, key)
+        token.validateDate(LocalDateTime.now())
+        return token
     }
-
 }

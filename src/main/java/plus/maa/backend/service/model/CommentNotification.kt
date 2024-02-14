@@ -8,6 +8,6 @@ data class CommentNotification(
     val authorName: String,
     val reName: String,
     val date: String,
-    val title: String,
+    val title: String?,
     val reMessage: String
 )

@@ -105,7 +105,7 @@ class CommentsAreaService(
                 val authorName = maaUserMap.getOrDefault(replyUserId, MaaUser.UNKNOWN).userName
                 val reName = maaUserMap.getOrDefault(userId, MaaUser.UNKNOWN).userName
 
-                val title = if (isCopilotAuthor) copilot.doc.title else commentsArea!!.message
+                val title = if (isCopilotAuthor) copilot.doc?.title else commentsArea!!.message
 
                 val commentNotification = CommentNotification(authorName, reName, timeStr, title, message)
 

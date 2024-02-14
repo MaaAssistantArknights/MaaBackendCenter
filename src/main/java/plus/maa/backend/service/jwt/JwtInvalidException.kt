@@ -1,4 +1,3 @@
-package plus.maa.backend.service.jwt;
+package plus.maa.backend.service.jwt
 
-public class JwtInvalidException extends Exception{
-}
+class JwtInvalidException : Exception()

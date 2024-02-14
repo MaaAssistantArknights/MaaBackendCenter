@@ -1,13 +1,8 @@
-package plus.maa.backend.service.jwt;
+package plus.maa.backend.service.jwt
 
-import java.time.LocalDateTime;
+import java.time.LocalDateTime
 
-public class JwtRefreshToken extends JwtToken {
-    /**
-     * RefreshToken 类型值
-     */
-    public static final String TYPE = "refresh";
-
+class JwtRefreshToken : JwtToken {
     /**
      * 从 jwt 构建 token
      *
@@ -15,19 +10,21 @@ public class JwtRefreshToken extends JwtToken {
      * @param key   签名密钥
      * @throws JwtInvalidException jwt 未通过签名验证或不符合要求
      */
-    public JwtRefreshToken(String token, byte[] key) throws JwtInvalidException {
-        super(token, TYPE, key);
-    }
+    constructor(token: String?, key: ByteArray?) : super(token, TYPE, key)
 
-    public JwtRefreshToken(
-            String sub,
-            String jti,
-            LocalDateTime iat,
-            LocalDateTime  exp,
-            LocalDateTime   nbf,
-            byte[] key
-    ) {
-        super(sub, jti, iat, exp, nbf, TYPE, key);
-    }
+    constructor(
+        sub: String,
+        jti: String?,
+        iat: LocalDateTime,
+        exp: LocalDateTime,
+        nbf: LocalDateTime,
+        key: ByteArray
+    ) : super(sub, jti, iat, exp, nbf, TYPE, key)
 
+    companion object {
+        /**
+         * RefreshToken 类型值
+         */
+        const val TYPE: String = "refresh"
+    }
 }

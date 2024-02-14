@@ -106,7 +106,7 @@ class EmailService(
     fun sendCommentNotification(email: String, commentNotification: CommentNotification) {
         val limit = 25
 
-        var title = commentNotification.title
+        var title = commentNotification.title ?: ""
         if (title.isNotBlank()) {
             if (title.length > limit) {
                 title = title.substring(0, limit) + "...."

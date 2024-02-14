@@ -63,7 +63,7 @@ class Copilot(
     var actions: List<Action>? = null,
 
     // 描述
-    var doc: Doc,
+    var doc: Doc?,
 
     var firstUploadTime: LocalDateTime? = null,
     var uploadTime: LocalDateTime? = null,
