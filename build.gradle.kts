@@ -45,9 +45,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-cache")
-
-    // springdoc相关依赖没有被自动管理，必须保留版本号
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
+    // springdoc 相关依赖没有被自动管理，必须保留版本号，
+    // springdoc-openapi-starter-webmvc-ui 升级到 2.3.0 以及以上版本会导致 therapi 不兼容
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
     implementation("com.github.therapi:therapi-runtime-javadoc:0.15.0")
     kapt("com.github.therapi:therapi-runtime-javadoc-scribe:0.15.0")
 
@@ -73,7 +73,9 @@ dependencies {
     implementation("org.eclipse.jgit:org.eclipse.jgit.ssh.apache.agent:6.8.0.202311291450-r")
     implementation("org.freemarker:freemarker:2.3.32")
     implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
-    implementation("com.github.erosb:everit-json-schema:1.14.4")
+    implementation("com.github.erosb:everit-json-schema:1.14.4") {
+        exclude("commons-logging", "commons-logging")
+    }
     implementation("com.google.guava:guava:32.1.3-jre")
     implementation("org.aspectj:aspectjweaver:1.9.21")
 
@@ -104,10 +106,10 @@ val swaggerOutputName = "swagger.json"
 
 
 openApi {
-    apiDocsUrl.set("http://localhost:8848/v3/api-docs")
-    outputDir.set(file(swaggerOutputDir))
-    outputFileName.set(swaggerOutputName)
-    waitTimeInSeconds.set(30)
+    apiDocsUrl = "http://localhost:8848/v3/api-docs"
+    outputDir = swaggerOutputDir
+    outputFileName = swaggerOutputName
+    waitTimeInSeconds = 30
 }
 
 swaggerSources {
