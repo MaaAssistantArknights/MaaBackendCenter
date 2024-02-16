@@ -1,7 +1,7 @@
 package plus.maa.backend.config
 
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
-import org.springframework.boot.task.TaskExecutorBuilder
+import org.springframework.boot.task.ThreadPoolTaskExecutorBuilder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy
@@ -14,9 +14,12 @@ class ThreadPoolConfig {
     @Lazy
     @Primary
     @Bean(
-        name = [TaskExecutionAutoConfiguration.APPLICATION_TASK_EXECUTOR_BEAN_NAME, AsyncAnnotationBeanPostProcessor.DEFAULT_TASK_EXECUTOR_BEAN_NAME]
+        name = [
+            TaskExecutionAutoConfiguration.APPLICATION_TASK_EXECUTOR_BEAN_NAME,
+            AsyncAnnotationBeanPostProcessor.DEFAULT_TASK_EXECUTOR_BEAN_NAME
+        ]
     )
-    fun defaultTaskExecutor(builder: TaskExecutorBuilder): ThreadPoolTaskExecutor = builder.build()
+    fun defaultTaskExecutor(builder: ThreadPoolTaskExecutorBuilder): ThreadPoolTaskExecutor = builder.build()
 
     @Bean
     fun emailTaskExecutor(): ThreadPoolTaskExecutor {
@@ -24,7 +27,7 @@ class ThreadPoolConfig {
         val taskExecutor = ThreadPoolTaskExecutor()
         // I/O 密集型配置
         taskExecutor.corePoolSize = Runtime.getRuntime().availableProcessors() * 2
-        taskExecutor.threadNamePrefix = "email-task-"
+        taskExecutor.setThreadNamePrefix("email-task-")
         // 动态的核心线程数量
         taskExecutor.setAllowCoreThreadTimeOut(true)
         return taskExecutor
