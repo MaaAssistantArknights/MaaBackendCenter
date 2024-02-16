@@ -48,7 +48,7 @@ class UserController(
     fun updatePassword(
         @Parameter(description = "修改密码请求") @RequestBody updateDTO: @Valid PasswordUpdateDTO
     ): MaaResult<Unit> {
-        userService.modifyPassword(helper.requireUserId(), updateDTO.newPassword)
+        userService.modifyPassword(helper.requireUserId(), updateDTO.newPassword, updateDTO.originalPassword)
         return success()
     }
 

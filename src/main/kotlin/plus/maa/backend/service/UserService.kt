@@ -73,10 +73,22 @@ class UserService(
      * @param userId      当前用户
      * @param rawPassword 新密码
      */
-    fun modifyPassword(userId: String, rawPassword: String?) {
+    fun modifyPassword(
+        userId: String, rawPassword: String,
+        originPassword: String? = null,
+        verifyOriginPassword: Boolean = true
+    ) {
         val userResult = userRepository.findById(userId)
         if (userResult.isEmpty) return
         val maaUser = userResult.get()
+        if (verifyOriginPassword) {
+            check(!originPassword.isNullOrEmpty()) {
+                "请输入原密码"
+            }
+            check(passwordEncoder.matches(originPassword, maaUser.password)) {
+                "原密码错误"
+            }
+        }
         // 修改密码的逻辑，应当使用与 authentication provider 一致的编码器
         maaUser.password = passwordEncoder.encode(rawPassword)
         maaUser.refreshJwtIds = ArrayList()
@@ -178,7 +190,7 @@ class UserService(
     fun modifyPasswordByActiveCode(passwordResetDTO: PasswordResetDTO) {
         emailService.verifyVCode(passwordResetDTO.email, passwordResetDTO.activeCode)
         val maaUser = userRepository.findByEmail(passwordResetDTO.email)
-        modifyPassword(maaUser!!.userId!!, passwordResetDTO.password)
+        modifyPassword(maaUser!!.userId!!, passwordResetDTO.password, verifyOriginPassword = false)
     }
 
     /**
