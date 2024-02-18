@@ -1,6 +1,7 @@
 package plus.maa.backend.controller
 
 import io.swagger.v3.oas.annotations.tags.Tag
+import kotlinx.coroutines.delay
 import org.springframework.boot.info.GitProperties
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -15,8 +16,8 @@ import plus.maa.backend.controller.response.MaaResult
 @RequestMapping("")
 @RestController
 class SystemController(
-        private val properties: MaaCopilotProperties,
-        private val gitProperties: GitProperties
+    private val properties: MaaCopilotProperties,
+    private val gitProperties: GitProperties
 ) {
 
     /**
@@ -24,7 +25,10 @@ class SystemController(
      * @return 系统启动信息
      */
     @GetMapping("/")
-    fun test() = MaaResult.success("Maa Copilot Server is Running", null)
+    suspend fun test(): MaaResult<Nothing> {
+        delay(1000L)
+        return MaaResult.success("Maa Copilot Server is Running", null)
+    }
 
 
     /**
@@ -39,9 +43,9 @@ class SystemController(
     }
 
     data class MaaSystemInfo(
-            val title: String,
-            val description: String,
-            val version: String,
-            val git: GitProperties,
+        val title: String,
+        val description: String,
+        val version: String,
+        val git: GitProperties,
     )
 }

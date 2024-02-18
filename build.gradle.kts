@@ -54,6 +54,8 @@ dependencies {
     // kotlin
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
 
     // kotlin-logging
     implementation("io.github.oshai:kotlin-logging-jvm:6.0.3")
@@ -149,6 +151,12 @@ swaggerSources {
             configFile = file("client-config/rust.json")
             outputDir = file(clientDir.dir("rust-client"))
         })
+    }
+}
+
+tasks {
+    forkedSpringBootRun {
+        doNotTrackState("See https://github.com/springdoc/springdoc-openapi-gradle-plugin/issues/102")
     }
 }
 
