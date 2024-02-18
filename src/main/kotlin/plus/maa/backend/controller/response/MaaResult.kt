@@ -6,24 +6,22 @@ import com.fasterxml.jackson.annotation.JsonInclude
  * @author AnselYuki
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-sealed interface MaaResult<out T> {
-    data class Success<T>(val statusCode: Int, val message: String?, val data: T) : MaaResult<T>
-    data class Fail(val statusCode: Int, val message: String?) : MaaResult<Nothing>
+data class MaaResult<out T>(val statusCode: Int, val message: String?, val data: T?) {
     companion object {
-        fun <T> success(data: T): Success<T> {
+        fun <T> success(data: T): MaaResult<T> {
             return success(null, data)
         }
 
-        fun success(): Success<Unit> {
+        fun success(): MaaResult<Unit> {
             return success(null, Unit)
         }
 
-        fun <T> success(msg: String?, data: T): Success<T> {
-            return Success(200, msg, data)
+        fun <T> success(msg: String?, data: T?): MaaResult<T> {
+            return MaaResult(200, msg, data)
         }
 
-        fun fail(code: Int, msg: String?): Fail {
-            return Fail(code, msg)
+        fun fail(code: Int, msg: String?): MaaResult<Nothing> {
+            return MaaResult(code, msg, null)
         }
 
     }
