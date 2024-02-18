@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}   # checkout the correct branch name
           fetch-depth: 0                # fetch the whole repo history
@@ -71,31 +71,31 @@ jobs:
         run: ./gradlew generateSwaggerCode
 
       - name: upload openapi
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: openapi-${{ steps.version.outputs.version }}
           path: ./build/docs/swagger.json
 
       - name: upload cpp client
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cpp-client
           path: ./build/clients/cpp-client/*
 
       - name: upload csharp client
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: csharp-client
           path: ./build/clients/csharp-client/*
 
       - name: upload rust client
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: rust-client
           path: ./build/clients/rust-client/*
 
       - name: upload ts client
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ts-client
           path: ./build/clients/ts-fetch-client/*
