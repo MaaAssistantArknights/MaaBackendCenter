@@ -8,22 +8,18 @@ import org.springframework.boot.autoconfigure.jackson.JacksonProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 import java.io.IOException
 import java.time.*
 import java.time.format.DateTimeFormatter
 
 @Configuration
-class JacksonConfig(private val jacksonProperties: JacksonProperties) : WebMvcConfigurer {
+class JacksonConfig(private val jacksonProperties: JacksonProperties) {
     @Bean
     fun jsonCustomizer(): Jackson2ObjectMapperBuilderCustomizer {
         return Jackson2ObjectMapperBuilderCustomizer { builder: Jackson2ObjectMapperBuilder ->
             val format = jacksonProperties.dateFormat
             val timeZone = jacksonProperties.timeZone
-
-            builder.simpleDateFormat(format)
-
-            val formatter = DateTimeFormatter.ofPattern(format).withZone(ZoneId.of(timeZone.id))
+            val formatter = DateTimeFormatter.ofPattern(format).withZone(timeZone.toZoneId())
             builder.serializers(LocalDateTimeSerializer(formatter))
         }
     }

@@ -1,4 +1,4 @@
-package plus.maa.backend.common.annotation
+package plus.maa.backend.config.accesslimit
 
 import java.lang.annotation.Inherited
 
@@ -19,11 +19,11 @@ import java.lang.annotation.Inherited
 )
 annotation class AccessLimit(
     /**
-     * 指定second 时间内，API最多的请求次数
+     * 指定 second 时间内，API 最多的请求次数
      */
     val times: Int = 3,
     /**
-     * 指定时间second，redis数据过期时间
+     * 指定时间 second，redis 数据过期时间
      */
     val second: Int = 10
 )

@@ -10,7 +10,7 @@ import jakarta.validation.Valid
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
-import plus.maa.backend.common.annotation.AccessLimit
+import plus.maa.backend.config.accesslimit.AccessLimit
 import plus.maa.backend.config.doc.RequireJwt
 import plus.maa.backend.config.security.AuthenticationHelper
 import plus.maa.backend.controller.response.MaaResult
