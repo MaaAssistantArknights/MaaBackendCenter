@@ -34,9 +34,7 @@ class CopilotSetController(
     @Operation(summary = "查询作业集列表")
     @ApiResponse(description = "作业集id")
     @PostMapping("/query")
-    fun querySets(
-        @Parameter(description = "作业集列表查询请求") @RequestBody req: @Valid CopilotSetQuery
-    ): MaaResult<CopilotSetPageRes> {
+    fun querySets(@RequestBody req: @Valid CopilotSetQuery): MaaResult<CopilotSetPageRes> {
         return success(service.query(req))
     }
 
@@ -51,49 +49,39 @@ class CopilotSetController(
     @ApiResponse(description = "作业集id")
     @RequireJwt
     @PostMapping("/create")
-    fun createSet(
-        @Parameter(description = "作业集新增请求") @RequestBody req: @Valid CopilotSetCreateReq
-    ): MaaResult<Long> {
+    fun createSet(@RequestBody req: @Valid CopilotSetCreateReq): MaaResult<Long> {
         return success(service.create(req, helper.userId))
     }
 
     @Operation(summary = "添加作业集作业列表")
     @RequireJwt
     @PostMapping("/add")
-    fun addCopilotIds(
-        @Parameter(description = "作业集中加入新作业请求") @RequestBody req: @Valid CopilotSetModCopilotsReq
-    ): MaaResult<Unit> {
-        service.addCopilotIds(req, helper.userId!!)
+    fun addCopilotIds(@RequestBody req: @Valid CopilotSetModCopilotsReq): MaaResult<Unit> {
+        service.addCopilotIds(req, helper.requireUserId())
         return success()
     }
 
     @Operation(summary = "添加作业集作业列表")
     @RequireJwt
     @PostMapping("/remove")
-    fun removeCopilotIds(
-        @Parameter(description = "作业集中删除作业请求") @RequestBody req: @Valid CopilotSetModCopilotsReq
-    ): MaaResult<Unit> {
-        service.removeCopilotIds(req, helper.userId!!)
+    fun removeCopilotIds(@RequestBody req: @Valid CopilotSetModCopilotsReq): MaaResult<Unit> {
+        service.removeCopilotIds(req, helper.requireUserId())
         return success()
     }
 
     @Operation(summary = "更新作业集信息")
     @RequireJwt
     @PostMapping("/update")
-    fun updateCopilotSet(
-        @Parameter(description = "更新作业集信息请求") @RequestBody req: @Valid CopilotSetUpdateReq
-    ): MaaResult<Unit> {
-        service.update(req, helper.userId!!)
+    fun updateCopilotSet(@RequestBody req: @Valid CopilotSetUpdateReq): MaaResult<Unit> {
+        service.update(req, helper.requireUserId())
         return success()
     }
 
     @Operation(summary = "删除作业集")
     @RequireJwt
     @PostMapping("/delete")
-    fun deleteCopilotSet(
-        @Parameter(description = "删除作业集信息请求") @RequestBody req: @Valid CommonIdReq<Long>
-    ): MaaResult<Unit> {
-        service.delete(req.id, helper.userId!!)
+    fun deleteCopilotSet(@RequestBody req: @Valid CommonIdReq<Long>): MaaResult<Unit> {
+        service.delete(req.id, helper.requireUserId())
         return success()
     }
 }

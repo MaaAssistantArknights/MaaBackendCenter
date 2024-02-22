@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
+import org.springdoc.core.annotations.ParameterObject
 import org.springframework.http.HttpHeaders
 import org.springframework.web.bind.annotation.*
 import plus.maa.backend.common.annotation.JsonSchema
@@ -42,9 +43,7 @@ class CopilotController(
     @JsonSchema
     @SensitiveWordDetection("#request.content != null ? #objectMapper.readTree(#request.content).get('doc')?.toString() : null")
     @PostMapping("/upload")
-    fun uploadCopilot(
-        @Parameter(description = "作业操作请求") @RequestBody request: CopilotCUDRequest
-    ): MaaResult<Long> {
+    fun uploadCopilot(@RequestBody request: CopilotCUDRequest): MaaResult<Long> {
         return success(copilotService.upload(helper.requireUserId(), request.content))
     }
 
@@ -52,9 +51,7 @@ class CopilotController(
     @ApiResponse(description = "删除作业结果")
     @RequireJwt
     @PostMapping("/delete")
-    fun deleteCopilot(
-        @Parameter(description = "作业操作请求") @RequestBody request: CopilotCUDRequest?
-    ): MaaResult<Unit> {
+    fun deleteCopilot(@RequestBody request: CopilotCUDRequest?): MaaResult<Unit> {
         copilotService.delete(helper.requireUserId(), request!!)
         return success()
     }
@@ -75,7 +72,7 @@ class CopilotController(
     @ApiResponse(description = "作业信息")
     @GetMapping("/query")
     fun queriesCopilot(
-        @Parameter(description = "作业查询请求") parsed: @Valid CopilotQueriesRequest
+        @ParameterObject parsed: @Valid CopilotQueriesRequest
     ): MaaResult<CopilotPageInfo> {
         // 三秒防抖，缓解前端重复请求问题
         response.setHeader(HttpHeaders.CACHE_CONTROL, "private, max-age=3, must-revalidate")
@@ -88,9 +85,7 @@ class CopilotController(
     @JsonSchema
     @SensitiveWordDetection("#copilotCUDRequest.content != null ? #objectMapper.readTree(#copilotCUDRequest.content).get('doc')?.toString() : null")
     @PostMapping("/update")
-    fun updateCopilot(
-        @Parameter(description = "作业操作请求") @RequestBody copilotCUDRequest: CopilotCUDRequest
-    ): MaaResult<Unit> {
+    fun updateCopilot(@RequestBody copilotCUDRequest: CopilotCUDRequest): MaaResult<Unit> {
         copilotService.update(helper.requireUserId(), copilotCUDRequest)
         return success()
     }
@@ -99,9 +94,7 @@ class CopilotController(
     @ApiResponse(description = "评分结果")
     @JsonSchema
     @PostMapping("/rating")
-    fun ratesCopilotOperation(
-        @Parameter(description = "作业评分请求") @RequestBody copilotRatingReq: CopilotRatingReq
-    ): MaaResult<String> {
+    fun ratesCopilotOperation(@RequestBody copilotRatingReq: CopilotRatingReq): MaaResult<String> {
         copilotService.rates(helper.userIdOrIpAddress, copilotRatingReq)
         return success("评分成功")
     }

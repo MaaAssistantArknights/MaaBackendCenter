@@ -1,7 +1,6 @@
 package plus.maa.backend.controller
 
 import io.swagger.v3.oas.annotations.Operation
-import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
@@ -45,9 +44,7 @@ class UserController(
     @ApiResponse(description = "修改密码结果")
     @RequireJwt
     @PostMapping("/update/password")
-    fun updatePassword(
-        @Parameter(description = "修改密码请求") @RequestBody updateDTO: @Valid PasswordUpdateDTO
-    ): MaaResult<Unit> {
+    fun updatePassword(@RequestBody updateDTO: @Valid PasswordUpdateDTO): MaaResult<Unit> {
         userService.modifyPassword(helper.requireUserId(), updateDTO.newPassword, updateDTO.originalPassword)
         return success()
     }
@@ -62,9 +59,7 @@ class UserController(
     @ApiResponse(description = "更新结果")
     @RequireJwt
     @PostMapping("/update/info")
-    fun updateInfo(
-        @Parameter(description = "更新用户详细信息请求") @RequestBody updateDTO: @Valid UserInfoUpdateDTO
-    ): MaaResult<Unit> {
+    fun updateInfo(@RequestBody updateDTO: @Valid UserInfoUpdateDTO): MaaResult<Unit> {
         userService.updateUserInfo(helper.requireUserId(), updateDTO)
         return success()
     }
@@ -78,7 +73,7 @@ class UserController(
     @PostMapping("/password/reset")
     @Operation(summary = "重置密码")
     @ApiResponse(description = "重置密码结果")
-    fun passwordReset(@Parameter(description = "重置密码请求") @RequestBody passwordResetDTO: @Valid PasswordResetDTO): MaaResult<Unit> {
+    fun passwordReset(@RequestBody passwordResetDTO: @Valid PasswordResetDTO): MaaResult<Unit> {
         // 校验用户邮箱是否存在
         userService.checkUserExistByEmail(passwordResetDTO.email)
         userService.modifyPasswordByActiveCode(passwordResetDTO)
@@ -94,7 +89,7 @@ class UserController(
     @PostMapping("/password/reset_request")
     @Operation(summary = "发送用于重置密码的验证码")
     @ApiResponse(description = "验证码发送结果")
-    fun passwordResetRequest(@Parameter(description = "发送重置密码的验证码请求") @RequestBody passwordResetVCodeDTO: @Valid PasswordResetVCodeDTO): MaaResult<Unit> {
+    fun passwordResetRequest(@RequestBody passwordResetVCodeDTO: @Valid PasswordResetVCodeDTO): MaaResult<Unit> {
         // 校验用户邮箱是否存在
         userService.checkUserExistByEmail(passwordResetVCodeDTO.email)
         emailService.sendVCode(passwordResetVCodeDTO.email)
@@ -110,7 +105,7 @@ class UserController(
     @PostMapping("/refresh")
     @Operation(summary = "刷新token")
     @ApiResponse(description = "刷新token结果")
-    fun refresh(@Parameter(description = "刷新token请求") @RequestBody request: RefreshReq): MaaResult<MaaLoginRsp> {
+    fun refresh(@RequestBody request: RefreshReq): MaaResult<MaaLoginRsp> {
         val res = userService.refreshToken(request.refreshToken)
         return success(res)
     }
@@ -124,7 +119,7 @@ class UserController(
     @PostMapping("/register")
     @Operation(summary = "用户注册")
     @ApiResponse(description = "注册结果")
-    fun register(@Parameter(description = "用户注册请求") @RequestBody user: @Valid RegisterDTO): MaaResult<MaaUserInfo> {
+    fun register(@RequestBody user: @Valid RegisterDTO): MaaResult<MaaUserInfo> {
         return success(userService.register(user))
     }
 
@@ -134,7 +129,7 @@ class UserController(
     @PostMapping("/sendRegistrationToken")
     @Operation(summary = "注册时发送验证码")
     @ApiResponse(description = "发送验证码结果", responseCode = "204")
-    fun sendRegistrationToken(@Parameter(description = "发送注册验证码请求") @RequestBody regDTO: @Valid SendRegistrationTokenDTO): MaaResult<Unit> {
+    fun sendRegistrationToken(@RequestBody regDTO: @Valid SendRegistrationTokenDTO): MaaResult<Unit> {
         userService.sendRegistrationToken(regDTO)
         return success()
     }
@@ -148,7 +143,7 @@ class UserController(
     @PostMapping("/login")
     @Operation(summary = "用户登录")
     @ApiResponse(description = "登录结果")
-    fun login(@Parameter(description = "登录请求") @RequestBody user: @Valid LoginDTO): MaaResult<MaaLoginRsp> {
+    fun login(@RequestBody user: @Valid LoginDTO): MaaResult<MaaLoginRsp> {
         return success("登陆成功", userService.login(user))
     }
 }

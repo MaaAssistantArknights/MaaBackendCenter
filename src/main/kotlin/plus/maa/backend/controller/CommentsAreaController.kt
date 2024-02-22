@@ -1,11 +1,11 @@
 package plus.maa.backend.controller
 
 import io.swagger.v3.oas.annotations.Operation
-import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
+import org.springdoc.core.annotations.ParameterObject
 import org.springframework.web.bind.annotation.*
 import plus.maa.backend.common.annotation.JsonSchema
 import plus.maa.backend.common.annotation.SensitiveWordDetection
@@ -33,9 +33,7 @@ class CommentsAreaController(
     @Operation(summary = "发送评论")
     @ApiResponse(description = "发送评论结果")
     @RequireJwt
-    fun sendComments(
-        @Parameter(description = "评论") @RequestBody comments: @Valid CommentsAddDTO
-    ): MaaResult<String> {
+    fun sendComments(@RequestBody comments: @Valid CommentsAddDTO): MaaResult<String> {
         commentsAreaService.addComments(authHelper.requireUserId(), comments)
         return success("评论成功")
     }
@@ -43,9 +41,7 @@ class CommentsAreaController(
     @GetMapping("/query")
     @Operation(summary = "分页查询评论")
     @ApiResponse(description = "评论区信息")
-    fun queriesCommentsArea(
-        @Parameter(description = "评论查询对象") parsed: @Valid CommentsQueriesDTO
-    ): MaaResult<CommentsAreaInfo> {
+    fun queriesCommentsArea(@ParameterObject parsed: @Valid CommentsQueriesDTO): MaaResult<CommentsAreaInfo> {
         return success(commentsAreaService.queriesCommentsArea(parsed))
     }
 
@@ -53,9 +49,7 @@ class CommentsAreaController(
     @Operation(summary = "删除评论")
     @ApiResponse(description = "评论删除结果")
     @RequireJwt
-    fun deleteComments(
-        @Parameter(description = "评论删除对象") @RequestBody comments: @Valid CommentsDeleteDTO
-    ): MaaResult<String> {
+    fun deleteComments(@RequestBody comments: @Valid CommentsDeleteDTO): MaaResult<String> {
         commentsAreaService.deleteComments(authHelper.requireUserId(), comments.commentId)
         return success("评论已删除")
     }
@@ -65,9 +59,7 @@ class CommentsAreaController(
     @ApiResponse(description = "点赞结果")
     @RequireJwt
     @PostMapping("/rating")
-    fun ratesComments(
-        @Parameter(description = "评论点赞对象") @RequestBody commentsRatingDTO: @Valid CommentsRatingDTO
-    ): MaaResult<String> {
+    fun ratesComments(@RequestBody commentsRatingDTO: @Valid CommentsRatingDTO): MaaResult<String> {
         commentsAreaService.rates(authHelper.requireUserId(), commentsRatingDTO)
         return success("成功")
     }
@@ -76,9 +68,7 @@ class CommentsAreaController(
     @ApiResponse(description = "置顶/取消置顶结果")
     @RequireJwt
     @PostMapping("/topping")
-    fun toppingComments(
-        @Parameter(description = "评论置顶对象") @RequestBody commentsToppingDTO: @Valid CommentsToppingDTO
-    ): MaaResult<String> {
+    fun toppingComments(@RequestBody commentsToppingDTO: @Valid CommentsToppingDTO): MaaResult<String> {
         commentsAreaService.topping(authHelper.requireUserId(), commentsToppingDTO)
         return success("成功")
     }
@@ -87,7 +77,7 @@ class CommentsAreaController(
     @RequireJwt
     @GetMapping("/status")
     fun modifyStatus(@RequestParam id: @NotBlank String, @RequestParam status: Boolean): MaaResult<String> {
-        commentsAreaService.notificationStatus(authHelper.userId!!, id, status)
+        commentsAreaService.notificationStatus(authHelper.requireUserId(), id, status)
         return success("success")
     }
 }
