@@ -13,8 +13,7 @@ data class CommentsAddDTO(
     @field:NotBlank(message = "请填写评论内容")
     val message: String,
     // 评论的作业id
-    @field:NotBlank(message = "作业id不可为空")
-    val copilotId: String,
+    val copilotId: Long,
     // 子评论来源评论id(回复评论)
     val fromCommentId: String? = null,
     val notification: Boolean = true

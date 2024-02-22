@@ -48,7 +48,7 @@ class CommentsAreaService(
      * @param commentsAddDTO CommentsRequest
      */
     fun addComments(userId: String, commentsAddDTO: CommentsAddDTO) {
-        val copilotId = commentsAddDTO.copilotId.toLong()
+        val copilotId = commentsAddDTO.copilotId
         val message = commentsAddDTO.message
         val copilotOptional = copilotRepository.findByCopilotId(copilotId)
         Assert.isTrue(StringUtils.isNotBlank(message), "评论不可为空")
@@ -171,8 +171,10 @@ class CommentsAreaService(
         val dislikeCountChange: Long
 
         val ratingOptional =
-            ratingRepository.findByTypeAndKeyAndUserId(Rating.KeyType.COMMENT,
-                commentsArea.id!!, userId)
+            ratingRepository.findByTypeAndKeyAndUserId(
+                Rating.KeyType.COMMENT,
+                commentsArea.id!!, userId
+            )
         // 判断该用户是否存在评分
         if (ratingOptional != null) {
             // 如果评分发生变化则更新
