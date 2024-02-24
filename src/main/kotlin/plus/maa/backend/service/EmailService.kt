@@ -1,22 +1,19 @@
 package plus.maa.backend.service
 
 import cn.hutool.extra.mail.MailAccount
+import cn.hutool.extra.mail.MailUtil
 import io.github.oshai.kotlinlogging.KotlinLogging
-import jakarta.annotation.PostConstruct
 import jakarta.annotation.Resource
 import org.apache.commons.lang3.RandomStringUtils
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.task.AsyncTaskExecutor
-import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
-import plus.maa.backend.common.bo.EmailBusinessObject
+import plus.maa.backend.common.utils.FreeMarkerUtils
 import plus.maa.backend.config.external.MaaCopilotProperties
 import plus.maa.backend.controller.response.MaaResultException
 import plus.maa.backend.repository.RedisCache
 import plus.maa.backend.service.model.CommentNotification
 import java.util.*
-
-private val log = KotlinLogging.logger { }
 
 /**
  * @author LoMu
@@ -24,8 +21,6 @@ private val log = KotlinLogging.logger { }
  */
 @Service
 class EmailService(
-    @Value("\${maa-copilot.vcode.expire:600}")
-    private val expire: Int,
     private val maaCopilotProperties: MaaCopilotProperties,
     @Value("\${debug.email.no-send:false}")
     private val flagNoSend: Boolean = false,
@@ -33,27 +28,16 @@ class EmailService(
     @Resource(name = "emailTaskExecutor")
     private val emailTaskExecutor: AsyncTaskExecutor
 ) {
-
-    private val mainAccount = MailAccount()
-
-
-    /**
-     * 初始化邮件账户信息
-     */
-    @PostConstruct
-    private fun initMailAccount() {
-        val mail = maaCopilotProperties.mail
-        mainAccount
-            .setHost(mail.host)
-            .setPort(mail.port)
-            .setFrom(mail.from)
-            .setUser(mail.user)
-            .setPass(mail.pass)
-            .setSslEnable(mail.ssl)
-            .setStarttlsEnable(mail.starttls)
-
-        log.info { "邮件账户信息初始化完成: $mainAccount" }
-    }
+    private val log = KotlinLogging.logger { }
+    private val mail = maaCopilotProperties.mail
+    private val mailAccount = MailAccount()
+        .setHost(mail.host)
+        .setPort(mail.port)
+        .setFrom(mail.from)
+        .setUser(mail.user)
+        .setPass(mail.pass)
+        .setSslEnable(mail.ssl)
+        .setStarttlsEnable(mail.starttls)
 
     /**
      * 发送验证码
@@ -64,8 +48,8 @@ class EmailService(
      */
     fun sendVCode(email: String) {
         // 一个过期周期最多重发十条，记录已发送的邮箱以及间隔时间
-        val timeout = expire / 10
-        if (!redisCache.setCacheIfAbsent("HasBeenSentVCode:$email", timeout, timeout.toLong())) {
+        val timeout = maaCopilotProperties.vcode.expire / 10
+        if (!redisCache.setCacheIfAbsent("HasBeenSentVCode:$email", timeout, timeout)) {
             // 设置失败，说明 key 已存在
             throw MaaResultException(403, String.format("发送验证码的请求至少需要间隔 %d 秒", timeout))
         }
@@ -73,21 +57,22 @@ class EmailService(
         asyncSendVCode(email)
     }
 
-    private fun asyncSendVCode(email: String) {
-        emailTaskExecutor.execute {
-            // 6位随机数验证码
-            val vcode = RandomStringUtils.random(6, true, true).uppercase(Locale.getDefault())
-            if (flagNoSend) {
-                log.debug { "vcode is $vcode" }
-                log.warn { "Email not sent, no-send enabled" }
-            } else {
-                EmailBusinessObject(
-                    mailAccount = mainAccount
-                ).setEmail(email).sendVerificationCodeMessage(vcode)
-            }
-            // 存redis
-            redisCache.setCache("vCodeEmail:$email", vcode, expire.toLong())
+    private fun asyncSendVCode(email: String) = emailTaskExecutor.execute {
+        // 6位随机数验证码
+        val vCode = RandomStringUtils.random(6, true, true).uppercase(Locale.getDefault())
+        if (flagNoSend) {
+            log.warn { "Email not sent, no-send enabled, vcode is $vCode" }
+        } else {
+            val subject = "Maa Backend Center 验证码"
+            val dataModel = mapOf(
+                "content" to "mail-vCode.ftlh",
+                "obj" to vCode,
+            )
+            val content = FreeMarkerUtils.parseData("mail-includeHtml.ftlh", dataModel)
+            MailUtil.send(mailAccount, listOf(email), subject, content, true)
         }
+        // 存redis
+        redisCache.setCache("vCodeEmail:$email", vCode, maaCopilotProperties.vcode.expire)
     }
 
     /**
@@ -102,27 +87,24 @@ class EmailService(
         }
     }
 
-    @Async("emailTaskExecutor")
-    fun sendCommentNotification(email: String, commentNotification: CommentNotification) {
+    fun sendCommentNotification(email: String, commentNotification: CommentNotification) = emailTaskExecutor.execute {
         val limit = 25
-
-        var title = commentNotification.title ?: ""
-        if (title.isNotBlank()) {
-            if (title.length > limit) {
-                title = title.substring(0, limit) + "...."
-            }
+        val title = (commentNotification.title ?: "").let {
+            if (it.length > limit) it.substring(0, limit - 4) + "...." else it
         }
 
-        val map: MutableMap<String, String> = HashMap()
-        map["authorName"] = commentNotification.authorName
-        map["forntEndLink"] = maaCopilotProperties.info.frontendDomain
-        map["reName"] = commentNotification.reName
-        map["date"] = commentNotification.date
-        map["title"] = title
-        map["reMessage"] = commentNotification.reMessage
-        EmailBusinessObject(
-            mailAccount = mainAccount,
-            title = "收到新回复 来自用户@" + commentNotification.reName + " Re: " + map["title"]
-        ).setEmail(email).sendCommentNotification(map)
+        val subject = "收到新回复 来自用户@${commentNotification.reName} Re: $title"
+        val dataModel = mapOf(
+            "content" to "mail-comment-notification.ftlh",
+            "authorName" to commentNotification.authorName,
+            "frontendLink" to maaCopilotProperties.info.frontendDomain,
+            "reName" to commentNotification.reName,
+            "date" to commentNotification.date,
+            "title" to title,
+            "reMessage" to commentNotification.reMessage,
+        )
+        val content = FreeMarkerUtils.parseData("mail-includeHtml.ftlh", dataModel)
+
+        MailUtil.send(mailAccount, listOf(email), subject, content, true)
     }
 }

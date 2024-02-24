@@ -20,7 +20,7 @@ object FreeMarkerUtils {
         cfg.setEncoding(Locale.CHINA, StandardCharsets.UTF_8.name())
     }
 
-    fun parseData(dataModel: Any?, templateName: String?): String {
+    fun parseData(templateName: String, dataModel: Any?): String {
         try {
             val template = cfg.getTemplate(templateName)
             val sw = StringWriter()
