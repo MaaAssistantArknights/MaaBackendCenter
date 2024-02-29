@@ -8,5 +8,5 @@ data class GithubTree (
     val mode: String,
     val type: String,
     val sha: String,
-    val url: String
+    val url: String?
 )
