@@ -53,7 +53,7 @@ class UserService(
         userRepository.save(user)
 
         val authorities = userDetailService.collectAuthoritiesFor(user)
-        val authToken = jwtService.issueAuthToken(user.userId, null, authorities)
+        val authToken = jwtService.issueAuthToken(user.userId!!, null, authorities)
         val refreshToken = jwtService.issueRefreshToken(user.userId, jwtId)
 
         return MaaLoginRsp(

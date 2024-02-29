@@ -3,7 +3,7 @@ package plus.maa.backend.service.jwt
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.stereotype.Service
 import plus.maa.backend.config.external.MaaCopilotProperties
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * 基于 Jwt 的 token 服务。 可直接用于 stateless 情境下的签发和认证， 或结合数据库进行状态管理。
@@ -22,10 +22,10 @@ class JwtService(properties: MaaCopilotProperties) {
      * @param authorities 授予的权限
      * @return JwtAuthToken
      */
-    fun issueAuthToken(subject: String?, jwtId: String?, authorities: Collection<GrantedAuthority>): JwtAuthToken {
-        val now = LocalDateTime.now()
+    fun issueAuthToken(subject: String, jwtId: String?, authorities: Collection<GrantedAuthority>): JwtAuthToken {
+        val now = Instant.now()
         val expireAt = now.plusSeconds(jwtProperties.expire)
-        return JwtAuthToken(subject!!, jwtId, now, expireAt, now, authorities, key)
+        return JwtAuthToken(subject, jwtId, now, expireAt, now, authorities, key)
     }
 
     /**
@@ -37,9 +37,9 @@ class JwtService(properties: MaaCopilotProperties) {
      * @throws JwtExpiredException jwt未生效或者已过期
      */
     @Throws(JwtInvalidException::class, JwtExpiredException::class)
-    fun verifyAndParseAuthToken(authToken: String?): JwtAuthToken {
+    fun verifyAndParseAuthToken(authToken: String): JwtAuthToken {
         val token = JwtAuthToken(authToken, key)
-        token.validateDate(LocalDateTime.now())
+        token.validateDate(Instant.now())
         token.isAuthenticated = true
         return token
     }
@@ -51,10 +51,10 @@ class JwtService(properties: MaaCopilotProperties) {
      * @param jwtId   jwt 的 id， 一般用于 stateful 场景下
      * @return JwtAuthToken
      */
-    fun issueRefreshToken(subject: String?, jwtId: String?): JwtRefreshToken {
-        val now = LocalDateTime.now()
+    fun issueRefreshToken(subject: String, jwtId: String?): JwtRefreshToken {
+        val now = Instant.now()
         val expireAt = now.plusSeconds(jwtProperties.refreshExpire)
-        return JwtRefreshToken(subject!!, jwtId, now, expireAt, now, key)
+        return JwtRefreshToken(subject, jwtId, now, expireAt, now, key)
     }
 
     /**
@@ -65,7 +65,7 @@ class JwtService(properties: MaaCopilotProperties) {
      * @return 新的 RefreshToken
      */
     fun newRefreshToken(old: JwtRefreshToken, jwtId: String?): JwtRefreshToken {
-        val now = LocalDateTime.now()
+        val now = Instant.now()
         return JwtRefreshToken(old.subject, jwtId, now, old.expiresAt, now, key)
     }
 
@@ -78,9 +78,9 @@ class JwtService(properties: MaaCopilotProperties) {
      * @throws JwtExpiredException jwt未生效或者已过期
      */
     @Throws(JwtInvalidException::class, JwtExpiredException::class)
-    fun verifyAndParseRefreshToken(refreshToken: String?): JwtRefreshToken {
+    fun verifyAndParseRefreshToken(refreshToken: String): JwtRefreshToken {
         val token = JwtRefreshToken(refreshToken, key)
-        token.validateDate(LocalDateTime.now())
+        token.validateDate(Instant.now())
         return token
     }
 }

@@ -4,7 +4,7 @@ import org.springframework.security.core.Authentication
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.util.StringUtils
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * 基于 JWT 的 AuthToken. 本类实现了 Authentication， 可直接用于 Spring Security
@@ -20,14 +20,14 @@ class JwtAuthToken : JwtToken, Authentication {
      * @param key 签名密钥
      * @throws JwtInvalidException jwt 未通过签名验证或不符合要求
      */
-    constructor(jwt: String?, key: ByteArray?) : super(jwt, TYPE, key)
+    constructor(jwt: String, key: ByteArray) : super(jwt, TYPE, key)
 
     constructor(
         sub: String,
         jti: String?,
-        iat: LocalDateTime,
-        exp: LocalDateTime,
-        nbf: LocalDateTime,
+        iat: Instant,
+        exp: Instant,
+        nbf: Instant,
         authorities: Collection<GrantedAuthority>,
         key: ByteArray
     ) : super(sub, jti, iat, exp, nbf, TYPE, key) {
@@ -53,7 +53,7 @@ class JwtAuthToken : JwtToken, Authentication {
      * @inheritDoc
      */
     override fun getCredentials(): Any {
-        return jwtId
+        return jwtId!!
     }
 
     override fun getDetails(): Any? {

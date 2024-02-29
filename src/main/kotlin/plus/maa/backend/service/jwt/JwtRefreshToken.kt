@@ -1,6 +1,6 @@
 package plus.maa.backend.service.jwt
 
-import java.time.LocalDateTime
+import java.time.Instant
 
 class JwtRefreshToken : JwtToken {
     /**
@@ -10,14 +10,14 @@ class JwtRefreshToken : JwtToken {
      * @param key   签名密钥
      * @throws JwtInvalidException jwt 未通过签名验证或不符合要求
      */
-    constructor(token: String?, key: ByteArray?) : super(token, TYPE, key)
+    constructor(token: String, key: ByteArray) : super(token, TYPE, key)
 
     constructor(
         sub: String,
         jti: String?,
-        iat: LocalDateTime,
-        exp: LocalDateTime,
-        nbf: LocalDateTime,
+        iat: Instant,
+        exp: Instant,
+        nbf: Instant,
         key: ByteArray
     ) : super(sub, jti, iat, exp, nbf, TYPE, key)
 
