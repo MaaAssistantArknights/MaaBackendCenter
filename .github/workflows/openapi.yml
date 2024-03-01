@@ -103,6 +103,7 @@ jobs:
       - name: Checkout maa-copilot-client-ts
         uses: actions/checkout@v4
         with:
+          repository: MaaAssistantArknights/maa-copilot-client-ts
           path: maa-copilot-client-ts
 
       - name: Copy ts client into maa-copilot-client-ts
