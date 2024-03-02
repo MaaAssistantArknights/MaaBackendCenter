@@ -99,3 +99,33 @@ jobs:
         with:
           name: ts-client
           path: ./build/clients/ts-fetch-client/*
+
+      - name: Checkout maa-copilot-client-ts
+        uses: actions/checkout@v4
+        with:
+          repository: MaaAssistantArknights/maa-copilot-client-ts
+          path: maa-copilot-client-ts
+
+      - name: Copy ts client into maa-copilot-client-ts
+        run: |
+          cp -f build/clients/ts-fetch-client/* maa-copilot-client-ts/
+
+      - name: Create PR to maa-copilot-client-ts
+        id: cpr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          path: maa-copilot-client-ts
+          author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          commit-message: 'release: ${{ steps.version.outputs.version }}'
+          title: 'release: ${{ steps.version.outputs.version }}'
+          body: https://github.com/MaaAssistantArknights/MaaBackendCenter/actions/runs/${{ github.run_id }}
+          branch: ts-client
+          delete-branch: true
+
+      - name: Tag previous commit with version
+        if: ${{ steps.cpr.outputs.pull-request-number }}
+        run: |
+          cd maa-copilot-client-ts
+          git checkout ts-client
+          git tag ${{ steps.version.outputs.version }}
+          git push --tags
