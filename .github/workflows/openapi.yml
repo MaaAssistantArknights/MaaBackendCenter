@@ -108,7 +108,7 @@ jobs:
 
       - name: Copy ts client into maa-copilot-client-ts
         run: |
-          cp -f build/clients/ts-fetch-client/* maa-copilot-client-ts/
+          cp -rf build/clients/ts-fetch-client/* maa-copilot-client-ts/
 
       - name: Create PR to maa-copilot-client-ts
         id: cpr
