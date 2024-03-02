@@ -1,5 +1,5 @@
-FROM amazoncorretto:17-alpine as runner
+FROM amazoncorretto:21-alpine as runner
 WORKDIR /app
-COPY ./build/libs/MaaBackendCenter*.jar /MaaBackendCenter.jar
+COPY ./build/libs/MaaBackendCenter*.jar /app/app.jar
 EXPOSE 7000-9000
-ENTRYPOINT ["java", "-jar", "/MaaBackendCenter.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar", "${JAVA_OPTS}"]

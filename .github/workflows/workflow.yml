@@ -23,35 +23,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       #checkout代码
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       #安装graalvm
       - name: 安装graalvm
         uses: graalvm/setup-graalvm@v1
         with:
           version: 'latest'
-          java-version: '17'
-          components: 'native-image'
+          java-version: '21'
       #查看版本信息
       - name: 查看版本信息
         run: |
           echo "GRAALVM_HOME: $GRAALVM_HOME"
           echo "JAVA_HOME: $JAVA_HOME"
           java --version
-          gu --version
           native-image --version
       #校验Gradle wrapper
       - name: 校验Gradle wrapper
-        uses: gradle/wrapper-validation-action@v1
+        uses: gradle/wrapper-validation-action@v2
       #使用Gradle编译项目
       - name: 使用Gradle编译项目
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v3
         with:
           arguments: bootBuildImage
 
       # 登录docker仓库
       - name: 登录docker仓库 ${{ env.REGISTRY }}
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ secrets.DOCKER_USERNAME }}

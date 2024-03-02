@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}   # checkout the correct branch name
           fetch-depth: 0                # fetch the whole repo history
@@ -39,10 +39,10 @@ jobs:
           major-identifier: "breaking:"
           minor-identifier: "feature:"
 
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         with:
-          distribution: zulu
-          java-version: 17
+          distribution: temurin
+          java-version: 21
 
 #      - name: Startup Mongodb
 #        uses: supercharge/mongodb-github-action@1.8.0
@@ -52,11 +52,11 @@ jobs:
 
       - name: Remove aliyun maven mirror
         run: |
-          sed -i '/maven {/,+2d' build.gradle
+          sed -i '/maven(url/d' build.gradle.kts
 
       - name: Set versions
         run: |
-          sed -i "s/^version.*$/version '${{ steps.version.outputs.version }}'/g" build.gradle
+          sed -i "s/^version.*$/version = \"${{ steps.version.outputs.version }}\"/g" build.gradle.kts
           sed -i 's/"packageVersion.*,/"packageVersion": "${{ steps.version.outputs.version }}",/g' client-config/cpp.json
           sed -i 's/"packageVersion.*,/"packageVersion": "${{ steps.version.outputs.version }}",/g' client-config/csharp-netcore.json
           sed -i 's/"packageVersion.*,/"packageVersion": "${{ steps.version.outputs.version }}",/g' client-config/rust.json
@@ -71,31 +71,31 @@ jobs:
         run: ./gradlew generateSwaggerCode
 
       - name: upload openapi
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: openapi-${{ steps.version.outputs.version }}
           path: ./build/docs/swagger.json
 
       - name: upload cpp client
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cpp-client
           path: ./build/clients/cpp-client/*
 
       - name: upload csharp client
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: csharp-client
           path: ./build/clients/csharp-client/*
 
       - name: upload rust client
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: rust-client
           path: ./build/clients/rust-client/*
 
       - name: upload ts client
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ts-client
           path: ./build/clients/ts-fetch-client/*
