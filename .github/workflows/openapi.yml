@@ -105,6 +105,7 @@ jobs:
         with:
           repository: MaaAssistantArknights/maa-copilot-client-ts
           path: maa-copilot-client-ts
+          token: ${{ secrets.TS_CLIENT_PAT }}
 
       - name: Copy ts client into maa-copilot-client-ts
         run: |
@@ -127,7 +128,6 @@ jobs:
         if: ${{ steps.cpr.outputs.pull-request-number }}
         run: |
           cd maa-copilot-client-ts
-          git remote set-url origin https://${{ secrets.TS_CLIENT_PAT }}@github.com/MaaAssistantArknights/maa-copilot-client-ts.git
           git checkout ts-client
           git tag ${{ steps.version.outputs.version }}
           git push --tags
