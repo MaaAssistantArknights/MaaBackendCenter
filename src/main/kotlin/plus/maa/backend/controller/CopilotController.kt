@@ -51,8 +51,8 @@ class CopilotController(
     @ApiResponse(description = "删除作业结果")
     @RequireJwt
     @PostMapping("/delete")
-    fun deleteCopilot(@RequestBody request: CopilotCUDRequest?): MaaResult<Unit> {
-        copilotService.delete(helper.requireUserId(), request!!)
+    fun deleteCopilot(@RequestBody request: CopilotCUDRequest): MaaResult<Unit> {
+        copilotService.delete(helper.requireUserId(), request)
         return success()
     }
 

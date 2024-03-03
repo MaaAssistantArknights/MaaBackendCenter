@@ -198,17 +198,11 @@ class ArkGameDataService(private val okHttpClient: OkHttpClient) {
                 }
                 val node = mapper.reader().readTree(body.string())
                 val characters = mapper.convertValue(node, object : TypeReference<Map<String, ArkCharacter>>() {})
-                characters.forEach { (id, c) -> c.id = id }
                 arkCharacterMap.clear()
-                characters.values.forEach { c ->
-                    if (c.id.isNullOrBlank()) {
-                        return@forEach
-                    }
-                    val ids = c.id!!.split("_")
-                    if (ids.size != 3) {
-                        // 不是干员
-                        return@forEach
-                    }
+                characters.forEach { (id, c) ->
+                    val ids = id.split("_")
+                    if (ids.size != 3) return@forEach
+                    c.id = id
                     arkCharacterMap[ids[2]] = c
                 }
                 log.info { "[DATA]获取character数据成功, 共${arkCharacterMap.size}条" }
