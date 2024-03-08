@@ -12,7 +12,8 @@ import plus.maa.backend.common.utils.FreeMarkerUtils
 import plus.maa.backend.config.external.MaaCopilotProperties
 import plus.maa.backend.controller.response.MaaResultException
 import plus.maa.backend.repository.RedisCache
-import plus.maa.backend.service.model.CommentNotification
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.*
 
 /**
@@ -38,6 +39,7 @@ class EmailService(
         .setPass(mail.pass)
         .setSslEnable(mail.ssl)
         .setStarttlsEnable(mail.starttls)
+    private val timeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 
     /**
      * 发送验证码
@@ -87,24 +89,30 @@ class EmailService(
         }
     }
 
-    fun sendCommentNotification(email: String, commentNotification: CommentNotification) = emailTaskExecutor.execute {
+    fun sendCommentNotification(
+        receiverEmail: String,
+        receiverName: String,
+        targetMessage: String,
+        replierName: String,
+        message: String,
+        timeStr: String = LocalDateTime.now().format(timeFormatter)
+    ) = emailTaskExecutor.execute {
+        if (!maaCopilotProperties.mail.notification) return@execute
         val limit = 25
-        val title = (commentNotification.title ?: "").let {
-            if (it.length > limit) it.substring(0, limit - 4) + "...." else it
-        }
+        val title = targetMessage.run { if (length > limit) take(limit - 4) + "...." else this }
 
-        val subject = "收到新回复 来自用户@${commentNotification.reName} Re: $title"
+        val subject = "收到新回复 来自用户@${replierName} Re: $title"
+
         val dataModel = mapOf(
             "content" to "mail-comment-notification.ftlh",
-            "authorName" to commentNotification.authorName,
+            "authorName" to receiverName,
             "frontendLink" to maaCopilotProperties.info.frontendDomain,
-            "reName" to commentNotification.reName,
-            "date" to commentNotification.date,
+            "reName" to replierName,
+            "date" to timeStr,
             "title" to title,
-            "reMessage" to commentNotification.reMessage,
+            "reMessage" to message,
         )
         val content = FreeMarkerUtils.parseData("mail-includeHtml.ftlh", dataModel)
-
-        MailUtil.send(mailAccount, listOf(email), subject, content, true)
+        MailUtil.send(mailAccount, listOf(receiverEmail), subject, content, true)
     }
 }

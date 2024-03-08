@@ -8,13 +8,22 @@ import org.hibernate.validator.constraints.Length
  * Date  2023-02-17 14:58
  */
 data class CommentsAddDTO(
-    // 评论内容
+    /**
+     * 评论内容
+     */
     @field:Length(min = 1, max = 150, message = "评论内容不可超过150字，请删减")
     @field:NotBlank(message = "请填写评论内容")
     val message: String,
-    // 评论的作业id
+    /**
+     * 评论所在作业的 id
+     */
     val copilotId: Long,
-    // 子评论来源评论id(回复评论)
+    /**
+     * 被回复评论的 id
+     */
     val fromCommentId: String? = null,
+    /**
+     * 是否接收通知
+     */
     val notification: Boolean = true
 )

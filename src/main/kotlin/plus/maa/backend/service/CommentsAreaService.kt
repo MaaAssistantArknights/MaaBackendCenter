@@ -1,28 +1,28 @@
 package plus.maa.backend.service
 
-import org.apache.commons.lang3.StringUtils
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
-import org.springframework.util.Assert
-import plus.maa.backend.common.utils.converter.CommentConverter
-import plus.maa.backend.config.external.MaaCopilotProperties
+import plus.maa.backend.common.utils.requireNotNull
 import plus.maa.backend.controller.request.comments.CommentsAddDTO
 import plus.maa.backend.controller.request.comments.CommentsQueriesDTO
 import plus.maa.backend.controller.request.comments.CommentsRatingDTO
 import plus.maa.backend.controller.request.comments.CommentsToppingDTO
 import plus.maa.backend.controller.response.comments.CommentsAreaInfo
-import plus.maa.backend.repository.*
+import plus.maa.backend.controller.response.comments.CommentsInfo
+import plus.maa.backend.controller.response.comments.SubCommentsInfo
+import plus.maa.backend.repository.CommentsAreaRepository
+import plus.maa.backend.repository.CopilotRepository
+import plus.maa.backend.repository.RatingRepository
+import plus.maa.backend.repository.UserRepository
 import plus.maa.backend.repository.entity.CommentsArea
 import plus.maa.backend.repository.entity.Copilot
 import plus.maa.backend.repository.entity.MaaUser
 import plus.maa.backend.repository.entity.Rating
-import plus.maa.backend.service.model.CommentNotification
 import plus.maa.backend.service.model.RatingType
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.util.*
 
 /**
  * @author LoMu
@@ -35,11 +35,7 @@ class CommentsAreaService(
     private val copilotRepository: CopilotRepository,
     private val userRepository: UserRepository,
     private val emailService: EmailService,
-    private val maaCopilotProperties: MaaCopilotProperties,
-    private val commentConverter: CommentConverter,
 ) {
-
-
     /**
      * 评论
      * 每个评论都有一个uuid加持
@@ -49,112 +45,57 @@ class CommentsAreaService(
      */
     fun addComments(userId: String, commentsAddDTO: CommentsAddDTO) {
         val copilotId = commentsAddDTO.copilotId
-        val message = commentsAddDTO.message
-        val copilotOptional = copilotRepository.findByCopilotId(copilotId)
-        Assert.isTrue(StringUtils.isNotBlank(message), "评论不可为空")
-        Assert.isTrue(copilotOptional != null, "作业表不存在")
+        val copilot = copilotRepository.findByCopilotId(copilotId).requireNotNull { "作业不存在" }
 
+        val parentCommentId = commentsAddDTO.fromCommentId?.ifBlank { null }
+        // 指定了回复对象但该对象不存在时抛出异常
+        val parentComment = parentCommentId?.let { id -> requireCommentsAreaById(id) { "回复的评论不存在" } }
 
-        var fromCommentsId: String? = null
-        var mainCommentsId: String? = null
+        notifyRelatedUser(userId, commentsAddDTO.message, copilot, parentComment)
 
-        var commentsArea: CommentsArea? = null
-        var isCopilotAuthor: Boolean? = null
-
-
-        //代表这是一条回复评论
-        if (!commentsAddDTO.fromCommentId.isNullOrBlank()) {
-            val commentsAreaOptional = commentsAreaRepository.findById(commentsAddDTO.fromCommentId)
-            Assert.isTrue(commentsAreaOptional.isPresent, "回复的评论不存在")
-            commentsArea = commentsAreaOptional.get()
-            Assert.isTrue(!commentsArea.delete, "回复的评论不存在")
-
-            mainCommentsId = if (StringUtils
-                    .isNoneBlank(commentsArea.mainCommentId)
-            ) commentsArea.mainCommentId else commentsArea.id
-
-            fromCommentsId = if (StringUtils
-                    .isNoneBlank(commentsArea.id)
-            ) commentsArea.id else null
-
-            if (Objects.isNull(commentsArea.notification) || commentsArea.notification) {
-                isCopilotAuthor = false
-            }
-        } else {
-            isCopilotAuthor = true
-        }
-
-        //判断是否需要通知
-        if (Objects.nonNull(isCopilotAuthor) && maaCopilotProperties.mail.notification) {
-            val copilot = copilotOptional!!
-
-            //通知作业作者或是评论作者
-            val replyUserId = if (isCopilotAuthor!!) copilot.uploaderId else commentsArea!!.uploaderId
-
-
-            val maaUserMap = userRepository.findByUsersId(listOf(userId, replyUserId!!))
-
-            //防止通知自己
-            if (replyUserId != userId) {
-                val time = LocalDateTime.now()
-                val timeStr = time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-
-
-                val authorName = maaUserMap.getOrDefault(replyUserId, MaaUser.UNKNOWN).userName
-                val reName = maaUserMap.getOrDefault(userId, MaaUser.UNKNOWN).userName
-
-                val title = if (isCopilotAuthor) copilot.doc?.title else commentsArea!!.message
-
-                val commentNotification = CommentNotification(authorName, reName, timeStr, title, message)
-
-
-                val maaUser = maaUserMap[replyUserId]
-                if (Objects.nonNull(maaUser)) {
-                    emailService.sendCommentNotification(maaUser!!.email, commentNotification)
-                }
-            }
-        }
-
-
-        //创建评论表
-        commentsAreaRepository.insert(
-            CommentsArea(
-                copilotId = copilotId,
-                uploaderId = userId,
-                fromCommentId = fromCommentsId,
-                mainCommentId = mainCommentsId,
-                message = message,
-                notification = commentsAddDTO.notification
-            )
+        val comment = CommentsArea(
+            copilotId = copilotId,
+            uploaderId = userId,
+            fromCommentId = parentComment?.id,
+            mainCommentId = parentComment?.run { mainCommentId ?: id },
+            message = commentsAddDTO.message,
+            notification = commentsAddDTO.notification
         )
+        commentsAreaRepository.insert(comment)
     }
 
+    private fun notifyRelatedUser(replierId: String, message: String, copilot: Copilot, parentComment: CommentsArea?) {
+        if (parentComment?.notification == false) return
+        val receiverId = parentComment?.uploaderId ?: copilot.uploaderId
+        if (receiverId == null || receiverId == replierId) return
+
+        val userMap = userRepository.findAllById(listOf(receiverId, replierId)).associateBy(MaaUser::userId)
+        val receiver = userMap[receiverId] ?: return
+        val replier = userMap.getOrDefault(replierId, MaaUser.UNKNOWN)
+
+        val targetMsg = parentComment?.message ?: copilot.doc?.title ?: ""
+        emailService.sendCommentNotification(receiver.email, receiver.userName, targetMsg, replier.userName, message)
+    }
 
     fun deleteComments(userId: String, commentsId: String) {
-        val commentsArea = findCommentsById(commentsId)
-        //允许作者删除评论
-        copilotRepository.findByCopilotId(commentsArea.copilotId)?.let { copilot: Copilot ->
-            Assert.isTrue(
-                userId == copilot.uploaderId || userId == commentsArea.uploaderId,
-                "您无法删除不属于您的评论"
-            )
-        }
+        val commentsArea = requireCommentsAreaById(commentsId)
+        // 允许作者删除评论
+        val copilot = copilotRepository.findByCopilotId(commentsArea.copilotId)
+        require(userId == copilot?.uploaderId || userId == commentsArea.uploaderId) { "您无法删除不属于您的评论" }
+
         val now = LocalDateTime.now()
         commentsArea.delete = true
         commentsArea.deleteTime = now
-
-        //删除所有回复
-        if (StringUtils.isBlank(commentsArea.mainCommentId)) {
-            val commentsAreaList = commentsAreaRepository.findByMainCommentId(commentsArea.id!!)
-            commentsAreaList.forEach { ca: CommentsArea ->
+        val comments = mutableListOf(commentsArea)
+        // 删除所有回复
+        if (commentsArea.mainCommentId.isNullOrBlank()) {
+            comments += commentsAreaRepository.findByMainCommentId(commentsId).onEach { ca ->
                 ca.deleteTime = now
                 ca.delete = true
             }
-            commentsAreaRepository.saveAll(commentsAreaList)
         }
-        commentsAreaRepository.save(commentsArea)
+        commentsAreaRepository.saveAll(comments)
     }
-
 
     /**
      * 为评论进行点赞
@@ -163,64 +104,38 @@ class CommentsAreaService(
      * @param commentsRatingDTO CommentsRatingDTO
      */
     fun rates(userId: String, commentsRatingDTO: CommentsRatingDTO) {
-        val rating = commentsRatingDTO.rating
+        val commentId = commentsRatingDTO.commentId
+        val commentsArea = requireCommentsAreaById(commentId)
 
-        val commentsArea = findCommentsById(commentsRatingDTO.commentId)
+        val rating = ratingRepository.findByTypeAndKeyAndUserId(
+            Rating.KeyType.COMMENT,
+            commentId,
+            userId
+        ) ?: Rating(
+            null,
+            Rating.KeyType.COMMENT,
+            commentId,
+            userId,
+            RatingType.NONE,
+            LocalDateTime.now()
+        )
 
-        val likeCountChange: Long
-        val dislikeCountChange: Long
+        val prevType = rating.rating
+        val nextType = RatingType.fromRatingType(commentsRatingDTO.rating)
+        // 如果评分未发生变化则返回
+        if (nextType == prevType) return
 
-        val ratingOptional =
-            ratingRepository.findByTypeAndKeyAndUserId(
-                Rating.KeyType.COMMENT,
-                commentsArea.id!!, userId
-            )
-        // 判断该用户是否存在评分
-        if (ratingOptional != null) {
-            // 如果评分发生变化则更新
-            if (ratingOptional.rating != RatingType.fromRatingType(rating)) {
-                val oldRatingType = ratingOptional.rating
-                ratingOptional.rating = RatingType.fromRatingType(rating)
-                ratingOptional.rateTime = LocalDateTime.now()
-                val newRatingType = ratingRepository.save(ratingOptional).rating
-                // 更新评分后更新评论的点赞数
-                likeCountChange =
-                    (if (newRatingType == RatingType.LIKE) 1 else (if (oldRatingType != RatingType.LIKE) 0 else -1)).toLong()
-                dislikeCountChange =
-                    (if (newRatingType == RatingType.DISLIKE) 1 else (if (oldRatingType != RatingType.DISLIKE) 0 else -1)).toLong()
-            } else {
-                // 如果评分未发生变化则结束
-                return
-            }
-        } else {
-            // 不存在评分则创建
-            val newRating = Rating(
-                null,
-                Rating.KeyType.COMMENT,
-                commentsArea.id!!,
-                userId,
-                RatingType.fromRatingType(rating),
-                LocalDateTime.now()
-            )
+        rating.rating = nextType
+        rating.rateTime = LocalDateTime.now()
+        ratingRepository.save(rating)
 
-            ratingRepository.insert(newRating)
-            likeCountChange = (if (newRating.rating == RatingType.LIKE) 1 else 0).toLong()
-            dislikeCountChange = (if (newRating.rating == RatingType.DISLIKE) 1 else 0).toLong()
-        }
+        // 更新评分后更新评论的点赞数
+        val likeCountChange = nextType.countLike() - prevType.countLike()
+        val dislikeCountChange = nextType.countDislike() - prevType.countDislike()
 
         // 点赞数不需要在高并发下特别精准，大概就行，但是也得避免特别离谱的数字
-        var likeCount = commentsArea.likeCount + likeCountChange
-        if (likeCount < 0) {
-            likeCount = 0
-        }
-
-        var dislikeCount = commentsArea.dislikeCount + dislikeCountChange
-        if (dislikeCount < 0) {
-            dislikeCount = 0
-        }
-
-        commentsArea.likeCount = likeCount
-        commentsArea.dislikeCount = dislikeCount
+        commentsArea.likeCount = (commentsArea.likeCount + likeCountChange).coerceAtLeast(0)
+        commentsArea.dislikeCount = (commentsArea.dislikeCount + dislikeCountChange).coerceAtLeast(0)
 
         commentsAreaRepository.save(commentsArea)
     }
@@ -232,17 +147,13 @@ class CommentsAreaService(
      * @param commentsToppingDTO CommentsToppingDTO
      */
     fun topping(userId: String, commentsToppingDTO: CommentsToppingDTO) {
-        val commentsArea = findCommentsById(commentsToppingDTO.commentId)
-        Assert.isTrue(!commentsArea.delete, "评论不存在")
+        val commentsArea = requireCommentsAreaById(commentsToppingDTO.commentId)
         // 只允许作者置顶评论
-        copilotRepository.findByCopilotId(commentsArea.copilotId)?.let { copilot: Copilot ->
-            Assert.isTrue(
-                userId == copilot.uploaderId,
-                "只有作者才能置顶评论"
-            )
-            commentsArea.topping = commentsToppingDTO.topping
-            commentsAreaRepository.save(commentsArea)
-        }
+        val copilot = copilotRepository.findByCopilotId(commentsArea.copilotId)
+        require(userId == copilot?.uploaderId) { "只有作者才能置顶评论" }
+
+        commentsArea.topping = commentsToppingDTO.topping
+        commentsAreaRepository.save(commentsArea)
     }
 
     /**
@@ -253,7 +164,6 @@ class CommentsAreaService(
      */
     fun queriesCommentsArea(request: CommentsQueriesDTO): CommentsAreaInfo {
         val toppingOrder = Sort.Order.desc("topping")
-
         val sortOrder = Sort.Order(
             if (request.desc) Sort.Direction.DESC else Sort.Direction.ASC,
             when (request.orderBy) {
@@ -262,16 +172,12 @@ class CommentsAreaService(
                 else -> request.orderBy ?: "likeCount"
             }
         )
-
-        val page = if (request.page > 0) request.page else 1
+        val page = (request.page - 1).coerceAtLeast(0)
         val limit = if (request.limit > 0) request.limit else 10
+        val pageable: Pageable = PageRequest.of(page, limit, Sort.by(toppingOrder, sortOrder))
 
-
-        val pageable: Pageable = PageRequest.of(page - 1, limit, Sort.by(toppingOrder, sortOrder))
-
-
-        //主评论
-        val mainCommentsList = if (!request.justSeeId.isNullOrBlank()) {
+        // 主评论
+        val mainCommentsPage = if (!request.justSeeId.isNullOrBlank()) {
             commentsAreaRepository.findByCopilotIdAndUploaderIdAndDeleteAndMainCommentIdExists(
                 request.copilotId,
                 request.justSeeId,
@@ -288,79 +194,69 @@ class CommentsAreaService(
             )
         }
 
-        val count = mainCommentsList.totalElements
-
-        val pageNumber = mainCommentsList.totalPages
-
-        // 判断是否存在下一页
-        val hasNext = count - page.toLong() * limit > 0
-
-
+        val mainCommentIds = mainCommentsPage.map(CommentsArea::id).filterNotNull()
         //获取子评论
-        val subCommentsList = commentsAreaRepository.findByMainCommentIdIn(
-            mainCommentsList
-                .map { obj: CommentsArea -> requireNotNull(obj.id) }
-                .toList()
-        )
-
-        //将已删除评论内容替换为空
-        subCommentsList.forEach { comment: CommentsArea ->
-            if (comment.delete) {
-                comment.message = ""
-            }
+        val subCommentsList = commentsAreaRepository.findByMainCommentIdIn(mainCommentIds).onEach {
+            //将已删除评论内容替换为空
+            if (it.delete) it.message = ""
         }
 
-
-        //所有评论
-        val allComments: MutableList<CommentsArea> = ArrayList(mainCommentsList.toList())
-        allComments.addAll(subCommentsList)
-
         //获取所有评论用户
-        val userIds = allComments.map { obj: CommentsArea -> obj.uploaderId }.distinct().toList()
-        val maaUserMap = userRepository.findByUsersId(userIds)
-
+        val allUserIds = (mainCommentsPage + subCommentsList).map(CommentsArea::uploaderId).distinct()
+        val users = userRepository.findAllById(allUserIds).associateBy(MaaUser::userId)
+        val subCommentGroups = subCommentsList.groupBy(CommentsArea::mainCommentId)
 
         //转换主评论数据并填充用户名
-        val commentsInfos = mainCommentsList.map { mainComment: CommentsArea ->
-            val subCommentsInfoList = subCommentsList
-                .filter { comment: CommentsArea -> mainComment.id == comment.mainCommentId } //转换子评论数据并填充用户名
-                .map { subComment: CommentsArea ->
-                    commentConverter.toSubCommentsInfo(
-                        subComment,  //填充评论用户名
-                        maaUserMap.getOrDefault(
-                            subComment.uploaderId,
-                            MaaUser.UNKNOWN
-                        )
-                    )
-                }.toList()
-            val commentsInfo = commentConverter.toCommentsInfo(
-                mainComment,
-                maaUserMap.getOrDefault(
-                    mainComment.uploaderId,
-                    MaaUser.UNKNOWN
-                ),
-                subCommentsInfoList
-            )
-            commentsInfo
-        }.toList()
+        val commentsInfos = mainCommentsPage.toList().map { mainComment ->
+            val subCommentsInfos = (subCommentGroups[mainComment.id] ?: emptyList()).map { c ->
+                buildSubCommentsInfo(c, users[c.uploaderId] ?: MaaUser.UNKNOWN)
+            }
+            buildMainCommentsInfo(mainComment, users[mainComment.uploaderId] ?: MaaUser.UNKNOWN, subCommentsInfos)
+        }
 
-        return CommentsAreaInfo(hasNext, pageNumber, count, commentsInfos)
+        return CommentsAreaInfo(
+            hasNext = mainCommentsPage.hasNext(),
+            page = mainCommentsPage.totalPages,
+            total = mainCommentsPage.totalElements,
+            data = commentsInfos
+        )
     }
 
+    /**
+     * 转换子评论数据并填充用户名
+     */
+    private fun buildSubCommentsInfo(c: CommentsArea, user: MaaUser) = SubCommentsInfo(
+        commentId = c.id!!,
+        uploader = user.userName,
+        uploaderId = c.uploaderId,
+        message = c.message,
+        uploadTime = c.uploadTime,
+        like = c.likeCount,
+        dislike = c.dislikeCount,
+        fromCommentId = c.fromCommentId!!,
+        mainCommentId = c.mainCommentId!!,
+        deleted = c.delete
+    )
 
-    private fun findCommentsById(commentsId: String): CommentsArea {
-        val commentsArea = commentsAreaRepository.findById(commentsId)
-        Assert.isTrue(commentsArea.isPresent, "评论不存在")
-        return commentsArea.get()
-    }
-
+    private fun buildMainCommentsInfo(c: CommentsArea, user: MaaUser, subList: List<SubCommentsInfo>) = CommentsInfo(
+        commentId = c.id!!,
+        uploader = user.userName,
+        uploaderId = c.uploaderId,
+        message = c.message,
+        uploadTime = c.uploadTime,
+        like = c.likeCount,
+        dislike = c.dislikeCount,
+        topping = c.topping,
+        subCommentsInfos = subList
+    )
 
     fun notificationStatus(userId: String, id: String, status: Boolean) {
-        val commentsAreaOptional = commentsAreaRepository.findById(id)
-        Assert.isTrue(commentsAreaOptional.isPresent, "评论不存在")
-        val commentsArea = commentsAreaOptional.get()
-        Assert.isTrue(userId == commentsArea.uploaderId, "您没有权限修改")
+        val commentsArea = requireCommentsAreaById(id)
+        require(userId == commentsArea.uploaderId) { "您没有权限修改" }
         commentsArea.notification = status
         commentsAreaRepository.save(commentsArea)
     }
+
+    private fun requireCommentsAreaById(commentsId: String, lazyMessage: () -> Any = { "评论不存在" }): CommentsArea =
+        commentsAreaRepository.findByIdOrNull(commentsId)?.takeIf { !it.delete }.requireNotNull(lazyMessage)
 }
