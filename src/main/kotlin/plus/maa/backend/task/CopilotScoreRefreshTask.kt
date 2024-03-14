@@ -97,7 +97,7 @@ class CopilotScoreRefreshTask(
             // 判断关卡是否开放
             val level = arkLevelService.findByLevelIdFuzzy(copilot.stageName!!)
             // 关卡已关闭，且作业在关闭前上传
-            if (level!!.closeTime != null
+            if (level?.closeTime != null
                 && copilot.firstUploadTime != null
                 && false == level.isOpen
                 && copilot.firstUploadTime!!.isBefore(level.closeTime)
