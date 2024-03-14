@@ -51,8 +51,8 @@ class CopilotController(
     @ApiResponse(description = "删除作业结果")
     @RequireJwt
     @PostMapping("/delete")
-    fun deleteCopilot(@RequestBody request: CopilotCUDRequest?): MaaResult<Unit> {
-        copilotService.delete(helper.requireUserId(), request!!)
+    fun deleteCopilot(@RequestBody request: CopilotCUDRequest): MaaResult<Unit> {
+        copilotService.delete(helper.requireUserId(), request)
         return success()
     }
 
@@ -74,19 +74,6 @@ class CopilotController(
     fun queriesCopilot(
         @ParameterObject parsed: @Valid CopilotQueriesRequest
     ): MaaResult<CopilotPageInfo> {
-        // FIXME 请求对下划线的处理存在问题，需要更正
-        if (parsed.copilotIds == null) {
-            parsed.copilotIds = parsed.copilot_ids
-        }
-        if (parsed.levelKeyword == null) {
-            parsed.levelKeyword = parsed.level_keyword
-        }
-        if (parsed.orderBy == null) {
-            parsed.orderBy = parsed.order_by
-        }
-        if (parsed.uploaderId == null) {
-            parsed.uploaderId = parsed.uploader_id
-        }
         // 三秒防抖，缓解前端重复请求问题
         response.setHeader(HttpHeaders.CACHE_CONTROL, "private, max-age=3, must-revalidate")
         return success(copilotService.queriesCopilot(helper.userId, parsed))

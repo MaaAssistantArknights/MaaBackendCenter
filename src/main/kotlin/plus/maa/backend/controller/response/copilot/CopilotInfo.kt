@@ -7,6 +7,7 @@ data class CopilotInfo (
     val id: Long,
 
     val uploadTime: LocalDateTime,
+    val uploaderId: String,
     val uploader: String,
 
     //用于前端显示的格式化后的干员信息 [干员名]::[技能]

@@ -21,7 +21,7 @@ import plus.maa.backend.controller.request.copilot.CopilotRatingReq
 import plus.maa.backend.controller.response.MaaResultException
 import java.io.IOException
 
-private val log = KotlinLogging.logger {  }
+private val log = KotlinLogging.logger { }
 
 /**
  * @author LoMu
@@ -61,12 +61,12 @@ class JsonSchemaAop(
                 }
             }
         }
-        if (content == null) return
+        if (schemaJson == null || content == null) return
 
 
         //获取json schema json路径并验证
         try {
-            ClassPathResource(schemaJson!!).inputStream.use { inputStream ->
+            ClassPathResource(schemaJson).inputStream.use { inputStream ->
                 val json = JSONObject(content)
                 val jsonObject = JSONObject(JSONTokener(inputStream))
                 val schema = SchemaLoader.load(jsonObject)

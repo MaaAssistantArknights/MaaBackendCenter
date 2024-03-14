@@ -32,7 +32,7 @@ import java.time.ZoneId
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 
-private val log = KotlinLogging.logger {  }
+private val log = KotlinLogging.logger { }
 
 /**
  * @author dragove
@@ -164,7 +164,8 @@ class ArkLevelService(
      */
     fun updateActivitiesOpenStatus() {
         log.info { "[ACTIVITIES-OPEN-STATUS]准备更新活动地图开放状态" }
-        val stages = githubRepo.getContents(githubToken, "resource").firstOrNull { content: GithubContent -> content.isFile && "stages.json" == content.name }
+        val stages = githubRepo.getContents(githubToken, "resource")
+            .firstOrNull { content: GithubContent -> content.isFile && "stages.json" == content.name }
 
         if (stages == null) {
             log.info { "[ACTIVITIES-OPEN-STATUS]活动地图开放状态数据不存在" }
@@ -186,14 +187,12 @@ class ArkLevelService(
             okHttpClient
                 .newCall(Request.Builder().url(stages.downloadUrl).build())
                 .execute().use { response ->
-                    if (!response.isSuccessful || response.body == null) {
+                    val body = response.body?.byteStream()
+                    if (!response.isSuccessful || body == null) {
                         log.error { "[ACTIVITIES-OPEN-STATUS]活动地图开放状态下载失败" }
                         return
                     }
-                    val body = response.body!!.byteStream()
-                    val stagesList: List<MaaArkStage> =
-                        mapper.readValue(body, object : TypeReference<List<MaaArkStage>>() {
-                        })
+                    val stagesList = mapper.readValue(body, object : TypeReference<List<MaaArkStage>>() {})
 
                     val keyInfos = stagesList
                         .map { it.stageId } // 提取地图系列的唯一标识
@@ -210,7 +209,7 @@ class ArkLevelService(
                     val nowTime = LocalDateTime.now()
 
                     while (arkLevelPage.hasContent()) {
-                        arkLevelPage.forEach{ arkLevel: ArkLevel ->
+                        arkLevelPage.forEach { arkLevel: ArkLevel ->
                             // 只考虑地图系列的唯一标识
                             if (keyInfos.contains(ArkLevelUtil.getKeyInfoById(arkLevel.stageId))) {
                                 arkLevel.isOpen = true
@@ -335,7 +334,7 @@ class ArkLevelService(
         private val fail: AtomicInteger = AtomicInteger(0),
         private val pass: AtomicInteger = AtomicInteger(0),
         val total: Int = 0,
-        private val finishCallback: ((DownloadTask) -> Unit)? = null
+        private val finishCallback: ((DownloadTask) -> Unit)
     ) {
         fun success() {
             success.incrementAndGet()
@@ -365,7 +364,7 @@ class ArkLevelService(
             if (success.get() + fail.get() + pass.get() != total) {
                 return
             }
-            finishCallback!!.invoke(this)
+            finishCallback.invoke(this)
             log.info { "[LEVEL]地图数据下载完成, 成功:${success.get()}, 失败:${fail.get()}, 跳过:${pass.get()} 总用时${duration}s" }
         }
     }

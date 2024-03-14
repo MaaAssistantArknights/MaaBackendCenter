@@ -9,6 +9,10 @@ enum class RatingType(val display: Int) {
     DISLIKE(2),
     NONE(0);
 
+    fun countLike() = if (this == LIKE) 1L else 0L
+
+    fun countDislike() = if (this == DISLIKE) 1L else 0L
+
     companion object {
         /**
          * 将rating转换为  0 = NONE 1 = LIKE 2 = DISLIKE
