@@ -32,7 +32,7 @@ class CopilotScoreRefreshTask(
     /**
      * 热度值刷入任务，每日四点三十执行（实际可能会更晚，因为需要等待之前启动的定时任务完成）
      */
-    @Scheduled(cron = "0 30 4 * * ?")
+    @Scheduled(cron = "0 30 4 * * ?", zone = "Asia/Shanghai")
     fun refreshHotScores() {
         // 分页获取所有未删除的作业
         var pageable = Pageable.ofSize(1000)
@@ -60,7 +60,7 @@ class CopilotScoreRefreshTask(
     /**
      * 刷入评分变更数 Top 100 的热度值，每日八点到二十点每三小时执行一次
      */
-    @Scheduled(cron = "0 0 8-20/3 * * ?")
+    @Scheduled(cron = "0 0 8-20/3 * * ?", zone = "Asia/Shanghai")
     fun refreshTop100HotScores() {
         val copilotIdSTRs = redisCache.getZSetReverse("rate:hot:copilotIds", 0, 99)
         if (copilotIdSTRs.isNullOrEmpty()) {
