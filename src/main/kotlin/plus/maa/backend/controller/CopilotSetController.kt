@@ -50,7 +50,7 @@ class CopilotSetController(
     @RequireJwt
     @PostMapping("/create")
     fun createSet(@RequestBody req: @Valid CopilotSetCreateReq): MaaResult<Long> {
-        return success(service.create(req, helper.userId))
+        return success(service.create(req, helper.obtainUserId()))
     }
 
     @Operation(summary = "添加作业集作业列表")

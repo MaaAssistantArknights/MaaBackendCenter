@@ -62,7 +62,7 @@ class CopilotController(
     fun getCopilotById(
         @Parameter(description = "作业id") @PathVariable("id") id: Long
     ): MaaResult<CopilotInfo?> {
-        val userIdOrIpAddress = helper.userIdOrIpAddress
+        val userIdOrIpAddress = helper.obtainUserIdOrIpAddress()
         return copilotService.getCopilotById(userIdOrIpAddress, id)?.let { success(it) }
             ?: fail(404, "作业不存在")
     }
@@ -76,7 +76,7 @@ class CopilotController(
     ): MaaResult<CopilotPageInfo> {
         // 三秒防抖，缓解前端重复请求问题
         response.setHeader(HttpHeaders.CACHE_CONTROL, "private, max-age=3, must-revalidate")
-        return success(copilotService.queriesCopilot(helper.userId, parsed))
+        return success(copilotService.queriesCopilot(helper.obtainUserId(), parsed))
     }
 
     @Operation(summary = "更新作业")
@@ -95,7 +95,7 @@ class CopilotController(
     @JsonSchema
     @PostMapping("/rating")
     fun ratesCopilotOperation(@RequestBody copilotRatingReq: CopilotRatingReq): MaaResult<String> {
-        copilotService.rates(helper.userIdOrIpAddress, copilotRatingReq)
+        copilotService.rates(helper.obtainUserIdOrIpAddress(), copilotRatingReq)
         return success("评分成功")
     }
 
@@ -104,7 +104,7 @@ class CopilotController(
     @ApiResponse(description = "success")
     @GetMapping("/status")
     fun modifyStatus(@RequestParam id: @NotBlank Long, @RequestParam status: Boolean): MaaResult<String> {
-        copilotService.notificationStatus(helper.userId, id, status)
+        copilotService.notificationStatus(helper.obtainUserId(), id, status)
         return success("success")
     }
 }
