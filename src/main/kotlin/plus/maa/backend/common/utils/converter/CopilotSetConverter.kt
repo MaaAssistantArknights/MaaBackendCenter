@@ -3,8 +3,8 @@ package plus.maa.backend.common.utils.converter
 import org.mapstruct.Mapper
 import org.mapstruct.Mapping
 import plus.maa.backend.controller.request.copilotset.CopilotSetCreateReq
-import plus.maa.backend.controller.response.copilotset.CopilotSetRes
 import plus.maa.backend.controller.response.copilotset.CopilotSetListRes
+import plus.maa.backend.controller.response.copilotset.CopilotSetRes
 import plus.maa.backend.repository.entity.CopilotSet
 import java.time.LocalDateTime
 
@@ -23,7 +23,6 @@ interface CopilotSetConverter {
     @Mapping(target = "updateTime", expression = "java(LocalDateTime.now())")
     fun convert(createReq: CopilotSetCreateReq, id: Long, creatorId: String): CopilotSet
 
-    @Mapping(target = "creator", ignore = true)
     fun convert(copilotSet: CopilotSet, creator: String): CopilotSetListRes
 
     fun convertDetail(copilotSet: CopilotSet, creator: String): CopilotSetRes

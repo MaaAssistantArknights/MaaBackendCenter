@@ -21,5 +21,8 @@ data class CopilotSetQuery (
     ) Int = 10,
 
     @Schema(title = "查询关键词")
-    val keyword: String? = null
+    val keyword: String? = null,
+
+    @Schema(title = "需要包含的作业id列表")
+    val copilotIds: List<Long>? = null
 )
