@@ -123,8 +123,10 @@ class CopilotSetService(
         if (!req.keyword.isNullOrBlank()) {
             val pattern = Pattern.compile(req.keyword, Pattern.CASE_INSENSITIVE)
             query.addCriteria(
-                Criteria().orOperator(Criteria.where("name").regex(pattern),
-                    Criteria.where("description").regex(pattern))
+                Criteria().orOperator(
+                    Criteria.where("name").regex(pattern),
+                    Criteria.where("description").regex(pattern)
+                )
             )
         }
         val copilotSets =
@@ -140,8 +142,8 @@ class CopilotSetService(
             .toList()
         val userById = userRepository.findByUsersId(userIds)
         return CopilotSetPageRes(
-            copilotSets.totalPages > req.page,
-            copilotSets.number + 1,
+            copilotSets.hasNext(),
+            copilotSets.totalPages,
             copilotSets.totalElements,
             copilotSets.map { cs: CopilotSet ->
                 val user = userById.getOrDefault(cs.creatorId, MaaUser.UNKNOWN)

@@ -11,7 +11,7 @@ data class CopilotSetPageRes (
     @Schema(title = "是否有下一页")
     val hasNext: Boolean = false,
 
-    @Schema(title = "当前页码")
+    @Schema(title = "总页数")
     val page: Int = 0,
 
     @Schema(title = "总数据量")
