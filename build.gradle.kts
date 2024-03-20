@@ -3,10 +3,10 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     java
-    id("org.springframework.boot") version "3.2.2"
+    id("org.springframework.boot") version "3.2.3"
     id("io.spring.dependency-management") version "1.1.4"
     id("org.springdoc.openapi-gradle-plugin") version "1.8.0"
-//    id("org.graalvm.buildtools.native") version "0.9.28"
+    id("org.graalvm.buildtools.native") version "0.9.28"
     id("org.hidetake.swagger.generator") version "2.19.2"
     id("com.gorylenko.gradle-git-properties") version "2.4.1"
 
@@ -72,7 +72,10 @@ dependencies {
     kapt("org.mapstruct:mapstruct-processor:${mapstructVersion}")
 
     implementation("org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r")
-    implementation("org.eclipse.jgit:org.eclipse.jgit.ssh.apache.agent:6.8.0.202311291450-r")
+    implementation("org.eclipse.jgit:org.eclipse.jgit.ssh.apache.agent:6.8.0.202311291450-r") {
+        exclude(group = "org.apache.sshd", module = "sshd-sftp")
+            .because("This is causing trouble with GraalVM native-image")
+    }
     implementation("org.freemarker:freemarker:2.3.32")
     implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
     implementation("com.github.erosb:everit-json-schema:1.14.4") {
@@ -160,6 +163,19 @@ tasks {
     }
 }
 
+graalvmNative {
+    binaries {
+        all {
+            resources.autodetect()
+        }
+
+        named("main") {
+            buildArgs.add("--trace-class-initialization=ch.qos.logback.classic.Logger")
+            buildArgs.add("--trace-object-instantiation=ch.qos.logback.core.AsyncAppenderBase\$Worker")
+            buildArgs.add("--initialize-at-build-time=org.slf4j.LoggerFactory,ch.qos.logback")
+        }
+    }
+}
 
 gitProperties {
     failOnNoGitDirectory = false
