@@ -120,6 +120,9 @@ class CopilotSetService(
         if (!req.copilotIds.isNullOrEmpty()) {
             query.addCriteria(Criteria.where("copilotIds").all(req.copilotIds)).with(pageRequest)
         }
+        if (!req.creatorId.isNullOrBlank()) {
+            query.addCriteria(Criteria.where("creatorId").`is`(req.creatorId))
+        }
         if (!req.keyword.isNullOrBlank()) {
             val pattern = Pattern.compile(req.keyword, Pattern.CASE_INSENSITIVE)
             query.addCriteria(
