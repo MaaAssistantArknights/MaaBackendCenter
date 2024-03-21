@@ -28,5 +28,8 @@ data class CopilotSetListRes (
     val createTime: LocalDateTime,
 
     @Schema(title = "更新时间")
-    val updateTime: LocalDateTime
+    val updateTime: LocalDateTime,
+
+    @Schema(title = "作业id列表")
+    val copilotIds: List<Long>
 )
