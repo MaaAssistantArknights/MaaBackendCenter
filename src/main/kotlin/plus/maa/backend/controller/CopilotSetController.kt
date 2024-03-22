@@ -35,7 +35,7 @@ class CopilotSetController(
     @ApiResponse(description = "作业集id")
     @PostMapping("/query")
     fun querySets(@RequestBody req: @Valid CopilotSetQuery): MaaResult<CopilotSetPageRes> {
-        return success(service.query(req))
+        return success(service.query(req, helper.obtainUserId()))
     }
 
     @Operation(summary = "查询作业集列表")

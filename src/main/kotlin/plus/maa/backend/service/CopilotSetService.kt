@@ -110,12 +110,16 @@ class CopilotSetService(
         repository.save(copilotSet)
     }
 
-    fun query(req: CopilotSetQuery): CopilotSetPageRes {
+    fun query(req: CopilotSetQuery, userId: String?): CopilotSetPageRes {
         val pageRequest = PageRequest.of(req.page - 1, req.limit, defaultSort)
 
+        val criteria = Criteria.where("status").`is`(CopilotSetStatus.PUBLIC)
         val query = Query.query(
-            Criteria.where("status").`is`(CopilotSetStatus.PUBLIC).and("delete")
-                .`is`(false)
+            if (userId.isNullOrBlank()) {
+                criteria
+            } else {
+                Criteria().orOperator(criteria, Criteria.where("creatorId").`is`(userId))
+            }.and("delete").`is`(false)
         ).with(pageRequest)
         if (!req.copilotIds.isNullOrEmpty()) {
             query.addCriteria(Criteria.where("copilotIds").all(req.copilotIds)).with(pageRequest)
