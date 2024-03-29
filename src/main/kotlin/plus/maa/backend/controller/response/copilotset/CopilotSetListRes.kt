@@ -1,6 +1,7 @@
 package plus.maa.backend.controller.response.copilotset
 
 import io.swagger.v3.oas.annotations.media.Schema
+import plus.maa.backend.service.model.CopilotSetStatus
 import java.time.LocalDateTime
 
 /**
@@ -23,6 +24,9 @@ data class CopilotSetListRes (
 
     @Schema(title = "上传者昵称")
     val creator: String,
+
+    @Schema(title = "作业状态", enumAsRef = true)
+    val status: CopilotSetStatus,
 
     @Schema(title = "创建时间")
     val createTime: LocalDateTime,
