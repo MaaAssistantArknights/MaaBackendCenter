@@ -77,7 +77,7 @@ class CopilotBackupTask(
     /**
      * copilot数据同步定时任务，每天执行一次
      */
-    @Scheduled(cron = "\${maa-copilot.task-cron.copilot-update:-}")
+    @Scheduled(cron = "\${maa-copilot.task-cron.copilot-update:-}", zone = "Asia/Shanghai")
     fun backupCopilots() {
         if (config.backup.disabled || Objects.isNull(git)) {
             return

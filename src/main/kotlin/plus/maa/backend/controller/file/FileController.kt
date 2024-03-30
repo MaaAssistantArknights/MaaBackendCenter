@@ -44,7 +44,7 @@ class FileController(
         @RequestPart(required = false) classification: String?,
         @RequestPart(required = false) label: String
     ): MaaResult<String> {
-        fileService.uploadFile(file, type, version, classification, label, helper.userIdOrIpAddress)
+        fileService.uploadFile(file, type, version, classification, label, helper.obtainUserIdOrIpAddress())
         return success("上传成功,数据已被接收")
     }
 

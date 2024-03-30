@@ -1,7 +1,7 @@
 package plus.maa.backend.service
 
-import org.springframework.beans.BeanUtils
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import plus.maa.backend.common.MaaStatusCode
@@ -78,9 +78,7 @@ class UserService(
         originPassword: String? = null,
         verifyOriginPassword: Boolean = true
     ) {
-        val userResult = userRepository.findById(userId)
-        if (userResult.isEmpty) return
-        val maaUser = userResult.get()
+        val maaUser = userRepository.findByIdOrNull(userId) ?: return
         if (verifyOriginPassword) {
             check(!originPassword.isNullOrEmpty()) {
                 "请输入原密码"
@@ -102,27 +100,22 @@ class UserService(
      * @return 返回注册成功的用户摘要（脱敏）
      */
     fun register(registerDTO: RegisterDTO): MaaUserInfo {
-        val encode = passwordEncoder.encode(registerDTO.password)
-
         // 校验验证码
         emailService.verifyVCode(registerDTO.email, registerDTO.registrationToken)
+
+        val encoded = passwordEncoder.encode(registerDTO.password)
 
         val user = MaaUser(
             userName = registerDTO.userName,
             email = registerDTO.email,
-            password = registerDTO.password
+            password = encoded,
+            status = 1,
         )
-        BeanUtils.copyProperties(registerDTO, user)
-        user.password = encode
-        user.status = 1
-        val userInfo: MaaUserInfo
-        try {
-            val save = userRepository.save(user)
-            userInfo = MaaUserInfo(save)
+        return try {
+            userRepository.save(user).run(::MaaUserInfo)
         } catch (e: DuplicateKeyException) {
             throw MaaResultException(MaaStatusCode.MAA_USER_EXISTS)
         }
-        return userInfo
     }
 
     /**
@@ -132,10 +125,9 @@ class UserService(
      * @param updateDTO 更新参数
      */
     fun updateUserInfo(userId: String, updateDTO: UserInfoUpdateDTO) {
-        userRepository.findById(userId).ifPresent { maaUser: MaaUser ->
-            maaUser.updateAttribute(updateDTO)
-            userRepository.save(maaUser)
-        }
+        val maaUser = userRepository.findByIdOrNull(userId) ?: return
+        maaUser.userName = updateDTO.userName
+        userRepository.save(maaUser)
     }
 
     /**

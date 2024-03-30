@@ -5,7 +5,6 @@ import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.Transient
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
-import plus.maa.backend.controller.request.user.UserInfoUpdateDTO
 import java.io.Serializable
 
 /**
@@ -24,13 +23,6 @@ data class MaaUser(
     var status: Int = 0,
     var refreshJwtIds: MutableList<String> = ArrayList()
 ) : Serializable {
-
-    fun updateAttribute(updateDTO: UserInfoUpdateDTO) {
-        val userName = updateDTO.userName
-        if (userName.isNotBlank()) {
-            this.userName = userName
-        }
-    }
 
     companion object {
         @Transient

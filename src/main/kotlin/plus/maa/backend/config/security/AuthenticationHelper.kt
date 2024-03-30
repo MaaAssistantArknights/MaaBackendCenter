@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
 import org.springframework.web.server.ResponseStatusException
-import plus.maa.backend.common.utils.IpUtil.getIpAddr
+import plus.maa.backend.common.utils.IpUtil
 import plus.maa.backend.service.jwt.JwtAuthToken
 import plus.maa.backend.service.model.LoginUser
 import java.util.*
@@ -35,39 +35,35 @@ class AuthenticationHelper {
      */
     @Throws(ResponseStatusException::class)
     fun requireUserId(): String {
-        val id = userId ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
-        return id
+        return obtainUserId() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
     }
 
-    val userId: String?
-        /**
-         * 获取用户 id
-         *
-         * @return 用户 id，如未验证则返回 null
-         */
-        get() {
-            val auth = SecurityContextHolder.getContext().authentication ?: return null
-            if (auth is UsernamePasswordAuthenticationToken) {
-                val principal = auth.getPrincipal()
-                if (principal is LoginUser) return principal.userId
-            } else if (auth is JwtAuthToken) {
-                return auth.subject
-            }
-            return null
+    /**
+     * 获取用户 id
+     *
+     * @return 用户 id，如未验证则返回 null
+     */
+    fun obtainUserId(): String? {
+        val auth = SecurityContextHolder.getContext().authentication ?: return null
+        if (auth is UsernamePasswordAuthenticationToken) {
+            val user = auth.getPrincipal() as? LoginUser
+            return user?.userId
+        } else if (auth is JwtAuthToken) {
+            return auth.subject
         }
+        return null
+    }
 
-    val userIdOrIpAddress: String
-        /**
-         * 获取已验证用户 id 或者未验证用户 ip 地址。在 HTTP request 之外调用该方法获取 ip 会抛出 NPE
-         *
-         * @return 用户 id 或者 ip 地址
-         */
-        get() {
-            val id = userId
-            if (id != null) return id
+    /**
+     * 获取已验证用户 id 或者未验证用户 ip 地址。在 HTTP request 之外调用该方法获取 ip 会抛出 [IllegalStateException]
+     *
+     * @return 用户 id 或者 ip 地址
+     */
+    fun obtainUserIdOrIpAddress(): String {
+        val id = obtainUserId()
+        if (id != null) return id
 
-            val attributes = Objects.requireNonNull(RequestContextHolder.getRequestAttributes())
-            val request = (attributes as ServletRequestAttributes).request
-            return getIpAddr(request)
-        }
+        val request = (RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes)?.request
+        return checkNotNull(request).run(IpUtil::getIpAddr)
+    }
 }

@@ -4,6 +4,10 @@ import cn.hutool.core.lang.Assert
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.support.PageableExecutionUtils
 import org.springframework.stereotype.Service
 import plus.maa.backend.common.utils.IdComponent
 import plus.maa.backend.common.utils.converter.CopilotSetConverter
@@ -18,7 +22,9 @@ import plus.maa.backend.repository.UserRepository
 import plus.maa.backend.repository.entity.CopilotSet
 import plus.maa.backend.repository.entity.MaaUser
 import plus.maa.backend.repository.findByUsersId
+import plus.maa.backend.service.model.CopilotSetStatus
 import java.time.LocalDateTime
+import java.util.regex.Pattern
 
 private val log = KotlinLogging.logger { }
 
@@ -32,6 +38,7 @@ class CopilotSetService(
     private val converter: CopilotSetConverter,
     private val repository: CopilotSetRepository,
     private val userRepository: UserRepository,
+    private val mongoTemplate: MongoTemplate
 ) {
 
     private val defaultSort: Sort = Sort.by("id").descending()
@@ -103,24 +110,47 @@ class CopilotSetService(
         repository.save(copilotSet)
     }
 
-    fun query(req: CopilotSetQuery): CopilotSetPageRes {
+    fun query(req: CopilotSetQuery, userId: String?): CopilotSetPageRes {
         val pageRequest = PageRequest.of(req.page - 1, req.limit, defaultSort)
 
-        val keyword = req.keyword
-        val copilotSets = if (keyword.isNullOrBlank()) {
-            repository.findAll(pageRequest)
-        } else {
-            repository.findByKeyword(keyword, pageRequest)
+        val criteria = Criteria.where("status").`is`(CopilotSetStatus.PUBLIC)
+        val query = Query.query(
+            if (userId.isNullOrBlank()) {
+                criteria
+            } else {
+                Criteria().orOperator(criteria, Criteria.where("creatorId").`is`(userId))
+            }.and("delete").`is`(false)
+        ).with(pageRequest)
+        if (!req.copilotIds.isNullOrEmpty()) {
+            query.addCriteria(Criteria.where("copilotIds").all(req.copilotIds)).with(pageRequest)
         }
-
+        if (!req.creatorId.isNullOrBlank()) {
+            query.addCriteria(Criteria.where("creatorId").`is`(req.creatorId))
+        }
+        if (!req.keyword.isNullOrBlank()) {
+            val pattern = Pattern.compile(req.keyword, Pattern.CASE_INSENSITIVE)
+            query.addCriteria(
+                Criteria().orOperator(
+                    Criteria.where("name").regex(pattern),
+                    Criteria.where("description").regex(pattern)
+                )
+            )
+        }
+        val copilotSets =
+            PageableExecutionUtils.getPage(mongoTemplate.find(query, CopilotSet::class.java), pageRequest) {
+                mongoTemplate.count(
+                    query.limit(-1).skip(-1),
+                    CopilotSet::class.java
+                )
+            }
         val userIds = copilotSets
             .map { obj: CopilotSet -> obj.creatorId }
             .distinct()
             .toList()
         val userById = userRepository.findByUsersId(userIds)
         return CopilotSetPageRes(
-            copilotSets.totalPages > req.page,
-            copilotSets.number + 1,
+            copilotSets.hasNext(),
+            copilotSets.totalPages,
             copilotSets.totalElements,
             copilotSets.map { cs: CopilotSet ->
                 val user = userById.getOrDefault(cs.creatorId, MaaUser.UNKNOWN)

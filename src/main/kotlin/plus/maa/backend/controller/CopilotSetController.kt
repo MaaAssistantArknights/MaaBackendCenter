@@ -35,7 +35,7 @@ class CopilotSetController(
     @ApiResponse(description = "作业集id")
     @PostMapping("/query")
     fun querySets(@RequestBody req: @Valid CopilotSetQuery): MaaResult<CopilotSetPageRes> {
-        return success(service.query(req))
+        return success(service.query(req, helper.obtainUserId()))
     }
 
     @Operation(summary = "查询作业集列表")
@@ -50,7 +50,7 @@ class CopilotSetController(
     @RequireJwt
     @PostMapping("/create")
     fun createSet(@RequestBody req: @Valid CopilotSetCreateReq): MaaResult<Long> {
-        return success(service.create(req, helper.userId))
+        return success(service.create(req, helper.obtainUserId()))
     }
 
     @Operation(summary = "添加作业集作业列表")
