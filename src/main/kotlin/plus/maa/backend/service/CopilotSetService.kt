@@ -113,29 +113,31 @@ class CopilotSetService(
     fun query(req: CopilotSetQuery, userId: String?): CopilotSetPageRes {
         val pageRequest = PageRequest.of(req.page - 1, req.limit, defaultSort)
 
-        val criteria = Criteria.where("status").`is`(CopilotSetStatus.PUBLIC)
-        val query = Query.query(
-            if (userId.isNullOrBlank()) {
-                criteria
-            } else {
-                Criteria().orOperator(criteria, Criteria.where("creatorId").`is`(userId))
-            }.and("delete").`is`(false)
-        ).with(pageRequest)
+        val andList = ArrayList<Criteria>()
+        val publicCriteria = Criteria.where("status").`is`(CopilotSetStatus.PUBLIC)
+        val permissionCriterion = if (userId.isNullOrBlank()) {
+            publicCriteria
+        } else {
+            Criteria().orOperator(publicCriteria, Criteria.where("creatorId").`is`(userId))
+        }
+        andList.add(permissionCriterion)
+        andList.add(Criteria.where("delete").`is`(false))
         if (!req.copilotIds.isNullOrEmpty()) {
-            query.addCriteria(Criteria.where("copilotIds").all(req.copilotIds)).with(pageRequest)
+            andList.add(Criteria.where("copilotIds").all(req.copilotIds))
         }
         if (!req.creatorId.isNullOrBlank()) {
-            query.addCriteria(Criteria.where("creatorId").`is`(req.creatorId))
+            andList.add(Criteria.where("creatorId").`is`(req.creatorId))
         }
         if (!req.keyword.isNullOrBlank()) {
             val pattern = Pattern.compile(req.keyword, Pattern.CASE_INSENSITIVE)
-            query.addCriteria(
+            andList.add(
                 Criteria().orOperator(
                     Criteria.where("name").regex(pattern),
                     Criteria.where("description").regex(pattern)
                 )
             )
         }
+        val query = Query.query(Criteria().andOperator(andList)).with(pageRequest)
         val copilotSets =
             PageableExecutionUtils.getPage(mongoTemplate.find(query, CopilotSet::class.java), pageRequest) {
                 mongoTemplate.count(
