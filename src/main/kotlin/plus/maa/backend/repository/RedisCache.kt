@@ -28,11 +28,9 @@ private val log = KotlinLogging.logger { }
  */
 @Component
 class RedisCache(
-    @Value("\${maa-copilot.cache.default-expire}")
-    private val expire: Int,
-    private val redisTemplate: StringRedisTemplate
+    @Value("\${maa-copilot.cache.default-expire}") private val expire: Int,
+    private val redisTemplate: StringRedisTemplate,
 ) {
-
     //  添加 JSR310 模块，以便顺利序列化 LocalDateTime 等类型
     private val writeMapper: ObjectMapper = jacksonObjectMapper()
         .registerModules(JavaTimeModule())
@@ -49,8 +47,10 @@ class RedisCache(
     private val incZSetRedisScript: RedisScript<Any> = RedisScript.of(ClassPathResource("redis-lua/incZSet.lua"))
 
     // 比较与输入的键值对是否相同，相同则删除
-    private val removeKVIfEqualsScript: RedisScript<Boolean> =
-        RedisScript.of(ClassPathResource("redis-lua/removeKVIfEquals.lua"), Boolean::class.java)
+    private val removeKVIfEqualsScript: RedisScript<Boolean> = RedisScript.of(
+        ClassPathResource("redis-lua/removeKVIfEquals.lua"),
+        Boolean::class.java,
+    )
 
     fun <T> setData(key: String, value: T) {
         setCache(key, value, 0, TimeUnit.SECONDS)
@@ -78,7 +78,7 @@ class RedisCache(
      *
      * @param key 缓存的 key
      * @param value 被缓存的值
-     * @return  是否 set
+     * @return 是否 set
      */
     fun <T> setCacheIfAbsent(key: String, value: T): Boolean {
         return setCacheIfAbsent(key, value, expire.toLong())
@@ -90,7 +90,7 @@ class RedisCache(
      * @param key 缓存的 key
      * @param value 被缓存的值
      * @param timeout 过期时间
-     * @return  是否 set
+     * @return 是否 set
      */
     fun <T> setCacheIfAbsent(key: String, value: T, timeout: Long): Boolean {
         return setCacheIfAbsent(key, value, timeout, TimeUnit.SECONDS)
@@ -103,7 +103,7 @@ class RedisCache(
      * @param value 被缓存的值
      * @param timeout 过期时间
      * @param timeUnit 过期时间的单位
-     * @return  是否 set
+     * @return 是否 set
      */
     fun <T> setCacheIfAbsent(key: String, value: T, timeout: Long, timeUnit: TimeUnit): Boolean {
         val json = getJson(value) ?: return false
@@ -137,7 +137,6 @@ class RedisCache(
         }
     }
 
-
     /**
      * ZSet 中元素的 score += incScore，如果元素不存在则插入 <br></br>
      * 会维持 ZSet 的相对大小（size <= 实际大小 <= size + 50）以及过期时间 <br></br>
@@ -156,7 +155,7 @@ class RedisCache(
             member,
             incScore.toString(),
             size.toString(),
-            timeout.toString()
+            timeout.toString(),
         )
     }
 
@@ -184,33 +183,33 @@ class RedisCache(
         return getCache(key, valueType, null, expire.toLong(), TimeUnit.SECONDS)
     }
 
-    fun <T> getCache(key: String, valueType: Class<T>, onMiss: (()->T)?): T? {
+    fun <T> getCache(key: String, valueType: Class<T>, onMiss: (() -> T)?): T? {
         return getCache(key, valueType, onMiss, expire.toLong(), TimeUnit.SECONDS)
     }
 
-    fun <T> getCache(key: String, valueType: Class<T>, onMiss: (()->T)?, timeout: Long): T? {
+    fun <T> getCache(key: String, valueType: Class<T>, onMiss: (() -> T)?, timeout: Long): T? {
         return getCache(key, valueType, onMiss, timeout, TimeUnit.SECONDS)
     }
 
-    fun <T> getCache(key: String, valueType: Class<T>, onMiss: (()->T)?, timeout: Long, timeUnit: TimeUnit): T? {
+    fun <T> getCache(key: String, valueType: Class<T>, onMiss: (() -> T)?, timeout: Long, timeUnit: TimeUnit): T? {
         try {
             var json = redisTemplate.opsForValue()[key]
             if (StringUtils.isEmpty(json)) {
-                if (onMiss == null){
+                if (onMiss == null) {
                     return null
                 }
-                    //上锁
-                    synchronized(RedisCache::class.java) {
-                        //再次查询缓存，目的是判断是否前面的线程已经set过了
-                        json = redisTemplate.opsForValue()[key]
-                        //第二次校验缓存是否存在
-                        if (StringUtils.isEmpty(json)) {
-                            val result = onMiss()
-                            //数据库中不存在
-                            setCache(key, result, timeout, timeUnit)
-                            return result
-                        }
+                // 上锁
+                synchronized(RedisCache::class.java) {
+                    // 再次查询缓存，目的是判断是否前面的线程已经set过了
+                    json = redisTemplate.opsForValue()[key]
+                    // 第二次校验缓存是否存在
+                    if (StringUtils.isEmpty(json)) {
+                        val result = onMiss()
+                        // 数据库中不存在
+                        setCache(key, result, timeout, timeUnit)
+                        return result
                     }
+                }
             }
             return readMapper.readValue(json, valueType)
         } catch (e: Exception) {
@@ -219,22 +218,15 @@ class RedisCache(
         }
     }
 
-    fun <T> updateCache(key: String, valueType: Class<T>, defaultValue: T, onUpdate: (T)->T) {
+    fun <T> updateCache(key: String, valueType: Class<T>, defaultValue: T, onUpdate: (T) -> T) {
         updateCache(key, valueType, defaultValue, onUpdate, expire.toLong(), TimeUnit.SECONDS)
     }
 
-    fun <T> updateCache(key: String, valueType: Class<T>?, defaultValue: T, onUpdate: (T)->T, timeout: Long) {
+    fun <T> updateCache(key: String, valueType: Class<T>?, defaultValue: T, onUpdate: (T) -> T, timeout: Long) {
         updateCache(key, valueType, defaultValue, onUpdate, timeout, TimeUnit.SECONDS)
     }
 
-    fun <T> updateCache(
-        key: String,
-        valueType: Class<T>?,
-        defaultValue: T,
-        onUpdate: (T)->T,
-        timeout: Long,
-        timeUnit: TimeUnit
-    ) {
+    fun <T> updateCache(key: String, valueType: Class<T>?, defaultValue: T, onUpdate: (T) -> T, timeout: Long, timeUnit: TimeUnit) {
         var result: T
         try {
             synchronized(RedisCache::class.java) {
@@ -273,7 +265,9 @@ class RedisCache(
                 // Redisson、Jedis、Lettuce
                 val cause = e.cause
                 if (cause == null || !StringUtils.containsAny(
-                        cause.message, "unknown command", "not support"
+                        cause.message,
+                        "unknown command",
+                        "not support",
                     )
                 ) {
                     throw e
@@ -284,7 +278,9 @@ class RedisCache(
             } catch (e: RedisSystemException) {
                 val cause = e.cause
                 if (cause == null || !StringUtils.containsAny(
-                        cause.message, "unknown command", "not support"
+                        cause.message,
+                        "unknown command",
+                        "not support",
                     )
                 ) {
                     throw e
@@ -361,7 +357,6 @@ class RedisCache(
             removeCache(keysToDelete)
         }
     }
-
 
     private fun <T> getJson(value: T): String? {
         val json: String

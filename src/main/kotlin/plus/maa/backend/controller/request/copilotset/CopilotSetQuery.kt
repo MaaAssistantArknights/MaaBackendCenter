@@ -10,22 +10,18 @@ import jakarta.validation.constraints.PositiveOrZero
  * create on 2024-01-06
  */
 @Schema(title = "作业集列表查询接口参数")
-data class CopilotSetQuery (
+data class CopilotSetQuery(
     @Schema(title = "页码")
-    val page: @Positive(message = "页码必须为大于0的数字") Int = 1,
-
+    @Positive(message = "页码必须为大于0的数字")
+    val page: Int = 1,
     @Schema(title = "单页数据量")
-    val limit: @PositiveOrZero(message = "单页数据量必须为大于等于0的数字") @Max(
-        value = 50,
-        message = "单页大小不得超过50"
-    ) Int = 10,
-
+    @PositiveOrZero(message = "单页数据量必须为大于等于0的数字")
+    @Max(value = 50, message = "单页大小不得超过50")
+    val limit: Int = 10,
     @Schema(title = "查询关键词")
     val keyword: String? = null,
-
     @Schema(title = "创建者id")
     val creatorId: String? = null,
-
     @Schema(title = "需要包含的作业id列表")
-    val copilotIds: List<Long>? = null
+    val copilotIds: List<Long>? = null,
 )

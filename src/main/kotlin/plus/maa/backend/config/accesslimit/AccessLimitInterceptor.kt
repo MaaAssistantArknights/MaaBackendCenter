@@ -20,7 +20,6 @@ class AccessLimitInterceptor(
     private val stringRedisTemplate: StringRedisTemplate,
     private val objectMapper: ObjectMapper,
 ) : HandlerInterceptor {
-
     private val log = KotlinLogging.logger { }
 
     @Throws(Exception::class)
@@ -37,7 +36,7 @@ class AccessLimitInterceptor(
                 key,
                 (count + 1).toString(),
                 ann.second.toLong(),
-                TimeUnit.SECONDS
+                TimeUnit.SECONDS,
             )
         } else {
             // 请求过于频繁

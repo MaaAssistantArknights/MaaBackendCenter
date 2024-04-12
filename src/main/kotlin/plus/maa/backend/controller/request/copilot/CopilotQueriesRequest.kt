@@ -9,7 +9,8 @@ import org.springframework.web.bind.annotation.BindParam
  */
 data class CopilotQueriesRequest(
     val page: Int = 0,
-    val limit: @Max(value = 50, message = "单页大小不得超过50") Int = 10,
+    @Max(value = 50, message = "单页大小不得超过50")
+    val limit: Int = 10,
     @BindParam("level_keyword") var levelKeyword: String? = null,
     val operator: String? = null,
     val content: String? = null,

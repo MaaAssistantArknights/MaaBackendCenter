@@ -22,8 +22,5 @@ interface GithubRepository {
     fun getCommits(@RequestHeader("Authorization") token: String): List<GithubCommit>
 
     @GetExchange(value = "/repos/MaaAssistantArknights/MaaAssistantArknights/contents/{path}")
-    fun getContents(
-        @RequestHeader("Authorization") token: String,
-        @PathVariable("path") path: String
-    ): List<GithubContent>
+    fun getContents(@RequestHeader("Authorization") token: String, @PathVariable("path") path: String): List<GithubContent>
 }

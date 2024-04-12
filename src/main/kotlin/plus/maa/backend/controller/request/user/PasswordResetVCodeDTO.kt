@@ -12,5 +12,5 @@ data class PasswordResetVCodeDTO(
      */
     @field:NotBlank(message = "邮箱格式错误")
     @field:Email(message = "邮箱格式错误")
-    val email: String
+    val email: String,
 )

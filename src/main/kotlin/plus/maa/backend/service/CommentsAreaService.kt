@@ -59,7 +59,7 @@ class CommentsAreaService(
             fromCommentId = parentComment?.id,
             mainCommentId = parentComment?.run { mainCommentId ?: id },
             message = commentsAddDTO.message,
-            notification = commentsAddDTO.notification
+            notification = commentsAddDTO.notification,
         )
         commentsAreaRepository.insert(comment)
     }
@@ -110,14 +110,14 @@ class CommentsAreaService(
         val rating = ratingRepository.findByTypeAndKeyAndUserId(
             Rating.KeyType.COMMENT,
             commentId,
-            userId
+            userId,
         ) ?: Rating(
             null,
             Rating.KeyType.COMMENT,
             commentId,
             userId,
             RatingType.NONE,
-            LocalDateTime.now()
+            LocalDateTime.now(),
         )
 
         val prevType = rating.rating
@@ -170,7 +170,7 @@ class CommentsAreaService(
                 "hot" -> "likeCount"
                 "id" -> "uploadTime"
                 else -> request.orderBy ?: "likeCount"
-            }
+            },
         )
         val page = (request.page - 1).coerceAtLeast(0)
         val limit = if (request.limit > 0) request.limit else 10
@@ -183,30 +183,30 @@ class CommentsAreaService(
                 request.justSeeId,
                 delete = false,
                 exists = false,
-                pageable = pageable
+                pageable = pageable,
             )
         } else {
             commentsAreaRepository.findByCopilotIdAndDeleteAndMainCommentIdExists(
                 request.copilotId,
                 delete = false,
                 exists = false,
-                pageable = pageable
+                pageable = pageable,
             )
         }
 
         val mainCommentIds = mainCommentsPage.map(CommentsArea::id).filterNotNull()
-        //获取子评论
+        // 获取子评论
         val subCommentsList = commentsAreaRepository.findByMainCommentIdIn(mainCommentIds).onEach {
-            //将已删除评论内容替换为空
+            // 将已删除评论内容替换为空
             if (it.delete) it.message = ""
         }
 
-        //获取所有评论用户
+        // 获取所有评论用户
         val allUserIds = (mainCommentsPage + subCommentsList).map(CommentsArea::uploaderId).distinct()
         val users = userRepository.findAllById(allUserIds).associateBy(MaaUser::userId)
         val subCommentGroups = subCommentsList.groupBy(CommentsArea::mainCommentId)
 
-        //转换主评论数据并填充用户名
+        // 转换主评论数据并填充用户名
         val commentsInfos = mainCommentsPage.toList().map { mainComment ->
             val subCommentsInfos = (subCommentGroups[mainComment.id] ?: emptyList()).map { c ->
                 buildSubCommentsInfo(c, users[c.uploaderId] ?: MaaUser.UNKNOWN)
@@ -218,7 +218,7 @@ class CommentsAreaService(
             hasNext = mainCommentsPage.hasNext(),
             page = mainCommentsPage.totalPages,
             total = mainCommentsPage.totalElements,
-            data = commentsInfos
+            data = commentsInfos,
         )
     }
 
@@ -235,7 +235,7 @@ class CommentsAreaService(
         dislike = c.dislikeCount,
         fromCommentId = c.fromCommentId!!,
         mainCommentId = c.mainCommentId!!,
-        deleted = c.delete
+        deleted = c.delete,
     )
 
     private fun buildMainCommentsInfo(c: CommentsArea, user: MaaUser, subList: List<SubCommentsInfo>) = CommentsInfo(
@@ -247,7 +247,7 @@ class CommentsAreaService(
         like = c.likeCount,
         dislike = c.dislikeCount,
         topping = c.topping,
-        subCommentsInfos = subList
+        subCommentsInfos = subList,
     )
 
     fun notificationStatus(userId: String, id: String, status: Boolean) {

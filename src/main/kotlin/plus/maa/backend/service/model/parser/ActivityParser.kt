@@ -6,7 +6,6 @@ import plus.maa.backend.repository.entity.gamedata.ArkTilePos
 import plus.maa.backend.service.ArkGameDataService
 import plus.maa.backend.service.model.ArkLevelType
 
-
 /**
  * @author john180
  *
@@ -18,9 +17,8 @@ import plus.maa.backend.service.model.ArkLevelType
  */
 @Component
 class ActivityParser(
-    private val dataService: ArkGameDataService
+    private val dataService: ArkGameDataService,
 ) : ArkLevelParser {
-
     override fun supportType(type: ArkLevelType): Boolean {
         return ArkLevelType.ACTIVITIES == type
     }

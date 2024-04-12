@@ -16,18 +16,16 @@ data class CopilotSetCreateReq(
     @Schema(title = "作业集名称")
     @field:NotBlank(message = "作业集名称不能为空")
     val name: String,
-
     @Schema(title = "作业集额外描述")
     val description: String = "",
-
     @Schema(title = "初始关联作业列表")
-    @field:NotNull(message = "作业id列表字段不能为null") @Size(
+    @field:NotNull(message = "作业id列表字段不能为null")
+    @Size(
         max = 1000,
-        message = "作业集作业列表最大只能为1000"
+        message = "作业集作业列表最大只能为1000",
     )
     override val copilotIds: MutableList<Long>,
-
     @Schema(title = "作业集公开状态", enumAsRef = true)
     @field:NotNull(message = "作业集公开状态不能为null")
-    val status: CopilotSetStatus
+    val status: CopilotSetStatus,
 ) : CopilotSetType

@@ -20,13 +20,13 @@ object IpUtil {
         if (ip.isNullOrEmpty() || "unknown".equals(ip, ignoreCase = true)) {
             ip = request.getHeader("Proxy-Client-IP")
         }
-        if (ip.isNullOrEmpty()|| "unknown".equals(ip, ignoreCase = true)) {
+        if (ip.isNullOrEmpty() || "unknown".equals(ip, ignoreCase = true)) {
             ip = request.getHeader("WL-Proxy-Client-IP")
         }
-        if (ip.isNullOrEmpty()|| "unknown".equals(ip, ignoreCase = true)) {
+        if (ip.isNullOrEmpty() || "unknown".equals(ip, ignoreCase = true)) {
             ip = request.remoteAddr
             if (ip == "127.0.0.1") {
-                //根据网卡取本机配置的IP
+                // 根据网卡取本机配置的IP
                 val inet: InetAddress?
                 try {
                     inet = InetAddress.getLocalHost()

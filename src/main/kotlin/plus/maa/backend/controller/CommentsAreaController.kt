@@ -6,12 +6,21 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import org.springdoc.core.annotations.ParameterObject
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 import plus.maa.backend.common.annotation.JsonSchema
 import plus.maa.backend.common.annotation.SensitiveWordDetection
 import plus.maa.backend.config.doc.RequireJwt
 import plus.maa.backend.config.security.AuthenticationHelper
-import plus.maa.backend.controller.request.comments.*
+import plus.maa.backend.controller.request.comments.CommentsAddDTO
+import plus.maa.backend.controller.request.comments.CommentsDeleteDTO
+import plus.maa.backend.controller.request.comments.CommentsQueriesDTO
+import plus.maa.backend.controller.request.comments.CommentsRatingDTO
+import plus.maa.backend.controller.request.comments.CommentsToppingDTO
 import plus.maa.backend.controller.response.MaaResult
 import plus.maa.backend.controller.response.MaaResult.Companion.success
 import plus.maa.backend.controller.response.comments.CommentsAreaInfo
@@ -26,7 +35,7 @@ import plus.maa.backend.service.CommentsAreaService
 @RequestMapping("/comments")
 class CommentsAreaController(
     private val commentsAreaService: CommentsAreaService,
-    private val authHelper: AuthenticationHelper
+    private val authHelper: AuthenticationHelper,
 ) {
     @SensitiveWordDetection("#comments.message")
     @PostMapping("/add")
@@ -41,9 +50,8 @@ class CommentsAreaController(
     @GetMapping("/query")
     @Operation(summary = "分页查询评论")
     @ApiResponse(description = "评论区信息")
-    fun queriesCommentsArea(@ParameterObject parsed: @Valid CommentsQueriesDTO): MaaResult<CommentsAreaInfo> {
-        return success(commentsAreaService.queriesCommentsArea(parsed))
-    }
+    fun queriesCommentsArea(@ParameterObject parsed: @Valid CommentsQueriesDTO): MaaResult<CommentsAreaInfo> =
+        success(commentsAreaService.queriesCommentsArea(parsed))
 
     @PostMapping("/delete")
     @Operation(summary = "删除评论")

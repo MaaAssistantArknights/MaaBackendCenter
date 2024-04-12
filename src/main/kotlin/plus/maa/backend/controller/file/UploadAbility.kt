@@ -7,5 +7,5 @@ class UploadAbility(
      * 是否开启上传功能
      */
     @field:NotNull
-    var enabled: Boolean
+    var enabled: Boolean,
 )

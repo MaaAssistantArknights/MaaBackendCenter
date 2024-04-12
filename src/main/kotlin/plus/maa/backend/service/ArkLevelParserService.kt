@@ -15,7 +15,6 @@ private val log = KotlinLogging.logger { }
  */
 @Service
 class ArkLevelParserService(private val parsers: List<ArkLevelParser>) {
-
     /**
      * 具体地图信息生成规则见
      * [GameDataParser](https://github.com/MaaAssistantArknights/MaaCopilotServer/blob/main/src/MaaCopilotServer.GameData/GameDataParser.cs)
@@ -44,7 +43,7 @@ class ArkLevelParserService(private val parsers: List<ArkLevelParser>) {
         }
         val parser = parsers.firstOrNull { it.supportType(type) }
         if (parser == null) {
-            //类型存在但无对应Parser直接跳过
+            // 类型存在但无对应Parser直接跳过
             return ArkLevel.EMPTY
         }
         return parser.parseLevel(level, tilePos)

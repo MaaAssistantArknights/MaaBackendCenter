@@ -18,7 +18,7 @@ class JwtRefreshToken : JwtToken {
         iat: Instant,
         exp: Instant,
         nbf: Instant,
-        key: ByteArray
+        key: ByteArray,
     ) : super(sub, jti, iat, exp, nbf, TYPE, key)
 
     companion object {

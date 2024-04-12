@@ -20,7 +20,7 @@ interface CopilotSetRepository : MongoRepository<CopilotSet, Long> {
                 ]
             }
             
-            """
+            """,
     )
     fun findByKeyword(keyword: String, pageable: Pageable): Page<CopilotSet>
 }

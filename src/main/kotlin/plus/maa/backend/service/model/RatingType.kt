@@ -7,7 +7,8 @@ package plus.maa.backend.service.model
 enum class RatingType(val display: Int) {
     LIKE(1),
     DISLIKE(2),
-    NONE(0);
+    NONE(0),
+    ;
 
     fun countLike() = if (this == LIKE) 1L else 0L
 
@@ -20,14 +21,10 @@ enum class RatingType(val display: Int) {
          * @param type rating
          * @return type
          */
-        fun fromRatingType(type: String?): RatingType {
-            return when (type) {
-                "Like" -> LIKE
-                "Dislike" -> DISLIKE
-                else -> NONE
-            }
+        fun fromRatingType(type: String?): RatingType = when (type) {
+            "Like" -> LIKE
+            "Dislike" -> DISLIKE
+            else -> NONE
         }
     }
 }
-
-

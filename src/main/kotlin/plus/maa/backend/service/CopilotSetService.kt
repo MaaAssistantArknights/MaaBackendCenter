@@ -38,9 +38,8 @@ class CopilotSetService(
     private val converter: CopilotSetConverter,
     private val repository: CopilotSetRepository,
     private val userRepository: UserRepository,
-    private val mongoTemplate: MongoTemplate
+    private val mongoTemplate: MongoTemplate,
 ) {
-
     private val defaultSort: Sort = Sort.by("id").descending()
 
     /**
@@ -61,8 +60,7 @@ class CopilotSetService(
      * 往作业集中加入作业id列表
      */
     fun addCopilotIds(req: CopilotSetModCopilotsReq, userId: String) {
-        val copilotSet = repository.findById(req.id)
-            .orElseThrow { IllegalArgumentException("作业集不存在") }
+        val copilotSet = repository.findById(req.id).orElseThrow { IllegalArgumentException("作业集不存在") }
         Assert.state(copilotSet.creatorId == userId, "您不是该作业集的创建者，无权修改该作业集")
         copilotSet.copilotIds.addAll(req.copilotIds)
         copilotSet.copilotIds = copilotSet.distinctIdsAndCheck()
@@ -73,8 +71,7 @@ class CopilotSetService(
      * 往作业集中删除作业id列表
      */
     fun removeCopilotIds(req: CopilotSetModCopilotsReq, userId: String) {
-        val copilotSet = repository.findById(req.id)
-            .orElseThrow { IllegalArgumentException("作业集不存在") }
+        val copilotSet = repository.findById(req.id).orElseThrow { IllegalArgumentException("作业集不存在") }
         Assert.state(copilotSet.creatorId == userId, "您不是该作业集的创建者，无权修改该作业集")
         val removeIds: Set<Long> = HashSet(req.copilotIds)
         copilotSet.copilotIds.removeIf { o: Long -> removeIds.contains(o) }
@@ -85,8 +82,7 @@ class CopilotSetService(
      * 更新作业集信息
      */
     fun update(req: CopilotSetUpdateReq, userId: String) {
-        val copilotSet = repository.findById(req.id)
-            .orElseThrow { IllegalArgumentException("作业集不存在") }
+        val copilotSet = repository.findById(req.id).orElseThrow { IllegalArgumentException("作业集不存在") }
         Assert.state(copilotSet.creatorId == userId, "您不是该作业集的创建者，无权修改该作业集")
         copilotSet.name = req.name
         copilotSet.description = req.description
@@ -102,8 +98,7 @@ class CopilotSetService(
      */
     fun delete(id: Long, userId: String) {
         log.info { "delete copilot set for id: $id, userId: $userId" }
-        val copilotSet = repository.findById(id)
-            .orElseThrow { IllegalArgumentException("作业集不存在") }
+        val copilotSet = repository.findById(id).orElseThrow { IllegalArgumentException("作业集不存在") }
         Assert.state(copilotSet.creatorId == userId, "您不是该作业集的创建者，无权删除该作业集")
         copilotSet.delete = true
         copilotSet.deleteTime = LocalDateTime.now()
@@ -133,22 +128,18 @@ class CopilotSetService(
             andList.add(
                 Criteria().orOperator(
                     Criteria.where("name").regex(pattern),
-                    Criteria.where("description").regex(pattern)
-                )
+                    Criteria.where("description").regex(pattern),
+                ),
             )
         }
         val query = Query.query(Criteria().andOperator(andList)).with(pageRequest)
-        val copilotSets =
-            PageableExecutionUtils.getPage(mongoTemplate.find(query, CopilotSet::class.java), pageRequest) {
-                mongoTemplate.count(
-                    query.limit(-1).skip(-1),
-                    CopilotSet::class.java
-                )
-            }
-        val userIds = copilotSets
-            .map { obj: CopilotSet -> obj.creatorId }
-            .distinct()
-            .toList()
+        val copilotSets = PageableExecutionUtils.getPage(mongoTemplate.find(query, CopilotSet::class.java), pageRequest) {
+            mongoTemplate.count(
+                query.limit(-1).skip(-1),
+                CopilotSet::class.java,
+            )
+        }
+        val userIds = copilotSets.map { obj: CopilotSet -> obj.creatorId }.distinct().toList()
         val userById = userRepository.findByUsersId(userIds)
         return CopilotSetPageRes(
             copilotSets.hasNext(),
@@ -157,14 +148,12 @@ class CopilotSetService(
             copilotSets.map { cs: CopilotSet ->
                 val user = userById.getOrDefault(cs.creatorId, MaaUser.UNKNOWN)
                 converter.convert(cs, user.userName)
-            }.toList()
+            }.toList(),
         )
     }
 
-    fun get(id: Long): CopilotSetRes {
-        return repository.findById(id).map { copilotSet: CopilotSet ->
-            val userName = (userRepository.findByUserId(copilotSet.creatorId) ?: MaaUser.UNKNOWN).userName
-            converter.convertDetail(copilotSet, userName)
-        }.orElseThrow { IllegalArgumentException("作业不存在") }
-    }
+    fun get(id: Long): CopilotSetRes = repository.findById(id).map { copilotSet: CopilotSet ->
+        val userName = (userRepository.findByUserId(copilotSet.creatorId) ?: MaaUser.UNKNOWN).userName
+        converter.convertDetail(copilotSet, userName)
+    }.orElseThrow { IllegalArgumentException("作业不存在") }
 }

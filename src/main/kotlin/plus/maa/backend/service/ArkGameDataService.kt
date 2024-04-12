@@ -8,8 +8,13 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.springframework.stereotype.Service
 import plus.maa.backend.common.utils.ArkLevelUtil
-import plus.maa.backend.repository.entity.gamedata.*
-import java.util.*
+import plus.maa.backend.repository.entity.gamedata.ArkActivity
+import plus.maa.backend.repository.entity.gamedata.ArkCharacter
+import plus.maa.backend.repository.entity.gamedata.ArkCrisisV2Info
+import plus.maa.backend.repository.entity.gamedata.ArkStage
+import plus.maa.backend.repository.entity.gamedata.ArkTower
+import plus.maa.backend.repository.entity.gamedata.ArkZone
+import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 
 private val log = KotlinLogging.logger {}
@@ -18,8 +23,9 @@ private val log = KotlinLogging.logger {}
  * @author john180
  */
 @Service
-class ArkGameDataService(private val okHttpClient: OkHttpClient) {
-
+class ArkGameDataService(
+    private val okHttpClient: OkHttpClient,
+) {
     companion object {
         private const val ARK_STAGE =
             "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/gamedata/excel/stage_table.json"
@@ -35,8 +41,7 @@ class ArkGameDataService(private val okHttpClient: OkHttpClient) {
             "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/gamedata/excel/crisis_v2_table.json"
     }
 
-    private final val mapper = jacksonObjectMapper()
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    private final val mapper = jacksonObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
     private val stageMap = ConcurrentHashMap<String, ArkStage>()
     private val levelStageMap = ConcurrentHashMap<String, ArkStage>()
     private val zoneMap = ConcurrentHashMap<String, ArkZone>()
@@ -46,12 +51,7 @@ class ArkGameDataService(private val okHttpClient: OkHttpClient) {
     private val arkCrisisV2InfoMap = ConcurrentHashMap<String, ArkCrisisV2Info>()
 
     fun syncGameData(): Boolean {
-        return syncStage() &&
-                syncZone() &&
-                syncActivity() &&
-                syncCharacter() &&
-                syncTower() &&
-                syncCrisisV2Info()
+        return syncStage() && syncZone() && syncActivity() && syncCharacter() && syncTower() && syncCrisisV2Info()
     }
 
     fun findStage(levelId: String, code: String, stageId: String): ArkStage? {
@@ -76,7 +76,6 @@ class ArkGameDataService(private val okHttpClient: OkHttpClient) {
     }
 
     fun findTower(zoneId: String) = arkTowerMap[zoneId]
-
 
     fun findCharacter(characterId: String): ArkCharacter? {
         val ids = characterId.split("_")
@@ -249,8 +248,7 @@ class ArkGameDataService(private val okHttpClient: OkHttpClient) {
                 }
                 val node = mapper.reader().readTree(body.string())
                 val crisisV2InfoNode = node.get("seasonInfoDataMap")
-                val crisisV2InfoMap =
-                    mapper.convertValue(crisisV2InfoNode, object : TypeReference<Map<String, ArkCrisisV2Info>>() {})
+                val crisisV2InfoMap = mapper.convertValue(crisisV2InfoNode, object : TypeReference<Map<String, ArkCrisisV2Info>>() {})
                 val temp = ConcurrentHashMap<String, ArkCrisisV2Info>()
                 crisisV2InfoMap.forEach { (k, v) -> temp[ArkLevelUtil.getKeyInfoById(k)] = v }
                 arkCrisisV2InfoMap.clear()

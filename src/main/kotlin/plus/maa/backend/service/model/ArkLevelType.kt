@@ -1,8 +1,10 @@
 package plus.maa.backend.service.model
 
-import java.util.*
+import java.util.Locale
 
-enum class ArkLevelType(val display: String) {
+enum class ArkLevelType(
+    val display: String,
+) {
     MAINLINE("主题曲"),
     WEEKLY("资源收集"),
     ACTIVITIES("活动关卡"),
@@ -10,17 +12,16 @@ enum class ArkLevelType(val display: String) {
     MEMORY("悖论模拟"),
     RUNE("危机合约"),
     LEGION("保全派驻"),
-    ROGUELIKE("集成战略"),  //实际不进行解析
-    TRAINING("训练关卡"),  //实际不进行解析
-    UNKNOWN("未知类型");
+    ROGUELIKE("集成战略"), // 实际不进行解析
+    TRAINING("训练关卡"), // 实际不进行解析
+    UNKNOWN("未知类型"), ;
 
     companion object {
         fun fromLevelId(levelId: String?): ArkLevelType {
             if (levelId.isNullOrBlank()) {
                 return UNKNOWN
             }
-            val ids = levelId.lowercase(Locale.getDefault()).split("/".toRegex()).dropLastWhile { it.isEmpty() }
-                .toTypedArray()
+            val ids = levelId.lowercase(Locale.getDefault()).split("/").dropLastWhile { it.isEmpty() }.toTypedArray()
             val type = if ((ids[0] == "obt")) ids[1] else ids[0]
             return when (type) {
                 "main", "hard" -> MAINLINE

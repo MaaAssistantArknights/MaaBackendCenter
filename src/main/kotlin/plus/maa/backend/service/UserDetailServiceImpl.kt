@@ -14,8 +14,9 @@ import plus.maa.backend.service.model.LoginUser
  * @author AnselYuki
  */
 @Service
-class UserDetailServiceImpl(private val userRepository: UserRepository) : UserDetailsService {
-
+class UserDetailServiceImpl(
+    private val userRepository: UserRepository,
+) : UserDetailsService {
     /**
      * 查询用户信息
      *
@@ -28,7 +29,7 @@ class UserDetailServiceImpl(private val userRepository: UserRepository) : UserDe
         val user = userRepository.findByEmail(email) ?: throw UsernameNotFoundException("用户不存在")
 
         val permissions = collectAuthoritiesFor(user)
-        //数据封装成UserDetails返回
+        // 数据封装成UserDetails返回
         return LoginUser(user, permissions)
     }
 

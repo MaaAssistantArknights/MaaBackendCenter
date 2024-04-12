@@ -13,9 +13,8 @@ data class MaaArkStage(
      * 例: CB-EX8
      */
     val code: String,
-
     /**
      * 例:  act5d0_ex08
      */
-    val stageId: String?
+    val stageId: String?,
 )

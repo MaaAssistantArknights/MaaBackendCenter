@@ -18,7 +18,7 @@ interface CommentsAreaRepository : MongoRepository<CommentsArea, String> {
         copilotId: Long,
         delete: Boolean,
         exists: Boolean,
-        pageable: Pageable
+        pageable: Pageable,
     ): Page<CommentsArea>
 
     fun findByCopilotIdAndUploaderIdAndDeleteAndMainCommentIdExists(
@@ -26,7 +26,7 @@ interface CommentsAreaRepository : MongoRepository<CommentsArea, String> {
         uploaderId: String,
         delete: Boolean,
         exists: Boolean,
-        pageable: Pageable
+        pageable: Pageable,
     ): Page<CommentsArea>
 
     fun findByCopilotIdInAndDelete(copilotIds: Collection<Long>, delete: Boolean): List<CommentsArea>

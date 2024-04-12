@@ -11,10 +11,10 @@ import java.lang.annotation.Inherited
     AnnotationTarget.PROPERTY_GETTER,
     AnnotationTarget.PROPERTY_SETTER,
     AnnotationTarget.CLASS,
-    AnnotationTarget.ANNOTATION_CLASS
+    AnnotationTarget.ANNOTATION_CLASS,
 )
 @Retention(
-    AnnotationRetention.RUNTIME
+    AnnotationRetention.RUNTIME,
 )
 @Inherited
 @SecurityRequirement(name = SpringDocConfig.SECURITY_SCHEME_JWT)

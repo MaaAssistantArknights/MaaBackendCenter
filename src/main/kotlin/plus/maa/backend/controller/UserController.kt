@@ -11,7 +11,14 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import plus.maa.backend.config.doc.RequireJwt
 import plus.maa.backend.config.security.AuthenticationHelper
-import plus.maa.backend.controller.request.user.*
+import plus.maa.backend.controller.request.user.LoginDTO
+import plus.maa.backend.controller.request.user.PasswordResetDTO
+import plus.maa.backend.controller.request.user.PasswordResetVCodeDTO
+import plus.maa.backend.controller.request.user.PasswordUpdateDTO
+import plus.maa.backend.controller.request.user.RefreshReq
+import plus.maa.backend.controller.request.user.RegisterDTO
+import plus.maa.backend.controller.request.user.SendRegistrationTokenDTO
+import plus.maa.backend.controller.request.user.UserInfoUpdateDTO
 import plus.maa.backend.controller.response.MaaResult
 import plus.maa.backend.controller.response.MaaResult.Companion.success
 import plus.maa.backend.controller.response.user.MaaLoginRsp
@@ -34,7 +41,6 @@ class UserController(
     private val emailService: EmailService,
     private val helper: AuthenticationHelper,
 ) {
-
     /**
      * 更新当前用户的密码(根据原密码)
      *
@@ -119,9 +125,7 @@ class UserController(
     @PostMapping("/register")
     @Operation(summary = "用户注册")
     @ApiResponse(description = "注册结果")
-    fun register(@RequestBody user: @Valid RegisterDTO): MaaResult<MaaUserInfo> {
-        return success(userService.register(user))
-    }
+    fun register(@RequestBody user: @Valid RegisterDTO): MaaResult<MaaUserInfo> = success(userService.register(user))
 
     /**
      * 获得注册时的验证码
@@ -143,7 +147,5 @@ class UserController(
     @PostMapping("/login")
     @Operation(summary = "用户登录")
     @ApiResponse(description = "登录结果")
-    fun login(@RequestBody user: @Valid LoginDTO): MaaResult<MaaLoginRsp> {
-        return success("登陆成功", userService.login(user))
-    }
+    fun login(@RequestBody user: @Valid LoginDTO): MaaResult<MaaLoginRsp> = success("登陆成功", userService.login(user))
 }

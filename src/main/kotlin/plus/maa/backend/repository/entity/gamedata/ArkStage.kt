@@ -6,19 +6,16 @@ data class ArkStage(
      * 例: Activities/ACT5D0/level_act5d0_ex08
      */
     val levelId: String?,
-
     /**
      * 例: act14d7_zone2
      */
     val zoneId: String,
-
     /**
      * 例:  act5d0_ex08
      */
     val stageId: String,
-
     /**
      * 例: CB-EX8
      */
-    val code: String
+    val code: String,
 )

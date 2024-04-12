@@ -20,9 +20,9 @@ import java.io.File
 import java.io.IOException
 import java.nio.file.Files
 import java.time.LocalDate
-import java.util.*
+import java.util.Objects
 
-private val log = KotlinLogging.logger {  }
+private val log = KotlinLogging.logger { }
 
 /**
  * CopilotBackupTask
@@ -33,7 +33,6 @@ class CopilotBackupTask(
     private val copilotRepository: CopilotRepository,
     private val levelService: ArkLevelService,
 ) {
-
     private lateinit var git: Git
 
     /**
@@ -58,17 +57,13 @@ class CopilotBackupTask(
             Files.list(repoDir.toPath()).use { fileList ->
                 git = if (fileList.findFirst().isEmpty) {
                     // 不存在文件则初始化
-                    Git.cloneRepository()
-                        .setURI(backup.uri)
-                        .setDirectory(repoDir)
-                        .setTransportConfigCallback(sshCallback)
-                        .call()
+                    Git.cloneRepository().setURI(backup.uri).setDirectory(repoDir).setTransportConfigCallback(sshCallback).call()
                 } else {
                     Git.open(repoDir)
                 }
             }
         } catch (e: IOException) {
-            log.error { "init copilot backup repo failed, repoDir: $repoDir, $e"}
+            log.error { "init copilot backup repo failed, repoDir: $repoDir, $e" }
         } catch (e: GitAPIException) {
             log.error { "init copilot backup repo failed, repoDir: $repoDir, $e" }
         }
@@ -90,14 +85,18 @@ class CopilotBackupTask(
 
         val baseDirectory = git.repository.workTree
         val copilots = copilotRepository.findAll()
-        copilots.forEach{ copilot: Copilot ->
+        copilots.forEach { copilot: Copilot ->
             val level = levelService.findByLevelIdFuzzy(copilot.stageName!!) ?: return@forEach
             // 暂时使用 copilotId 作为文件名
             val filePath = File(
                 java.lang.String.join(
-                    File.separator, baseDirectory.path, level.catOne,
-                    level.catTwo, level.catThree, copilot.copilotId.toString() + ".json"
-                )
+                    File.separator,
+                    baseDirectory.path,
+                    level.catOne,
+                    level.catTwo,
+                    level.catThree,
+                    copilot.copilotId.toString() + ".json",
+                ),
             )
             val content = copilot.content ?: return@forEach
             if (copilot.delete) {

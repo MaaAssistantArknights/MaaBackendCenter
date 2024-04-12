@@ -10,8 +10,7 @@ data class CommentsInfo(
     val commentId: String,
     val uploader: String,
     val uploaderId: String,
-
-    //评论内容,
+    // 评论内容,
     val message: String,
     val uploadTime: LocalDateTime,
     val like: Long = 0,

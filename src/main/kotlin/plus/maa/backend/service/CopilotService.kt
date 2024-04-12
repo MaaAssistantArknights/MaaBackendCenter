@@ -26,17 +26,22 @@ import plus.maa.backend.controller.response.MaaResultException
 import plus.maa.backend.controller.response.copilot.ArkLevelInfo
 import plus.maa.backend.controller.response.copilot.CopilotInfo
 import plus.maa.backend.controller.response.copilot.CopilotPageInfo
-import plus.maa.backend.repository.*
+import plus.maa.backend.repository.CommentsAreaRepository
+import plus.maa.backend.repository.CopilotRepository
+import plus.maa.backend.repository.RatingRepository
+import plus.maa.backend.repository.RedisCache
+import plus.maa.backend.repository.UserRepository
 import plus.maa.backend.repository.entity.Copilot
 import plus.maa.backend.repository.entity.Copilot.OperationGroup
 import plus.maa.backend.repository.entity.Rating
+import plus.maa.backend.repository.findByUsersId
 import plus.maa.backend.service.model.RatingCache
 import plus.maa.backend.service.model.RatingType
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
-import java.util.*
+import java.util.Objects
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
@@ -64,9 +69,8 @@ class CopilotService(
     private val userRepository: UserRepository,
     private val commentsAreaRepository: CommentsAreaRepository,
     private val properties: MaaCopilotProperties,
-    private val copilotConverter: CopilotConverter
+    private val copilotConverter: CopilotConverter,
 ) {
-
     /**
      * 并修正前端的冗余部分
      *
@@ -121,11 +125,7 @@ class CopilotService(
         }
     }
 
-
-    private fun caseInsensitive(s: String): Pattern {
-        return Pattern.compile(s, Pattern.CASE_INSENSITIVE)
-    }
-
+    private fun caseInsensitive(s: String): Pattern = Pattern.compile(s, Pattern.CASE_INSENSITIVE)
 
     /**
      * 上传新的作业
@@ -138,7 +138,10 @@ class CopilotService(
         // 将其转换为数据库存储对象
         val copilot = copilotConverter.toCopilot(
             copilotDTO,
-            idComponent.getId(Copilot.META), loginUserId, LocalDateTime.now(), content
+            idComponent.getId(Copilot.META),
+            loginUserId,
+            LocalDateTime.now(),
+            content,
         )
         copilotRepository.insert(copilot)
         return copilot.copilotId!!
@@ -152,10 +155,8 @@ class CopilotService(
             Assert.state(copilot.uploaderId == loginUserId, "您无法修改不属于您的作业")
             copilot.delete = true
             copilotRepository.save(copilot)
-            /*
-             * 删除作业时，如果被删除的项在 Redis 首页缓存中存在，则清空对应的首页缓存
-             * 新增作业就不必，因为新作业显然不会那么快就登上热度榜和浏览量榜
-             */
+            // 删除作业时，如果被删除的项在 Redis 首页缓存中存在，则清空对应的首页缓存
+            // 新增作业就不必，因为新作业显然不会那么快就登上热度榜和浏览量榜
             for ((key1) in HOME_PAGE_CACHE_CONFIG) {
                 val key = String.format("home:%s:copilotIds", key1)
                 val pattern = String.format("home:%s:*", key1)
@@ -175,9 +176,7 @@ class CopilotService(
         return copilotOptional?.let { copilot: Copilot ->
             // 60分钟内限制同一个用户对访问量的增加
             val cache = redisCache.getCache("views:$userIdOrIpAddress", RatingCache::class.java)
-            if (Objects.isNull(cache) || Objects.isNull(cache!!.copilotIds) ||
-                !cache.copilotIds.contains(id)
-            ) {
+            if (Objects.isNull(cache) || Objects.isNull(cache!!.copilotIds) || !cache.copilotIds.contains(id)) {
                 val query = Query.query(Criteria.where("copilotId").`is`(id))
                 val update = Update()
                 // 增加一次views
@@ -187,11 +186,15 @@ class CopilotService(
                     redisCache.setCache("views:$userIdOrIpAddress", RatingCache(Sets.newHashSet(id)))
                 } else {
                     redisCache.updateCache(
-                        "views:$userIdOrIpAddress", RatingCache::class.java, cache,
+                        "views:$userIdOrIpAddress",
+                        RatingCache::class.java,
+                        cache,
                         { updateCache: RatingCache? ->
                             updateCache!!.copilotIds.add(id)
                             updateCache
-                        }, 60, TimeUnit.MINUTES
+                        },
+                        60,
+                        TimeUnit.MINUTES,
                     )
                 }
             }
@@ -200,11 +203,14 @@ class CopilotService(
             // 新评分系统
             val ratingType = ratingRepository.findByTypeAndKeyAndUserId(
                 Rating.KeyType.COPILOT,
-                copilot.copilotId.toString(), userIdOrIpAddress
+                copilot.copilotId.toString(),
+                userIdOrIpAddress,
             )?.rating
             formatCopilot(
-                copilot, ratingType, maaUser!!.userName,
-                commentsAreaRepository.countByCopilotIdAndDelete(copilot.copilotId!!, false)
+                copilot,
+                ratingType,
+                maaUser!!.userName,
+                commentsAreaRepository.countByCopilotIdAndDelete(copilot.copilotId!!, false),
             )
         }
     }
@@ -222,7 +228,10 @@ class CopilotService(
         val cacheKey = AtomicReference<String?>()
         val setKey = AtomicReference<String>()
         // 只缓存默认状态下热度和访问量排序的结果，并且最多只缓存前三页
-        if (request.page <= 3 && request.document == null && request.levelKeyword == null && request.uploaderId == null && request.operator == null &&
+        if (request.page <= 3 &&
+            request.document == null &&
+            request.levelKeyword == null &&
+            request.uploaderId == null && request.operator == null &&
             request.copilotIds.isNullOrEmpty()
         ) {
             request.orderBy?.takeIf { orderBy -> orderBy.isNotBlank() }
@@ -243,7 +252,7 @@ class CopilotService(
                     "id" -> "copilotId"
                     else -> request.orderBy
                 }
-            } ?: "copilotId"
+            } ?: "copilotId",
         )
         // 判断是否有值 无值则为默认
         val page = if (request.page > 0) request.page else 1
@@ -260,8 +269,7 @@ class CopilotService(
 
         andQueries.add(Criteria.where("delete").`is`(false))
 
-
-        //关卡名、关卡类型、关卡编号
+        // 关卡名、关卡类型、关卡编号
         if (!request.levelKeyword.isNullOrBlank()) {
             val keyword = request.levelKeyword!!
             val levelInfo = levelService.queryLevelInfosByKeyword(keyword)
@@ -270,8 +278,8 @@ class CopilotService(
             } else {
                 andQueries.add(
                     Criteria.where("stageName").`in`(
-                        levelInfo.map { obj: ArkLevelInfo -> obj.stageId }.toSet()
-                    )
+                        levelInfo.map { obj: ArkLevelInfo -> obj.stageId }.toSet(),
+                    ),
                 )
             }
         }
@@ -281,14 +289,13 @@ class CopilotService(
             andQueries.add(Criteria.where("copilotId").`in`(request.copilotIds!!))
         }
 
-        //标题、描述、神秘代码
+        // 标题、描述、神秘代码
         if (!request.document.isNullOrBlank()) {
             orQueries.add(Criteria.where("doc.title").regex(caseInsensitive(request.document)))
             orQueries.add(Criteria.where("doc.details").regex(caseInsensitive(request.document)))
         }
 
-
-        //包含或排除干员
+        // 包含或排除干员
         var oper = request.operator
         if (!oper.isNullOrBlank()) {
             oper = oper.replace("[“\"”]".toRegex(), "")
@@ -305,7 +312,7 @@ class CopilotService(
             }
         }
 
-        //查看自己
+        // 查看自己
         if (StringUtils.isNotBlank(request.uploaderId)) {
             if ("me" == request.uploaderId) {
                 if (!ObjectUtils.isEmpty(userId)) {
@@ -338,17 +345,18 @@ class CopilotService(
             it.copilotId!!
         }.toSet()
         val maaUsers = userRepository.findByUsersId(copilots.map { it.uploaderId!! }.toList())
-        val commentsCount = commentsAreaRepository.findByCopilotIdInAndDelete(copilotIds, false)
-            .groupBy { it.copilotId }
-            .mapValues { it.value.size.toLong() }
+        val commentsCount = commentsAreaRepository.findByCopilotIdInAndDelete(copilotIds, false).groupBy {
+            it.copilotId
+        }.mapValues { it.value.size.toLong() }
 
         // 新版评分系统
         // 反正目前首页和搜索不会直接展示当前用户有没有点赞，干脆直接不查，要用户点进作业才显示自己是否点赞
         val infos = copilots.map { copilot ->
             formatCopilot(
-                copilot, null,
+                copilot,
+                null,
                 maaUsers[copilot.uploaderId]!!.userName,
-                commentsCount[copilot.copilotId]
+                commentsCount[copilot.copilotId],
             )
         }.toList()
 
@@ -404,7 +412,7 @@ class CopilotService(
         val ratingOptional = ratingRepository.findByTypeAndKeyAndUserId(
             Rating.KeyType.COPILOT,
             request.id.toString(),
-            userIdOrIpAddress
+            userIdOrIpAddress,
         )
         // 如果评分存在则更新评分
         if (ratingOptional != null) {
@@ -432,7 +440,7 @@ class CopilotService(
                 request.id.toString(),
                 userIdOrIpAddress,
                 RatingType.fromRatingType(rating),
-                LocalDateTime.now()
+                LocalDateTime.now(),
             )
 
             ratingRepository.insert(newRating)
@@ -443,9 +451,7 @@ class CopilotService(
 
         // 获取只包含评分的作业
         var query = Query.query(
-            Criteria
-                .where("copilotId").`is`(request.id)
-                .and("delete").`is`(false)
+            Criteria.where("copilotId").`is`(request.id).and("delete").`is`(false),
         )
         // 排除 _id，防止误 save 该不完整作业后原有数据丢失
         query.fields().include("likeCount", "dislikeCount").exclude("_id")
@@ -464,9 +470,7 @@ class CopilotService(
         val ratingLevel = bigDecimal.setScale(1, RoundingMode.HALF_UP).toDouble()
         // 更新数据
         query = Query.query(
-            Criteria
-                .where("copilotId").`is`(request.id)
-                .and("delete").`is`(false)
+            Criteria.where("copilotId").`is`(request.id).and("delete").`is`(false),
         )
         val update = Update()
         update["likeCount"] = likeCount
@@ -479,7 +483,9 @@ class CopilotService(
         redisCache.incZSet(
             "rate:hot:copilotIds",
             request.id.toString(),
-            1.0, 100, (3600 * 3).toLong()
+            1.0,
+            100,
+            (3600 * 3).toLong(),
         )
     }
 
@@ -487,13 +493,12 @@ class CopilotService(
      * 将数据库内容转换为前端所需格式 <br></br>
      * 新版评分系统
      */
-    private fun formatCopilot(
-        copilot: Copilot, ratingType: RatingType?, userName: String,
-        commentsCount: Long?
-    ): CopilotInfo {
+    private fun formatCopilot(copilot: Copilot, ratingType: RatingType?, userName: String, commentsCount: Long?): CopilotInfo {
         val info = copilotConverter.toCopilotInfo(
-            copilot, userName, copilot.copilotId!!,
-            commentsCount
+            copilot,
+            userName,
+            copilot.copilotId!!,
+            commentsCount,
         )
 
         info.ratingRatio = copilot.ratingRatio
@@ -502,8 +507,7 @@ class CopilotService(
             info.ratingType = ratingType.display
         }
         // 评分数少于一定数量
-        info.notEnoughRating =
-            copilot.likeCount + copilot.dislikeCount <= properties.copilot.minValueShowNotEnoughRating
+        info.notEnoughRating = copilot.likeCount + copilot.dislikeCount <= properties.copilot.minValueShowNotEnoughRating
 
         info.available = true
 
@@ -526,11 +530,11 @@ class CopilotService(
         首页分页查询缓存配置
         格式为：需要缓存的 orderBy 类型（也就是榜单类型） -> 缓存时间
         （Map.of()返回的是不可变对象，无需担心线程安全问题）
-     */
-        private val HOME_PAGE_CACHE_CONFIG: Map<String?, Long?> = java.util.Map.of(
-            "hot", 3600 * 24L,
-            "views", 3600L,
-            "id", 300L
+         */
+        private val HOME_PAGE_CACHE_CONFIG: Map<String?, Long?> = mapOf(
+            "hot" to 3600 * 24L,
+            "views" to 3600L,
+            "id" to 300L,
         )
 
         @JvmStatic
@@ -551,8 +555,7 @@ class CopilotService(
                 base *= greatRate
             }
             // 上一周好评率 * (上一周评分数 / 10) * (浏览数 / 10) / 过去的周数
-            val s = (greatRate * (copilot.views / 10.0)
-                    * max((ups + downs) / 10.0, 1.0)) / pastedWeeks
+            val s = (greatRate * (copilot.views / 10.0) * max((ups + downs) / 10.0, 1.0)) / pastedWeeks
             val order = ln(max(s, 1.0))
             return order + s / 1000.0 + base
         }

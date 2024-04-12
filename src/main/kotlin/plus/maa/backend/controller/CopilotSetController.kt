@@ -5,7 +5,12 @@ import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 import plus.maa.backend.config.doc.RequireJwt
 import plus.maa.backend.config.security.AuthenticationHelper
 import plus.maa.backend.controller.request.CommonIdReq
@@ -28,30 +33,24 @@ import plus.maa.backend.service.CopilotSetService
 @RestController
 class CopilotSetController(
     private val service: CopilotSetService,
-    private val helper: AuthenticationHelper
+    private val helper: AuthenticationHelper,
 ) {
-
     @Operation(summary = "查询作业集列表")
     @ApiResponse(description = "作业集id")
     @PostMapping("/query")
-    fun querySets(@RequestBody req: @Valid CopilotSetQuery): MaaResult<CopilotSetPageRes> {
-        return success(service.query(req, helper.obtainUserId()))
-    }
+    fun querySets(@RequestBody req: @Valid CopilotSetQuery): MaaResult<CopilotSetPageRes> =
+        success(service.query(req, helper.obtainUserId()))
 
     @Operation(summary = "查询作业集列表")
     @ApiResponse(description = "作业集id")
     @GetMapping("/get")
-    fun getSet(@RequestParam @Parameter(description = "作业id") id: Long): MaaResult<CopilotSetRes> {
-        return success(service.get(id))
-    }
+    fun getSet(@RequestParam @Parameter(description = "作业id") id: Long): MaaResult<CopilotSetRes> = success(service.get(id))
 
     @Operation(summary = "创建作业集")
     @ApiResponse(description = "作业集id")
     @RequireJwt
     @PostMapping("/create")
-    fun createSet(@RequestBody req: @Valid CopilotSetCreateReq): MaaResult<Long> {
-        return success(service.create(req, helper.obtainUserId()))
-    }
+    fun createSet(@RequestBody req: @Valid CopilotSetCreateReq): MaaResult<Long> = success(service.create(req, helper.obtainUserId()))
 
     @Operation(summary = "添加作业集作业列表")
     @RequireJwt

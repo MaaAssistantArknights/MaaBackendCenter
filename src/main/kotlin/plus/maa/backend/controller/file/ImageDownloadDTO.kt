@@ -12,5 +12,5 @@ data class ImageDownloadDTO(
     val classification: String? = null,
     val version: List<String>? = null,
     val label: String? = null,
-    val delete: Boolean = false
+    val delete: Boolean = false,
 )

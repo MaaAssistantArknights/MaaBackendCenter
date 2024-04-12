@@ -9,5 +9,8 @@ import java.io.Serializable
  * @author dragove
  * created on 2023-12-27
  */
-data class CollectionMeta<T>(val idGetter: (T) -> Long, val incIdField: String, val entityClass: Class<T>) :
-    Serializable
+data class CollectionMeta<T>(
+    val idGetter: (T) -> Long,
+    val incIdField: String,
+    val entityClass: Class<T>,
+) : Serializable

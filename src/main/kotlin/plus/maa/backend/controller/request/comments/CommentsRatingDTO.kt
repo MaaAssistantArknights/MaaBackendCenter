@@ -10,5 +10,5 @@ data class CommentsRatingDTO(
     @field:NotBlank(message = "评分id不可为空")
     val commentId: String,
     @field:NotBlank(message = "评分不能为空")
-    val rating: String
+    val rating: String,
 )

@@ -17,11 +17,10 @@ class OkHttpUtils {
      * @return OkHttpClient
      */
     @Bean
-    fun defaultOkHttpClient(): OkHttpClient {
-        return OkHttpClient().newBuilder()
-            .connectTimeout(5, TimeUnit.SECONDS)
-            .readTimeout(5, TimeUnit.SECONDS)
-            .connectionPool(ConnectionPool(10, 5, TimeUnit.MINUTES))
-            .build()
-    }
+    fun defaultOkHttpClient(): OkHttpClient = OkHttpClient()
+        .newBuilder()
+        .connectTimeout(5, TimeUnit.SECONDS)
+        .readTimeout(5, TimeUnit.SECONDS)
+        .connectionPool(ConnectionPool(10, 5, TimeUnit.MINUTES))
+        .build()
 }

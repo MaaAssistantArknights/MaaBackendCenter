@@ -26,9 +26,8 @@ import plus.maa.backend.controller.response.MaaResultException
 class SensitiveWordAop(
     // 敏感词库
     private val wordTree: WordTree,
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
 ) {
-
     // SpEL 表达式解析器
     private val parser = SpelExpressionParser()
 

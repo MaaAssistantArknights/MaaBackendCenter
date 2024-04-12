@@ -11,7 +11,6 @@ class AccessLimitConfig(
     private val stringRedisTemplate: StringRedisTemplate,
     private val objectMapper: ObjectMapper,
 ) : WebMvcConfigurer {
-
     override fun addInterceptors(registry: InterceptorRegistry) {
         registry.addInterceptor(AccessLimitInterceptor(stringRedisTemplate, objectMapper))
     }

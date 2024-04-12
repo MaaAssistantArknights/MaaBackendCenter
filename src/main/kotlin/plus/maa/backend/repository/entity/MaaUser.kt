@@ -16,12 +16,11 @@ data class MaaUser(
     @Id
     val userId: String? = null,
     var userName: String,
-
     @Indexed(unique = true)
     val email: String,
     var password: String,
     var status: Int = 0,
-    var refreshJwtIds: MutableList<String> = ArrayList()
+    var refreshJwtIds: MutableList<String> = ArrayList(),
 ) : Serializable {
 
     companion object {
@@ -29,7 +28,7 @@ data class MaaUser(
         val UNKNOWN: MaaUser = MaaUser(
             userName = "未知用户:(",
             email = "unknown@unkown.unkown",
-            password = "unknown"
+            password = "unknown",
         )
     }
 }

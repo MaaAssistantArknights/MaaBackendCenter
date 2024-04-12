@@ -1,9 +1,9 @@
 package plus.maa.backend.repository.entity.gamedata
 
-data class ArkCharacter (
+data class ArkCharacter(
     val name: String,
     val profession: String,
-    val rarity: Int
+    val rarity: Int,
 ) {
     var id: String? = null
 }

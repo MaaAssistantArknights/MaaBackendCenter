@@ -17,9 +17,8 @@ import plus.maa.backend.controller.response.MaaResult
 @RestController
 class SystemController(
     private val properties: MaaCopilotProperties,
-    private val gitProperties: GitProperties
+    private val gitProperties: GitProperties,
 ) {
-
     /**
      * Tests if the server is ready.
      * @return 系统启动信息
@@ -29,7 +28,6 @@ class SystemController(
         delay(1000L)
         return MaaResult.success("Maa Copilot Server is Running", null)
     }
-
 
     /**
      * Gets the current version of the server.

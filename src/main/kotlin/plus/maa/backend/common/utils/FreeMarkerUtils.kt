@@ -6,7 +6,7 @@ import plus.maa.backend.controller.response.MaaResultException
 import java.io.IOException
 import java.io.StringWriter
 import java.nio.charset.StandardCharsets
-import java.util.*
+import java.util.Locale
 
 /**
  * @author dragove

@@ -25,17 +25,19 @@ class HttpInterfaceConfig {
 
         val client = WebClient.builder()
             .baseUrl("https://api.github.com")
-            .exchangeStrategies(ExchangeStrategies
-                .builder()
-                .codecs { codecs: ClientCodecConfigurer ->
-                    codecs.defaultCodecs()
-                        .jackson2JsonEncoder(Jackson2JsonEncoder(mapper))
-                    codecs.defaultCodecs()
-                        .jackson2JsonDecoder(Jackson2JsonDecoder(mapper))
-                    // 最大 20MB
-                    codecs.defaultCodecs().maxInMemorySize(20 * 1024 * 1024)
-                }
-                .build())
+            .exchangeStrategies(
+                ExchangeStrategies
+                    .builder()
+                    .codecs { codecs: ClientCodecConfigurer ->
+                        codecs.defaultCodecs()
+                            .jackson2JsonEncoder(Jackson2JsonEncoder(mapper))
+                        codecs.defaultCodecs()
+                            .jackson2JsonDecoder(Jackson2JsonDecoder(mapper))
+                        // 最大 20MB
+                        codecs.defaultCodecs().maxInMemorySize(20 * 1024 * 1024)
+                    }
+                    .build(),
+            )
             .defaultHeaders { headers: HttpHeaders ->
                 headers.add("Accept", "application/vnd.github+json")
                 headers.add("X-GitHub-Api-Version", "2022-11-28")

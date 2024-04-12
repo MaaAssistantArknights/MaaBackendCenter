@@ -8,5 +8,5 @@ import jakarta.validation.constraints.NotBlank
  */
 data class CommentsDeleteDTO(
     @field:NotBlank(message = "评论id不可为空")
-    val commentId: String
+    val commentId: String,
 )

@@ -18,5 +18,5 @@ data class RegisterDTO(
     @field:Length(min = 8, max = 32, message = "密码长度必须在8-32位之间")
     val password: String,
     @field:NotBlank(message = "请输入验证码")
-    val registrationToken: String
+    val registrationToken: String,
 )

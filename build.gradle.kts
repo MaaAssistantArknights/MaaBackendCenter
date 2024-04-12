@@ -1,5 +1,6 @@
 import org.hidetake.gradle.swagger.generator.GenerateSwaggerCode
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
 
 plugins {
     java
@@ -13,6 +14,8 @@ plugins {
     kotlin("jvm") version "1.9.22"
     kotlin("plugin.spring") version "1.9.22"
     kotlin("kapt") version "1.9.22"
+
+    id("org.jlleitschuh.gradle.ktlint") version "12.1.0"
 }
 
 group = "plus.maa"
@@ -27,7 +30,6 @@ repositories {
     maven(url = "https://maven.aliyun.com/repository/spring/")
     mavenCentral()
 }
-
 
 dependencies {
     val hutoolVersion = "5.8.26"
@@ -68,8 +70,8 @@ dependencies {
     implementation("cn.hutool:hutool-dfa:$hutoolVersion")
 
     // mapstruct
-    implementation("org.mapstruct:mapstruct:${mapstructVersion}")
-    kapt("org.mapstruct:mapstruct-processor:${mapstructVersion}")
+    implementation("org.mapstruct:mapstruct:$mapstructVersion")
+    kapt("org.mapstruct:mapstruct-processor:$mapstructVersion")
 
     implementation("org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r")
     implementation("org.eclipse.jgit:org.eclipse.jgit.ssh.apache.agent:6.8.0.202311291450-r")
@@ -84,7 +86,6 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
     swaggerCodegen("org.openapitools:openapi-generator-cli:7.2.0")
-
 }
 
 kapt {
@@ -102,10 +103,8 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
-
 val swaggerOutputDir = layout.buildDirectory.dir("docs")
 val swaggerOutputName = "swagger.json"
-
 
 openApi {
     apiDocsUrl = "http://localhost:8848/v3/api-docs"
@@ -119,38 +118,46 @@ swaggerSources {
     val swaggerOutputFile = swaggerOutputDir.get().file(swaggerOutputName)
     create("TsFetch") {
         setInputFile(file(swaggerOutputFile))
-        code(closureOf<GenerateSwaggerCode> {
-            language = "typescript-fetch"
-            configFile = file("client-config/ts-fetch.json")
+        code(
+            closureOf<GenerateSwaggerCode> {
+                language = "typescript-fetch"
+                configFile = file("client-config/ts-fetch.json")
 //            templateDir = file('client-config/typescript-fetch')
-            rawOptions = listOf("-e", "mustache")
-            outputDir = file(clientDir.dir("ts-fetch-client"))
-        })
+                rawOptions = listOf("-e", "mustache")
+                outputDir = file(clientDir.dir("ts-fetch-client"))
+            },
+        )
     }
     create("CSharp") {
         setInputFile(file(swaggerOutputFile))
-        code(closureOf<GenerateSwaggerCode> {
-            language = "csharp"
-            configFile = file("client-config/csharp-netcore.json")
-            outputDir = file(clientDir.dir("csharp-client"))
+        code(
+            closureOf<GenerateSwaggerCode> {
+                language = "csharp"
+                configFile = file("client-config/csharp-netcore.json")
+                outputDir = file(clientDir.dir("csharp-client"))
 //            rawOptions = listOf("--type-mappings", "binary=System.IO.Stream")
-        })
+            },
+        )
     }
     create("Cpp") {
         setInputFile(file(swaggerOutputFile))
-        code(closureOf<GenerateSwaggerCode> {
-            language = "cpp-restsdk"
-            configFile = file("client-config/cpp.json")
-            outputDir = file(clientDir.dir("cpp-client"))
-        })
+        code(
+            closureOf<GenerateSwaggerCode> {
+                language = "cpp-restsdk"
+                configFile = file("client-config/cpp.json")
+                outputDir = file(clientDir.dir("cpp-client"))
+            },
+        )
     }
     create("Rust") {
         setInputFile(file(swaggerOutputFile))
-        code(closureOf<GenerateSwaggerCode> {
-            language = "rust"
-            configFile = file("client-config/rust.json")
-            outputDir = file(clientDir.dir("rust-client"))
-        })
+        code(
+            closureOf<GenerateSwaggerCode> {
+                language = "rust"
+                configFile = file("client-config/rust.json")
+                outputDir = file(clientDir.dir("rust-client"))
+            },
+        )
     }
 }
 
@@ -160,8 +167,15 @@ tasks {
     }
 }
 
-
 gitProperties {
     failOnNoGitDirectory = false
     keys = listOf("git.branch", "git.commit.id", "git.commit.id.abbrev", "git.commit.time")
+}
+
+ktlint {
+    ignoreFailures = false
+
+    reporters {
+        reporter(ReporterType.PLAIN)
+    }
 }

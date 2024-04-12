@@ -16,36 +16,50 @@ import plus.maa.backend.config.external.MaaCopilotProperties
  * @author AnselYuki
  */
 @Configuration
-class SpringDocConfig(properties: MaaCopilotProperties) {
-    private val _info = properties.info
+class SpringDocConfig(
+    properties: MaaCopilotProperties,
+) {
+    private val info = properties.info
     private val jwt = properties.jwt
 
     @Bean
     fun emergencyLogistics(): OpenAPI = OpenAPI().apply {
-        info(Info().apply {
-            title(_info.title)
-            description(_info.description)
-            version(_info.version)
-            license(License().apply {
-                name("GNU Affero General Public License v3.0")
-                url("https://www.gnu.org/licenses/agpl-3.0.html")
-            })
-        })
-        externalDocs(ExternalDocumentation().apply {
-            description("GitHub repo")
-            url("https://github.com/MaaAssistantArknights/MaaBackendCenter")
-        })
-        components(Components().apply {
-            addSecuritySchemes(SECURITY_SCHEME_JWT, SecurityScheme().apply {
-                type(SecurityScheme.Type.HTTP)
-                scheme("bearer")
-                `in`(SecurityScheme.In.HEADER)
-                name(jwt.header)
-                val s = "JWT Authorization header using the Bearer scheme. Raw head example: " +
-                        "\"${jwt.header}: Bearer {token}\""
-                description(s)
-            })
-        })
+        info(
+            Info().apply {
+                title(this@SpringDocConfig.info.title)
+                description(this@SpringDocConfig.info.description)
+                version(this@SpringDocConfig.info.version)
+                license(
+                    License().apply {
+                        name("GNU Affero General Public License v3.0")
+                        url("https://www.gnu.org/licenses/agpl-3.0.html")
+                    },
+                )
+            },
+        )
+        externalDocs(
+            ExternalDocumentation().apply {
+                description("GitHub repo")
+                url("https://github.com/MaaAssistantArknights/MaaBackendCenter")
+            },
+        )
+        components(
+            Components().apply {
+                addSecuritySchemes(
+                    SECURITY_SCHEME_JWT,
+                    SecurityScheme().apply {
+                        type(SecurityScheme.Type.HTTP)
+                        scheme("bearer")
+                        `in`(SecurityScheme.In.HEADER)
+                        name(jwt.header)
+                        val s =
+                            "JWT Authorization header using the Bearer scheme. Raw head example: " +
+                                "\"${jwt.header}: Bearer {token}\""
+                        description(s)
+                    },
+                )
+            },
+        )
     }
 
     @Bean

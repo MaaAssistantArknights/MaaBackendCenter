@@ -25,7 +25,7 @@ interface ArkLevelRepository : MongoRepository<ArkLevel, String> {
                 ]
             }
             
-            """
+            """,
     )
     fun findByLevelIdFuzzy(levelId: String): List<ArkLevel>
 
@@ -44,8 +44,7 @@ interface ArkLevelRepository : MongoRepository<ArkLevel, String> {
                 ]
             }
             
-            """
+            """,
     )
     fun queryLevelByKeyword(keyword: String): List<ArkLevel>
-
 }

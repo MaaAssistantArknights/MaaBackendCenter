@@ -10,16 +10,13 @@ import plus.maa.backend.repository.entity.MaaUser
  */
 class LoginUser(
     private val maaUser: MaaUser,
-    private val authorities: Collection<GrantedAuthority?>) : UserDetails {
+    private val authorities: Collection<GrantedAuthority?>,
+) : UserDetails {
     @JsonIgnore
-    override fun getAuthorities(): Collection<GrantedAuthority?> {
-        return authorities
-    }
+    override fun getAuthorities(): Collection<GrantedAuthority?> = authorities
 
     @JsonIgnore
-    override fun getPassword(): String {
-        return maaUser.password
-    }
+    override fun getPassword(): String = maaUser.password
 
     val userId: String?
         get() = maaUser.userId
@@ -31,32 +28,22 @@ class LoginUser(
      * @return 用户邮箱
      */
     @JsonIgnore
-    override fun getUsername(): String {
-        return maaUser.email
-    }
+    override fun getUsername(): String = maaUser.email
 
     @get:JsonIgnore
     val email: String
         get() = maaUser.email
 
-    override fun isAccountNonExpired(): Boolean {
-        return true
-    }
+    override fun isAccountNonExpired(): Boolean = true
 
-    override fun isAccountNonLocked(): Boolean {
-        return true
-    }
+    override fun isAccountNonLocked(): Boolean = true
 
-    override fun isCredentialsNonExpired(): Boolean {
-        return true
-    }
+    override fun isCredentialsNonExpired(): Boolean = true
 
     /**
      * 默认用户为0(禁用)，1为启用
      *
      * @return 账户启用状态
      */
-    override fun isEnabled(): Boolean {
-        return true
-    }
+    override fun isEnabled(): Boolean = true
 }

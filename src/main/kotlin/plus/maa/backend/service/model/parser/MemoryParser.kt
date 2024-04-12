@@ -6,7 +6,7 @@ import plus.maa.backend.repository.entity.ArkLevel
 import plus.maa.backend.repository.entity.gamedata.ArkTilePos
 import plus.maa.backend.service.ArkGameDataService
 import plus.maa.backend.service.model.ArkLevelType
-import java.util.*
+import java.util.Locale
 
 private val log = KotlinLogging.logger { }
 
@@ -21,23 +21,24 @@ private val log = KotlinLogging.logger { }
  */
 @Component
 class MemoryParser(
-    val dataService: ArkGameDataService
+    val dataService: ArkGameDataService,
 ) : ArkLevelParser {
-
-    override fun supportType(type: ArkLevelType): Boolean {
-        return ArkLevelType.MEMORY == type
-    }
+    override fun supportType(type: ArkLevelType): Boolean = ArkLevelType.MEMORY == type
 
     override fun parseLevel(level: ArkLevel, tilePos: ArkTilePos): ArkLevel? {
         level.catOne = ArkLevelType.MEMORY.display
 
         val chIdSplit =
-            level.stageId!!.split("_".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray() //mem_aurora_1
+            level
+                .stageId!!
+                .split("_".toRegex())
+                .dropLastWhile { it.isEmpty() }
+                .toTypedArray() // mem_aurora_1
         if (chIdSplit.size != 3) {
             log.error { "[PARSER]悖论模拟关卡stageId异常: ${level.stageId}, level: ${level.levelId}" }
             return null
         }
-        val chId = chIdSplit[1] //aurora
+        val chId = chIdSplit[1] // aurora
         val character = dataService.findCharacter(chId)
         if (character == null) {
             log.error { "[PARSER]悖论模拟关卡未找到角色信息: ${level.stageId}, level: ${level.levelId}" }
@@ -50,17 +51,15 @@ class MemoryParser(
         return level
     }
 
-    private fun parseProfession(professionId: String): String {
-        return when (professionId.lowercase(Locale.getDefault())) {
-            "medic" -> "医疗"
-            "special" -> "特种"
-            "warrior" -> "近卫"
-            "sniper" -> "狙击"
-            "tank" -> "重装"
-            "caster" -> "术师"
-            "pioneer" -> "先锋"
-            "support" -> "辅助"
-            else -> "未知"
-        }
+    private fun parseProfession(professionId: String): String = when (professionId.lowercase(Locale.getDefault())) {
+        "medic" -> "医疗"
+        "special" -> "特种"
+        "warrior" -> "近卫"
+        "sniper" -> "狙击"
+        "tank" -> "重装"
+        "caster" -> "术师"
+        "pioneer" -> "先锋"
+        "support" -> "辅助"
+        else -> "未知"
     }
 }

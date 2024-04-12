@@ -18,12 +18,13 @@ import plus.maa.backend.repository.RedisCache
 import java.io.IOException
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
-
 
 /**
  * @author LoMu
@@ -32,25 +33,17 @@ import java.util.zip.ZipOutputStream
 @Service
 class FileService(
     private val gridFsOperations: GridFsOperations,
-    private val redisCache: RedisCache
+    private val redisCache: RedisCache,
 ) {
-
-    fun uploadFile(
-        file: MultipartFile,
-        type: String?,
-        version: String,
-        classification: String?,
-        label: String?,
-        ip: String?
-    ) {
-        //redis持久化
+    fun uploadFile(file: MultipartFile, type: String?, version: String, classification: String?, label: String?, ip: String?) {
+        // redis持久化
 
         var realVersion = version
         if (redisCache.getCache("NotEnable:UploadFile", String::class.java) != null) {
             throw MaaResultException(403, "closed uploadfile")
         }
 
-        //文件小于1024Bytes不接收
+        // 文件小于1024Bytes不接收
         if (file.size < 1024) {
             throw MultipartException("Minimum upload size exceeded")
         }
@@ -86,7 +79,6 @@ class FileService(
         }
     }
 
-
     fun downloadDateFile(date: String?, beLocated: String, delete: Boolean, response: HttpServletResponse) {
         val formatter = SimpleDateFormat("yyyy-MM-dd")
         val query: Query
@@ -117,26 +109,24 @@ class FileService(
         }
     }
 
-
     fun downloadFile(imageDownloadDTO: ImageDownloadDTO, response: HttpServletResponse) {
         val query = Query()
         val criteriaSet: MutableSet<Criteria> = HashSet()
 
-
-        //图片类型
+        // 图片类型
         criteriaSet.add(
-            GridFsCriteria.whereMetaData("type").regex(Pattern.compile(imageDownloadDTO.type, Pattern.CASE_INSENSITIVE))
+            GridFsCriteria.whereMetaData("type").regex(Pattern.compile(imageDownloadDTO.type, Pattern.CASE_INSENSITIVE)),
         )
 
-        //指定下载某个类型的图片
+        // 指定下载某个类型的图片
         if (!imageDownloadDTO.classification.isNullOrBlank()) {
             criteriaSet.add(
                 GridFsCriteria.whereMetaData("classification")
-                    .regex(Pattern.compile(imageDownloadDTO.classification, Pattern.CASE_INSENSITIVE))
+                    .regex(Pattern.compile(imageDownloadDTO.classification, Pattern.CASE_INSENSITIVE)),
             )
         }
 
-        //指定版本或指定范围版本
+        // 指定版本或指定范围版本
         if (!imageDownloadDTO.version.isNullOrEmpty()) {
             val version = imageDownloadDTO.version
 
@@ -147,8 +137,7 @@ class FileService(
                     antecedentVersion = split[1]
                 }
                 criteriaSet.add(
-                    GridFsCriteria.whereMetaData("version").`is`(version[0]).and("antecedentVersion")
-                        .`is`(antecedentVersion)
+                    GridFsCriteria.whereMetaData("version").`is`(version[0]).and("antecedentVersion").`is`(antecedentVersion),
                 )
             } else if (version.size == 2) {
                 criteriaSet.add(GridFsCriteria.whereMetaData("version").gte(version[0]).lte(version[1]))
@@ -157,14 +146,12 @@ class FileService(
 
         if (!imageDownloadDTO.label.isNullOrBlank()) {
             criteriaSet.add(
-                GridFsCriteria.whereMetaData("label")
-                    .regex(Pattern.compile(imageDownloadDTO.label, Pattern.CASE_INSENSITIVE))
+                GridFsCriteria.whereMetaData("label").regex(Pattern.compile(imageDownloadDTO.label, Pattern.CASE_INSENSITIVE)),
             )
         }
 
         val criteria = Criteria().andOperator(criteriaSet)
         query.addCriteria(criteria)
-
 
         val gridFSFiles = gridFsOperations.find(query)
 
@@ -187,12 +174,11 @@ class FileService(
         return "已启用"
     }
 
+    /**
+     * 上传功能状态
+     */
     var isUploadEnabled: Boolean
         get() = redisCache.getCache("NotEnable:UploadFile", String::class.java) == null
-        /**
-         * 设置上传功能状态
-         * @param enabled 是否开启
-         */
         set(enabled) {
             // Fixme: redis recovery solution should be added, or change to another storage
             if (enabled) {
@@ -202,14 +188,13 @@ class FileService(
             }
         }
 
-
     private fun gzip(response: HttpServletResponse, files: GridFSFindIterable) {
         try {
             ZipOutputStream(response.outputStream).use { zipOutputStream ->
                 for (file in files) {
                     val zipEntry = ZipEntry(file.filename)
                     gridFsOperations.getResource(file).inputStream.use { inputStream ->
-                        //添加压缩文件
+                        // 添加压缩文件
                         zipOutputStream.putNextEntry(zipEntry)
 
                         val bytes = ByteArray(1024)

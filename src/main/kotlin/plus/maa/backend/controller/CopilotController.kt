@@ -9,7 +9,13 @@ import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import org.springdoc.core.annotations.ParameterObject
 import org.springframework.http.HttpHeaders
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 import plus.maa.backend.common.annotation.JsonSchema
 import plus.maa.backend.common.annotation.SensitiveWordDetection
 import plus.maa.backend.config.doc.RequireJwt
@@ -34,18 +40,18 @@ import plus.maa.backend.service.CopilotService
 class CopilotController(
     private val copilotService: CopilotService,
     private val helper: AuthenticationHelper,
-    private val response: HttpServletResponse
+    private val response: HttpServletResponse,
 ) {
-
     @Operation(summary = "上传作业")
     @ApiResponse(description = "上传作业结果")
     @RequireJwt
     @JsonSchema
-    @SensitiveWordDetection("#request.content != null ? #objectMapper.readTree(#request.content).get('doc')?.toString() : null")
+    @SensitiveWordDetection(
+        "#request.content != null ? #objectMapper.readTree(#request.content).get('doc')?.toString() : null",
+    )
     @PostMapping("/upload")
-    fun uploadCopilot(@RequestBody request: CopilotCUDRequest): MaaResult<Long> {
-        return success(copilotService.upload(helper.requireUserId(), request.content))
-    }
+    fun uploadCopilot(@RequestBody request: CopilotCUDRequest): MaaResult<Long> =
+        success(copilotService.upload(helper.requireUserId(), request.content))
 
     @Operation(summary = "删除作业")
     @ApiResponse(description = "删除作业结果")
@@ -59,21 +65,16 @@ class CopilotController(
     @Operation(summary = "获取作业")
     @ApiResponse(description = "作业信息")
     @GetMapping("/get/{id}")
-    fun getCopilotById(
-        @Parameter(description = "作业id") @PathVariable("id") id: Long
-    ): MaaResult<CopilotInfo?> {
+    fun getCopilotById(@Parameter(description = "作业id") @PathVariable("id") id: Long): MaaResult<CopilotInfo?> {
         val userIdOrIpAddress = helper.obtainUserIdOrIpAddress()
         return copilotService.getCopilotById(userIdOrIpAddress, id)?.let { success(it) }
             ?: fail(404, "作业不存在")
     }
 
-
     @Operation(summary = "分页查询作业，提供登录凭据时查询用户自己的作业")
     @ApiResponse(description = "作业信息")
     @GetMapping("/query")
-    fun queriesCopilot(
-        @ParameterObject parsed: @Valid CopilotQueriesRequest
-    ): MaaResult<CopilotPageInfo> {
+    fun queriesCopilot(@ParameterObject parsed: @Valid CopilotQueriesRequest): MaaResult<CopilotPageInfo> {
         // 三秒防抖，缓解前端重复请求问题
         response.setHeader(HttpHeaders.CACHE_CONTROL, "private, max-age=3, must-revalidate")
         return success(copilotService.queriesCopilot(helper.obtainUserId(), parsed))
@@ -83,7 +84,9 @@ class CopilotController(
     @ApiResponse(description = "更新结果")
     @RequireJwt
     @JsonSchema
-    @SensitiveWordDetection("#copilotCUDRequest.content != null ? #objectMapper.readTree(#copilotCUDRequest.content).get('doc')?.toString() : null")
+    @SensitiveWordDetection(
+        "#copilotCUDRequest.content != null ? #objectMapper.readTree(#copilotCUDRequest.content).get('doc')?.toString() : null",
+    )
     @PostMapping("/update")
     fun updateCopilot(@RequestBody copilotCUDRequest: CopilotCUDRequest): MaaResult<Unit> {
         copilotService.update(helper.requireUserId(), copilotCUDRequest)

@@ -27,7 +27,7 @@ class CopilotScoreRefreshTask(
     private val arkLevelService: ArkLevelService,
     private val redisCache: RedisCache,
     private val copilotRepository: CopilotRepository,
-    private val mongoTemplate: MongoTemplate
+    private val mongoTemplate: MongoTemplate,
 ) {
     /**
      * 热度值刷入任务，每日四点三十执行（实际可能会更晚，因为需要等待之前启动的定时任务完成）
@@ -68,7 +68,7 @@ class CopilotScoreRefreshTask(
         }
 
         val copilots = copilotRepository.findByCopilotIdInAndDeleteIsFalse(
-            copilotIdSTRs.map { s: String? -> s!!.toLong() }
+            copilotIdSTRs.map { s: String? -> s!!.toLong() },
         )
         if (copilots.isEmpty()) {
             return
@@ -97,10 +97,10 @@ class CopilotScoreRefreshTask(
             // 判断关卡是否开放
             val level = arkLevelService.findByLevelIdFuzzy(copilot.stageName!!)
             // 关卡已关闭，且作业在关闭前上传
-            if (level?.closeTime != null
-                && copilot.firstUploadTime != null
-                && false == level.isOpen
-                && copilot.firstUploadTime!!.isBefore(level.closeTime)
+            if (level?.closeTime != null &&
+                copilot.firstUploadTime != null &&
+                false == level.isOpen &&
+                copilot.firstUploadTime!!.isBefore(level.closeTime)
             ) {
                 // 非开放关卡打入冷宫
 
@@ -119,11 +119,10 @@ class CopilotScoreRefreshTask(
                     .where("type").`is`(Rating.KeyType.COPILOT)
                     .and("key").`in`(keys)
                     .and("rating").`is`(rating)
-                    .and("rateTime").gte(startTime)
+                    .and("rateTime").gte(startTime),
             ),
-            Aggregation.group("key").count().`as`("count")
-                .first("key").`as`("key"),
-            Aggregation.project("key", "count")
+            Aggregation.group("key").count().`as`("count").first("key").`as`("key"),
+            Aggregation.project("key", "count"),
         ).withOptions(Aggregation.newAggregationOptions().allowDiskUse(true).build()) // 放弃内存优化，使用磁盘优化，免得内存炸了
         return mongoTemplate.aggregate(aggregation, Rating::class.java, RatingCount::class.java).mappedResults
     }

@@ -11,5 +11,5 @@ data class LoginDTO(
     @field:Email(message = "邮箱格式错误")
     val email: String,
     @field:NotBlank(message = "请输入用户密码")
-    val password: String
+    val password: String,
 )

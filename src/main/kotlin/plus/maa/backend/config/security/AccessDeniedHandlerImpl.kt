@@ -17,11 +17,7 @@ import java.io.IOException
 @Component
 class AccessDeniedHandlerImpl : AccessDeniedHandler {
     @Throws(IOException::class)
-    override fun handle(
-        request: HttpServletRequest,
-        response: HttpServletResponse,
-        accessDeniedException: AccessDeniedException
-    ) {
+    override fun handle(request: HttpServletRequest, response: HttpServletResponse, accessDeniedException: AccessDeniedException) {
         val result = fail(HttpStatus.FORBIDDEN.value(), "权限不足")
         val json = ObjectMapper().writeValueAsString(result)
         renderString(response, json, HttpStatus.FORBIDDEN.value())

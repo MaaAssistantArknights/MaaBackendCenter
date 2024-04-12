@@ -15,5 +15,5 @@ annotation class SensitiveWordDetection(
     /**
      * SpEL 表达式
      */
-    vararg val value: String = []
+    vararg val value: String = [],
 )

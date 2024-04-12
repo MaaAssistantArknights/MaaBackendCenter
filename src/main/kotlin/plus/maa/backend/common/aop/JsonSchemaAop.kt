@@ -30,7 +30,7 @@ private val log = KotlinLogging.logger { }
 @Component
 @Aspect
 class JsonSchemaAop(
-    private val mapper: ObjectMapper
+    private val mapper: ObjectMapper,
 ) {
     @Pointcut("@annotation(plus.maa.backend.common.annotation.JsonSchema)")
     fun pt() {
@@ -46,7 +46,7 @@ class JsonSchemaAop(
     fun before(joinPoint: JoinPoint, jsonSchema: JsonSchema?) {
         var schemaJson: String? = null
         var content: String? = null
-        //判断是验证的是Copilot还是Rating
+        // 判断是验证的是Copilot还是Rating
         for (arg in joinPoint.args) {
             if (arg is CopilotCUDRequest) {
                 content = arg.content
@@ -63,8 +63,7 @@ class JsonSchemaAop(
         }
         if (schemaJson == null || content == null) return
 
-
-        //获取json schema json路径并验证
+        // 获取json schema json路径并验证
         try {
             ClassPathResource(schemaJson).inputStream.use { inputStream ->
                 val json = JSONObject(content)

@@ -8,9 +8,8 @@ import plus.maa.backend.service.model.ArkLevelType
 
 @Component
 class RuneParser(
-    private val dataService: ArkGameDataService
+    private val dataService: ArkGameDataService,
 ) : ArkLevelParser {
-
     override fun supportType(type: ArkLevelType): Boolean {
         return ArkLevelType.RUNE == type
     }

@@ -13,16 +13,14 @@ data class PasswordResetDTO(
     @field:NotBlank(message = "邮箱格式错误")
     @field:Email(message = "邮箱格式错误")
     val email: String,
-
     /**
      * 验证码
      */
     @field:NotBlank(message = "请输入验证码")
     val activeCode: String,
-
     /**
      * 修改后的密码
      */
     @field:NotBlank(message = "请输入用户密码")
-    val password: String
+    val password: String,
 )

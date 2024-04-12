@@ -7,25 +7,19 @@ package plus.maa.backend.repository.entity.github
 data class GithubContent(
     // 文件名
     val name: String,
-
     // 路径
     val path: String,
     val sha: String,
-
     // 文件大小(Byte)
     val size: Long,
-
     // 路径类型 file-文件 dir-目录
     val type: String,
-
     // 下载地址
     val downloadUrl: String?,
-
     // 访问地址
     val htmlUrl: String,
-
     // 对应commit地址
-    val gitUrl: String
+    val gitUrl: String,
 ) {
     val isFile: Boolean
         /**

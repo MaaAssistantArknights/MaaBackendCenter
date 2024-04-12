@@ -13,7 +13,8 @@ import java.time.LocalDateTime
  * create on 2024-01-01
  */
 @Mapper(
-    componentModel = "spring", imports = [LocalDateTime::class]
+    componentModel = "spring",
+    imports = [LocalDateTime::class],
 )
 interface CopilotSetConverter {
     @Mapping(target = "delete", ignore = true)

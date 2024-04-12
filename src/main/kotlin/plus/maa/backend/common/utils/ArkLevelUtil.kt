@@ -3,8 +3,9 @@ package plus.maa.backend.common.utils
 import java.util.regex.Pattern
 
 object ArkLevelUtil {
-    private val NOT_KEY_INFO: Pattern = Pattern.compile( // level_、各种难度前缀、season_、前导零、以-或者_划分的后缀
-        "^level_|^easy_|^hard_|^tough_|^main_|season_|(?<!\\d)0+(?=\\d)|[-_]+[^-_]+($|[-_]+\\D+$)"
+    private val NOT_KEY_INFO: Pattern = Pattern.compile(
+        // level_、各种难度前缀、season_、前导零、以-或者_划分的后缀
+        "^level_|^easy_|^hard_|^tough_|^main_|season_|(?<!\\d)0+(?=\\d)|[-_]+[^-_]+($|[-_]+\\D+$)",
     )
 
     /**

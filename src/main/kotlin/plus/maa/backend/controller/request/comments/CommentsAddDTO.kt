@@ -25,5 +25,5 @@ data class CommentsAddDTO(
     /**
      * 是否接收通知
      */
-    val notification: Boolean = true
+    val notification: Boolean = true,
 )

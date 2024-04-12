@@ -11,5 +11,5 @@ data class PasswordUpdateDTO(
     val originalPassword: String,
     @field:NotBlank(message = "密码长度必须在8-32位之间")
     @field:Length(min = 8, max = 32, message = "密码长度必须在8-32位之间")
-    val newPassword: String
+    val newPassword: String,
 )

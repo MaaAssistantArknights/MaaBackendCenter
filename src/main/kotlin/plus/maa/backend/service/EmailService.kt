@@ -14,7 +14,7 @@ import plus.maa.backend.controller.response.MaaResultException
 import plus.maa.backend.repository.RedisCache
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.*
+import java.util.Locale
 
 /**
  * @author LoMu
@@ -27,7 +27,7 @@ class EmailService(
     private val flagNoSend: Boolean = false,
     private val redisCache: RedisCache,
     @Resource(name = "emailTaskExecutor")
-    private val emailTaskExecutor: AsyncTaskExecutor
+    private val emailTaskExecutor: AsyncTaskExecutor,
 ) {
     private val log = KotlinLogging.logger { }
     private val mail = maaCopilotProperties.mail
@@ -95,13 +95,13 @@ class EmailService(
         targetMessage: String,
         replierName: String,
         message: String,
-        timeStr: String = LocalDateTime.now().format(timeFormatter)
+        timeStr: String = LocalDateTime.now().format(timeFormatter),
     ) = emailTaskExecutor.execute {
         if (!maaCopilotProperties.mail.notification) return@execute
         val limit = 25
         val title = targetMessage.run { if (length > limit) take(limit - 4) + "...." else this }
 
-        val subject = "收到新回复 来自用户@${replierName} Re: $title"
+        val subject = "收到新回复 来自用户@$replierName Re: $title"
 
         val dataModel = mapOf(
             "content" to "mail-comment-notification.ftlh",

@@ -11,7 +11,6 @@ import org.springframework.web.server.ResponseStatusException
 import plus.maa.backend.common.utils.IpUtil
 import plus.maa.backend.service.jwt.JwtAuthToken
 import plus.maa.backend.service.model.LoginUser
-import java.util.*
 
 /**
  * Auth 助手，统一 auth 的设置和获取
@@ -34,9 +33,7 @@ class AuthenticationHelper {
      * @throws ResponseStatusException 用户未通过验证
      */
     @Throws(ResponseStatusException::class)
-    fun requireUserId(): String {
-        return obtainUserId() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
-    }
+    fun requireUserId(): String = obtainUserId() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
 
     /**
      * 获取用户 id

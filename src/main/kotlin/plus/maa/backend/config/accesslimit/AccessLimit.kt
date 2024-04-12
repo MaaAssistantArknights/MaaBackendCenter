@@ -12,10 +12,10 @@ import java.lang.annotation.Inherited
     AnnotationTarget.CLASS,
     AnnotationTarget.FUNCTION,
     AnnotationTarget.PROPERTY_GETTER,
-    AnnotationTarget.PROPERTY_SETTER
+    AnnotationTarget.PROPERTY_SETTER,
 )
 @Retention(
-    AnnotationRetention.RUNTIME
+    AnnotationRetention.RUNTIME,
 )
 annotation class AccessLimit(
     /**
@@ -25,5 +25,5 @@ annotation class AccessLimit(
     /**
      * 指定时间 second，redis 数据过期时间
      */
-    val second: Int = 10
+    val second: Int = 10,
 )

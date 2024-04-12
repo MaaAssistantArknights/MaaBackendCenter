@@ -13,6 +13,5 @@ data class CopilotPageInfo(
     val hasNext: Boolean,
     val page: Int,
     val total: Long,
-    val data: List<CopilotInfo>
+    val data: List<CopilotInfo>,
 ) : Serializable
-

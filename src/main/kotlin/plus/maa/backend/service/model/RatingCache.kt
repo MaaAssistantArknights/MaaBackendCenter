@@ -5,5 +5,5 @@ package plus.maa.backend.service.model
  * Date  2023-01-28 11:37
  */
 data class RatingCache(
-    val copilotIds: MutableSet<Long>
+    val copilotIds: MutableSet<Long>,
 )

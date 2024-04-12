@@ -13,7 +13,7 @@ private val log = KotlinLogging.logger { }
 
 @Component
 class IdComponent(
-    private val mongoTemplate: MongoTemplate
+    private val mongoTemplate: MongoTemplate,
 ) {
     private val currentIdMap: MutableMap<String, AtomicLong> = ConcurrentHashMap()
 
@@ -41,11 +41,10 @@ class IdComponent(
         return v.incrementAndGet()
     }
 
-    private fun <T> getMax(entityClass: Class<T>, idGetter: (T) -> Long, fieldName: String) =
-        mongoTemplate.findOne(
-            Query().with(Sort.by(fieldName).descending()).limit(1),
-            entityClass
-        )
-            ?.let(idGetter)
-            ?: 20000L
+    private fun <T> getMax(entityClass: Class<T>, idGetter: (T) -> Long, fieldName: String) = mongoTemplate.findOne(
+        Query().with(Sort.by(fieldName).descending()).limit(1),
+        entityClass,
+    )
+        ?.let(idGetter)
+        ?: 20000L
 }

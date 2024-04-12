@@ -29,17 +29,15 @@ class JwtAuthToken : JwtToken, Authentication {
         exp: Instant,
         nbf: Instant,
         authorities: Collection<GrantedAuthority>,
-        key: ByteArray
+        key: ByteArray,
     ) : super(sub, jti, iat, exp, nbf, TYPE, key) {
         this.authorities = authorities
     }
 
-
     override fun getAuthorities(): Collection<GrantedAuthority> {
         val authorityStrings = jwt.payloads.getStr(CLAIM_AUTHORITIES)
-        return StringUtils.commaDelimitedListToSet(authorityStrings).stream()
+        return StringUtils.commaDelimitedListToSet(authorityStrings)
             .map { role: String? -> SimpleGrantedAuthority(role) }
-            .toList()
     }
 
     fun setAuthorities(authorities: Collection<GrantedAuthority>) {
@@ -52,34 +50,24 @@ class JwtAuthToken : JwtToken, Authentication {
      * @return credentials，采用 jwt 的 id
      * @inheritDoc
      */
-    override fun getCredentials(): Any {
-        return jwtId!!
-    }
+    override fun getCredentials(): Any = jwtId!!
 
-    override fun getDetails(): Any? {
-        return null
-    }
+    override fun getDetails(): Any? = null
 
     /**
      * @return principal，采用 jwt 的 subject
      * @inheritDoc
      */
-    override fun getPrincipal(): Any {
-        return subject
-    }
+    override fun getPrincipal(): Any = subject
 
-    override fun isAuthenticated(): Boolean {
-        return this.authenticated
-    }
+    override fun isAuthenticated(): Boolean = this.authenticated
 
     @Throws(IllegalArgumentException::class)
     override fun setAuthenticated(isAuthenticated: Boolean) {
         this.authenticated = isAuthenticated
     }
 
-    override fun getName(): String {
-        return subject
-    }
+    override fun getName(): String = subject
 
     companion object {
         /**

@@ -22,11 +22,7 @@ import java.io.InputStream
 @ConditionalOnProperty(name = ["server.compression.enabled"], havingValue = "true")
 class ContentLengthRepairFilter : ShallowEtagHeaderFilter() {
     @Throws(ServletException::class, IOException::class)
-    override fun doFilterInternal(
-        request: HttpServletRequest,
-        response: HttpServletResponse,
-        filterChain: FilterChain
-    ) {
+    override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, filterChain: FilterChain) {
         if (response is ContentCachingResponseWrapper) {
             // 不对已包装过的响应体做处理
             filterChain.doFilter(request, response)
@@ -39,6 +35,6 @@ class ContentLengthRepairFilter : ShallowEtagHeaderFilter() {
         request: HttpServletRequest,
         response: HttpServletResponse,
         responseStatusCode: Int,
-        inputStream: InputStream
+        inputStream: InputStream,
     ) = false
 }

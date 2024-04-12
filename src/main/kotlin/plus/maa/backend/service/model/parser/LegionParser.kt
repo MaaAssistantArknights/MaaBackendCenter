@@ -20,9 +20,8 @@ private val log = KotlinLogging.logger { }
  */
 @Component
 class LegionParser(
-    private val dataService: ArkGameDataService
+    private val dataService: ArkGameDataService,
 ) : ArkLevelParser {
-
     override fun supportType(type: ArkLevelType): Boolean {
         return ArkLevelType.LEGION == type
     }

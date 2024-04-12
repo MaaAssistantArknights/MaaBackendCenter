@@ -18,9 +18,8 @@ import plus.maa.backend.service.model.ArkLevelType
  */
 @Component
 class WeeklyParser(
-    private val dataService: ArkGameDataService
+    private val dataService: ArkGameDataService,
 ) : ArkLevelParser {
-
     override fun supportType(type: ArkLevelType): Boolean {
         return ArkLevelType.WEEKLY == type
     }

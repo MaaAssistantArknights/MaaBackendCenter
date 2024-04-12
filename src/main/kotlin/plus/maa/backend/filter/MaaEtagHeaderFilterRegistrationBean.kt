@@ -17,14 +17,6 @@ import java.io.InputStream
  */
 @Component
 class MaaEtagHeaderFilterRegistrationBean : FilterRegistrationBean<Filter>() {
-    /**
-     * 配置需要使用 Etag 机制的 URI，采用 Servlet 的 URI 匹配语法
-     */
-    private val ETAG_URI = setOf(
-        "/arknights/level",
-        "/copilot/query"
-    )
-
     @PostConstruct
     fun init() {
         filter = MaaEtagHeaderFilter()
@@ -38,8 +30,10 @@ class MaaEtagHeaderFilterRegistrationBean : FilterRegistrationBean<Filter>() {
         }
 
         override fun isEligibleForEtag(
-            request: HttpServletRequest, response: HttpServletResponse,
-            responseStatusCode: Int, inputStream: InputStream
+            request: HttpServletRequest,
+            response: HttpServletResponse,
+            responseStatusCode: Int,
+            inputStream: InputStream,
         ): Boolean {
             if (super.isEligibleForEtag(request, response, responseStatusCode, inputStream)) {
                 // 使用 ETag 机制的 URI，若其响应中不存在缓存控制头，则配置默认值
@@ -56,5 +50,16 @@ class MaaEtagHeaderFilterRegistrationBean : FilterRegistrationBean<Filter>() {
         companion object {
             private const val CACHE_HEAD = "private, no-cache, max-age=0, must-revalidate"
         }
+    }
+
+    companion object {
+        /**
+         * 配置需要使用 Etag 机制的 URI，采用 Servlet 的 URI 匹配语法
+         */
+        private val ETAG_URI =
+            setOf(
+                "/arknights/level",
+                "/copilot/query",
+            )
     }
 }

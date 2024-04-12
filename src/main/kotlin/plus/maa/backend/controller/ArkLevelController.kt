@@ -16,13 +16,10 @@ import plus.maa.backend.service.ArkLevelService
 @RestController
 @Tag(name = "ArkLevelController", description = "关卡数据管理接口")
 class ArkLevelController(
-    private val arkLevelService: ArkLevelService
+    private val arkLevelService: ArkLevelService,
 ) {
-
     @GetMapping("/arknights/level")
     @ApiResponse(description = "关卡数据")
     @Operation(summary = "获取关卡数据")
-    fun getLevels(): MaaResult<List<ArkLevelInfo>> {
-        return success(arkLevelService.arkLevelInfos)
-    }
+    fun getLevels(): MaaResult<List<ArkLevelInfo>> = success(arkLevelService.arkLevelInfos)
 }

@@ -7,7 +7,7 @@ import plus.maa.backend.repository.entity.gamedata.ArkTilePos
 import plus.maa.backend.repository.entity.gamedata.ArkZone
 import plus.maa.backend.service.ArkGameDataService
 import plus.maa.backend.service.model.ArkLevelType
-import java.util.*
+import java.util.Locale
 
 /**
  * @author john180
@@ -21,18 +21,19 @@ import java.util.*
  */
 @Component
 class MainlineParser(
-    private val dataService: ArkGameDataService
+    private val dataService: ArkGameDataService,
 ) : ArkLevelParser {
-
-    override fun supportType(type: ArkLevelType): Boolean {
-        return ArkLevelType.MAINLINE == type
-    }
+    override fun supportType(type: ArkLevelType): Boolean = ArkLevelType.MAINLINE == type
 
     override fun parseLevel(level: ArkLevel, tilePos: ArkTilePos): ArkLevel? {
         level.catOne = ArkLevelType.MAINLINE.display
 
         val chapterLevelId =
-            level.levelId!!.split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[2] // level_main_10-02
+            level
+                .levelId!!
+                .split("/".toRegex())
+                .dropLastWhile { it.isEmpty() }
+                .toTypedArray()[2] // level_main_10-02
         val chapterStrSplit =
             chapterLevelId.split("_".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray() // level main 10-02
         val diff = parseDifficulty(chapterStrSplit[1]) // easy、main
@@ -53,12 +54,10 @@ class MainlineParser(
         return level
     }
 
-    private fun parseDifficulty(diff: String): String {
-        return when (diff.lowercase(Locale.getDefault())) {
-            "easy" -> "简单"
-            "tough" -> "磨难"
-            else -> "标准"
-        }
+    private fun parseDifficulty(diff: String): String = when (diff.lowercase(Locale.getDefault())) {
+        "easy" -> "简单"
+        "tough" -> "磨难"
+        else -> "标准"
     }
 
     private fun parseZoneName(zone: ArkZone): String {

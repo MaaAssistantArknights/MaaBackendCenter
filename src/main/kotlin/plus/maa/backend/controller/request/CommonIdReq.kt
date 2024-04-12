@@ -8,5 +8,5 @@ import jakarta.validation.constraints.NotNull
  */
 data class CommonIdReq<T>(
     @field:NotNull(message = "id必填")
-    val id: T
+    val id: T,
 )

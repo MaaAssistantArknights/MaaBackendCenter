@@ -16,10 +16,6 @@ interface UserRepository : MongoRepository<MaaUser, String> {
     fun findByEmail(email: String): MaaUser?
 
     fun findByUserId(userId: String): MaaUser?
-
 }
 
-fun UserRepository.findByUsersId(userId: List<String>): Map<String, MaaUser> {
-    return findAllById(userId).associateBy { it.userId!! }
-}
-
+fun UserRepository.findByUsersId(userId: List<String>): Map<String, MaaUser> = findAllById(userId).associateBy { it.userId!! }

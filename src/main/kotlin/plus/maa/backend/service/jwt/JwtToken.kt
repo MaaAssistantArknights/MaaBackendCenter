@@ -5,7 +5,6 @@ import cn.hutool.jwt.JWT
 import cn.hutool.jwt.JWTUtil
 import cn.hutool.jwt.RegisteredPayload
 import java.time.Instant
-import java.util.*
 
 /**
  * 对 [JWT] 的包装增强，某些 payload 被标记为 MUST
@@ -22,12 +21,14 @@ open class JwtToken {
         this.payload = jwt.payloads
 
         // jwtId is nullable
-        if (requiredType != type
-            || payload.getStr(RegisteredPayload.SUBJECT) == null
-            || payload.getLong(RegisteredPayload.ISSUED_AT) == null
-            || payload.getLong(RegisteredPayload.EXPIRES_AT) == null
-            || payload.getLong(RegisteredPayload.NOT_BEFORE) == null
-        ) throw JwtInvalidException()
+        if (requiredType != type ||
+            payload.getStr(RegisteredPayload.SUBJECT) == null ||
+            payload.getLong(RegisteredPayload.ISSUED_AT) == null ||
+            payload.getLong(RegisteredPayload.EXPIRES_AT) == null ||
+            payload.getLong(RegisteredPayload.NOT_BEFORE) == null
+        ) {
+            throw JwtInvalidException()
+        }
     }
 
     constructor(
@@ -37,7 +38,7 @@ open class JwtToken {
         exp: Instant,
         nbf: Instant,
         typ: String?,
-        key: ByteArray
+        key: ByteArray,
     ) {
         jwt = JWT.create()
         jwt.setPayload(RegisteredPayload.SUBJECT, sub)

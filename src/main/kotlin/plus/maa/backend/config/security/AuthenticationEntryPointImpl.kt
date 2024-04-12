@@ -16,15 +16,10 @@ import java.io.IOException
  */
 @Component
 class AuthenticationEntryPointImpl(
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
 ) : AuthenticationEntryPoint {
-
     @Throws(IOException::class)
-    override fun commence(
-        request: HttpServletRequest,
-        response: HttpServletResponse,
-        authException: AuthenticationException
-    ) {
+    override fun commence(request: HttpServletRequest, response: HttpServletResponse, authException: AuthenticationException) {
         val result = fail(HttpStatus.UNAUTHORIZED.value(), authException.message)
         val json = objectMapper.writeValueAsString(result)
         renderString(response, json, HttpStatus.UNAUTHORIZED.value())

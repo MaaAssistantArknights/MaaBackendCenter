@@ -6,7 +6,11 @@ import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import plus.maa.backend.common.MaaStatusCode
 import plus.maa.backend.config.external.MaaCopilotProperties
-import plus.maa.backend.controller.request.user.*
+import plus.maa.backend.controller.request.user.LoginDTO
+import plus.maa.backend.controller.request.user.PasswordResetDTO
+import plus.maa.backend.controller.request.user.RegisterDTO
+import plus.maa.backend.controller.request.user.SendRegistrationTokenDTO
+import plus.maa.backend.controller.request.user.UserInfoUpdateDTO
 import plus.maa.backend.controller.response.MaaResultException
 import plus.maa.backend.controller.response.user.MaaLoginRsp
 import plus.maa.backend.controller.response.user.MaaUserInfo
@@ -15,7 +19,7 @@ import plus.maa.backend.repository.entity.MaaUser
 import plus.maa.backend.service.jwt.JwtExpiredException
 import plus.maa.backend.service.jwt.JwtInvalidException
 import plus.maa.backend.service.jwt.JwtService
-import java.util.*
+import java.util.UUID
 
 /**
  * @author AnselYuki
@@ -27,9 +31,8 @@ class UserService(
     private val passwordEncoder: PasswordEncoder,
     private val userDetailService: UserDetailServiceImpl,
     private val jwtService: JwtService,
-    private val properties: MaaCopilotProperties
+    private val properties: MaaCopilotProperties,
 ) {
-
     /**
      * 登录方法
      *
@@ -63,7 +66,7 @@ class UserService(
             refreshToken.value,
             refreshToken.expiresAt,
             refreshToken.notBefore,
-            MaaUserInfo(user)
+            MaaUserInfo(user),
         )
     }
 
@@ -73,11 +76,7 @@ class UserService(
      * @param userId      当前用户
      * @param rawPassword 新密码
      */
-    fun modifyPassword(
-        userId: String, rawPassword: String,
-        originPassword: String? = null,
-        verifyOriginPassword: Boolean = true
-    ) {
+    fun modifyPassword(userId: String, rawPassword: String, originPassword: String? = null, verifyOriginPassword: Boolean = true) {
         val maaUser = userRepository.findByIdOrNull(userId) ?: return
         if (verifyOriginPassword) {
             check(!originPassword.isNullOrEmpty()) {
@@ -163,7 +162,7 @@ class UserService(
                 refreshToken.value,
                 refreshToken.expiresAt,
                 refreshToken.notBefore,
-                MaaUserInfo(user)
+                MaaUserInfo(user),
             )
         } catch (e: JwtInvalidException) {
             throw MaaResultException(401, e.message)

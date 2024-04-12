@@ -18,14 +18,10 @@ import java.io.IOException
 class JwtAuthenticationTokenFilter(
     private val helper: AuthenticationHelper,
     private val properties: MaaCopilotProperties,
-    private val jwtService: JwtService
+    private val jwtService: JwtService,
 ) : OncePerRequestFilter() {
     @Throws(IOException::class, ServletException::class)
-    override fun doFilterInternal(
-        request: HttpServletRequest,
-        response: HttpServletResponse,
-        filterChain: FilterChain
-    ) {
+    override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, filterChain: FilterChain) {
         try {
             val token = extractToken(request)
             val authToken = jwtService.verifyAndParseAuthToken(token)

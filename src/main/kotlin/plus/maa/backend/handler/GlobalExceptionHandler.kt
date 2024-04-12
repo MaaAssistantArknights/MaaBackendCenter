@@ -18,7 +18,7 @@ import plus.maa.backend.controller.response.MaaResult
 import plus.maa.backend.controller.response.MaaResult.Companion.fail
 import plus.maa.backend.controller.response.MaaResultException
 
-private val log = KotlinLogging.logger {  }
+private val log = KotlinLogging.logger { }
 
 /**
  * @author john180
@@ -30,12 +30,9 @@ class GlobalExceptionHandler {
      * @author FAll
      * @description 请求参数缺失
      * @date 2022/12/23 12:00
-    </java.lang.String> */
+     </java.lang.String> */
     @ExceptionHandler(MissingServletRequestParameterException::class)
-    fun missingServletRequestParameterException(
-        e: MissingServletRequestParameterException,
-        request: HttpServletRequest
-    ): MaaResult<Unit> {
+    fun missingServletRequestParameterException(e: MissingServletRequestParameterException, request: HttpServletRequest): MaaResult<Unit> {
         logWarn(request)
         log.warn(e) { "请求参数缺失" }
         return fail(400, String.format("请求参数缺失:%s", e.parameterName))
@@ -46,12 +43,9 @@ class GlobalExceptionHandler {
      * @author FAll
      * @description 参数类型不匹配
      * @date 2022/12/23 12:01
-    </java.lang.String> */
+     </java.lang.String> */
     @ExceptionHandler(MethodArgumentTypeMismatchException::class)
-    fun methodArgumentTypeMismatchException(
-        e: MethodArgumentTypeMismatchException,
-        request: HttpServletRequest
-    ): MaaResult<Unit> {
+    fun methodArgumentTypeMismatchException(e: MethodArgumentTypeMismatchException, request: HttpServletRequest): MaaResult<Unit> {
         logWarn(request)
         log.warn(e) { "参数类型不匹配" }
         return fail(400, String.format("参数类型不匹配:%s", e.message))
@@ -62,7 +56,7 @@ class GlobalExceptionHandler {
      * @author FAll
      * @description 参数校验错误
      * @date 2022/12/23 12:02
-    </java.lang.String> */
+     </java.lang.String> */
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun methodArgumentNotValidException(e: MethodArgumentNotValidException): MaaResult<Unit> {
         val fieldError = e.bindingResult.fieldError
@@ -77,7 +71,7 @@ class GlobalExceptionHandler {
      * @author FAll
      * @description 请求地址不存在
      * @date 2022/12/23 12:03
-    </java.lang.String> */
+     </java.lang.String> */
     @ExceptionHandler(NoHandlerFoundException::class)
     fun noHandlerFoundExceptionHandler(e: NoHandlerFoundException): MaaResult<Unit> {
         log.warn(e) { "请求地址不存在" }
@@ -89,11 +83,11 @@ class GlobalExceptionHandler {
      * @author FAll
      * @description
      * @date 2022/12/23 12:04
-    </java.lang.String> */
+     </java.lang.String> */
     @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
     fun httpRequestMethodNotSupportedExceptionHandler(
         e: HttpRequestMethodNotSupportedException,
-        request: HttpServletRequest
+        request: HttpServletRequest,
     ): MaaResult<Unit> {
         logWarn(request)
         log.warn(e) { "请求方式错误" }
@@ -113,7 +107,7 @@ class GlobalExceptionHandler {
      * @author cbc
      * @description
      * @date 2022/12/26 12:00
-    </java.lang.String> */
+     </java.lang.String> */
     @ExceptionHandler(MaaResultException::class)
     fun maaResultExceptionHandler(e: MaaResultException): MaaResult<Unit> {
         return fail(e.code, e.msg)
@@ -146,10 +140,7 @@ class GlobalExceptionHandler {
      */
     @ResponseBody
     @ExceptionHandler(value = [Exception::class])
-    fun defaultExceptionHandler(
-        e: Exception,
-        request: HttpServletRequest
-    ): MaaResult<*> {
+    fun defaultExceptionHandler(e: Exception, request: HttpServletRequest): MaaResult<*> {
         logError(request)
         log.error(e) { "Exception: " }
         return fail(500, "服务器内部错误")

@@ -1,6 +1,10 @@
 package plus.maa.backend.common.utils.converter
 
-import org.mapstruct.*
+import org.mapstruct.BeanMapping
+import org.mapstruct.Mapper
+import org.mapstruct.Mapping
+import org.mapstruct.MappingTarget
+import org.mapstruct.NullValuePropertyMappingStrategy
 import plus.maa.backend.controller.request.copilot.CopilotDTO
 import plus.maa.backend.controller.response.copilot.CopilotInfo
 import plus.maa.backend.repository.entity.Copilot
@@ -48,13 +52,7 @@ interface CopilotConverter {
     @Mapping(target = "uploadTime", source = "now")
     @Mapping(target = "firstUploadTime", source = "now")
     @Mapping(target = "uploaderId", source = "userId")
-    fun toCopilot(
-        copilotDto: CopilotDTO,
-        copilotId: Long,
-        userId: String,
-        now: LocalDateTime,
-        content: String?
-    ): Copilot
+    fun toCopilot(copilotDto: CopilotDTO, copilotId: Long, userId: String, now: LocalDateTime, content: String?): Copilot
 
     @Mapping(target = "ratingType", ignore = true)
     @Mapping(target = "ratingRatio", ignore = true)

@@ -6,9 +6,8 @@ import plus.maa.backend.service.ArkLevelService
 
 @Component
 class ArkLevelSyncTask(
-    private val arkLevelService: ArkLevelService
+    private val arkLevelService: ArkLevelService,
 ) {
-
     /**
      * 地图数据同步定时任务，每10分钟执行一次
      * 应用启动时自动同步一次

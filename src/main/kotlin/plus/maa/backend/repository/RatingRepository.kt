@@ -11,6 +11,4 @@ import plus.maa.backend.repository.entity.Rating
 @Repository
 interface RatingRepository : MongoRepository<Rating, String> {
     fun findByTypeAndKeyAndUserId(type: Rating.KeyType, key: String, userId: String): Rating?
-
 }
-

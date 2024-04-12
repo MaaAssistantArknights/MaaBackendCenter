@@ -9,5 +9,5 @@ data class MaaLoginRsp(
     val refreshToken: String,
     val refreshTokenValidBefore: Instant,
     val refreshTokenValidAfter: Instant,
-    val userInfo: MaaUserInfo
+    val userInfo: MaaUserInfo,
 )

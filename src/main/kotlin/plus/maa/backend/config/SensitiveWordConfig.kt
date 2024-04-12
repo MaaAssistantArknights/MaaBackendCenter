@@ -10,8 +10,6 @@ import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
 
-private val log = KotlinLogging.logger {  }
-
 /**
  * 敏感词配置类 <br></br>
  *
@@ -21,9 +19,9 @@ private val log = KotlinLogging.logger {  }
 @Configuration
 class SensitiveWordConfig(
     // 标准的 Spring 路径匹配语法，默认为 classpath:sensitive-word.txt
-    @Value("\${maa-copilot.sensitive-word.path:classpath:sensitive-word.txt}")
-    private val sensitiveWordPath: String
+    @Value("\${maa-copilot.sensitive-word.path:classpath:sensitive-word.txt}") private val sensitiveWordPath: String,
 ) {
+    private val log = KotlinLogging.logger {}
 
     /**
      * 敏感词库初始化 <br></br>
@@ -44,7 +42,7 @@ class SensitiveWordConfig(
         // 以行为单位载入敏感词
         try {
             BufferedReader(
-                InputStreamReader(sensitiveWordResource.inputStream)
+                InputStreamReader(sensitiveWordResource.inputStream),
             ).use { bufferedReader ->
                 var line: String?
                 while ((bufferedReader.readLine().also { line = it }) != null) {
