@@ -88,6 +88,10 @@ class UserService(
         }
         // 修改密码的逻辑，应当使用与 authentication provider 一致的编码器
         maaUser.password = passwordEncoder.encode(rawPassword)
+        // 更新密码时，如果用户未启用则自动启用
+        if (maaUser.status == 0) {
+            maaUser.status = 1
+        }
         maaUser.refreshJwtIds = ArrayList()
         userRepository.save(maaUser)
     }
