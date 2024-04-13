@@ -15,12 +15,10 @@ import plus.maa.backend.controller.response.comments.CommentsInfo
 import plus.maa.backend.controller.response.comments.SubCommentsInfo
 import plus.maa.backend.repository.CommentsAreaRepository
 import plus.maa.backend.repository.CopilotRepository
-import plus.maa.backend.repository.RatingRepository
 import plus.maa.backend.repository.UserRepository
 import plus.maa.backend.repository.entity.CommentsArea
 import plus.maa.backend.repository.entity.Copilot
 import plus.maa.backend.repository.entity.MaaUser
-import plus.maa.backend.repository.entity.Rating
 import plus.maa.backend.service.model.RatingType
 import java.time.LocalDateTime
 
@@ -31,7 +29,7 @@ import java.time.LocalDateTime
 @Service
 class CommentsAreaService(
     private val commentsAreaRepository: CommentsAreaRepository,
-    private val ratingRepository: RatingRepository,
+    private val ratingService: RatingService,
     private val copilotRepository: CopilotRepository,
     private val userRepository: UserRepository,
     private val emailService: EmailService,
@@ -107,31 +105,13 @@ class CommentsAreaService(
         val commentId = commentsRatingDTO.commentId
         val commentsArea = requireCommentsAreaById(commentId)
 
-        val rating = ratingRepository.findByTypeAndKeyAndUserId(
-            Rating.KeyType.COMMENT,
+        val ratingChange = ratingService.rateComment(
             commentId,
             userId,
-        ) ?: Rating(
-            null,
-            Rating.KeyType.COMMENT,
-            commentId,
-            userId,
-            RatingType.NONE,
-            LocalDateTime.now(),
+            RatingType.fromRatingType(commentsRatingDTO.rating),
         )
-
-        val prevType = rating.rating
-        val nextType = RatingType.fromRatingType(commentsRatingDTO.rating)
-        // 如果评分未发生变化则返回
-        if (nextType == prevType) return
-
-        rating.rating = nextType
-        rating.rateTime = LocalDateTime.now()
-        ratingRepository.save(rating)
-
         // 更新评分后更新评论的点赞数
-        val likeCountChange = nextType.countLike() - prevType.countLike()
-        val dislikeCountChange = nextType.countDislike() - prevType.countDislike()
+        val (likeCountChange, dislikeCountChange) = ratingService.calcLikeChange(ratingChange)
 
         // 点赞数不需要在高并发下特别精准，大概就行，但是也得避免特别离谱的数字
         commentsArea.likeCount = (commentsArea.likeCount + likeCountChange).coerceAtLeast(0)

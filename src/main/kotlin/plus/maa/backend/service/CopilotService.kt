@@ -2,7 +2,6 @@ package plus.maa.backend.service
 
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.google.common.collect.Sets
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.apache.commons.lang3.StringUtils
 import org.springframework.data.domain.PageRequest
@@ -28,7 +27,6 @@ import plus.maa.backend.controller.response.copilot.CopilotInfo
 import plus.maa.backend.controller.response.copilot.CopilotPageInfo
 import plus.maa.backend.repository.CommentsAreaRepository
 import plus.maa.backend.repository.CopilotRepository
-import plus.maa.backend.repository.RatingRepository
 import plus.maa.backend.repository.RedisCache
 import plus.maa.backend.repository.UserRepository
 import plus.maa.backend.repository.entity.Copilot
@@ -37,11 +35,9 @@ import plus.maa.backend.repository.entity.Rating
 import plus.maa.backend.repository.findByUsersId
 import plus.maa.backend.service.model.RatingCache
 import plus.maa.backend.service.model.RatingType
-import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
-import java.util.Objects
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
@@ -60,7 +56,7 @@ private val log = KotlinLogging.logger { }
 @Service
 class CopilotService(
     private val copilotRepository: CopilotRepository,
-    private val ratingRepository: RatingRepository,
+    private val ratingService: RatingService,
     private val mongoTemplate: MongoTemplate,
     private val mapper: ObjectMapper,
     private val levelService: ArkLevelService,
@@ -171,48 +167,29 @@ class CopilotService(
      * 指定查询
      */
     fun getCopilotById(userIdOrIpAddress: String, id: Long): CopilotInfo? {
-        // 根据ID获取作业, 如作业不存在则抛出异常返回
-        val copilotOptional = copilotRepository.findByCopilotIdAndDeleteIsFalse(id)
-        return copilotOptional?.let { copilot: Copilot ->
-            // 60分钟内限制同一个用户对访问量的增加
-            val cache = redisCache.getCache("views:$userIdOrIpAddress", RatingCache::class.java)
-            if (Objects.isNull(cache) || Objects.isNull(cache!!.copilotIds) || !cache.copilotIds.contains(id)) {
-                val query = Query.query(Criteria.where("copilotId").`is`(id))
-                val update = Update()
-                // 增加一次views
-                update.inc("views")
-                mongoTemplate.updateFirst(query, update, Copilot::class.java)
-                if (cache == null) {
-                    redisCache.setCache("views:$userIdOrIpAddress", RatingCache(Sets.newHashSet(id)))
-                } else {
-                    redisCache.updateCache(
-                        "views:$userIdOrIpAddress",
-                        RatingCache::class.java,
-                        cache,
-                        { updateCache: RatingCache? ->
-                            updateCache!!.copilotIds.add(id)
-                            updateCache
-                        },
-                        60,
-                        TimeUnit.MINUTES,
-                    )
-                }
-            }
-            val maaUser = userRepository.findByUserId(copilot.uploaderId!!)
+        val copilot = copilotRepository.findByCopilotIdAndDeleteIsFalse(id) ?: return null
 
-            // 新评分系统
-            val ratingType = ratingRepository.findByTypeAndKeyAndUserId(
-                Rating.KeyType.COPILOT,
-                copilot.copilotId.toString(),
-                userIdOrIpAddress,
-            )?.rating
-            formatCopilot(
-                copilot,
-                ratingType,
-                maaUser!!.userName,
-                commentsAreaRepository.countByCopilotIdAndDelete(copilot.copilotId!!, false),
-            )
+        // 60分钟内限制同一个用户对访问量的增加
+        val viewCacheKey = "views:$userIdOrIpAddress"
+        val viewCache = redisCache.getCache(viewCacheKey, RatingCache::class.java)
+        if (viewCache?.copilotIds?.contains(id) != true) {
+            val query = Query.query(Criteria.where("copilotId").`is`(id))
+            val update = Update()
+            update.inc("views")
+            mongoTemplate.updateFirst(query, update, Copilot::class.java)
+            // 实际上读写并没有锁，因此是否调用 update 意义都不大
+            val vc = viewCache ?: RatingCache(mutableSetOf())
+            vc.copilotIds.add(id)
+            redisCache.setCache(viewCacheKey, vc, 60, TimeUnit.MINUTES)
         }
+
+        val maaUser = userRepository.findByUserId(copilot.uploaderId!!)
+        return formatCopilot(
+            copilot,
+            ratingService.findPersonalRatingOfCopilot(userIdOrIpAddress, id),
+            maaUser!!.userName,
+            commentsAreaRepository.countByCopilotIdAndDelete(copilot.copilotId!!, false),
+        )
     }
 
     /**
@@ -231,7 +208,8 @@ class CopilotService(
         if (request.page <= 3 &&
             request.document == null &&
             request.levelKeyword == null &&
-            request.uploaderId == null && request.operator == null &&
+            request.uploaderId == null &&
+            request.operator == null &&
             request.copilotIds.isNullOrEmpty()
         ) {
             request.orderBy?.takeIf { orderBy -> orderBy.isNotBlank() }
@@ -341,9 +319,7 @@ class CopilotService(
         val copilots = mongoTemplate.find(queryObj.with(pageable), Copilot::class.java)
 
         // 填充前端所需信息
-        val copilotIds = copilots.map {
-            it.copilotId!!
-        }.toSet()
+        val copilotIds = copilots.map { it.copilotId!! }.toSet()
         val maaUsers = userRepository.findByUsersId(copilots.map { it.uploaderId!! }.toList())
         val commentsCount = commentsAreaRepository.findByCopilotIdInAndDelete(copilotIds, false).groupBy {
             it.copilotId
@@ -356,7 +332,7 @@ class CopilotService(
                 copilot,
                 null,
                 maaUsers[copilot.uploaderId]!!.userName,
-                commentsCount[copilot.copilotId],
+                commentsCount[copilot.copilotId] ?: 0,
             )
         }.toList()
 
@@ -403,51 +379,14 @@ class CopilotService(
      * @param userIdOrIpAddress 用于已登录用户作出评分
      */
     fun rates(userIdOrIpAddress: String, request: CopilotRatingReq) {
-        val rating = request.rating
+        requireNotNull(copilotRepository.existsCopilotsByCopilotId(request.id)) { "作业id不存在" }
 
-        Assert.isTrue(copilotRepository.existsCopilotsByCopilotId(request.id), "作业id不存在")
-
-        var likeCountChange = 0
-        var dislikeCountChange = 0
-        val ratingOptional = ratingRepository.findByTypeAndKeyAndUserId(
-            Rating.KeyType.COPILOT,
-            request.id.toString(),
+        val ratingChange = ratingService.rateCopilot(
+            request.id,
             userIdOrIpAddress,
+            RatingType.fromRatingType(request.rating),
         )
-        // 如果评分存在则更新评分
-        if (ratingOptional != null) {
-            // 如果评分相同，则不做任何操作
-            if (ratingOptional.rating == RatingType.fromRatingType(rating)) {
-                return
-            }
-            // 如果评分不同则更新评分
-            val oldRatingType = ratingOptional.rating
-            ratingOptional.rating = RatingType.fromRatingType(rating)
-            ratingOptional.rateTime = LocalDateTime.now()
-            ratingRepository.save(ratingOptional)
-            // 计算评分变化
-            likeCountChange =
-                if (ratingOptional.rating == RatingType.LIKE) 1 else (if (oldRatingType != RatingType.LIKE) 0 else -1)
-            dislikeCountChange =
-                if (ratingOptional.rating == RatingType.DISLIKE) 1 else (if (oldRatingType != RatingType.DISLIKE) 0 else -1)
-        }
-
-        // 不存在评分 则添加新的评分
-        if (ratingOptional == null) {
-            val newRating = Rating(
-                null,
-                Rating.KeyType.COPILOT,
-                request.id.toString(),
-                userIdOrIpAddress,
-                RatingType.fromRatingType(rating),
-                LocalDateTime.now(),
-            )
-
-            ratingRepository.insert(newRating)
-            // 计算评分变化
-            likeCountChange = if (newRating.rating == RatingType.LIKE) 1 else 0
-            dislikeCountChange = if (newRating.rating == RatingType.DISLIKE) 1 else 0
-        }
+        val (likeCountChange, dislikeCountChange) = ratingService.calcLikeChange(ratingChange)
 
         // 获取只包含评分的作业
         var query = Query.query(
@@ -456,18 +395,15 @@ class CopilotService(
         // 排除 _id，防止误 save 该不完整作业后原有数据丢失
         query.fields().include("likeCount", "dislikeCount").exclude("_id")
         val copilot = mongoTemplate.findOne(query, Copilot::class.java)
-        Assert.notNull(copilot, "作业不存在")
+        checkNotNull(copilot) { "作业不存在" }
 
         // 计算评分相关
-        var likeCount = copilot!!.likeCount + likeCountChange
-        likeCount = if (likeCount < 0) 0 else likeCount
-        var ratingCount = likeCount + copilot.dislikeCount + dislikeCountChange
-        ratingCount = if (ratingCount < 0) 0 else ratingCount
+        val likeCount = (copilot.likeCount + likeCountChange).coerceAtLeast(0)
+        val ratingCount = (likeCount + copilot.dislikeCount + dislikeCountChange).coerceAtLeast(0)
 
         val rawRatingLevel = if (ratingCount != 0L) likeCount.toDouble() / ratingCount else 0.0
-        val bigDecimal = BigDecimal(rawRatingLevel)
         // 只取一位小数点
-        val ratingLevel = bigDecimal.setScale(1, RoundingMode.HALF_UP).toDouble()
+        val ratingLevel = rawRatingLevel.toBigDecimal().setScale(1, RoundingMode.HALF_UP).toDouble()
         // 更新数据
         query = Query.query(
             Criteria.where("copilotId").`is`(request.id).and("delete").`is`(false),
@@ -493,27 +429,24 @@ class CopilotService(
      * 将数据库内容转换为前端所需格式 <br></br>
      * 新版评分系统
      */
-    private fun formatCopilot(copilot: Copilot, ratingType: RatingType?, userName: String, commentsCount: Long?): CopilotInfo {
-        val info = copilotConverter.toCopilotInfo(
-            copilot,
-            userName,
-            copilot.copilotId!!,
-            commentsCount,
+    private fun formatCopilot(copilot: Copilot, rating: Rating?, userName: String, commentsCount: Long): CopilotInfo {
+        return CopilotInfo(
+            id = copilot.copilotId!!,
+            uploadTime = copilot.uploadTime!!,
+            uploaderId = copilot.uploaderId!!,
+            uploader = userName,
+            views = copilot.views,
+            hotScore = copilot.hotScore,
+            available = true,
+            ratingLevel = copilot.ratingLevel,
+            notEnoughRating = copilot.likeCount + copilot.dislikeCount <= properties.copilot.minValueShowNotEnoughRating,
+            ratingRatio = copilot.ratingRatio,
+            ratingType = (rating?.rating ?: RatingType.NONE).display,
+            commentsCount = commentsCount,
+            content = copilot.content ?: "",
+            like = copilot.likeCount,
+            dislike = copilot.dislikeCount,
         )
-
-        info.ratingRatio = copilot.ratingRatio
-        info.ratingLevel = copilot.ratingLevel
-        if (ratingType != null) {
-            info.ratingType = ratingType.display
-        }
-        // 评分数少于一定数量
-        info.notEnoughRating = copilot.likeCount + copilot.dislikeCount <= properties.copilot.minValueShowNotEnoughRating
-
-        info.available = true
-
-        // 兼容客户端, 将作业ID替换为数字ID
-        copilot.id = copilot.copilotId.toString()
-        return info
     }
 
     fun notificationStatus(userId: String?, copilotId: Long, status: Boolean) {
