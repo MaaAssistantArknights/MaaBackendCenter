@@ -8,7 +8,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -17,6 +16,7 @@ import org.springframework.web.util.DefaultUriBuilderFactory
 import plus.maa.backend.common.utils.ArkLevelUtil
 import plus.maa.backend.common.utils.awaitString
 import plus.maa.backend.common.utils.converter.ArkLevelConverter
+import plus.maa.backend.config.external.MaaCopilotProperties
 import plus.maa.backend.controller.response.copilot.ArkLevelInfo
 import plus.maa.backend.repository.ArkLevelRepository
 import plus.maa.backend.repository.GithubRepository
@@ -38,21 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger
  */
 @Service
 class ArkLevelService(
-    /**
-     * GitHub api调用token 从 [tokens](https://github.com/settings/tokens) 获取
-     */
-    @Value("\${maa-copilot.github.token:}")
-    private val githubToken: String,
-    /**
-     * maa 主仓库，一般不变
-     */
-    @Value("\${maa-copilot.github.repo:MaaAssistantArknights/MaaAssistantArknights/dev}")
-    private val maaRepoAndBranch: String,
-    /**
-     * 地图数据所在路径
-     */
-    @Value("\${maa-copilot.github.repo.tile.path:resource/Arknights-Tile-Pos}")
-    private val tilePosPath: String,
+    properties: MaaCopilotProperties,
     private val githubRepo: GithubRepository,
     private val redisCache: RedisCache,
     private val arkLevelRepo: ArkLevelRepository,
@@ -61,6 +47,7 @@ class ArkLevelService(
     webClientBuilder: WebClient.Builder,
 ) {
     private val log = KotlinLogging.logger { }
+    private val github = properties.github
     private val webClient = webClientBuilder
         .uriBuilderFactory(DefaultUriBuilderFactory().apply { encodingMode = DefaultUriBuilderFactory.EncodingMode.NONE })
         .build()
@@ -87,14 +74,14 @@ class ArkLevelService(
         try {
             log.info { "${tag}开始同步地图数据" }
             // 获取地图文件夹最新的 commit, 与缓存的 commit 比较，如果相同则不更新
-            val commit = githubRepo.getCommits(githubToken).getOrNull(0)
+            val commit = getGithubCommits().getOrNull(0)
             checkNotNull(commit) { "获取地图数据最新 commit 失败" }
             if (redisCache.cacheLevelCommit == commit.sha) {
                 log.info { "${tag}地图数据已是最新" }
                 return
             }
 
-            val trees = fetchTilePosGithubTreesToUpdate(commit, tilePosPath)
+            val trees = fetchTilePosGithubTreesToUpdate(commit, github.tilePosPath)
             log.info { "${tag}已发现 ${trees.size} 份地图数据" }
 
             // 根据 sha 筛选无需更新的地图
@@ -122,12 +109,12 @@ class ArkLevelService(
     }
 
     private suspend fun fetchTilePosGithubTreesToUpdate(commit: GithubCommit, path: String): List<GithubTree> {
-        var folder = githubRepo.getTrees(githubToken, commit.sha)
+        var folder = getGithubTree(commit.sha)
         val pathSegments = path.split("/").filter(String::isNotEmpty)
         for (seg in pathSegments) {
             val targetTree = folder.tree.firstOrNull { it.path == seg && it.type == "tree" }
-                ?: throw Exception("[LEVEL]地图数据获取失败, 未找到文件夹 $tilePosPath")
-            folder = githubRepo.getTrees(githubToken, targetTree.sha)
+                ?: throw Exception("[LEVEL]地图数据获取失败, 未找到文件夹 $path")
+            folder = getGithubTree(targetTree.sha)
         }
         // 根据后缀筛选地图文件列表,排除 overview 文件、肉鸽、训练关卡和 Guide? 不知道是啥
         return folder.tree.filter {
@@ -153,7 +140,7 @@ class ArkLevelService(
 
         suspend fun downloadAndSave(tree: GithubTree) = try {
             val fileName = URLEncoder.encode(tree.path, StandardCharsets.UTF_8)
-            val url = "https://raw.githubusercontent.com/$maaRepoAndBranch/$tilePosPath/$fileName"
+            val url = "https://raw.githubusercontent.com/${github.repoAndBranch}/${github.tilePosPath}/$fileName"
             val tilePos = getTextAsEntity<ArkTilePos>(url)
             val level = parser.parseLevel(tilePos, tree.sha)
             checkNotNull(level) { "地图数据解析失败: ${tree.path}" }
@@ -188,7 +175,7 @@ class ArkLevelService(
         val cacheKey = "level:stages:sha"
         try {
             log.info { "[ACTIVITIES-OPEN-STATUS]准备更新活动地图开放状态" }
-            val content = githubRepo.getContents(githubToken, "resource")
+            val content = getGithubContent("resource")
                 .firstOrNull { it.isFile && "stages.json" == it.name }
 
             if (content?.downloadUrl == null) {
@@ -251,6 +238,10 @@ class ArkLevelService(
             pageable = page.nextPageable()
         } while (page.hasNext())
     }
+
+    private suspend fun getGithubCommits() = withContext(Dispatchers.IO) { githubRepo.getCommits(github.token) }
+    private suspend fun getGithubTree(sha: String) = withContext(Dispatchers.IO) { githubRepo.getTrees(github.token, sha) }
+    private suspend fun getGithubContent(path: String) = withContext(Dispatchers.IO) { githubRepo.getContents(github.token, path) }
 
     /**
      * Fetch a resource as text, parse as json and convert it to entity.
