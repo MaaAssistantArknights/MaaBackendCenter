@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component
 import plus.maa.backend.config.external.MaaCopilotProperties
 import plus.maa.backend.repository.CopilotRepository
 import plus.maa.backend.repository.entity.Copilot
-import plus.maa.backend.service.ArkLevelService
+import plus.maa.backend.service.level.ArkLevelService
 import java.io.File
 import java.io.IOException
 import java.nio.file.Files

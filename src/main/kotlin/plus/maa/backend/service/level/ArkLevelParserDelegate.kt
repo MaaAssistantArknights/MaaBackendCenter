@@ -1,20 +1,34 @@
-package plus.maa.backend.service
+package plus.maa.backend.service.level
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.lang.Nullable
-import org.springframework.stereotype.Service
 import plus.maa.backend.repository.entity.ArkLevel
 import plus.maa.backend.repository.entity.gamedata.ArkTilePos
-import plus.maa.backend.service.model.ArkLevelType
-import plus.maa.backend.service.model.parser.ArkLevelParser
-
-private val log = KotlinLogging.logger { }
+import plus.maa.backend.service.level.parser.ActivityParser
+import plus.maa.backend.service.level.parser.CampaignParser
+import plus.maa.backend.service.level.parser.LegionParser
+import plus.maa.backend.service.level.parser.MainlineParser
+import plus.maa.backend.service.level.parser.MemoryParser
+import plus.maa.backend.service.level.parser.RuneParser
+import plus.maa.backend.service.level.parser.UnknownParser
+import plus.maa.backend.service.level.parser.WeeklyParser
 
 /**
  * @author john180
  */
-@Service
-class ArkLevelParserService(private val parsers: List<ArkLevelParser>) {
+class ArkLevelParserDelegate(holder: ArkGameDataHolder) {
+    private val log = KotlinLogging.logger { }
+    private val parsers = listOf(
+        ActivityParser(holder),
+        CampaignParser(),
+        LegionParser(holder),
+        MainlineParser(holder),
+        MemoryParser(holder),
+        RuneParser(holder),
+        UnknownParser(),
+        WeeklyParser(holder),
+    )
+
     /**
      * 具体地图信息生成规则见
      * [GameDataParser](https://github.com/MaaAssistantArknights/MaaCopilotServer/blob/main/src/MaaCopilotServer.GameData/GameDataParser.cs)

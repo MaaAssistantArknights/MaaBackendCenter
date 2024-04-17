@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController
 import plus.maa.backend.controller.response.MaaResult
 import plus.maa.backend.controller.response.MaaResult.Companion.success
 import plus.maa.backend.controller.response.copilot.ArkLevelInfo
-import plus.maa.backend.service.ArkLevelService
+import plus.maa.backend.service.level.ArkLevelService
 
 /**
  * @author john180

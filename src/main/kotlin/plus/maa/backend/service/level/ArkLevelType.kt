@@ -1,4 +1,4 @@
-package plus.maa.backend.service.model
+package plus.maa.backend.service.level
 
 import java.util.Locale
 

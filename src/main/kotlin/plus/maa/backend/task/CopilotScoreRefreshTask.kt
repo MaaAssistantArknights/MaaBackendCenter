@@ -10,8 +10,8 @@ import plus.maa.backend.repository.CopilotRepository
 import plus.maa.backend.repository.RedisCache
 import plus.maa.backend.repository.entity.Copilot
 import plus.maa.backend.repository.entity.Rating
-import plus.maa.backend.service.ArkLevelService
 import plus.maa.backend.service.CopilotService.Companion.getHotScore
+import plus.maa.backend.service.level.ArkLevelService
 import plus.maa.backend.service.model.RatingCount
 import plus.maa.backend.service.model.RatingType
 import java.time.LocalDateTime

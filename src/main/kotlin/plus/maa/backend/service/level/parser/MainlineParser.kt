@@ -1,12 +1,11 @@
-package plus.maa.backend.service.model.parser
+package plus.maa.backend.service.level.parser
 
-import org.springframework.stereotype.Component
 import org.springframework.util.ObjectUtils
 import plus.maa.backend.repository.entity.ArkLevel
 import plus.maa.backend.repository.entity.gamedata.ArkTilePos
 import plus.maa.backend.repository.entity.gamedata.ArkZone
-import plus.maa.backend.service.ArkGameDataService
-import plus.maa.backend.service.model.ArkLevelType
+import plus.maa.backend.service.level.ArkGameDataHolder
+import plus.maa.backend.service.level.ArkLevelType
 import java.util.Locale
 
 /**
@@ -19,9 +18,9 @@ import java.util.Locale
  * 主题曲 -> 序章：黑暗时代·上 -> 0-1 == obt/main/level_main_00-01<br></br>
  * 主题曲 -> 第四章：急性衰竭 -> S4-7 == obt/main/level_sub_04-3-1<br></br>
  */
-@Component
+
 class MainlineParser(
-    private val dataService: ArkGameDataService,
+    private val dataHolder: ArkGameDataHolder,
 ) : ArkLevelParser {
     override fun supportType(type: ArkLevelType): Boolean = ArkLevelType.MAINLINE == type
 
@@ -43,7 +42,7 @@ class MainlineParser(
             stageCodeEncoded.split("-".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0] // 10 (str)
         val chapter = chapterStr.toInt() // 10 (int)
 
-        val zone = dataService.findZone(level.levelId, tilePos.code!!, tilePos.stageId!!) ?: return null
+        val zone = dataHolder.findZone(level.levelId, tilePos.code!!, tilePos.stageId!!) ?: return null
 
         val catTwo = parseZoneName(zone)
         level.catTwo = catTwo

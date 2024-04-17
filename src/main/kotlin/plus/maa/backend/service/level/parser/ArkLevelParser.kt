@@ -1,8 +1,8 @@
-package plus.maa.backend.service.model.parser
+package plus.maa.backend.service.level.parser
 
 import plus.maa.backend.repository.entity.ArkLevel
 import plus.maa.backend.repository.entity.gamedata.ArkTilePos
-import plus.maa.backend.service.model.ArkLevelType
+import plus.maa.backend.service.level.ArkLevelType
 
 /**
  * @author john180

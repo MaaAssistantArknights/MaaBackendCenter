@@ -1,11 +1,10 @@
-package plus.maa.backend.service.model.parser
+package plus.maa.backend.service.level.parser
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.springframework.stereotype.Component
 import plus.maa.backend.repository.entity.ArkLevel
 import plus.maa.backend.repository.entity.gamedata.ArkTilePos
-import plus.maa.backend.service.ArkGameDataService
-import plus.maa.backend.service.model.ArkLevelType
+import plus.maa.backend.service.level.ArkGameDataHolder
+import plus.maa.backend.service.level.ArkLevelType
 import java.util.Locale
 
 private val log = KotlinLogging.logger { }
@@ -19,9 +18,8 @@ private val log = KotlinLogging.logger { }
  * eg:<br></br>
  * 悖论模拟 -> 狙击 -> 克洛丝 == obt/memory/level_memory_kroos_1<br></br>
  */
-@Component
 class MemoryParser(
-    val dataService: ArkGameDataService,
+    private val dataHolder: ArkGameDataHolder,
 ) : ArkLevelParser {
     override fun supportType(type: ArkLevelType): Boolean = ArkLevelType.MEMORY == type
 
@@ -39,7 +37,7 @@ class MemoryParser(
             return null
         }
         val chId = chIdSplit[1] // aurora
-        val character = dataService.findCharacter(chId)
+        val character = dataHolder.findCharacter(chId)
         if (character == null) {
             log.error { "[PARSER]悖论模拟关卡未找到角色信息: ${level.stageId}, level: ${level.levelId}" }
             return null

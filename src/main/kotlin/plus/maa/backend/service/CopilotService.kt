@@ -33,6 +33,7 @@ import plus.maa.backend.repository.entity.Copilot
 import plus.maa.backend.repository.entity.Copilot.OperationGroup
 import plus.maa.backend.repository.entity.Rating
 import plus.maa.backend.repository.findByUsersId
+import plus.maa.backend.service.level.ArkLevelService
 import plus.maa.backend.service.model.RatingCache
 import plus.maa.backend.service.model.RatingType
 import java.math.RoundingMode

@@ -1,14 +1,12 @@
-package plus.maa.backend.service.model.parser
+package plus.maa.backend.service.level.parser
 
-import org.springframework.stereotype.Component
 import plus.maa.backend.repository.entity.ArkLevel
 import plus.maa.backend.repository.entity.gamedata.ArkTilePos
-import plus.maa.backend.service.ArkGameDataService
-import plus.maa.backend.service.model.ArkLevelType
+import plus.maa.backend.service.level.ArkGameDataHolder
+import plus.maa.backend.service.level.ArkLevelType
 
-@Component
 class RuneParser(
-    private val dataService: ArkGameDataService,
+    private val dataHolder: ArkGameDataHolder,
 ) : ArkLevelParser {
     override fun supportType(type: ArkLevelType): Boolean {
         return ArkLevelType.RUNE == type
@@ -17,7 +15,7 @@ class RuneParser(
     override fun parseLevel(level: ArkLevel, tilePos: ArkTilePos): ArkLevel? {
         level.catOne = ArkLevelType.RUNE.display
         level.catTwo = level.stageId
-            ?.let { dataService.findCrisisV2InfoById(it) }
+            ?.let { dataHolder.findCrisisV2InfoById(it) }
             ?.name ?: tilePos.code
 
         level.catThree = level.name

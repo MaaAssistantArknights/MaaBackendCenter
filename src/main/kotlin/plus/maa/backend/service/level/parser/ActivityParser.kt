@@ -1,10 +1,9 @@
-package plus.maa.backend.service.model.parser
+package plus.maa.backend.service.level.parser
 
-import org.springframework.stereotype.Component
 import plus.maa.backend.repository.entity.ArkLevel
 import plus.maa.backend.repository.entity.gamedata.ArkTilePos
-import plus.maa.backend.service.ArkGameDataService
-import plus.maa.backend.service.model.ArkLevelType
+import plus.maa.backend.service.level.ArkGameDataHolder
+import plus.maa.backend.service.level.ArkLevelType
 
 /**
  * @author john180
@@ -15,9 +14,8 @@ import plus.maa.backend.service.model.ArkLevelType
  * eg:<br></br>
  * 活动关卡 -> 战地秘闻 -> SW-EV-1 == activities/act4d0/level_act4d0_01<br></br>
  */
-@Component
 class ActivityParser(
-    private val dataService: ArkGameDataService,
+    private val dataHolder: ArkGameDataHolder,
 ) : ArkLevelParser {
     override fun supportType(type: ArkLevelType): Boolean {
         return ArkLevelType.ACTIVITIES == type
@@ -26,9 +24,9 @@ class ActivityParser(
     override fun parseLevel(level: ArkLevel, tilePos: ArkTilePos): ArkLevel? {
         level.catOne = ArkLevelType.ACTIVITIES.display
 
-        val stage = dataService.findStage(level.levelId!!, tilePos.code!!, tilePos.stageId!!)
+        val stage = dataHolder.findStage(level.levelId!!, tilePos.code!!, tilePos.stageId!!)
         level.catTwo = stage?.zoneId
-            ?.let { dataService.findActivityByZoneId(it) }
+            ?.let { dataHolder.findActivityByZoneId(it) }
             ?.name ?: ""
         return level
     }

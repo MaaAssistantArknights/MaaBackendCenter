@@ -5,7 +5,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import plus.maa.backend.service.ArkLevelService
+import plus.maa.backend.service.level.ArkLevelService
 
 @Component
 class ArkLevelSyncTask(

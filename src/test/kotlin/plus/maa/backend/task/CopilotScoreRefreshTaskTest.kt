@@ -13,7 +13,7 @@ import plus.maa.backend.repository.RedisCache
 import plus.maa.backend.repository.entity.ArkLevel
 import plus.maa.backend.repository.entity.Copilot
 import plus.maa.backend.repository.entity.Rating
-import plus.maa.backend.service.ArkLevelService
+import plus.maa.backend.service.level.ArkLevelService
 import plus.maa.backend.service.model.RatingCount
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
@@ -27,9 +27,8 @@ class CopilotScoreRefreshTaskTest {
         arkLevelService,
         redisCache,
         copilotRepository,
-        mongoTemplate
+        mongoTemplate,
     )
-
 
     @Test
     fun testRefreshScores() {
@@ -63,8 +62,9 @@ class CopilotScoreRefreshTaskTest {
             listOf(
                 RatingCount("1", 1L),
                 RatingCount("2", 0L),
-                RatingCount("3", 0L)
-            ), Document()
+                RatingCount("3", 0L),
+            ),
+            Document(),
         )
 
         val arkLevel = ArkLevel()
@@ -114,8 +114,9 @@ class CopilotScoreRefreshTaskTest {
             listOf(
                 RatingCount("1", 1L),
                 RatingCount("2", 0L),
-                RatingCount("3", 0L)
-            ), Document()
+                RatingCount("3", 0L),
+            ),
+            Document(),
         )
         val arkLevel = ArkLevel()
         arkLevel.isOpen = true
