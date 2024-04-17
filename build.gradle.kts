@@ -1,5 +1,5 @@
 import org.hidetake.gradle.swagger.generator.GenerateSwaggerCode
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
 
 plugins {
@@ -23,6 +23,17 @@ version = "2.0"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
+}
+
+kotlin {
+    compilerOptions {
+        freeCompilerArgs.add("-Xjsr305=strict")
+        jvmTarget = JvmTarget.JVM_21
+    }
+}
+
+kapt {
+    keepJavacAnnotationProcessors = true
 }
 
 repositories {
@@ -58,11 +69,11 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
 
     // kotlin-logging
     implementation("io.github.oshai:kotlin-logging-jvm:6.0.3")
 
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
     // hutool 的邮箱工具类依赖
     implementation("com.sun.mail:javax.mail:1.6.2")
     implementation("cn.hutool:hutool-extra:$hutoolVersion")
@@ -88,21 +99,6 @@ dependencies {
     swaggerCodegen("org.openapitools:openapi-generator-cli:7.2.0")
 }
 
-kapt {
-    keepJavacAnnotationProcessors = true
-}
-
-tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        freeCompilerArgs += "-Xjsr305=strict"
-        jvmTarget = "21"
-    }
-}
-
-tasks.withType<Test> {
-    useJUnitPlatform()
-}
-
 val swaggerOutputDir = layout.buildDirectory.dir("docs")
 val swaggerOutputName = "swagger.json"
 
@@ -115,9 +111,9 @@ openApi {
 
 swaggerSources {
     val clientDir = layout.buildDirectory.dir("clients").get()
-    val swaggerOutputFile = swaggerOutputDir.get().file(swaggerOutputName)
+    val swaggerOutputFile = swaggerOutputDir.get().file(swaggerOutputName).asFile
     create("TsFetch") {
-        setInputFile(file(swaggerOutputFile))
+        setInputFile(swaggerOutputFile)
         code(
             closureOf<GenerateSwaggerCode> {
                 language = "typescript-fetch"
@@ -129,7 +125,7 @@ swaggerSources {
         )
     }
     create("CSharp") {
-        setInputFile(file(swaggerOutputFile))
+        setInputFile(swaggerOutputFile)
         code(
             closureOf<GenerateSwaggerCode> {
                 language = "csharp"
@@ -140,7 +136,7 @@ swaggerSources {
         )
     }
     create("Cpp") {
-        setInputFile(file(swaggerOutputFile))
+        setInputFile(swaggerOutputFile)
         code(
             closureOf<GenerateSwaggerCode> {
                 language = "cpp-restsdk"
@@ -150,7 +146,7 @@ swaggerSources {
         )
     }
     create("Rust") {
-        setInputFile(file(swaggerOutputFile))
+        setInputFile(swaggerOutputFile)
         code(
             closureOf<GenerateSwaggerCode> {
                 language = "rust"
@@ -164,6 +160,9 @@ swaggerSources {
 tasks {
     forkedSpringBootRun {
         doNotTrackState("See https://github.com/springdoc/springdoc-openapi-gradle-plugin/issues/102")
+    }
+    test {
+        useJUnitPlatform()
     }
 }
 
