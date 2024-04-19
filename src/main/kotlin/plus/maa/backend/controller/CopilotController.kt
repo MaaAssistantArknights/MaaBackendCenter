@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import plus.maa.backend.common.annotation.JsonSchema
 import plus.maa.backend.common.annotation.SensitiveWordDetection
 import plus.maa.backend.config.doc.RequireJwt
 import plus.maa.backend.config.security.AuthenticationHelper
@@ -45,12 +44,11 @@ class CopilotController(
     @Operation(summary = "上传作业")
     @ApiResponse(description = "上传作业结果")
     @RequireJwt
-    @JsonSchema
     @SensitiveWordDetection(
         "#request.content != null ? #objectMapper.readTree(#request.content).get('doc')?.toString() : null",
     )
     @PostMapping("/upload")
-    fun uploadCopilot(@RequestBody request: CopilotCUDRequest): MaaResult<Long> =
+    fun uploadCopilot(@RequestBody @Valid request: CopilotCUDRequest): MaaResult<Long> =
         success(copilotService.upload(helper.requireUserId(), request.content))
 
     @Operation(summary = "删除作业")
@@ -83,21 +81,19 @@ class CopilotController(
     @Operation(summary = "更新作业")
     @ApiResponse(description = "更新结果")
     @RequireJwt
-    @JsonSchema
     @SensitiveWordDetection(
         "#copilotCUDRequest.content != null ? #objectMapper.readTree(#copilotCUDRequest.content).get('doc')?.toString() : null",
     )
     @PostMapping("/update")
-    fun updateCopilot(@RequestBody copilotCUDRequest: CopilotCUDRequest): MaaResult<Unit> {
+    fun updateCopilot(@RequestBody @Valid copilotCUDRequest: CopilotCUDRequest): MaaResult<Unit> {
         copilotService.update(helper.requireUserId(), copilotCUDRequest)
         return success()
     }
 
     @Operation(summary = "为作业评分")
     @ApiResponse(description = "评分结果")
-    @JsonSchema
     @PostMapping("/rating")
-    fun ratesCopilotOperation(@RequestBody copilotRatingReq: CopilotRatingReq): MaaResult<String> {
+    fun ratesCopilotOperation(@RequestBody @Valid copilotRatingReq: CopilotRatingReq): MaaResult<String> {
         copilotService.rates(helper.obtainUserIdOrIpAddress(), copilotRatingReq)
         return success("评分成功")
     }

@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
-import jakarta.validation.constraints.NotBlank
 import org.springdoc.core.annotations.ParameterObject
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -12,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import plus.maa.backend.common.annotation.JsonSchema
 import plus.maa.backend.common.annotation.SensitiveWordDetection
 import plus.maa.backend.config.doc.RequireJwt
 import plus.maa.backend.config.security.AuthenticationHelper
@@ -62,7 +60,6 @@ class CommentsAreaController(
         return success("评论已删除")
     }
 
-    @JsonSchema
     @Operation(summary = "为评论点赞")
     @ApiResponse(description = "点赞结果")
     @RequireJwt
@@ -84,7 +81,7 @@ class CommentsAreaController(
     @Operation(summary = "设置通知接收状态")
     @RequireJwt
     @GetMapping("/status")
-    fun modifyStatus(@RequestParam id: @NotBlank String, @RequestParam status: Boolean): MaaResult<String> {
+    fun modifyStatus(@RequestParam id: String, @RequestParam status: Boolean): MaaResult<String> {
         commentsAreaService.notificationStatus(authHelper.requireUserId(), id, status)
         return success("success")
     }
