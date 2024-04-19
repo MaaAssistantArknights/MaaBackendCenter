@@ -1,6 +1,5 @@
 package plus.maa.backend.config.accesslimit
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -9,8 +8,8 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.method.HandlerMethod
 import org.springframework.web.servlet.HandlerInterceptor
 import plus.maa.backend.common.utils.IpUtil
-import plus.maa.backend.common.utils.WebUtils
 import plus.maa.backend.controller.response.MaaResult.Companion.fail
+import plus.maa.backend.service.DataTransferService
 import java.util.concurrent.TimeUnit
 
 /**
@@ -18,7 +17,7 @@ import java.util.concurrent.TimeUnit
  */
 class AccessLimitInterceptor(
     private val stringRedisTemplate: StringRedisTemplate,
-    private val objectMapper: ObjectMapper,
+    private val dataTransferService: DataTransferService,
 ) : HandlerInterceptor {
     private val log = KotlinLogging.logger { }
 
@@ -42,8 +41,7 @@ class AccessLimitInterceptor(
             // 请求过于频繁
             log.info { "$key 请求过于频繁" }
             val result = fail(HttpStatus.TOO_MANY_REQUESTS.value(), "请求过于频繁")
-            val json = objectMapper.writeValueAsString(result)
-            WebUtils.renderString(response, json, HttpStatus.TOO_MANY_REQUESTS.value())
+            dataTransferService.writeJson(response, result, HttpStatus.TOO_MANY_REQUESTS.value())
             return false
         }
 
