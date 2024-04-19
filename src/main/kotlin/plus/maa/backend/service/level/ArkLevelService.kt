@@ -13,9 +13,9 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.util.DefaultUriBuilderFactory
-import plus.maa.backend.common.utils.ArkLevelUtil
 import plus.maa.backend.common.utils.awaitString
 import plus.maa.backend.common.utils.converter.ArkLevelConverter
+import plus.maa.backend.common.utils.lazySuspend
 import plus.maa.backend.config.external.MaaCopilotProperties
 import plus.maa.backend.controller.response.copilot.ArkLevelInfo
 import plus.maa.backend.repository.ArkLevelRepository
@@ -51,8 +51,8 @@ class ArkLevelService(
     private val webClient = webClientBuilder
         .uriBuilderFactory(DefaultUriBuilderFactory().apply { encodingMode = DefaultUriBuilderFactory.EncodingMode.NONE })
         .build()
-    private var dataHolder: ArkGameDataHolder? = null
-    private var levelParser: ArkLevelParserDelegate? = null
+    private val fetchDataHolder = lazySuspend { ArkGameDataHolder.fetch(webClient) }
+    private val fetchLevelParser = lazySuspend { ArkLevelParserDelegate(fetchDataHolder()) }
 
     @get:Cacheable("arkLevelInfos")
     val arkLevelInfos: List<ArkLevelInfo>
@@ -94,18 +94,6 @@ class ArkLevelService(
         } catch (e: Exception) {
             log.error(e) { "${tag}同步地图数据失败" }
         }
-    }
-
-    private suspend fun fetchDataHolder(): ArkGameDataHolder {
-        val holder = dataHolder ?: ArkGameDataHolder.fetch(webClient)
-        dataHolder = holder
-        return holder
-    }
-
-    private suspend fun fetchLevelParser(): ArkLevelParserDelegate {
-        val parser = levelParser ?: fetchDataHolder().run(::ArkLevelParserDelegate)
-        levelParser = parser
-        return parser
     }
 
     private suspend fun fetchTilePosGithubTreesToUpdate(commit: GithubCommit, path: String): List<GithubTree> {
@@ -229,7 +217,7 @@ class ArkLevelService(
         log.info { "[CRISIS-V2-OPEN-STATUS]危机合约开放状态更新完毕" }
     }
 
-    suspend fun updateLevelsOfTypeInBatch(catOne: ArkLevelType, batchSize: Int = 1000, block: (page: ArkLevel) -> Unit) {
+    suspend fun updateLevelsOfTypeInBatch(catOne: ArkLevelType, batchSize: Int = 1000, block: (ArkLevel) -> Unit) {
         var pageable = Pageable.ofSize(batchSize)
         do {
             val page = withContext(Dispatchers.IO) { arkLevelRepo.findAllByCatOne(catOne.display, pageable) }
