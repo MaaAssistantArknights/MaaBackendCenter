@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import plus.maa.backend.common.annotation.SensitiveWordDetection
 import plus.maa.backend.config.doc.RequireJwt
 import plus.maa.backend.config.security.AuthenticationHelper
 import plus.maa.backend.controller.request.copilot.CopilotCUDRequest
@@ -44,12 +43,10 @@ class CopilotController(
     @Operation(summary = "上传作业")
     @ApiResponse(description = "上传作业结果")
     @RequireJwt
-    @SensitiveWordDetection(
-        "#request.content != null ? #objectMapper.readTree(#request.content).get('doc')?.toString() : null",
-    )
     @PostMapping("/upload")
-    fun uploadCopilot(@RequestBody @Valid request: CopilotCUDRequest): MaaResult<Long> =
-        success(copilotService.upload(helper.requireUserId(), request.content))
+    fun uploadCopilot(@RequestBody @Valid request: CopilotCUDRequest): MaaResult<Long> {
+        return success(copilotService.upload(helper.requireUserId(), request.content))
+    }
 
     @Operation(summary = "删除作业")
     @ApiResponse(description = "删除作业结果")
@@ -81,9 +78,6 @@ class CopilotController(
     @Operation(summary = "更新作业")
     @ApiResponse(description = "更新结果")
     @RequireJwt
-    @SensitiveWordDetection(
-        "#copilotCUDRequest.content != null ? #objectMapper.readTree(#copilotCUDRequest.content).get('doc')?.toString() : null",
-    )
     @PostMapping("/update")
     fun updateCopilot(@RequestBody @Valid copilotCUDRequest: CopilotCUDRequest): MaaResult<Unit> {
         copilotService.update(helper.requireUserId(), copilotCUDRequest)

@@ -17,6 +17,7 @@ import org.springframework.web.servlet.NoHandlerFoundException
 import plus.maa.backend.controller.response.MaaResult
 import plus.maa.backend.controller.response.MaaResult.Companion.fail
 import plus.maa.backend.controller.response.MaaResultException
+import plus.maa.backend.service.sensitiveword.SensitiveWordException
 
 private val log = KotlinLogging.logger { }
 
@@ -130,6 +131,11 @@ class GlobalExceptionHandler {
     @ExceptionHandler(ResponseStatusException::class)
     fun handleResponseStatusException(ex: ResponseStatusException): MaaResult<Unit> {
         return fail(ex.statusCode.value(), ex.message)
+    }
+
+    @ExceptionHandler(SensitiveWordException::class)
+    fun handleSensitiveWordException(ex: SensitiveWordException): MaaResult<Unit> {
+        return fail(400, ex.message)
     }
 
     /**

@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import plus.maa.backend.common.annotation.SensitiveWordDetection
 import plus.maa.backend.config.doc.RequireJwt
 import plus.maa.backend.config.security.AuthenticationHelper
 import plus.maa.backend.controller.request.comments.CommentsAddDTO
@@ -35,7 +34,6 @@ class CommentsAreaController(
     private val commentsAreaService: CommentsAreaService,
     private val authHelper: AuthenticationHelper,
 ) {
-    @SensitiveWordDetection("#comments.message")
     @PostMapping("/add")
     @Operation(summary = "发送评论")
     @ApiResponse(description = "发送评论结果")

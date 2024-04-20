@@ -20,6 +20,7 @@ import plus.maa.backend.repository.entity.CommentsArea
 import plus.maa.backend.repository.entity.Copilot
 import plus.maa.backend.repository.entity.MaaUser
 import plus.maa.backend.service.model.RatingType
+import plus.maa.backend.service.sensitiveword.SensitiveWordService
 import java.time.LocalDateTime
 
 /**
@@ -33,6 +34,7 @@ class CommentsAreaService(
     private val copilotRepository: CopilotRepository,
     private val userRepository: UserRepository,
     private val emailService: EmailService,
+    private val sensitiveWordService: SensitiveWordService,
 ) {
     /**
      * 评论
@@ -42,6 +44,7 @@ class CommentsAreaService(
      * @param commentsAddDTO CommentsRequest
      */
     fun addComments(userId: String, commentsAddDTO: CommentsAddDTO) {
+        sensitiveWordService.validate(commentsAddDTO.message)
         val copilotId = commentsAddDTO.copilotId
         val copilot = copilotRepository.findByCopilotId(copilotId).requireNotNull { "作业不存在" }
 

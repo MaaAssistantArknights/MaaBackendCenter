@@ -16,6 +16,7 @@ import org.springframework.util.Assert
 import org.springframework.util.ObjectUtils
 import plus.maa.backend.common.utils.IdComponent
 import plus.maa.backend.common.utils.converter.CopilotConverter
+import plus.maa.backend.common.utils.requireNotNull
 import plus.maa.backend.config.external.MaaCopilotProperties
 import plus.maa.backend.controller.request.copilot.CopilotCUDRequest
 import plus.maa.backend.controller.request.copilot.CopilotDTO
@@ -36,6 +37,7 @@ import plus.maa.backend.repository.findByUsersId
 import plus.maa.backend.service.level.ArkLevelService
 import plus.maa.backend.service.model.RatingCache
 import plus.maa.backend.service.model.RatingType
+import plus.maa.backend.service.sensitiveword.SensitiveWordService
 import java.math.RoundingMode
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
@@ -67,6 +69,7 @@ class CopilotService(
     private val commentsAreaRepository: CommentsAreaRepository,
     private val properties: MaaCopilotProperties,
     private val copilotConverter: CopilotConverter,
+    private val sensitiveWordService: SensitiveWordService,
 ) {
     /**
      * 并修正前端的冗余部分
@@ -132,6 +135,7 @@ class CopilotService(
      */
     fun upload(loginUserId: String, content: String?): Long {
         val copilotDTO = correctCopilot(parseToCopilotDto(content))
+        sensitiveWordService.validate(copilotDTO.doc)
         // 将其转换为数据库存储对象
         val copilot = copilotConverter.toCopilot(
             copilotDTO,
@@ -363,9 +367,10 @@ class CopilotService(
      */
     fun update(loginUserId: String, copilotCUDRequest: CopilotCUDRequest) {
         val content = copilotCUDRequest.content
-        val id = copilotCUDRequest.id
-        copilotRepository.findByCopilotId(id!!)?.let { copilot: Copilot ->
+        val id = copilotCUDRequest.id.requireNotNull { "id 不能为空" }
+        copilotRepository.findByCopilotId(id)?.let { copilot: Copilot ->
             val copilotDTO = correctCopilot(parseToCopilotDto(content))
+            sensitiveWordService.validate(copilotDTO.doc)
             Assert.state(copilot.uploaderId == loginUserId, "您无法修改不属于您的作业")
             copilot.uploadTime = LocalDateTime.now()
             copilotConverter.updateCopilotFromDto(copilotDTO, content!!, copilot)
