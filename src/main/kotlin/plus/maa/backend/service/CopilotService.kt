@@ -14,9 +14,9 @@ import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
 import org.springframework.util.Assert
 import org.springframework.util.ObjectUtils
+import plus.maa.backend.common.extensions.requireNotNull
 import plus.maa.backend.common.utils.IdComponent
 import plus.maa.backend.common.utils.converter.CopilotConverter
-import plus.maa.backend.common.utils.requireNotNull
 import plus.maa.backend.config.external.MaaCopilotProperties
 import plus.maa.backend.controller.request.copilot.CopilotCUDRequest
 import plus.maa.backend.controller.request.copilot.CopilotDTO
@@ -29,11 +29,9 @@ import plus.maa.backend.controller.response.copilot.CopilotPageInfo
 import plus.maa.backend.repository.CommentsAreaRepository
 import plus.maa.backend.repository.CopilotRepository
 import plus.maa.backend.repository.RedisCache
-import plus.maa.backend.repository.UserRepository
 import plus.maa.backend.repository.entity.Copilot
 import plus.maa.backend.repository.entity.Copilot.OperationGroup
 import plus.maa.backend.repository.entity.Rating
-import plus.maa.backend.repository.findByUsersId
 import plus.maa.backend.service.level.ArkLevelService
 import plus.maa.backend.service.model.RatingCache
 import plus.maa.backend.service.model.RatingType
@@ -65,7 +63,7 @@ class CopilotService(
     private val levelService: ArkLevelService,
     private val redisCache: RedisCache,
     private val idComponent: IdComponent,
-    private val userRepository: UserRepository,
+    private val userRepository: UserService,
     private val commentsAreaRepository: CommentsAreaRepository,
     private val properties: MaaCopilotProperties,
     private val copilotConverter: CopilotConverter,
@@ -188,11 +186,11 @@ class CopilotService(
             redisCache.setCache(viewCacheKey, vc, 60, TimeUnit.MINUTES)
         }
 
-        val maaUser = userRepository.findByUserId(copilot.uploaderId!!)
+        val maaUser = userRepository.findByUserIdOrDefault(copilot.uploaderId!!)
         return formatCopilot(
             copilot,
             ratingService.findPersonalRatingOfCopilot(userIdOrIpAddress, id),
-            maaUser!!.userName,
+            maaUser.userName,
             commentsAreaRepository.countByCopilotIdAndDelete(copilot.copilotId!!, false),
         )
     }
@@ -325,7 +323,7 @@ class CopilotService(
 
         // 填充前端所需信息
         val copilotIds = copilots.map { it.copilotId!! }.toSet()
-        val maaUsers = userRepository.findByUsersId(copilots.map { it.uploaderId!! }.toList())
+        val maaUsers = userRepository.findByUsersId(copilots.map { it.uploaderId!! })
         val commentsCount = commentsAreaRepository.findByCopilotIdInAndDelete(copilotIds, false).groupBy {
             it.copilotId
         }.mapValues { it.value.size.toLong() }
@@ -336,7 +334,7 @@ class CopilotService(
             formatCopilot(
                 copilot,
                 null,
-                maaUsers[copilot.uploaderId]!!.userName,
+                maaUsers.getOrDefault(copilot.uploaderId!!).userName,
                 commentsCount[copilot.copilotId] ?: 0,
             )
         }.toList()

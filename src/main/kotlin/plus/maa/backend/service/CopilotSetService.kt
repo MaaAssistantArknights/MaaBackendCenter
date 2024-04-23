@@ -18,15 +18,10 @@ import plus.maa.backend.controller.request.copilotset.CopilotSetUpdateReq
 import plus.maa.backend.controller.response.copilotset.CopilotSetPageRes
 import plus.maa.backend.controller.response.copilotset.CopilotSetRes
 import plus.maa.backend.repository.CopilotSetRepository
-import plus.maa.backend.repository.UserRepository
 import plus.maa.backend.repository.entity.CopilotSet
-import plus.maa.backend.repository.entity.MaaUser
-import plus.maa.backend.repository.findByUsersId
 import plus.maa.backend.service.model.CopilotSetStatus
 import java.time.LocalDateTime
 import java.util.regex.Pattern
-
-private val log = KotlinLogging.logger { }
 
 /**
  * @author dragove
@@ -37,9 +32,10 @@ class CopilotSetService(
     private val idComponent: IdComponent,
     private val converter: CopilotSetConverter,
     private val repository: CopilotSetRepository,
-    private val userRepository: UserRepository,
+    private val userService: UserService,
     private val mongoTemplate: MongoTemplate,
 ) {
+    private val log = KotlinLogging.logger { }
     private val defaultSort: Sort = Sort.by("id").descending()
 
     /**
@@ -140,20 +136,20 @@ class CopilotSetService(
             )
         }
         val userIds = copilotSets.map { obj: CopilotSet -> obj.creatorId }.distinct().toList()
-        val userById = userRepository.findByUsersId(userIds)
+        val userById = userService.findByUsersId(userIds)
         return CopilotSetPageRes(
             copilotSets.hasNext(),
             copilotSets.totalPages,
             copilotSets.totalElements,
             copilotSets.map { cs: CopilotSet ->
-                val user = userById.getOrDefault(cs.creatorId, MaaUser.UNKNOWN)
+                val user = userById.getOrDefault(cs.creatorId)
                 converter.convert(cs, user.userName)
             }.toList(),
         )
     }
 
     fun get(id: Long): CopilotSetRes = repository.findById(id).map { copilotSet: CopilotSet ->
-        val userName = (userRepository.findByUserId(copilotSet.creatorId) ?: MaaUser.UNKNOWN).userName
+        val userName = userService.findByUserIdOrDefault(copilotSet.creatorId).userName
         converter.convertDetail(copilotSet, userName)
     }.orElseThrow { IllegalArgumentException("作业不存在") }
 }

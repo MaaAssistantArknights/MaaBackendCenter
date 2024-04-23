@@ -13,9 +13,9 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.util.DefaultUriBuilderFactory
-import plus.maa.backend.common.utils.awaitString
+import plus.maa.backend.common.extensions.awaitString
+import plus.maa.backend.common.extensions.lazySuspend
 import plus.maa.backend.common.utils.converter.ArkLevelConverter
-import plus.maa.backend.common.utils.lazySuspend
 import plus.maa.backend.config.external.MaaCopilotProperties
 import plus.maa.backend.controller.response.copilot.ArkLevelInfo
 import plus.maa.backend.repository.ArkLevelRepository

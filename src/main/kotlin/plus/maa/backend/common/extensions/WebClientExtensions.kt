@@ -1,4 +1,4 @@
-package plus.maa.backend.common.utils
+package plus.maa.backend.common.extensions
 
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.core.io.buffer.DataBuffer

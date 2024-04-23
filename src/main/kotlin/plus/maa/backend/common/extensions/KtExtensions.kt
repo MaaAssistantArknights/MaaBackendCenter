@@ -1,4 +1,4 @@
-package plus.maa.backend.common.utils
+package plus.maa.backend.common.extensions
 
 inline fun <T> T?.requireNotNull(lazyMessage: () -> Any): T = requireNotNull(this, lazyMessage)
 

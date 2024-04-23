@@ -3,9 +3,14 @@ package plus.maa.backend.service
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.query.exists
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
-import plus.maa.backend.common.utils.requireNotNull
+import plus.maa.backend.common.extensions.addAndCriteria
+import plus.maa.backend.common.extensions.findPage
+import plus.maa.backend.common.extensions.requireNotNull
 import plus.maa.backend.controller.request.comments.CommentsAddDTO
 import plus.maa.backend.controller.request.comments.CommentsQueriesDTO
 import plus.maa.backend.controller.request.comments.CommentsRatingDTO
@@ -15,7 +20,6 @@ import plus.maa.backend.controller.response.comments.CommentsInfo
 import plus.maa.backend.controller.response.comments.SubCommentsInfo
 import plus.maa.backend.repository.CommentsAreaRepository
 import plus.maa.backend.repository.CopilotRepository
-import plus.maa.backend.repository.UserRepository
 import plus.maa.backend.repository.entity.CommentsArea
 import plus.maa.backend.repository.entity.Copilot
 import plus.maa.backend.repository.entity.MaaUser
@@ -32,9 +36,10 @@ class CommentsAreaService(
     private val commentsAreaRepository: CommentsAreaRepository,
     private val ratingService: RatingService,
     private val copilotRepository: CopilotRepository,
-    private val userRepository: UserRepository,
+    private val userService: UserService,
     private val emailService: EmailService,
     private val sensitiveWordService: SensitiveWordService,
+    private val mongoTemplate: MongoTemplate,
 ) {
     /**
      * 评论
@@ -70,9 +75,9 @@ class CommentsAreaService(
         val receiverId = parentComment?.uploaderId ?: copilot.uploaderId
         if (receiverId == null || receiverId == replierId) return
 
-        val userMap = userRepository.findAllById(listOf(receiverId, replierId)).associateBy(MaaUser::userId)
+        val userMap = userService.findByUsersId(listOf(receiverId, replierId))
         val receiver = userMap[receiverId] ?: return
-        val replier = userMap.getOrDefault(replierId, MaaUser.UNKNOWN)
+        val replier = userMap.getOrDefault(replierId)
 
         val targetMsg = parentComment?.message ?: copilot.doc?.title ?: ""
         emailService.sendCommentNotification(receiver.email, receiver.userName, targetMsg, replier.userName, message)
@@ -160,20 +165,14 @@ class CommentsAreaService(
         val pageable: Pageable = PageRequest.of(page, limit, Sort.by(toppingOrder, sortOrder))
 
         // 主评论
-        val mainCommentsPage = if (!request.justSeeId.isNullOrBlank()) {
-            commentsAreaRepository.findByCopilotIdAndUploaderIdAndDeleteAndMainCommentIdExists(
-                request.copilotId,
-                request.justSeeId,
-                delete = false,
-                exists = false,
-                pageable = pageable,
-            )
-        } else {
-            commentsAreaRepository.findByCopilotIdAndDeleteAndMainCommentIdExists(
-                request.copilotId,
-                delete = false,
-                exists = false,
-                pageable = pageable,
+        val mainCommentsPage = mongoTemplate.findPage<CommentsArea>(pageable) {
+            if (!request.justSeeId.isNullOrBlank()) {
+                addCriteria(CommentsArea::id isEqualTo request.justSeeId)
+            }
+            addAndCriteria(
+                CommentsArea::copilotId isEqualTo request.copilotId,
+                CommentsArea::delete isEqualTo false,
+                CommentsArea::mainCommentId exists false,
             )
         }
 
@@ -186,15 +185,15 @@ class CommentsAreaService(
 
         // 获取所有评论用户
         val allUserIds = (mainCommentsPage + subCommentsList).map(CommentsArea::uploaderId).distinct()
-        val users = userRepository.findAllById(allUserIds).associateBy(MaaUser::userId)
+        val users = userService.findByUsersId(allUserIds)
         val subCommentGroups = subCommentsList.groupBy(CommentsArea::mainCommentId)
 
         // 转换主评论数据并填充用户名
         val commentsInfos = mainCommentsPage.toList().map { mainComment ->
             val subCommentsInfos = (subCommentGroups[mainComment.id] ?: emptyList()).map { c ->
-                buildSubCommentsInfo(c, users[c.uploaderId] ?: MaaUser.UNKNOWN)
+                buildSubCommentsInfo(c, users.getOrDefault(c.uploaderId))
             }
-            buildMainCommentsInfo(mainComment, users[mainComment.uploaderId] ?: MaaUser.UNKNOWN, subCommentsInfos)
+            buildMainCommentsInfo(mainComment, users.getOrDefault(mainComment.uploaderId), subCommentsInfos)
         }
 
         return CommentsAreaInfo(

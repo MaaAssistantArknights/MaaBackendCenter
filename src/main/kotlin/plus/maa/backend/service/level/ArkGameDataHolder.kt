@@ -7,7 +7,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import org.springframework.web.reactive.function.client.WebClient
-import plus.maa.backend.common.utils.awaitString
+import plus.maa.backend.common.extensions.awaitString
 import plus.maa.backend.repository.entity.gamedata.ArkActivity
 import plus.maa.backend.repository.entity.gamedata.ArkCharacter
 import plus.maa.backend.repository.entity.gamedata.ArkCrisisV2Info

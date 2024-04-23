@@ -212,4 +212,16 @@ class UserService(
         // 发送验证码
         emailService.sendVCode(regDTO.email)
     }
+
+    fun findByUserIdOrDefault(id: String) = userRepository.findByUserId(id) ?: MaaUser.UNKNOWN
+
+    fun findByUsersId(ids: Iterable<String>): UserDict {
+        return userRepository.findAllById(ids).let(::UserDict)
+    }
+
+    class UserDict(users: List<MaaUser>) {
+        private val userMap = users.associateBy { it.userId }
+        operator fun get(id: String): MaaUser? = userMap[id]
+        fun getOrDefault(id: String) = get(id) ?: MaaUser.UNKNOWN
+    }
 }
