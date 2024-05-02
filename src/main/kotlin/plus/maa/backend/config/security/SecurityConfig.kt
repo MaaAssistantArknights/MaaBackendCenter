@@ -90,6 +90,7 @@ class SecurityConfig(
                 "/",
                 "/error",
                 "/version",
+                "/user/info",
                 "/user/activateAccount",
                 "/user/password/reset_request",
                 "/user/password/reset",

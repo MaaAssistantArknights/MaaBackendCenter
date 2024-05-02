@@ -116,7 +116,7 @@ class UserService(
         )
         return try {
             userRepository.save(user).run(::MaaUserInfo)
-        } catch (e: DuplicateKeyException) {
+        } catch (_: DuplicateKeyException) {
             throw MaaResultException(MaaStatusCode.MAA_USER_EXISTS)
         }
     }
@@ -224,4 +224,8 @@ class UserService(
         operator fun get(id: String): MaaUser? = userMap[id]
         fun getOrDefault(id: String) = get(id) ?: MaaUser.UNKNOWN
     }
+
+    fun get(userId: String): MaaUserInfo =
+        (userRepository.findByUserId(userId) ?: MaaUser.UNKNOWN).run(::MaaUserInfo)
+
 }

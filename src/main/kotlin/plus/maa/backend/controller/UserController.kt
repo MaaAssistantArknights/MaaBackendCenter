@@ -5,9 +5,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.validation.annotation.Validated
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import plus.maa.backend.config.doc.RequireJwt
 import plus.maa.backend.config.security.AuthenticationHelper
@@ -148,4 +150,13 @@ class UserController(
     @Operation(summary = "用户登录")
     @ApiResponse(description = "登录结果")
     fun login(@RequestBody user: @Valid LoginDTO): MaaResult<MaaLoginRsp> = success("登陆成功", userService.login(user))
+
+    /**
+     * 查询用户信息
+     */
+    @GetMapping("/info")
+    @Operation(summary = "查询用户信息")
+    @ApiResponse(description = "用户详情信息")
+    fun getUserInfo(@RequestParam userId: String): MaaResult<MaaUserInfo> = success(userService.get(userId))
+
 }

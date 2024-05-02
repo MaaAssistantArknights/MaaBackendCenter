@@ -26,6 +26,7 @@ data class MaaUser(
     companion object {
         @Transient
         val UNKNOWN: MaaUser = MaaUser(
+            userId = "",
             userName = "未知用户:(",
             email = "unknown@unkown.unkown",
             password = "unknown",
