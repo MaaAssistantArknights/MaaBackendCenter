@@ -83,13 +83,13 @@ class CopilotSetService(
         if (!req.name.isNullOrBlank()) {
             copilotSet.name = req.name
         }
-        if (!req.description.isNullOrBlank()) {
+        if (req.description != null) {
             copilotSet.description = req.description
         }
         if (req.status != null) {
             copilotSet.status = req.status
         }
-        if (!req.copilotIds.isNullOrEmpty()) {
+        if (req.copilotIds != null) {
             copilotSet.copilotIds = req.copilotIds
             copilotSet.distinctIdsAndCheck()
         }
