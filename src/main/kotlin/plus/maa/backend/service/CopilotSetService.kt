@@ -80,9 +80,19 @@ class CopilotSetService(
     fun update(req: CopilotSetUpdateReq, userId: String) {
         val copilotSet = repository.findById(req.id).orElseThrow { IllegalArgumentException("作业集不存在") }
         Assert.state(copilotSet.creatorId == userId, "您不是该作业集的创建者，无权修改该作业集")
-        copilotSet.name = req.name
-        copilotSet.description = req.description
-        copilotSet.status = req.status
+        if (!req.name.isNullOrBlank()) {
+            copilotSet.name = req.name
+        }
+        if (!req.description.isNullOrBlank()) {
+            copilotSet.description = req.description
+        }
+        if (req.status != null) {
+            copilotSet.status = req.status
+        }
+        if (!req.copilotIds.isNullOrEmpty()) {
+            copilotSet.copilotIds = req.copilotIds
+            copilotSet.distinctIdsAndCheck()
+        }
         repository.save(copilotSet)
     }
 
