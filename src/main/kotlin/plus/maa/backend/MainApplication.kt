@@ -14,7 +14,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 @SpringBootApplication
 @ConfigurationPropertiesScan
 @EnableMethodSecurity
-class MainApplication
+open class MainApplication
 
 fun main(args: Array<String>) {
     runApplication<MainApplication>(*args)

@@ -10,8 +10,10 @@ import org.hibernate.validator.constraints.Length
 data class CommentsAddDTO(
     /**
      * 评论内容
+     * 500字长度为对作者的限制，对于非作者限制为150字
+     * 在业务层中实现
      */
-    @field:Length(min = 1, max = 150, message = "评论内容不可超过150字，请删减")
+    @field:Length(min = 1, max = 500, message = "评论内容不可超过500字，请删减")
     @field:NotBlank(message = "请填写评论内容")
     val message: String,
     /**

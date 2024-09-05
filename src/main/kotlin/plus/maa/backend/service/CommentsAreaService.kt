@@ -52,6 +52,9 @@ class CommentsAreaService(
         sensitiveWordService.validate(commentsAddDTO.message)
         val copilotId = commentsAddDTO.copilotId
         val copilot = copilotRepository.findByCopilotId(copilotId).requireNotNull { "作业不存在" }
+        if (userId != copilot.uploaderId) {
+            require(commentsAddDTO.message.length <= 150) { "评论内容不可超过150字，请删减" }
+        }
 
         val parentCommentId = commentsAddDTO.fromCommentId?.ifBlank { null }
         // 指定了回复对象但该对象不存在时抛出异常
