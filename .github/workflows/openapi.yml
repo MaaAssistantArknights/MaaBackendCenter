@@ -37,7 +37,7 @@ jobs:
           release-branch: main
           dev-branch: dev
           major-identifier: "breaking:"
-          minor-identifier: "feature:"
+          minor-identifier: "/^(feat|refactor):/"
 
       - uses: actions/setup-java@v4
         with:
