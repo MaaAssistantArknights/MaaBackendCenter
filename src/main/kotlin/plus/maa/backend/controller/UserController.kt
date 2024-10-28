@@ -158,5 +158,4 @@ class UserController(
     @Operation(summary = "查询用户信息")
     @ApiResponse(description = "用户详情信息")
     fun getUserInfo(@RequestParam userId: String): MaaResult<MaaUserInfo> = success(userService.get(userId))
-
 }

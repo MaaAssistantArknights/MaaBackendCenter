@@ -29,7 +29,6 @@ class CopilotServiceTest {
         lastWeekLikeCounts[1] = 6L
         lastWeekDislikeCounts[1] = 1L
 
-
         // 近期作业，差评较多，均为近期评分
         val newBad = Copilot(doc = Copilot.Doc(title = "test"))
         newBad.uploadTime = now
@@ -38,7 +37,6 @@ class CopilotServiceTest {
         lastWeekLikeCounts[2] = 2L
         lastWeekDislikeCounts[2] = 4L
 
-
         // 一月前的作业，评分高，但是只有一条近期好评，浏览量尚可
         val oldNormal = Copilot(doc = Copilot.Doc(title = "test"))
         oldNormal.uploadTime = beforeWeek.minusDays(21L)
@@ -46,7 +44,6 @@ class CopilotServiceTest {
         copilots[3] = oldNormal
         lastWeekLikeCounts[3] = 1L
         lastWeekDislikeCounts[3] = 0L
-
 
         // 新增作业，暂无评分
         val newEmpty = Copilot(doc = Copilot.Doc(title = "test"))
@@ -57,8 +54,7 @@ class CopilotServiceTest {
         lastWeekDislikeCounts[4] = 0L
 
         for (i in 0..4) {
-            copilots[i]!!.hotScore =
-                getHotScore(copilots[i]!!, lastWeekLikeCounts[i], lastWeekDislikeCounts[i])
+            copilots[i]!!.hotScore = getHotScore(copilots[i]!!, lastWeekLikeCounts[i], lastWeekDislikeCounts[i])
         }
 
         // 近期好评 > 远古好评 > 近期新增 > 近期差评 > 远古一般

@@ -8,7 +8,7 @@ import plus.maa.backend.config.external.MaaCopilotProperties
 @SpringBootTest
 class GithubRepositoryTest(
     @Autowired val repository: GithubRepository,
-    @Autowired val properties: MaaCopilotProperties
+    @Autowired val properties: MaaCopilotProperties,
 ) {
     @Test
     fun testGetTrees() {
