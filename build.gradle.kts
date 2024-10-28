@@ -1,21 +1,22 @@
+
 import org.hidetake.gradle.swagger.generator.GenerateSwaggerCode
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
 
 plugins {
     java
-    id("org.springframework.boot") version "3.2.2"
-    id("io.spring.dependency-management") version "1.1.4"
-    id("org.springdoc.openapi-gradle-plugin") version "1.8.0"
+    id("org.springframework.boot") version "3.3.5"
+    id("io.spring.dependency-management") version "1.1.6"
+    id("org.springdoc.openapi-gradle-plugin") version "1.9.0"
 //    id("org.graalvm.buildtools.native") version "0.9.28"
     id("org.hidetake.swagger.generator") version "2.19.2"
-    id("com.gorylenko.gradle-git-properties") version "2.4.1"
+    id("com.gorylenko.gradle-git-properties") version "2.4.2"
 
-    kotlin("jvm") version "1.9.22"
-    kotlin("plugin.spring") version "1.9.22"
-    kotlin("kapt") version "1.9.22"
+    kotlin("jvm") version "1.9.25"
+    kotlin("plugin.spring") version "1.9.25"
+    kotlin("kapt") version "1.9.25"
 
-    id("org.jlleitschuh.gradle.ktlint") version "12.1.0"
+    id("org.jlleitschuh.gradle.ktlint") version "12.1.1"
 }
 
 group = "plus.maa"
@@ -43,13 +44,13 @@ repositories {
 }
 
 dependencies {
-    val hutoolVersion = "5.8.26"
+    val hutoolVersion = "5.8.32"
     val mapstructVersion = "1.5.5.Final"
 
     kapt("org.springframework.boot:spring-boot-configuration-processor")
 
-    testImplementation("io.mockk:mockk:1.13.9")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("io.mockk:mockk:1.13.13")
+//    testImplementation("org.springframework.boot:spring-boot-starter-test")
 
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
@@ -72,7 +73,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
 
     // kotlin-logging
-    implementation("io.github.oshai:kotlin-logging-jvm:6.0.3")
+    implementation("io.github.oshai:kotlin-logging-jvm:7.0.0")
 
     // hutool 的邮箱工具类依赖
     implementation("com.sun.mail:javax.mail:1.6.2")
@@ -84,19 +85,19 @@ dependencies {
     implementation("org.mapstruct:mapstruct:$mapstructVersion")
     kapt("org.mapstruct:mapstruct-processor:$mapstructVersion")
 
-    implementation("org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r")
-    implementation("org.eclipse.jgit:org.eclipse.jgit.ssh.apache.agent:6.8.0.202311291450-r")
-    implementation("org.freemarker:freemarker:2.3.32")
+    implementation("org.eclipse.jgit:org.eclipse.jgit:7.0.0.202409031743-r")
+    implementation("org.eclipse.jgit:org.eclipse.jgit.ssh.apache.agent:7.0.0.202409031743-r")
+    implementation("org.freemarker:freemarker:2.3.33")
     implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
     implementation("com.github.erosb:everit-json-schema:1.14.4") {
         exclude("commons-logging", "commons-logging")
     }
-    implementation("com.google.guava:guava:32.1.3-jre")
+    implementation("com.google.guava:guava:33.3.1-jre")
     implementation("org.aspectj:aspectjweaver:1.9.21")
 
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
-    swaggerCodegen("org.openapitools:openapi-generator-cli:7.2.0")
+    swaggerCodegen("org.openapitools:openapi-generator-cli:7.9.0")
 }
 
 val swaggerOutputDir = layout.buildDirectory.dir("docs")

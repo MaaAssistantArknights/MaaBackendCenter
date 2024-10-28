@@ -6,10 +6,10 @@ spring:
       # uri: mongodb://localhost:27017/MaaBackend
       # 有密码
       # uri: mongodb://用户名:密码@localhost:27017/MaaBackend
-      uri: mongodb://localhost/MaaBackend
+      uri: mongodb://127.0.0.1/MaaBackend
     redis:
       port: 6379
-      host: localhost
+      host: 127.0.0.1
 
 maa-copilot:
   backup:
