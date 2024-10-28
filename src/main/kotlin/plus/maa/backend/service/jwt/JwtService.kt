@@ -58,18 +58,6 @@ class JwtService(properties: MaaCopilotProperties) {
     }
 
     /**
-     * 产生新的 RefreshToken. 新的 token 除了签发和生效时间、 id 不同外，其余属性均继承自原来的 token.
-     * 一般情况下， RefreshToken 应结合数据库使用以避免陷入无法撤销的窘境
-     *
-     * @param old 原 token
-     * @return 新的 RefreshToken
-     */
-    fun newRefreshToken(old: JwtRefreshToken, jwtId: String?): JwtRefreshToken {
-        val now = Instant.now()
-        return JwtRefreshToken(old.subject, jwtId, now, old.expiresAt, now, key)
-    }
-
-    /**
      * 验证并解析为 RefreshToken. 该方法为 stateless 的验证。
      *
      * @param refreshToken jwt字符串

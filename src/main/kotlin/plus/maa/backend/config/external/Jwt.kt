@@ -17,8 +17,4 @@ data class Jwt(
      * JwtToken的加密密钥
      */
     var secret: String = "",
-    /**
-     * Jwt 最大同时登录设备数
-     */
-    var maxLogin: Int = 1,
 )

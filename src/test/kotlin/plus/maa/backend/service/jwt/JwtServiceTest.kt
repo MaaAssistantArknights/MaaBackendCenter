@@ -31,22 +31,6 @@ class JwtServiceTest {
     }
 
     @Test
-    @Throws(JwtExpiredException::class, JwtInvalidException::class)
-    fun refreshTokenCodec() {
-        val service = createService()
-
-        val subject = "some user id"
-        val origin = service.issueRefreshToken(subject, null)
-
-        val parsedToken = service.verifyAndParseRefreshToken(origin.value)
-        check(subject == parsedToken.subject)
-        val newToken = service.newRefreshToken(parsedToken, null)
-        check(!newToken.issuedAt.isBefore(parsedToken.issuedAt))
-        check(!newToken.notBefore.isBefore(parsedToken.notBefore))
-        check(newToken.expiresAt == parsedToken.expiresAt)
-    }
-
-    @Test
     fun wrongTypeParseShouldFail() {
         val service = createService()
         val authToken = service.issueAuthToken("some user id", null, ArrayList())

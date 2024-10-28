@@ -5,7 +5,6 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import plus.maa.backend.common.MaaStatusCode
-import plus.maa.backend.config.external.MaaCopilotProperties
 import plus.maa.backend.controller.request.user.LoginDTO
 import plus.maa.backend.controller.request.user.PasswordResetDTO
 import plus.maa.backend.controller.request.user.RegisterDTO
@@ -19,7 +18,6 @@ import plus.maa.backend.repository.entity.MaaUser
 import plus.maa.backend.service.jwt.JwtExpiredException
 import plus.maa.backend.service.jwt.JwtInvalidException
 import plus.maa.backend.service.jwt.JwtService
-import java.util.UUID
 
 /**
  * @author AnselYuki
@@ -31,7 +29,6 @@ class UserService(
     private val passwordEncoder: PasswordEncoder,
     private val userDetailService: UserDetailServiceImpl,
     private val jwtService: JwtService,
-    private val properties: MaaCopilotProperties,
 ) {
     /**
      * 登录方法
@@ -49,15 +46,9 @@ class UserService(
             throw MaaResultException(MaaStatusCode.MAA_USER_NOT_ENABLED)
         }
 
-        val jwtId = UUID.randomUUID().toString()
-        val jwtIds = user.refreshJwtIds
-        jwtIds.add(jwtId)
-        while (jwtIds.size > properties.jwt.maxLogin) jwtIds.removeAt(0)
-        userRepository.save(user)
-
         val authorities = userDetailService.collectAuthoritiesFor(user)
         val authToken = jwtService.issueAuthToken(user.userId!!, null, authorities)
-        val refreshToken = jwtService.issueRefreshToken(user.userId, jwtId)
+        val refreshToken = jwtService.issueRefreshToken(user.userId, null)
 
         return MaaLoginRsp(
             authToken.value,
@@ -144,18 +135,7 @@ class UserService(
 
             val userId = old.subject
             val user = userRepository.findById(userId).orElseThrow()
-
-            val refreshJwtIds = user.refreshJwtIds
-            val idIndex = refreshJwtIds.indexOf(old.jwtId)
-            if (idIndex < 0) throw MaaResultException(401, "invalid token")
-
-            val jwtId = UUID.randomUUID().toString()
-            refreshJwtIds[idIndex] = jwtId
-
-            userRepository.save(user)
-
-            val refreshToken = jwtService.newRefreshToken(old, jwtId)
-
+            val refreshToken = jwtService.issueRefreshToken(userId, null)
             val authorities = userDetailService.collectAuthoritiesFor(user)
             val authToken = jwtService.issueAuthToken(userId, null, authorities)
 
