@@ -141,7 +141,7 @@ class UserService(
 
             val userId = old.subject
             val user = userRepository.findById(userId).orElseThrow()
-            if (old.notBefore.isBefore(user.pwdUpdateTime)) {
+            if (old.issuedAt.isBefore(user.pwdUpdateTime)) {
                 throw MaaResultException(401, "invalid token")
             }
 
