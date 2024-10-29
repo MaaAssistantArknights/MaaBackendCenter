@@ -18,6 +18,8 @@ import plus.maa.backend.repository.entity.MaaUser
 import plus.maa.backend.service.jwt.JwtExpiredException
 import plus.maa.backend.service.jwt.JwtInvalidException
 import plus.maa.backend.service.jwt.JwtService
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 /**
  * @author AnselYuki
@@ -76,6 +78,10 @@ class UserService(
             check(passwordEncoder.matches(originPassword, maaUser.password)) {
                 "原密码错误"
             }
+            // 通过原密码修改密码不能过于频繁
+            check(ChronoUnit.MINUTES.between(maaUser.pwdUpdateTime, Instant.now()) >= 10L) {
+                "密码修改过于频繁"
+            }
         }
         // 修改密码的逻辑，应当使用与 authentication provider 一致的编码器
         maaUser.password = passwordEncoder.encode(rawPassword)
@@ -83,7 +89,7 @@ class UserService(
         if (maaUser.status == 0) {
             maaUser.status = 1
         }
-        maaUser.refreshJwtIds = ArrayList()
+        maaUser.pwdUpdateTime = Instant.now()
         userRepository.save(maaUser)
     }
 
@@ -135,7 +141,16 @@ class UserService(
 
             val userId = old.subject
             val user = userRepository.findById(userId).orElseThrow()
-            val refreshToken = jwtService.issueRefreshToken(userId, null)
+            if (old.notBefore.isBefore(user.pwdUpdateTime)) {
+                throw MaaResultException(401, "invalid token")
+            }
+
+            // 刚签发不久的 refreshToken 重新使用
+            val refreshToken = if (ChronoUnit.MINUTES.between(old.issuedAt, Instant.now()) < 5) {
+                old
+            } else {
+                jwtService.issueRefreshToken(userId, null)
+            }
             val authorities = userDetailService.collectAuthoritiesFor(user)
             val authToken = jwtService.issueAuthToken(userId, null, authorities)
 

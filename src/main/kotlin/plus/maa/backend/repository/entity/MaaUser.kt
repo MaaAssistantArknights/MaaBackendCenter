@@ -6,6 +6,7 @@ import org.springframework.data.annotation.Transient
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
 import java.io.Serializable
+import java.time.Instant
 
 /**
  * @author AnselYuki
@@ -20,7 +21,7 @@ data class MaaUser(
     val email: String,
     var password: String,
     var status: Int = 0,
-    var refreshJwtIds: MutableList<String> = ArrayList(),
+    var pwdUpdateTime: Instant = Instant.MIN,
 ) : Serializable {
 
     companion object {
