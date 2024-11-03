@@ -27,6 +27,7 @@ import plus.maa.backend.controller.response.MaaResult.Companion.success
 import plus.maa.backend.controller.response.copilot.CopilotInfo
 import plus.maa.backend.controller.response.copilot.CopilotPageInfo
 import plus.maa.backend.service.CopilotService
+import java.util.regex.PatternSyntaxException
 
 /**
  * @author LoMu
@@ -72,7 +73,11 @@ class CopilotController(
     fun queriesCopilot(@ParameterObject parsed: @Valid CopilotQueriesRequest): MaaResult<CopilotPageInfo> {
         // 三秒防抖，缓解前端重复请求问题
         response.setHeader(HttpHeaders.CACHE_CONTROL, "private, max-age=3, must-revalidate")
-        return success(copilotService.queriesCopilot(helper.obtainUserId(), parsed))
+        return try {
+            success(copilotService.queriesCopilot(helper.obtainUserId(), parsed))
+        } catch (e: PatternSyntaxException) {
+            fail(400, "正则表达式不合法")
+        }
     }
 
     @Operation(summary = "更新作业")
