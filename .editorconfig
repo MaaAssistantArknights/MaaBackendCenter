@@ -24,6 +24,11 @@ ktlint_standard = enabled
 # we are not pleased ourselves with the results on the ktlint code base.
 ktlint_experimental = disabled
 
+# disable rules on class signature, condition and function body
+ktlint_standard_class-signature = disabled
+ktlint_standard_condition-wrapping = disabled
+ktlint_standard_function-expression-body = disabled
+
 # Don't allow any wildcard imports
 ij_kotlin_packages_to_use_import_on_demand = unset
 
@@ -34,9 +39,6 @@ ij_kotlin_name_count_to_use_star_import_for_members = 99
 [*.md]
 trim_trailing_whitespace = false
 max_line_length = unset
-
-[gradle/verification-metadata.xml]
-indent_size = 3
 
 [*.yml]
 ij_yaml_spaces_within_brackets = false

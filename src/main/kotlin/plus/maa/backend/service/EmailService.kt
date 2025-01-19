@@ -61,7 +61,7 @@ class EmailService(
 
     private fun asyncSendVCode(email: String) = emailTaskExecutor.execute {
         // 6位随机数验证码
-        val vCode = RandomStringUtils.random(6, true, true).uppercase(Locale.getDefault())
+        val vCode = RandomStringUtils.insecure().next(6, true, true).uppercase(Locale.getDefault())
         if (flagNoSend) {
             log.warn { "Email not sent, no-send enabled, vcode is $vCode" }
         } else {
