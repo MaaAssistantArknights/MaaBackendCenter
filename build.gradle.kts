@@ -58,9 +58,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-cache")
-    // springdoc 相关依赖没有被自动管理，必须保留版本号，
-    // springdoc-openapi-starter-webmvc-ui 升级到 2.3.0 以及以上版本会导致 therapi 不兼容
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
+
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.3")
     implementation("com.github.therapi:therapi-runtime-javadoc:0.15.0")
     kapt("com.github.therapi:therapi-runtime-javadoc-scribe:0.15.0")
 
