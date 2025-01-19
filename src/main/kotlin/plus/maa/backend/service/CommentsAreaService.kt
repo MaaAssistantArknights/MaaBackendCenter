@@ -83,7 +83,14 @@ class CommentsAreaService(
         val replier = userMap.getOrDefault(replierId)
 
         val targetMsg = parentComment?.message ?: copilot.doc?.title ?: ""
-        emailService.sendCommentNotification(receiver.email, receiver.userName, targetMsg, replier.userName, message)
+        emailService.sendCommentNotification(
+            receiver.email,
+            receiver.userName,
+            targetMsg,
+            replier.userName,
+            message,
+            "?op=${copilot.copilotId}"
+        )
     }
 
     fun deleteComments(userId: String, commentsId: String) {

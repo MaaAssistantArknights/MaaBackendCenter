@@ -95,6 +95,7 @@ class EmailService(
         targetMessage: String,
         replierName: String,
         message: String,
+        subLink: String = "",
         timeStr: String = LocalDateTime.now().format(timeFormatter),
     ) = emailTaskExecutor.execute {
         if (!maaCopilotProperties.mail.notification) return@execute
@@ -106,7 +107,7 @@ class EmailService(
         val dataModel = mapOf(
             "content" to "mail-comment-notification.ftlh",
             "authorName" to receiverName,
-            "frontendLink" to maaCopilotProperties.info.frontendDomain,
+            "frontendLink" to "${maaCopilotProperties.info.frontendDomain}/${subLink.removePrefix("/")}",
             "reName" to replierName,
             "date" to timeStr,
             "title" to title,
