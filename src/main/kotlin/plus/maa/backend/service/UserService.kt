@@ -110,6 +110,7 @@ class UserService(
             email = registerDTO.email,
             password = encoded,
             status = 1,
+            pwdUpdateTime = Instant.now(),
         )
         return try {
             userRepository.save(user).run(::MaaUserInfo)
