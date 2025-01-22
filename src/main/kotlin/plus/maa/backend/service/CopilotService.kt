@@ -209,10 +209,10 @@ class CopilotService(
         val setKey = AtomicReference<String>()
         // 只缓存默认状态下热度和访问量排序的结果，并且最多只缓存前三页
         if (request.page <= 3 &&
-            request.document == null &&
-            request.levelKeyword == null &&
-            request.uploaderId == null &&
-            request.operator == null &&
+            request.document.isNullOrBlank() &&
+            request.levelKeyword.isNullOrBlank() &&
+            request.uploaderId.isNullOrBlank() &&
+            request.operator.isNullOrBlank() &&
             request.copilotIds.isNullOrEmpty()
         ) {
             request.orderBy?.takeIf { orderBy -> orderBy.isNotBlank() }
