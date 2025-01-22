@@ -28,6 +28,7 @@ class Copilot(
     // 上传者id
     var uploaderId: String? = null,
     // 查看次数
+    @Indexed
     var views: Long = 0L,
     // 评级
     var ratingLevel: Int = 0,
@@ -36,6 +37,7 @@ class Copilot(
     var likeCount: Long = 0,
     var dislikeCount: Long = 0,
     // 热度
+    @Indexed
     var hotScore: Double = 0.0,
     // 难度
     var difficulty: Int = 0,
