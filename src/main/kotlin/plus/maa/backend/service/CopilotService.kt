@@ -272,6 +272,7 @@ class CopilotService(
 
         // 标题、描述、神秘代码
         if (!request.document.isNullOrBlank()) {
+            Pattern.compile(request.document)
             orQueries.add(Criteria.where("doc.title").regex(caseInsensitive(request.document)))
             orQueries.add(Criteria.where("doc.details").regex(caseInsensitive(request.document)))
         }
