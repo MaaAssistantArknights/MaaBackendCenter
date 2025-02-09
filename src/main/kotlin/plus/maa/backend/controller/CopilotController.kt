@@ -45,7 +45,7 @@ class CopilotController(
     @RequireJwt
     @PostMapping("/upload")
     fun uploadCopilot(@RequestBody @Valid request: CopilotCUDRequest): MaaResult<Long> {
-        return success(copilotService.upload(helper.requireUserId(), request.content))
+        return success(copilotService.upload(helper.requireUserId(), request))
     }
 
     @Operation(summary = "删除作业")

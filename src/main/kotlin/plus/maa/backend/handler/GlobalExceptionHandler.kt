@@ -9,11 +9,13 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseBody
+import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import org.springframework.web.multipart.MultipartException
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.servlet.NoHandlerFoundException
+import org.springframework.web.servlet.resource.NoResourceFoundException
 import plus.maa.backend.controller.response.MaaResult
 import plus.maa.backend.controller.response.MaaResult.Companion.fail
 import plus.maa.backend.controller.response.MaaResultException
@@ -73,10 +75,18 @@ class GlobalExceptionHandler {
      * @description 请求地址不存在
      * @date 2022/12/23 12:03
      </java.lang.String> */
+    @ResponseStatus(HttpStatus.NOT_FOUND)
     @ExceptionHandler(NoHandlerFoundException::class)
     fun noHandlerFoundExceptionHandler(e: NoHandlerFoundException): MaaResult<Unit> {
         log.warn(e) { "请求地址不存在" }
         return fail(404, String.format("请求地址 %s 不存在", e.requestURL))
+    }
+
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ExceptionHandler(NoResourceFoundException::class)
+    fun handleNoResourceFoundException(e: NoResourceFoundException): MaaResult<Unit> {
+        log.warn(e) { "请求资源不存在" }
+        return fail(404, String.format("请求资源 %s 不存在", e.resourcePath))
     }
 
     /**

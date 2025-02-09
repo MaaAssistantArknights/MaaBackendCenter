@@ -7,6 +7,7 @@ import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.Transient
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
+import plus.maa.backend.service.model.CopilotSetStatus
 import java.io.Serializable
 import java.time.LocalDateTime
 
@@ -51,10 +52,17 @@ class Copilot(
     var actions: List<Action>? = null,
     // 描述
     var doc: Doc?,
+    // 首次上传时间
     var firstUploadTime: LocalDateTime? = null,
+    // 更新时间
     var uploadTime: LocalDateTime? = null,
     // 原始数据
     var content: String? = null,
+    /**
+     * 作业状态，后端默认设置为公开以兼容历史逻辑
+     * [plus.maa.backend.service.model.CopilotSetStatus]
+     */
+    var status: CopilotSetStatus = CopilotSetStatus.PUBLIC,
     @JsonIgnore
     var delete: Boolean = false,
     @JsonIgnore

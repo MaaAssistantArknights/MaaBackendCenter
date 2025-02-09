@@ -33,6 +33,7 @@ import plus.maa.backend.repository.entity.Copilot
 import plus.maa.backend.repository.entity.Copilot.OperationGroup
 import plus.maa.backend.repository.entity.Rating
 import plus.maa.backend.service.level.ArkLevelService
+import plus.maa.backend.service.model.CopilotSetStatus
 import plus.maa.backend.service.model.RatingCache
 import plus.maa.backend.service.model.RatingType
 import plus.maa.backend.service.sensitiveword.SensitiveWordService
@@ -43,7 +44,6 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import java.util.regex.Pattern
-import kotlin.collections.component1
 import kotlin.math.ceil
 import kotlin.math.ln
 import kotlin.math.max
@@ -76,26 +76,18 @@ class CopilotService(
      */
     private fun correctCopilot(copilotDTO: CopilotDTO): CopilotDTO {
         // 去除name的冗余部分
-        if (copilotDTO.groups != null) {
-            copilotDTO.groups.forEach { group: Copilot.Groups ->
-                if (group.opers != null) {
-                    group.opers.forEach { oper: OperationGroup ->
-                        oper.name = oper.name?.replace("[\"“”]".toRegex(), "")
-                    }
-                }
+        copilotDTO.groups?.forEach { group: Copilot.Groups ->
+            group.opers?.forEach { oper: OperationGroup ->
+                oper.name = oper.name?.replace("[\"“”]".toRegex(), "")
             }
         }
-        if (copilotDTO.opers != null) {
-            copilotDTO.opers.forEach { operator: Copilot.Operators ->
-                operator.name = operator.name?.replace("[\"“”]".toRegex(), "")
-            }
+        copilotDTO.opers?.forEach { operator: Copilot.Operators ->
+            operator.name = operator.name?.replace("[\"“”]".toRegex(), "")
         }
 
         // actions name 不是必须
-        if (copilotDTO.actions != null) {
-            copilotDTO.actions.forEach { action: Copilot.Action ->
-                action.name = if (action.name == null) null else action.name!!.replace("[\"“”]".toRegex(), "")
-            }
+        copilotDTO.actions?.forEach { action: Copilot.Action ->
+            action.name = if (action.name == null) null else action.name!!.replace("[\"“”]".toRegex(), "")
         }
         // 使用stageId存储作业关卡信息
         val level = levelService.findByLevelIdFuzzy(copilotDTO.stageName)
@@ -111,10 +103,7 @@ class CopilotService(
      * @param content content
      * @return CopilotDTO
      */
-    private fun parseToCopilotDto(content: String?): CopilotDTO {
-        requireNotNull(content) {
-            "作业内容不可为空"
-        }
+    private fun parseToCopilotDto(content: String): CopilotDTO {
         try {
             return mapper.readValue(content, CopilotDTO::class.java)
         } catch (e: JsonProcessingException) {
@@ -128,11 +117,11 @@ class CopilotService(
     /**
      * 上传新的作业
      *
-     * @param content 前端编辑json作业内容
+     * @param request 作业创建/更新请求实体
      * @return 返回_id
      */
-    fun upload(loginUserId: String, content: String?): Long {
-        val copilotDTO = correctCopilot(parseToCopilotDto(content))
+    fun upload(loginUserId: String, request: CopilotCUDRequest): Long {
+        val copilotDTO = correctCopilot(parseToCopilotDto(request.content))
         sensitiveWordService.validate(copilotDTO.doc)
         // 将其转换为数据库存储对象
         val copilot = copilotConverter.toCopilot(
@@ -140,7 +129,8 @@ class CopilotService(
             idComponent.getId(Copilot.META),
             loginUserId,
             LocalDateTime.now(),
-            content,
+            request.content,
+            request.status,
         )
         copilotRepository.insert(copilot)
         return copilot.copilotId!!
@@ -156,13 +146,7 @@ class CopilotService(
             copilotRepository.save(copilot)
             // 删除作业时，如果被删除的项在 Redis 首页缓存中存在，则清空对应的首页缓存
             // 新增作业就不必，因为新作业显然不会那么快就登上热度榜和浏览量榜
-            for ((key1) in HOME_PAGE_CACHE_CONFIG) {
-                val key = String.format("home:%s:copilotIds", key1)
-                val pattern = String.format("home:%s:*", key1)
-                if (redisCache.valueMemberInSet(key, copilot.copilotId)) {
-                    redisCache.removeCacheByPattern(pattern)
-                }
-            }
+            deleteCacheWhenMatchCopilotId(copilot.copilotId!!)
         }
     }
 
@@ -249,6 +233,10 @@ class CopilotService(
         val orQueries: MutableSet<Criteria> = HashSet()
 
         andQueries.add(Criteria.where("delete").`is`(false))
+        // 仅查询自己的作业时才展示所有数据，否则只查询公开作业
+        if (request.uploaderId != "me") {
+            andQueries.add(Criteria.where("status").`is`(CopilotSetStatus.PUBLIC))
+        }
 
         // 关卡名、关卡类型、关卡编号
         if (!request.levelKeyword.isNullOrBlank()) {
@@ -367,12 +355,17 @@ class CopilotService(
         val content = copilotCUDRequest.content
         val id = copilotCUDRequest.id.requireNotNull { "id 不能为空" }
         copilotRepository.findByCopilotId(id)?.let { copilot: Copilot ->
-            val copilotDTO = correctCopilot(parseToCopilotDto(content))
-            sensitiveWordService.validate(copilotDTO.doc)
             Assert.state(copilot.uploaderId == loginUserId, "您无法修改不属于您的作业")
+            val copilotDTO = correctCopilot(parseToCopilotDto(content))
+            val originStatus = copilot.status
+            sensitiveWordService.validate(copilotDTO.doc)
             copilot.uploadTime = LocalDateTime.now()
-            copilotConverter.updateCopilotFromDto(copilotDTO, content!!, copilot)
+            copilotConverter.updateCopilotFromDto(copilotDTO, content, copilot, copilotCUDRequest.status)
             copilotRepository.save(copilot)
+            if (originStatus == CopilotSetStatus.PUBLIC && copilot.status == CopilotSetStatus.PRIVATE) {
+                // 从公开改为隐藏时，如果数据存在缓存中则需要清除缓存
+                deleteCacheWhenMatchCopilotId(copilot.copilotId!!)
+            }
         }
     }
 
@@ -450,6 +443,7 @@ class CopilotService(
             content = copilot.content ?: "",
             like = copilot.likeCount,
             dislike = copilot.dislikeCount,
+            status = copilot.status,
         )
     }
 
@@ -460,6 +454,19 @@ class CopilotService(
         Assert.isTrue(userId == copilot.uploaderId, "您没有权限修改")
         copilot.notification = status
         copilotRepository.save(copilot)
+    }
+
+    /**
+     * 用于重置缓存，数据修改为私有或者删除时用于重置缓存防止继续被查询到
+     */
+    private fun deleteCacheWhenMatchCopilotId(copilotId: Long) {
+        for (k in HOME_PAGE_CACHE_CONFIG) {
+            val key = String.format("home:%s:copilotIds", k)
+            val pattern = String.format("home:%s:*", k)
+            if (redisCache.valueMemberInSet(key, copilotId)) {
+                redisCache.removeCacheByPattern(pattern)
+            }
+        }
     }
 
     companion object {
@@ -488,7 +495,7 @@ class CopilotService(
             val downs = max(lastWeekDislike.toDouble(), 0.0).toLong()
             val greatRate = ups.toDouble() / (ups + downs)
             if ((ups + downs) >= 5 && downs >= ups) {
-                // 将信赖就差评过多的作业打入地狱
+                // 差评过多的作业分数稀释
                 base *= greatRate
             }
             // 上一周好评率 * (上一周评分数 / 10) * (浏览数 / 10) / 过去的周数

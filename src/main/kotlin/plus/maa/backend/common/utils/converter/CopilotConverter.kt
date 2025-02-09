@@ -8,6 +8,7 @@ import org.mapstruct.NullValuePropertyMappingStrategy
 import plus.maa.backend.controller.request.copilot.CopilotDTO
 import plus.maa.backend.controller.response.copilot.CopilotInfo
 import plus.maa.backend.repository.entity.Copilot
+import plus.maa.backend.service.model.CopilotSetStatus
 import java.time.LocalDateTime
 
 /**
@@ -38,7 +39,7 @@ interface CopilotConverter {
     @Mapping(target = "ratingRatio", ignore = true)
     @Mapping(target = "ratingLevel", ignore = true)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    fun updateCopilotFromDto(copilotDTO: CopilotDTO, content: String, @MappingTarget copilot: Copilot)
+    fun updateCopilotFromDto(copilotDTO: CopilotDTO, content: String, @MappingTarget copilot: Copilot, status: CopilotSetStatus)
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "deleteTime", ignore = true)
@@ -52,7 +53,14 @@ interface CopilotConverter {
     @Mapping(target = "uploadTime", source = "now")
     @Mapping(target = "firstUploadTime", source = "now")
     @Mapping(target = "uploaderId", source = "userId")
-    fun toCopilot(copilotDto: CopilotDTO, copilotId: Long, userId: String, now: LocalDateTime, content: String?): Copilot
+    fun toCopilot(
+        copilotDto: CopilotDTO,
+        copilotId: Long,
+        userId: String,
+        now: LocalDateTime,
+        content: String,
+        status: CopilotSetStatus,
+    ): Copilot
 
     @Mapping(target = "ratingType", ignore = true)
     @Mapping(target = "ratingRatio", ignore = true)
