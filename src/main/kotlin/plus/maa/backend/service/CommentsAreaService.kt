@@ -15,6 +15,7 @@ import plus.maa.backend.controller.request.comments.CommentsAddDTO
 import plus.maa.backend.controller.request.comments.CommentsQueriesDTO
 import plus.maa.backend.controller.request.comments.CommentsRatingDTO
 import plus.maa.backend.controller.request.comments.CommentsToppingDTO
+import plus.maa.backend.controller.response.MaaResultException
 import plus.maa.backend.controller.response.comments.CommentsAreaInfo
 import plus.maa.backend.controller.response.comments.CommentsInfo
 import plus.maa.backend.controller.response.comments.SubCommentsInfo
@@ -23,6 +24,7 @@ import plus.maa.backend.repository.CopilotRepository
 import plus.maa.backend.repository.entity.CommentsArea
 import plus.maa.backend.repository.entity.Copilot
 import plus.maa.backend.repository.entity.MaaUser
+import plus.maa.backend.service.model.CommentStatus
 import plus.maa.backend.service.model.RatingType
 import plus.maa.backend.service.sensitiveword.SensitiveWordService
 import java.time.LocalDateTime
@@ -52,6 +54,11 @@ class CommentsAreaService(
         sensitiveWordService.validate(commentsAddDTO.message)
         val copilotId = commentsAddDTO.copilotId
         val copilot = copilotRepository.findByCopilotId(copilotId).requireNotNull { "作业不存在" }
+
+        if (copilot.commentStatus == CommentStatus.DISABLED && userId != copilot.uploaderId) {
+            throw MaaResultException("评论区已被禁用")
+        }
+
         if (userId != copilot.uploaderId) {
             require(commentsAddDTO.message.length <= 150) { "评论内容不可超过150字，请删减" }
         }
