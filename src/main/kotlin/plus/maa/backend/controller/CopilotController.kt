@@ -27,6 +27,7 @@ import plus.maa.backend.controller.response.MaaResult.Companion.success
 import plus.maa.backend.controller.response.copilot.CopilotInfo
 import plus.maa.backend.controller.response.copilot.CopilotPageInfo
 import plus.maa.backend.service.CopilotService
+import plus.maa.backend.service.model.CommentStatus
 
 /**
  * @author LoMu
@@ -97,7 +98,16 @@ class CopilotController(
     @ApiResponse(description = "success")
     @GetMapping("/status")
     fun modifyStatus(@RequestParam id: @NotBlank Long, @RequestParam status: Boolean): MaaResult<String> {
-        copilotService.notificationStatus(helper.obtainUserId(), id, status)
+        copilotService.notificationStatus(helper.requireUserId(), id, status)
+        return success("success")
+    }
+
+
+    @Operation(summary = "禁用评论区/开启评论区")
+    @RequireJwt
+    @PostMapping("/ban")
+    fun banComments(@RequestParam coplitId: @NotBlank Long, @RequestParam status: CommentStatus): MaaResult<String> {
+        copilotService.commentStatus(helper.requireUserId(), coplitId, status)
         return success("success")
     }
 }

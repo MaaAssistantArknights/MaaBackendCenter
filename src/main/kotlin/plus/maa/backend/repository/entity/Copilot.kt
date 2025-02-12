@@ -7,6 +7,7 @@ import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.Transient
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
+import plus.maa.backend.service.model.CommentStatus
 import java.io.Serializable
 import java.time.LocalDateTime
 
@@ -55,6 +56,8 @@ class Copilot(
     var uploadTime: LocalDateTime? = null,
     // 原始数据
     var content: String? = null,
+    @JsonIgnore
+    var commentStatus: CommentStatus? = CommentStatus.ENABLED,
     @JsonIgnore
     var delete: Boolean = false,
     @JsonIgnore
