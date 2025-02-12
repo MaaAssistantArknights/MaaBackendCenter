@@ -5,6 +5,7 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import plus.maa.backend.common.MaaStatusCode
+import plus.maa.backend.common.utils.PinyinUtil
 import plus.maa.backend.controller.request.user.LoginDTO
 import plus.maa.backend.controller.request.user.PasswordResetDTO
 import plus.maa.backend.controller.request.user.RegisterDTO
@@ -20,6 +21,7 @@ import plus.maa.backend.service.jwt.JwtInvalidException
 import plus.maa.backend.service.jwt.JwtService
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import com.github.houbb.opencc4j.util.ZhConverterUtil
 
 /**
  * @author AnselYuki
@@ -222,4 +224,24 @@ class UserService(
     }
 
     fun get(userId: String): MaaUserInfo = (userRepository.findByUserId(userId) ?: MaaUser.UNKNOWN).run(::MaaUserInfo)
+
+    /**
+     * 用户模糊搜索
+     */
+    fun search(userName: String): List<MaaUserInfo> {
+        val patterns = if (isAllChinese(userName)) {
+            listOf(
+                userName
+            )
+        } else {
+            listOf(userName)
+        }
+        return userRepository.searchUsers(
+            patterns[0]
+        ).take(10)
+    }
+
+    private fun isAllChinese(input: String): Boolean {
+        return input.all { it in '\u4e00'..'\u9fa5' }
+    }
 }

@@ -158,4 +158,12 @@ class UserController(
     @Operation(summary = "查询用户信息")
     @ApiResponse(description = "用户详情信息")
     fun getUserInfo(@RequestParam userId: String): MaaResult<MaaUserInfo> = success(userService.get(userId))
+
+    /**
+     * 用户模糊搜索
+     */
+    @GetMapping("/search")
+    @Operation(summary = "用户模糊搜索")
+    @ApiResponse(description = "模糊搜索匹配结果")
+    fun searchUsers(@RequestParam userName: String): MaaResult<List<MaaUserInfo>> = success(userService.search(userName))
 }
