@@ -96,6 +96,9 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
     swaggerCodegen("org.openapitools:openapi-generator-cli:7.10.0")
+
+    implementation("com.belerweb:pinyin4j:2.5.0")
+    implementation("com.github.houbb:opencc4j:1.8.1")
 }
 
 val swaggerOutputDir = layout.buildDirectory.dir("docs")
