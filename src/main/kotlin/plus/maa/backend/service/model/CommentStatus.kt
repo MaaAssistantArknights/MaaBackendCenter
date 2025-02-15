@@ -4,6 +4,5 @@ enum class CommentStatus {
 
     ENABLED,
 
-    DISABLED
-
+    DISABLED,
 }

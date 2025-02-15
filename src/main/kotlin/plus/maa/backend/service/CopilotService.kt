@@ -463,6 +463,15 @@ class CopilotService(
         copilotRepository.save(copilot)
     }
 
+    fun commentStatus(userId: String?, copilotId: Long, status: CommentStatus) {
+        val copilotOptional = copilotRepository.findByCopilotId(copilotId)
+        Assert.isTrue(copilotOptional != null, "copilot不存在")
+        val copilot = copilotOptional!!
+        Assert.isTrue(userId == copilot.uploaderId, "您没有权限修改")
+        copilot.commentStatus = status
+        copilotRepository.save(copilot)
+    }
+
     companion object {
         /*
         首页分页查询缓存配置
@@ -497,14 +506,5 @@ class CopilotService(
             val order = ln(max(s, 1.0))
             return order + s / 1000.0 + base
         }
-    }
-
-    fun commentStatus(userId: String, coplitId: Long, status: CommentStatus) {
-        val copilotOptional = copilotRepository.findByCopilotId(coplitId)
-        Assert.isTrue(copilotOptional != null, "copilot不存在")
-        val copilot = copilotOptional!!
-        Assert.isTrue(userId == copilot.uploaderId, "您没有权限修改")
-        copilot.commentStatus = status
-        copilotRepository.save(copilot)
     }
 }

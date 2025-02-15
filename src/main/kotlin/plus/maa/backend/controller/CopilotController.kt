@@ -102,12 +102,11 @@ class CopilotController(
         return success("success")
     }
 
-
     @Operation(summary = "禁用评论区/开启评论区")
     @RequireJwt
-    @PostMapping("/ban")
-    fun banComments(@RequestParam coplitId: @NotBlank Long, @RequestParam status: CommentStatus): MaaResult<String> {
-        copilotService.commentStatus(helper.requireUserId(), coplitId, status)
+    @GetMapping("/ban")
+    fun banComments(@RequestParam copilotId: @NotBlank Long, @RequestParam status: CommentStatus): MaaResult<String> {
+        copilotService.commentStatus(helper.requireUserId(), copilotId, status)
         return success("success")
     }
 }

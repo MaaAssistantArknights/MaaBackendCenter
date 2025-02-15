@@ -21,5 +21,5 @@ data class CopilotInfo(
     val content: String,
     val like: Long = 0,
     val dislike: Long = 0,
-    val commentStatus: CommentStatus =  CommentStatus.ENABLED,
+    val commentStatus: CommentStatus = CommentStatus.ENABLED,
 ) : Serializable

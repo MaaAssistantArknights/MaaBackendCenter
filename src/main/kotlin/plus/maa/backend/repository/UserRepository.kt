@@ -19,8 +19,6 @@ interface UserRepository : MongoRepository<MaaUser, String> {
 
     fun findByUserId(userId: String): MaaUser?
 
-    @Query("{'\$or': [ " +
-        "{ 'userName': { \$eq: ?0 } }, " +
-        "] }")
+    @Query("{ 'userName': { '\$regex': ?0, '\$options': 'i' } }")
     fun searchUsers(userName: String): List<MaaUserInfo>
 }

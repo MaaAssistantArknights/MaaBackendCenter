@@ -32,5 +32,5 @@ data class CommentsAddDTO(
     /**
      * 是否允许评论
      */
-    val commentStatus: CommentStatus = CommentStatus.ENABLED
+    val commentStatus: CommentStatus = CommentStatus.ENABLED,
 )

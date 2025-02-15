@@ -6,6 +6,7 @@ import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat
 import net.sourceforge.pinyin4j.format.HanyuPinyinToneType
 import net.sourceforge.pinyin4j.format.HanyuPinyinVCharType
 
+@Suppress("unused")
 object PinyinUtil {
     private val format = HanyuPinyinOutputFormat().apply {
         caseType = HanyuPinyinCaseType.LOWERCASE
@@ -17,7 +18,7 @@ object PinyinUtil {
         val sb = StringBuilder()
         input.forEach { ch ->
             val pinyinArray = PinyinHelper.toHanyuPinyinStringArray(ch, format)
-            if (pinyinArray != null && pinyinArray.isNotEmpty()) {
+            if (!pinyinArray.isNullOrEmpty()) {
                 sb.append(pinyinArray[0])
             } else {
                 sb.append(ch)
@@ -33,7 +34,7 @@ object PinyinUtil {
             if (pinyinArray != null && pinyinArray.isNotEmpty()) {
                 sb.append(pinyinArray[0][0])
             } else {
-                sb.append(ch)
+                sb.append(pinyinArray?.firstOrNull()?.get(0) ?: ch)
             }
         }
         return sb.toString()

@@ -107,8 +107,7 @@ class SecurityConfig(
                 "/copilot/rating",
                 "/comments/query",
                 "/file/upload",
-                "/comments/status",
-                "/copilot/status",
+                "/copilot/ban",
             )
 
         // 添加需要权限1才能访问的接口
@@ -117,8 +116,10 @@ class SecurityConfig(
                 "/copilot/delete",
                 "/copilot/update",
                 "/copilot/upload",
+                "/copilot/status",
                 "/comments/add",
                 "/comments/delete",
+                "/comments/status",
             )
 
         private val URL_AUTHENTICATION_2 =

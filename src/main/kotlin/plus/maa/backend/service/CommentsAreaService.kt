@@ -96,7 +96,7 @@ class CommentsAreaService(
             targetMsg,
             replier.userName,
             message,
-            "?op=${copilot.copilotId}"
+            "?op=${copilot.copilotId}",
         )
     }
 
