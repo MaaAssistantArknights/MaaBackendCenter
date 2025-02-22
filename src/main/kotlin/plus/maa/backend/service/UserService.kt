@@ -221,5 +221,5 @@ class UserService(
         fun getOrDefault(id: String) = get(id) ?: MaaUser.UNKNOWN
     }
 
-    fun get(userId: String): MaaUserInfo = (userRepository.findByUserId(userId) ?: MaaUser.UNKNOWN).run(::MaaUserInfo)
+    fun get(userId: String): MaaUserInfo? = userRepository.findByUserId(userId)?.run(::MaaUserInfo)
 }

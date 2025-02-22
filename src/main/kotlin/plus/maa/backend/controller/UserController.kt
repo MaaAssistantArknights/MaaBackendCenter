@@ -1,9 +1,11 @@
 package plus.maa.backend.controller
 
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import org.springframework.http.HttpStatus
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.server.ResponseStatusException
 import plus.maa.backend.config.doc.RequireJwt
 import plus.maa.backend.config.security.AuthenticationHelper
 import plus.maa.backend.controller.request.user.LoginDTO
@@ -156,6 +159,10 @@ class UserController(
      */
     @GetMapping("/info")
     @Operation(summary = "查询用户信息")
-    @ApiResponse(description = "用户详情信息")
-    fun getUserInfo(@RequestParam userId: String): MaaResult<MaaUserInfo> = success(userService.get(userId))
+    @ApiResponse(responseCode = "200", description = "用户详情信息")
+    @ApiResponse(responseCode = "404", content = [Content()])
+    fun getUserInfo(@RequestParam userId: String): MaaResult<MaaUserInfo> {
+        val userInfo = userService.get(userId) ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
+        return success(userInfo)
+    }
 }
