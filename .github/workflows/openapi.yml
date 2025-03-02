@@ -62,6 +62,9 @@ jobs:
           sed -i 's/"packageVersion.*,/"packageVersion": "${{ steps.version.outputs.version }}",/g' client-config/rust.json
           sed -i 's/"npmVersion.*,/"npmVersion": "${{ steps.version.outputs.version }}",/g' client-config/ts-fetch.json
 
+      - name: Generate dev profile
+        run: cp ./src/main/resources/application-template.yml ./src/main/resources/application-dev.yml
+
       - run: chmod 777 ./gradlew
 
       - name: Execute Gradle generateOpenApi
