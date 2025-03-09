@@ -38,10 +38,6 @@ maa-copilot:
     expire: 600
   cache:
     default-expire: 60
-  ark-level-git:
-    repository: https://github.com/MaaAssistantArknights/MaaAssistantArknights.git
-    local-repository: ./MaaAssistantArknights
-    json-path: resource/Arknights-Tile-Pos/
   task-cron:
     ark-level: "-"
     copilot-update: "-"

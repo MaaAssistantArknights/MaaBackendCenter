@@ -14,6 +14,7 @@ enum class ArkLevelType(
     LEGION("保全派驻"),
     ROGUELIKE("集成战略"), // 实际不进行解析
     TRAINING("训练关卡"), // 实际不进行解析
+    SANDBOX("生息演算"), // 实际不进行解析
     UNKNOWN("未知类型"), ;
 
     companion object {
@@ -33,6 +34,7 @@ enum class ArkLevelType(
                 "legion" -> LEGION
                 "roguelike" -> ROGUELIKE
                 "training" -> TRAINING
+                "sandbox" -> SANDBOX
                 else -> UNKNOWN
             }
         }

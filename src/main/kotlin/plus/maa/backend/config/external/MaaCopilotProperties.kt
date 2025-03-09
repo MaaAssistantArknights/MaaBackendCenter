@@ -18,8 +18,6 @@ data class MaaCopilotProperties(
     @NestedConfigurationProperty
     var cache: Cache = Cache(),
     @NestedConfigurationProperty
-    var arkLevelGit: ArkLevelGit = ArkLevelGit(),
-    @NestedConfigurationProperty
     var taskCron: TaskCron = TaskCron(),
     @NestedConfigurationProperty
     var backup: CopilotBackup = CopilotBackup(),
