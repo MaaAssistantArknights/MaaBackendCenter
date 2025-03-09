@@ -1,6 +1,7 @@
 package plus.maa.backend.controller.response.copilot
 
 import plus.maa.backend.service.model.CommentStatus
+import plus.maa.backend.service.model.CopilotSetStatus
 import java.io.Serializable
 import java.time.LocalDateTime
 
@@ -22,4 +23,5 @@ data class CopilotInfo(
     val like: Long = 0,
     val dislike: Long = 0,
     val commentStatus: CommentStatus = CommentStatus.ENABLED,
+    val status: CopilotSetStatus = CopilotSetStatus.PUBLIC,
 ) : Serializable
