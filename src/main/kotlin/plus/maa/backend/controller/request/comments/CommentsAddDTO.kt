@@ -2,6 +2,7 @@ package plus.maa.backend.controller.request.comments
 
 import jakarta.validation.constraints.NotBlank
 import org.hibernate.validator.constraints.Length
+import plus.maa.backend.service.model.CommentStatus
 
 /**
  * @author LoMu
@@ -28,4 +29,8 @@ data class CommentsAddDTO(
      * 是否接收通知
      */
     val notification: Boolean = true,
+    /**
+     * 是否允许评论
+     */
+    val commentStatus: CommentStatus = CommentStatus.ENABLED,
 )

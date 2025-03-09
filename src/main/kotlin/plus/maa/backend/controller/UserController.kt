@@ -5,6 +5,8 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import jakarta.validation.constraints.Max
+import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.GetMapping
@@ -164,5 +166,21 @@ class UserController(
     fun getUserInfo(@RequestParam userId: String): MaaResult<MaaUserInfo> {
         val userInfo = userService.get(userId) ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
         return success(userInfo)
+    }
+
+    /**
+     * 用户模糊搜索
+     */
+    @GetMapping("/search")
+    @Operation(summary = "用户模糊搜索")
+    @ApiResponse(description = "模糊搜索匹配结果")
+    fun searchUsers(
+        @RequestParam userName: String,
+        @RequestParam page: Int = 1,
+        @Max(50, message = "查询用户量不能超过50") @RequestParam size: Int = 10,
+    ): MaaResult<List<MaaUserInfo>> {
+        val pageable = PageRequest.of(page - 1, size)
+        val resultPage = userService.search(userName, pageable)
+        return success(resultPage.content)
     }
 }

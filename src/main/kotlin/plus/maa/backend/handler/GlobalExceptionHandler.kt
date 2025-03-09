@@ -2,6 +2,7 @@ package plus.maa.backend.handler
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.servlet.http.HttpServletRequest
+import jakarta.validation.ConstraintViolationException
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.AuthenticationException
 import org.springframework.web.HttpRequestMethodNotSupportedException
@@ -108,7 +109,7 @@ class GlobalExceptionHandler {
     /**
      * 处理由 [org.springframework.util.Assert] 工具产生的异常
      */
-    @ExceptionHandler(IllegalArgumentException::class, IllegalStateException::class)
+    @ExceptionHandler(IllegalArgumentException::class, IllegalStateException::class, ConstraintViolationException::class)
     fun illegalArgumentOrStateExceptionHandler(e: RuntimeException): MaaResult<Unit> {
         return fail(HttpStatus.BAD_REQUEST.value(), e.message)
     }

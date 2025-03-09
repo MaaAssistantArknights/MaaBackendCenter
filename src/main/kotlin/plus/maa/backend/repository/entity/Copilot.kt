@@ -7,6 +7,7 @@ import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.Transient
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
+import plus.maa.backend.service.model.CommentStatus
 import plus.maa.backend.service.model.CopilotSetStatus
 import java.io.Serializable
 import java.time.LocalDateTime
@@ -63,6 +64,8 @@ class Copilot(
      * [plus.maa.backend.service.model.CopilotSetStatus]
      */
     var status: CopilotSetStatus = CopilotSetStatus.PUBLIC,
+    @JsonIgnore
+    var commentStatus: CommentStatus? = CommentStatus.ENABLED,
     @JsonIgnore
     var delete: Boolean = false,
     @JsonIgnore

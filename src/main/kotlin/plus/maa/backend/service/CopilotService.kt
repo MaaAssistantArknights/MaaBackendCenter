@@ -33,6 +33,7 @@ import plus.maa.backend.repository.entity.Copilot
 import plus.maa.backend.repository.entity.Copilot.OperationGroup
 import plus.maa.backend.repository.entity.Rating
 import plus.maa.backend.service.level.ArkLevelService
+import plus.maa.backend.service.model.CommentStatus
 import plus.maa.backend.service.model.CopilotSetStatus
 import plus.maa.backend.service.model.RatingCache
 import plus.maa.backend.service.model.RatingType
@@ -453,6 +454,14 @@ class CopilotService(
         val copilot = copilotOptional!!
         Assert.isTrue(userId == copilot.uploaderId, "您没有权限修改")
         copilot.notification = status
+        copilotRepository.save(copilot)
+    }
+
+    fun commentStatus(userId: String?, copilotId: Long, status: CommentStatus) {
+        val copilot = copilotRepository.findByCopilotId(copilotId)
+        checkNotNull(copilot) { "copilot不存在" }
+        Assert.isTrue(userId == copilot.uploaderId, "您没有权限修改")
+        copilot.commentStatus = status
         copilotRepository.save(copilot)
     }
 
