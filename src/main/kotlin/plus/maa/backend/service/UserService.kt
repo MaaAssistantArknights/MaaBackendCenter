@@ -1,6 +1,8 @@
 package plus.maa.backend.service
 
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
@@ -220,25 +222,17 @@ class UserService(
         operator fun get(id: String): MaaUser? = userMap[id]
         fun getOrDefault(id: String) = get(id) ?: MaaUser.UNKNOWN
     }
-    
+
     fun get(userId: String): MaaUserInfo? = userRepository.findByUserId(userId)?.run(::MaaUserInfo)
 
     /**
      * 用户模糊搜索
      */
-    fun search(userName: String): List<MaaUserInfo> {
-        val patterns = if (isAllChinese(userName)) {
-            listOf(
-                userName,
-            )
-        } else {
-            listOf(userName)
-        }
-        return userRepository.searchUsers(
-            patterns[0],
-        ).take(10)
+    fun search(userName: String, pageable: Pageable): Page<MaaUserInfo> {
+        return userRepository.searchUsers(userName, pageable)
     }
 
+    @Suppress("unused")
     private fun isAllChinese(input: String): Boolean {
         return input.all { it in '\u4e00'..'\u9fa5' }
     }

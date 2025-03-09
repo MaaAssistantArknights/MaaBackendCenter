@@ -31,11 +31,7 @@ object PinyinUtil {
         val sb = StringBuilder()
         input.forEach { ch ->
             val pinyinArray = PinyinHelper.toHanyuPinyinStringArray(ch)
-            if (pinyinArray != null && pinyinArray.isNotEmpty()) {
-                sb.append(pinyinArray[0][0])
-            } else {
-                sb.append(pinyinArray?.firstOrNull()?.get(0) ?: ch)
-            }
+            sb.append(pinyinArray?.firstOrNull()?.get(0) ?: ch)
         }
         return sb.toString()
     }

@@ -1,5 +1,7 @@
 package plus.maa.backend.repository
 
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.data.mongodb.repository.Query
 import plus.maa.backend.controller.response.user.MaaUserInfo
@@ -19,6 +21,6 @@ interface UserRepository : MongoRepository<MaaUser, String> {
 
     fun findByUserId(userId: String): MaaUser?
 
-    @Query("{ 'userName': { '\$regex': ?0, '\$options': 'i' } }")
-    fun searchUsers(userName: String): List<MaaUserInfo>
+    @Query("{ 'userName': { '\$regex': ?0, '\$options': 'i' }, 'status': 1 }")
+    fun searchUsers(userName: String, pageable: Pageable): Page<MaaUserInfo>
 }

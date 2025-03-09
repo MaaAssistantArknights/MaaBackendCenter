@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.GetMapping
@@ -172,5 +173,9 @@ class UserController(
     @GetMapping("/search")
     @Operation(summary = "用户模糊搜索")
     @ApiResponse(description = "模糊搜索匹配结果")
-    fun searchUsers(@RequestParam userName: String): MaaResult<List<MaaUserInfo>> = success(userService.search(userName))
+    fun searchUsers(@RequestParam userName: String, @RequestParam page: Int, @RequestParam size: Int): MaaResult<List<MaaUserInfo>> {
+        val pageable = PageRequest.of(page, size)
+        val resultPage = userService.search(userName, pageable)
+        return success(resultPage.content)
+    }
 }
