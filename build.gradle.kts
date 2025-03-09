@@ -4,18 +4,18 @@ import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
 
 plugins {
     java
-    id("org.springframework.boot") version "3.4.1"
+    id("org.springframework.boot") version "3.4.3"
     id("io.spring.dependency-management") version "1.1.7"
     id("org.springdoc.openapi-gradle-plugin") version "1.9.0"
 //    id("org.graalvm.buildtools.native") version "0.10.4"
     id("org.hidetake.swagger.generator") version "2.19.2"
     id("com.gorylenko.gradle-git-properties") version "2.4.2"
 
-    kotlin("jvm") version "2.1.0"
-    kotlin("plugin.spring") version "2.1.0"
-    kotlin("kapt") version "2.1.0"
+    kotlin("jvm") version "2.1.10"
+    kotlin("plugin.spring") version "2.1.10"
+    kotlin("kapt") version "2.1.10"
 
-    id("org.jlleitschuh.gradle.ktlint") version "12.1.2"
+    id("org.jlleitschuh.gradle.ktlint") version "12.2.0"
 }
 
 group = "plus.maa"
@@ -43,12 +43,12 @@ repositories {
 }
 
 dependencies {
-    val hutoolVersion = "5.8.35"
+    val hutoolVersion = "5.8.36"
     val mapstructVersion = "1.5.5.Final"
 
     kapt("org.springframework.boot:spring-boot-configuration-processor")
 
-    testImplementation("io.mockk:mockk:1.13.16")
+    testImplementation("io.mockk:mockk:1.13.17")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -71,7 +71,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
 
     // kotlin-logging
-    implementation("io.github.oshai:kotlin-logging-jvm:7.0.3")
+    implementation("io.github.oshai:kotlin-logging-jvm:7.0.5")
 
     // hutool 的邮箱工具类依赖
     implementation("com.sun.mail:javax.mail:1.6.2")
@@ -87,7 +87,7 @@ dependencies {
     implementation("org.eclipse.jgit:org.eclipse.jgit.ssh.apache.agent:7.1.0.202411261347-r")
     implementation("org.freemarker:freemarker:2.3.34")
     implementation("com.github.ben-manes.caffeine:caffeine:3.2.0")
-    implementation("com.github.erosb:everit-json-schema:1.14.4") {
+    implementation("com.github.erosb:everit-json-schema:1.14.5") {
         exclude("commons-logging")
     }
     implementation("com.google.guava:guava:33.4.0-jre")
