@@ -274,10 +274,10 @@ class CopilotService(
                 if (operator.startsWith("~")) {
                     val exclude = operator.substring(1)
                     // 排除查询指定干员
-                    norQueries.add(Criteria.where("opers.name").`is`(exclude))
+                    norQueries.add(Criteria.where("opers.name").regex(exclude))
                 } else {
                     // 模糊匹配查询指定干员
-                    andQueries.add(Criteria.where("opers.name").`is`(operator))
+                    andQueries.add(Criteria.where("opers.name").regex(operator))
                 }
             }
         }
