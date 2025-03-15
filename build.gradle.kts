@@ -7,7 +7,7 @@ plugins {
     id("org.springframework.boot") version "3.4.3"
     id("io.spring.dependency-management") version "1.1.7"
     id("org.springdoc.openapi-gradle-plugin") version "1.9.0"
-//    id("org.graalvm.buildtools.native") version "0.10.4"
+//    id("org.graalvm.buildtools.native") version "0.10.5"
     id("org.hidetake.swagger.generator") version "2.19.2"
     id("com.gorylenko.gradle-git-properties") version "2.4.2"
 
@@ -22,7 +22,9 @@ group = "plus.maa"
 version = "2.0"
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 kotlin {
@@ -37,14 +39,16 @@ kapt {
 }
 
 repositories {
-    maven(url = "https://maven.aliyun.com/repository/public/")
-    maven(url = "https://maven.aliyun.com/repository/spring/")
+    maven(url = "https://maven.aliyun.com/repository/public")
+    maven(url = "https://maven.aliyun.com/repository/spring")
+    maven(url = "https://maven.aliyun.com/repository/spring-plugin")
+    maven(url = "https://maven.aliyun.com/repository/gradle-plugin")
     mavenCentral()
 }
 
 dependencies {
     val hutoolVersion = "5.8.36"
-    val mapstructVersion = "1.5.5.Final"
+    val mapstructVersion = "1.6.3"
 
     kapt("org.springframework.boot:spring-boot-configuration-processor")
 
