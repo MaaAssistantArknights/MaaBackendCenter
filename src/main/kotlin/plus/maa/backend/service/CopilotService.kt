@@ -141,14 +141,16 @@ class CopilotService(
      * 根据作业id删除作业
      */
     fun delete(loginUserId: String, request: CopilotCUDRequest) {
-        copilotRepository.findByCopilotId(request.id!!)?.let { copilot: Copilot ->
-            Assert.state(copilot.uploaderId == loginUserId, "您无法修改不属于您的作业")
-            copilot.delete = true
-            copilotRepository.save(copilot)
-            // 删除作业时，如果被删除的项在 Redis 首页缓存中存在，则清空对应的首页缓存
-            // 新增作业就不必，因为新作业显然不会那么快就登上热度榜和浏览量榜
-            deleteCacheWhenMatchCopilotId(copilot.copilotId!!)
-        }
+        copilotRepository.findByCopilotId(request.id!!)?.takeIf { !it.delete }
+            ?.let { copilot: Copilot ->
+                Assert.state(copilot.uploaderId == loginUserId, "您无法修改不属于您的作业")
+                copilot.delete = true
+                copilot.deleteTime = LocalDateTime.now()
+                copilotRepository.save(copilot)
+                // 删除作业时，如果被删除的项在 Redis 首页缓存中存在，则清空对应的首页缓存
+                // 新增作业就不必，因为新作业显然不会那么快就登上热度榜和浏览量榜
+                deleteCacheWhenMatchCopilotId(copilot.copilotId!!)
+            }
     }
 
     /**
