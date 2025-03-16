@@ -16,10 +16,12 @@ import plus.maa.backend.config.external.MaaCopilotProperties
 import plus.maa.backend.repository.CopilotRepository
 import plus.maa.backend.repository.entity.Copilot
 import plus.maa.backend.service.level.ArkLevelService
+import plus.maa.backend.service.model.CopilotSetStatus
 import java.io.File
 import java.io.IOException
 import java.nio.file.Files
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.Objects
 
 private val log = KotlinLogging.logger { }
@@ -42,6 +44,7 @@ class CopilotBackupTask(
     fun initGit() {
         val backup = config.backup
         if (backup.disabled) {
+            log.info { "Copilot backup disabled" }
             return
         }
         val repoDir = File(backup.dir)
@@ -83,8 +86,9 @@ class CopilotBackupTask(
             log.error { "git pull execute failed, msg: ${e.message}, $e" }
         }
 
+        val monthAgo = LocalDateTime.now().minusDays(60L)
         val baseDirectory = git.repository.workTree
-        val copilots = copilotRepository.findAll()
+        val copilots = copilotRepository.findAllByUploadTimeAfterOrDeleteTimeAfter(monthAgo, monthAgo)
         copilots.forEach { copilot: Copilot ->
             val level = levelService.findByLevelIdFuzzy(copilot.stageName!!) ?: return@forEach
             // 暂时使用 copilotId 作为文件名
@@ -99,7 +103,7 @@ class CopilotBackupTask(
                 ),
             )
             val content = copilot.content ?: return@forEach
-            if (copilot.delete) {
+            if (copilot.delete || copilot.status == CopilotSetStatus.PRIVATE) {
                 // 删除文件
                 deleteCopilot(filePath)
             } else {
