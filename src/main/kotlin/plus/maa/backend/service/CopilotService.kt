@@ -69,6 +69,7 @@ class CopilotService(
     private val properties: MaaCopilotProperties,
     private val copilotConverter: CopilotConverter,
     private val sensitiveWordService: SensitiveWordService,
+    private val objectMapper: ObjectMapper,
 ) {
     /**
      * 并修正前端的冗余部分
@@ -306,6 +307,9 @@ class CopilotService(
             criteriaObj.orOperator(orQueries)
         }
         queryObj.addCriteria(criteriaObj)
+
+        queryObj.fields().exclude("content")
+
         // 查询总数
         val count = mongoTemplate.count(queryObj, Copilot::class.java)
 
@@ -322,6 +326,9 @@ class CopilotService(
         // 新版评分系统
         // 反正目前首页和搜索不会直接展示当前用户有没有点赞，干脆直接不查，要用户点进作业才显示自己是否点赞
         val infos = copilots.map { copilot ->
+            copilot.apply {
+                content = assembleProtocolInfo(copilot)
+            }
             formatCopilot(
                 copilot,
                 null,
@@ -347,6 +354,18 @@ class CopilotService(
             redisCache.setCache(cacheKey.get()!!, data, cacheTimeout.get())
         }
         return data
+    }
+
+    private fun assembleProtocolInfo(copilot: Copilot): String = run {
+        mapOf(
+            "stageName" to copilot.stageName,
+            "doc" to copilot.doc,
+            "opers" to copilot.opers,
+            "groups" to copilot.groups,
+            "minimumRequired" to copilot.minimumRequired,
+        ).run {
+            objectMapper.writeValueAsString(this)
+        }
     }
 
     /**
@@ -491,6 +510,9 @@ class CopilotService(
             "views" to 3600L,
             "id" to 300L,
         )
+
+
+        val Q = mutableListOf<Map<*, *>>()
 
         @JvmStatic
         fun getHotScore(copilot: Copilot, lastWeekLike: Long, lastWeekDislike: Long): Double {
