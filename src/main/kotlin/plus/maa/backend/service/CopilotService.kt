@@ -511,9 +511,6 @@ class CopilotService(
             "id" to 300L,
         )
 
-
-        val Q = mutableListOf<Map<*, *>>()
-
         @JvmStatic
         fun getHotScore(copilot: Copilot, lastWeekLike: Long, lastWeekDislike: Long): Double {
             val now = LocalDateTime.now()
