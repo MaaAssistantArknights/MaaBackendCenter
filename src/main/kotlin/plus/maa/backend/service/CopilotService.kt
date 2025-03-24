@@ -363,6 +363,7 @@ class CopilotService(
             "opers" to copilot.opers,
             "groups" to copilot.groups,
             "minimumRequired" to copilot.minimumRequired,
+            "difficulty" to copilot.difficulty
         ).run {
             objectMapper.writeValueAsString(this)
         }
