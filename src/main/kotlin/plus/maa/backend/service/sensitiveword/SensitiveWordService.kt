@@ -1,5 +1,6 @@
 package plus.maa.backend.service.sensitiveword
 
+import cn.hutool.dfa.StopChar
 import cn.hutool.dfa.WordTree
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -15,6 +16,7 @@ class SensitiveWordService(
 ) {
     private val log = KotlinLogging.logger {}
     private val wordTree = WordTree().apply {
+        StopChar.STOP_WORD.remove('/')
         val path = maaCopilotProperties.sensitiveWord.path
         try {
             ctx.getResource(path).inputStream.bufferedReader().use { it.lines().forEach(::addWord) }
