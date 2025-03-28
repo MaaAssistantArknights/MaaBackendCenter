@@ -10,8 +10,8 @@ object SegmentInfo {
     private val cfg: Configuration = run {
         DefaultConfig.getInstance().also {
             Dictionary.initial(it)
-            this::class.java.classLoader.getResourceAsStream("arknights.txt")?.bufferedReader().use {
-                Dictionary.getSingleton().addWords(it?.readLines() ?: emptyList())
+            this::class.java.classLoader.getResourceAsStream("arknights.txt")?.bufferedReader().use { r ->
+                Dictionary.getSingleton().addWords(r?.readLines() ?: emptyList())
             }
             it.setUseSmart(false)
         }

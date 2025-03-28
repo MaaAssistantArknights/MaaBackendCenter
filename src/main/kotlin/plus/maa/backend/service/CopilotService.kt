@@ -136,6 +136,13 @@ class CopilotService(
             request.content,
             request.status,
         )
+
+        copilot.apply {
+            segment = copilot.doc.let {
+                SegmentInfo.getSegment(it?.title, it?.details)
+            }.joinToString(separator = " ") { it }
+        }
+
         copilotRepository.insert(copilot)
         return copilot.copilotId!!
     }
