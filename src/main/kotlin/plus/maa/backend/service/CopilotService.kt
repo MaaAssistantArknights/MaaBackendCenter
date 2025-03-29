@@ -463,6 +463,7 @@ class CopilotService(
             ratingRatio = copilot.ratingRatio,
             ratingType = (rating?.rating ?: RatingType.NONE).display,
             commentsCount = commentsCount,
+            commentStatus = copilot.commentStatus ?: CommentStatus.ENABLED,
             content = copilot.content ?: "",
             like = copilot.likeCount,
             dislike = copilot.dislikeCount,
