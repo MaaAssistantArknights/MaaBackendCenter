@@ -22,8 +22,6 @@ import plus.maa.backend.repository.entity.Copilot
 import java.io.StringReader
 import kotlin.math.ceil
 
-private val log = KotlinLogging.logger { }
-
 @Service
 class SegmentService(
     private val ctx: ApplicationContext,
@@ -31,42 +29,27 @@ class SegmentService(
     private val mongoTemplate: MongoTemplate,
 ) : InitializingBean {
 
-    private val cfg: Configuration = run {
-        DefaultConfig.getInstance().also {
-            Dictionary.initial(it)
-            ctx.getResource(properties.segmentInfo.path).inputStream.bufferedReader().use { r ->
-                Dictionary.getSingleton().addWords(r.readLines())
-            }
-            it.setUseSmart(false)
+    private val log = KotlinLogging.logger { }
+
+    private val cfg: Configuration = DefaultConfig.getInstance().apply {
+        setUseSmart(false)
+        Dictionary.initial(this)
+        ctx.getResource(properties.segmentInfo.path).inputStream.bufferedReader().use { r ->
+            Dictionary.getSingleton().addWords(r.readLines())
         }
     }
 
     fun getSegment(vararg content: String?): List<String> {
-        when {
-            content.isEmpty() -> return emptyList()
-            content.size == 1 -> {
-                val helper = IKSegmenter(StringReader(content[0] ?: return emptyList()), cfg)
-                val words = mutableListOf<String>()
-                while (true) {
-                    val lex = helper.next() ?: break
-                    words.add(lex.lexemeText)
-                }
-                return words
-            }
-
-            else -> {
-                val set = HashSet<String>()
-                content.forEach {
-                    if (it.isNullOrBlank()) return@forEach
-                    val helper = IKSegmenter(StringReader(it), cfg)
-                    while (true) {
-                        val lex = helper.next() ?: break
-                        set.add(lex.lexemeText)
-                    }
-                }
-                return set.toList()
+        val set = HashSet<String>()
+        content.forEach {
+            if (it.isNullOrBlank()) return@forEach
+            val helper = IKSegmenter(StringReader(it), cfg)
+            while (true) {
+                val lex = helper.next() ?: break
+                set.add(lex.lexemeText)
             }
         }
+        return set.toList()
     }
 
     override fun afterPropertiesSet() {
