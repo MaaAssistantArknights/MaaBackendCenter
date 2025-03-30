@@ -5,5 +5,6 @@ data class SegmentInfo(
     /**
      * 是否全局更新索引
      */
-    var updateFullIndex: Boolean = false,
+    var forceUpdateAllIndexes: Boolean = false,
+    var updateBatchSize: Int = 1000,
 )

@@ -11,6 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Document
 import plus.maa.backend.service.model.CommentStatus
 import plus.maa.backend.service.model.CopilotSetStatus
 import java.io.Serializable
+import java.time.Instant
 import java.time.LocalDateTime
 
 /**
@@ -43,6 +44,8 @@ class Copilot(
     // 分词信息 空格作为stop word
     @TextIndexed
     var segment: String? = null,
+
+    var segmentUpdateAt: Instant? = null,
     // 热度
     @Indexed
     var hotScore: Double = 0.0,
