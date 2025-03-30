@@ -6,10 +6,12 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.Transient
 import org.springframework.data.mongodb.core.index.Indexed
+import org.springframework.data.mongodb.core.index.TextIndexed
 import org.springframework.data.mongodb.core.mapping.Document
 import plus.maa.backend.service.model.CommentStatus
 import plus.maa.backend.service.model.CopilotSetStatus
 import java.io.Serializable
+import java.time.Instant
 import java.time.LocalDateTime
 
 /**
@@ -38,6 +40,12 @@ class Copilot(
     var ratingRatio: Double = 0.0,
     var likeCount: Long = 0,
     var dislikeCount: Long = 0,
+
+    // 分词信息 空格作为stop word
+    @TextIndexed
+    var segment: String? = null,
+
+    var segmentUpdateAt: Instant? = null,
     // 热度
     @Indexed
     var hotScore: Double = 0.0,

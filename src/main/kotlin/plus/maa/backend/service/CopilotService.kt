@@ -10,6 +10,7 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.TextCriteria
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
 import org.springframework.util.Assert
@@ -37,6 +38,7 @@ import plus.maa.backend.service.model.CommentStatus
 import plus.maa.backend.service.model.CopilotSetStatus
 import plus.maa.backend.service.model.RatingCache
 import plus.maa.backend.service.model.RatingType
+import plus.maa.backend.service.segment.SegmentService
 import plus.maa.backend.service.sensitiveword.SensitiveWordService
 import java.math.RoundingMode
 import java.time.LocalDateTime
@@ -70,6 +72,7 @@ class CopilotService(
     private val copilotConverter: CopilotConverter,
     private val sensitiveWordService: SensitiveWordService,
     private val objectMapper: ObjectMapper,
+    private val segmentService: SegmentService,
 ) {
     /**
      * 并修正前端的冗余部分
@@ -134,6 +137,13 @@ class CopilotService(
             request.content,
             request.status,
         )
+
+        copilot.apply {
+            segment = copilot.doc.let {
+                segmentService.getSegment(it?.title, it?.details)
+            }.joinToString(separator = " ")
+        }
+
         copilotRepository.insert(copilot)
         return copilot.copilotId!!
     }
@@ -229,7 +239,6 @@ class CopilotService(
 
         val pageable: Pageable = PageRequest.of(page - 1, limit, Sort.by(sortOrder))
 
-        val queryObj = Query()
         val criteriaObj = Criteria()
 
         val andQueries: MutableSet<Criteria> = HashSet()
@@ -260,12 +269,6 @@ class CopilotService(
         // 作业id列表
         if (!request.copilotIds.isNullOrEmpty()) {
             andQueries.add(Criteria.where("copilotId").`in`(request.copilotIds!!))
-        }
-
-        // 标题、描述、神秘代码
-        if (!request.document.isNullOrBlank()) {
-            orQueries.add(Criteria.where("doc.title").regex(caseInsensitive(request.document)))
-            orQueries.add(Criteria.where("doc.details").regex(caseInsensitive(request.document)))
         }
 
         // 包含或排除干员
@@ -306,9 +309,19 @@ class CopilotService(
         if (orQueries.isNotEmpty()) {
             criteriaObj.orOperator(orQueries)
         }
-        queryObj.addCriteria(criteriaObj)
 
-        queryObj.fields().exclude("content")
+        // 标题、描述、神秘代码
+        val queryObj = Query().addCriteria(criteriaObj)
+
+        if (!request.document.isNullOrBlank()) {
+            val words = segmentService.getSegment(request.document)
+            if (words.isNotEmpty()) {
+                queryObj.addCriteria(TextCriteria.forDefaultLanguage().matchingAny(*words.toTypedArray()))
+            }
+        }
+
+        // 去除large fields
+        queryObj.fields().exclude("content", "actions", "segment")
 
         // 查询总数
         val count = mongoTemplate.count(queryObj, Copilot::class.java)
@@ -363,7 +376,7 @@ class CopilotService(
             "opers" to copilot.opers,
             "groups" to copilot.groups,
             "minimumRequired" to copilot.minimumRequired,
-            "difficulty" to copilot.difficulty
+            "difficulty" to copilot.difficulty,
         ).run {
             objectMapper.writeValueAsString(this)
         }
@@ -384,6 +397,13 @@ class CopilotService(
             sensitiveWordService.validate(copilotDTO.doc)
             copilot.uploadTime = LocalDateTime.now()
             copilotConverter.updateCopilotFromDto(copilotDTO, content, copilot, copilotCUDRequest.status)
+
+            copilot.apply {
+                segment = copilot.doc.let {
+                    segmentService.getSegment(it?.title, it?.details)
+                }.joinToString(separator = " ")
+            }
+
             copilotRepository.save(copilot)
             if (originStatus == CopilotSetStatus.PUBLIC && copilot.status == CopilotSetStatus.PRIVATE) {
                 // 从公开改为隐藏时，如果数据存在缓存中则需要清除缓存
