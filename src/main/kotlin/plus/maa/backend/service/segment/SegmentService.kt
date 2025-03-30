@@ -1,17 +1,25 @@
-package plus.maa.backend.service
+package plus.maa.backend.service.segment
 
+import org.springframework.context.ApplicationContext
+import org.springframework.stereotype.Service
 import org.wltea.analyzer.cfg.Configuration
 import org.wltea.analyzer.cfg.DefaultConfig
 import org.wltea.analyzer.core.IKSegmenter
 import org.wltea.analyzer.dic.Dictionary
+import plus.maa.backend.config.external.MaaCopilotProperties
 import java.io.StringReader
 
-object SegmentInfo {
+@Service
+class SegmentService(
+    private val ctx: ApplicationContext,
+    private val properties: MaaCopilotProperties,
+) {
+
     private val cfg: Configuration = run {
         DefaultConfig.getInstance().also {
             Dictionary.initial(it)
-            this::class.java.classLoader.getResourceAsStream("arknights.txt")?.bufferedReader().use { r ->
-                Dictionary.getSingleton().addWords(r?.readLines() ?: emptyList())
+            ctx.getResource(properties.segmentInfo.path).inputStream.bufferedReader().use { r ->
+                Dictionary.getSingleton().addWords(r.readLines())
             }
             it.setUseSmart(false)
         }
@@ -44,6 +52,4 @@ object SegmentInfo {
             }
         }
     }
-
-
 }

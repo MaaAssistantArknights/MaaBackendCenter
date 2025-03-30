@@ -38,6 +38,7 @@ import plus.maa.backend.service.model.CommentStatus
 import plus.maa.backend.service.model.CopilotSetStatus
 import plus.maa.backend.service.model.RatingCache
 import plus.maa.backend.service.model.RatingType
+import plus.maa.backend.service.segment.SegmentService
 import plus.maa.backend.service.sensitiveword.SensitiveWordService
 import java.math.RoundingMode
 import java.time.LocalDateTime
@@ -71,6 +72,7 @@ class CopilotService(
     private val copilotConverter: CopilotConverter,
     private val sensitiveWordService: SensitiveWordService,
     private val objectMapper: ObjectMapper,
+    private val segmentService: SegmentService,
 ) {
     /**
      * 并修正前端的冗余部分
@@ -138,8 +140,8 @@ class CopilotService(
 
         copilot.apply {
             segment = copilot.doc.let {
-                SegmentInfo.getSegment(it?.title, it?.details)
-            }.joinToString(separator = " ") { it }
+                segmentService.getSegment(it?.title, it?.details)
+            }.joinToString(separator = " ")
         }
 
         copilotRepository.insert(copilot)
@@ -237,7 +239,6 @@ class CopilotService(
 
         val pageable: Pageable = PageRequest.of(page - 1, limit, Sort.by(sortOrder))
 
-
         val criteriaObj = Criteria()
 
         val andQueries: MutableSet<Criteria> = HashSet()
@@ -313,7 +314,7 @@ class CopilotService(
         val queryObj = Query().addCriteria(criteriaObj)
 
         if (!request.document.isNullOrBlank()) {
-            val words = SegmentInfo.getSegment(request.document)
+            val words = segmentService.getSegment(request.document)
             if (words.isNotEmpty()) {
                 queryObj.addCriteria(TextCriteria.forDefaultLanguage().matchingAny(*words.toTypedArray()))
             }
@@ -321,7 +322,6 @@ class CopilotService(
 
         // 去除large fields
         queryObj.fields().exclude("content", "actions", "segment")
-
 
         // 查询总数
         val count = mongoTemplate.count(queryObj, Copilot::class.java)
@@ -376,7 +376,7 @@ class CopilotService(
             "opers" to copilot.opers,
             "groups" to copilot.groups,
             "minimumRequired" to copilot.minimumRequired,
-            "difficulty" to copilot.difficulty
+            "difficulty" to copilot.difficulty,
         ).run {
             objectMapper.writeValueAsString(this)
         }
@@ -400,8 +400,8 @@ class CopilotService(
 
             copilot.apply {
                 segment = copilot.doc.let {
-                    SegmentInfo.getSegment(it?.title, it?.details)
-                }.joinToString(separator = " ") { it }
+                    segmentService.getSegment(it?.title, it?.details)
+                }.joinToString(separator = " ")
             }
 
             copilotRepository.save(copilot)

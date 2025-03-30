@@ -27,4 +27,6 @@ data class MaaCopilotProperties(
     var sensitiveWord: SensitiveWord = SensitiveWord(),
     @NestedConfigurationProperty
     var copilot: Copilot = Copilot(),
+    @NestedConfigurationProperty
+    var segmentInfo: SegmentInfo = SegmentInfo(),
 )
