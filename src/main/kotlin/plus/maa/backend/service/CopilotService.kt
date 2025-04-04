@@ -517,7 +517,7 @@ class CopilotService(
      * 用于重置缓存，数据修改为私有或者删除时用于重置缓存防止继续被查询到
      */
     private fun deleteCacheWhenMatchCopilotId(copilotId: Long) {
-        for (k in HOME_PAGE_CACHE_CONFIG) {
+        for (k in HOME_PAGE_CACHE_CONFIG.keys) {
             val key = String.format("home:%s:copilotIds", k)
             val pattern = String.format("home:%s:*", k)
             if (redisCache.valueMemberInSet(key, copilotId)) {
@@ -532,7 +532,7 @@ class CopilotService(
         格式为：需要缓存的 orderBy 类型（也就是榜单类型） -> 缓存时间
         （Map.of()返回的是不可变对象，无需担心线程安全问题）
          */
-        private val HOME_PAGE_CACHE_CONFIG: Map<String?, Long?> = mapOf(
+        private val HOME_PAGE_CACHE_CONFIG = mapOf(
             "hot" to 3600 * 24L,
             "views" to 3600L,
             "id" to 300L,
