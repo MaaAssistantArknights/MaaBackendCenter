@@ -2,6 +2,7 @@ package plus.maa.backend.controller.request.copilot
 
 import jakarta.validation.constraints.Max
 import org.springframework.web.bind.annotation.BindParam
+import plus.maa.backend.service.model.CopilotSetStatus
 
 /**
  * @author LoMu
@@ -20,4 +21,5 @@ data class CopilotQueriesRequest(
     @BindParam("order_by") var orderBy: String? = null,
     val language: String? = null,
     @BindParam("copilot_ids") var copilotIds: List<Long>? = null,
+    val status: CopilotSetStatus? = null,
 )
