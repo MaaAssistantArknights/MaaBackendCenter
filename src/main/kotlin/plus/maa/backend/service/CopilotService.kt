@@ -246,8 +246,13 @@ class CopilotService(
         val orQueries: MutableSet<Criteria> = HashSet()
 
         andQueries.add(Criteria.where("delete").`is`(false))
+
         // 仅查询自己的作业时才展示所有数据，否则只查询公开作业
-        if (request.uploaderId != "me") {
+        if (request.uploaderId == "me" && userId != null) {
+            if (request.status != null) {
+                andQueries.add(Criteria.where("status").`is`(request.status))
+            }
+        } else {
             andQueries.add(Criteria.where("status").`is`(CopilotSetStatus.PUBLIC))
         }
 
