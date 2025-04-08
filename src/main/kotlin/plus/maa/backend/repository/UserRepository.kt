@@ -23,4 +23,6 @@ interface UserRepository : MongoRepository<MaaUser, String> {
 
     @Query("{ 'userName': { '\$regex': ?0, '\$options': 'i' }, 'status': 1 }")
     fun searchUsers(userName: String, pageable: Pageable): Page<MaaUserInfo>
+
+    fun existsByUserName(userName: String): Boolean
 }
