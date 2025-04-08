@@ -321,7 +321,14 @@ class CopilotService(
         if (!request.document.isNullOrBlank()) {
             val words = segmentService.getSegment(request.document)
             if (words.isNotEmpty()) {
-                queryObj.addCriteria(TextCriteria.forDefaultLanguage().matchingAny(*words.toTypedArray()))
+                TextCriteria.forDefaultLanguage().let { tc ->
+                    words.forEach {
+                        tc.matchingPhrase(it)
+                    }
+                    tc
+                }.let {
+                    queryObj.addCriteria(it)
+                }
             }
         }
 
