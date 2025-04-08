@@ -105,6 +105,10 @@ class UserService(
         // 校验验证码
         emailService.verifyVCode(registerDTO.email, registerDTO.registrationToken)
 
+        check(!userRepository.existsByUserName(registerDTO.userName)) {
+            "用户名已存在，请重新取个名字吧"
+        }
+
         val encoded = passwordEncoder.encode(registerDTO.password)
 
         val user = MaaUser(
@@ -129,6 +133,13 @@ class UserService(
      */
     fun updateUserInfo(userId: String, updateDTO: UserInfoUpdateDTO) {
         val maaUser = userRepository.findByIdOrNull(userId) ?: return
+        if (updateDTO.userName == maaUser.userName) {
+            // 暂时只支持修改用户名，如果有其他字段修改需要同步修改该逻辑
+            return
+        }
+        check(userRepository.existsByUserName(updateDTO.userName)) {
+            "用户名已存在，请重新取个名字吧"
+        }
         maaUser.userName = updateDTO.userName
         userRepository.save(maaUser)
     }
