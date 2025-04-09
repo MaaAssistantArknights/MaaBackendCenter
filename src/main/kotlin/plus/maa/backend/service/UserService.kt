@@ -102,17 +102,19 @@ class UserService(
      * @return 返回注册成功的用户摘要（脱敏）
      */
     fun register(registerDTO: RegisterDTO): MaaUserInfo {
-        // 校验验证码
-        emailService.verifyVCode(registerDTO.email, registerDTO.registrationToken)
-
-        check(!userRepository.existsByUserName(registerDTO.userName)) {
+        val userName = registerDTO.userName.trim()
+        check(userName.length >= 4) { "用户名长度应在4-24位之间" }
+        check(!userRepository.existsByUserName(userName)) {
             "用户名已存在，请重新取个名字吧"
         }
+
+        // 校验验证码
+        emailService.verifyVCode(registerDTO.email, registerDTO.registrationToken)
 
         val encoded = passwordEncoder.encode(registerDTO.password)
 
         val user = MaaUser(
-            userName = registerDTO.userName,
+            userName = userName,
             email = registerDTO.email,
             password = encoded,
             status = 1,
@@ -133,14 +135,17 @@ class UserService(
      */
     fun updateUserInfo(userId: String, updateDTO: UserInfoUpdateDTO) {
         val maaUser = userRepository.findByIdOrNull(userId) ?: return
-        if (updateDTO.userName == maaUser.userName) {
+        val newName = updateDTO.userName.trim()
+        check(newName.length >= 4) { "用户名长度应在4-24位之间" }
+        if (newName == maaUser.userName) {
             // 暂时只支持修改用户名，如果有其他字段修改需要同步修改该逻辑
             return
         }
-        check(userRepository.existsByUserName(updateDTO.userName)) {
+        // 用户名需要trim
+        check(!userRepository.existsByUserName(newName)) {
             "用户名已存在，请重新取个名字吧"
         }
-        maaUser.userName = updateDTO.userName
+        maaUser.userName = newName
         userRepository.save(maaUser)
     }
 
