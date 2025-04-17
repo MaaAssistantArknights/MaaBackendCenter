@@ -51,8 +51,13 @@ class SegmentService(
                 set.add(lex.lexemeText)
             }
         }
-        return set.toList()
+        return set.filterNot(String::isBlank)
     }
+
+    /**
+     * Get space-delimited segment string
+     */
+    fun getSegmentStr(vararg content: String?) = getSegment(*content).joinToString(separator = " ")
 
     override fun afterPropertiesSet() {
         val segUpdateAt = Instant.now()
