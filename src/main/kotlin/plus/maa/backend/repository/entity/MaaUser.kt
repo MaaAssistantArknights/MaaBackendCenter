@@ -21,6 +21,8 @@ data class MaaUser(
     val email: String,
     var password: String,
     var status: Int = 0,
+    val following: MutableSet<String> = mutableSetOf(), // 关注的用户ID集合
+    val followers: MutableSet<String> = mutableSetOf(), // 粉丝用户ID集合
     var pwdUpdateTime: Instant = Instant.MIN,
 ) : Serializable {
 

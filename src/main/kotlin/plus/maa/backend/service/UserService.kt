@@ -2,6 +2,7 @@ package plus.maa.backend.service
 
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -235,5 +236,117 @@ class UserService(
     @Suppress("unused")
     private fun isAllChinese(input: String): Boolean {
         return input.all { it in '\u4e00'..'\u9fa5' }
+    }
+
+    /**
+     * 关注用户
+     */
+    fun follow(userId: String, targetUserId: String) {
+        if (userId == targetUserId) {
+            throw MaaResultException(400, "不能关注自己")
+        }
+
+        val targetUser = userRepository.findByUserId(targetUserId)
+            ?: throw MaaResultException(404, "目标用户不存在")
+
+        val currentUser = userRepository.findByUserId(userId)
+            ?: throw MaaResultException(401, "用户未登录")
+
+        if (currentUser.following.contains(targetUserId)) {
+            return
+        }
+
+        currentUser.following.add(targetUserId)
+        userRepository.save(currentUser)
+
+        targetUser.followers.add(userId)
+        userRepository.save(targetUser)
+    }
+
+    /**
+     * 取消关注用户
+     */
+    fun unfollow(userId: String, targetUserId: String) {
+        val targetUser = userRepository.findByUserId(targetUserId)
+            ?: throw MaaResultException(404, "目标用户不存在")
+
+        val currentUser = userRepository.findByUserId(userId)
+            ?: throw MaaResultException(401, "用户未登录")
+
+        if (!currentUser.following.contains(targetUserId)) {
+            return
+        }
+
+        currentUser.following.remove(targetUserId)
+        userRepository.save(currentUser)
+
+        targetUser.followers.remove(userId)
+        userRepository.save(targetUser)
+    }
+
+    /**
+     * 获取用户关系列表（关注/粉丝）
+     *
+     * @param userId 用户ID
+     * @param pageable 分页参数
+     * @param listSelector 选择用户关系列表的函数，可以选择following或followers
+     * @return 分页的用户信息列表
+     */
+    private fun getUserRelationList(userId: String, pageable: Pageable, listSelector: (MaaUser) -> Set<String>): Page<MaaUserInfo> {
+        val user = userRepository.findByUserId(userId)
+            ?: throw MaaResultException(404, "用户不存在")
+
+        val relationIds = listSelector(user)
+
+        val pageIds = relationIds
+            .drop(pageable.pageNumber * pageable.pageSize)
+            .take(pageable.pageSize)
+            .toList()
+
+        val usersPage = userRepository.findByUserIdIn(pageIds, pageable)
+        val content = usersPage.content.map { MaaUserInfo(it) }
+
+        return PageImpl(content, pageable, relationIds.size.toLong())
+    }
+
+    /**
+     * 获取用户关注列表
+     */
+    fun getFollowings(userId: String, pageable: Pageable): Page<MaaUserInfo> {
+        return getUserRelationList(userId, pageable) { it.following }
+    }
+
+    /**
+     * 获取用户粉丝列表
+     */
+    fun getFollowers(userId: String, pageable: Pageable): Page<MaaUserInfo> {
+        return getUserRelationList(userId, pageable) { it.followers }
+    }
+
+    /**
+     * 获取关注数量
+     */
+    fun getFollowingsCount(userId: String): Int {
+        val user = userRepository.findByUserId(userId)
+            ?: throw MaaResultException(404, "用户不存在")
+        return user.following.size
+    }
+
+    /**
+     * 获取粉丝数量
+     */
+    fun getFollowersCount(userId: String): Int {
+        val user = userRepository.findByUserId(userId)
+            ?: throw MaaResultException(404, "用户不存在")
+        return user.followers.size
+    }
+
+    /**
+     * 检查是否已关注
+     */
+    fun isFollowing(userId: String, targetUserId: String): Boolean {
+        val user = userRepository.findByUserId(userId)
+            ?: throw MaaResultException(404, "用户不存在")
+        return user.following.contains(targetUserId)
     }
 }
