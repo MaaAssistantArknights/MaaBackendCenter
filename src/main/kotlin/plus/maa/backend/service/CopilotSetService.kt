@@ -127,7 +127,11 @@ class CopilotSetService(
             andList.add(Criteria.where("copilotIds").all(req.copilotIds))
         }
         if (!req.creatorId.isNullOrBlank()) {
-            andList.add(Criteria.where("creatorId").`is`(req.creatorId))
+            if (req.creatorId == "me" && userId != null) {
+                andList.add(Criteria.where("creatorId").`is`(userId))
+            } else {
+                andList.add(Criteria.where("creatorId").`is`(req.creatorId))
+            }
         }
         if (!req.keyword.isNullOrBlank()) {
             val pattern = Pattern.compile(req.keyword, Pattern.CASE_INSENSITIVE)
