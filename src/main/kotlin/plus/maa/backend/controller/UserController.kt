@@ -183,4 +183,106 @@ class UserController(
         val resultPage = userService.search(userName, pageable)
         return success(resultPage.content)
     }
+
+    /**
+     * 关注用户
+     */
+    @PostMapping("/follow")
+    @Operation(summary = "关注用户")
+    @ApiResponse(description = "关注结果")
+    @RequireJwt
+    fun follow(@RequestBody userId: String): MaaResult<Unit> {
+        userService.follow(helper.requireUserId(), userId)
+        return success()
+    }
+
+    /**
+     * 取消关注用户
+     */
+    @PostMapping("/unfollow")
+    @Operation(summary = "取消关注用户")
+    @ApiResponse(description = "取消关注结果")
+    @RequireJwt
+    fun unfollow(@RequestBody userId: String): MaaResult<Unit> {
+        userService.unfollow(helper.requireUserId(), userId)
+        return success()
+    }
+
+    /**
+     * 获取当前用户的关注列表
+     */
+    @GetMapping("/followings")
+    @Operation(summary = "获取当前用户的关注列表")
+    @ApiResponse(responseCode = "200", description = "关注列表")
+    @ApiResponse(responseCode = "404", content = [Content()])
+    @RequireJwt
+    fun getFollowings(
+        @RequestParam page: Int = 1,
+        @Max(50, message = "查询用户量不能超过50") @RequestParam size: Int = 10,
+    ): MaaResult<List<MaaUserInfo>> {
+        val userId = helper.requireUserId()
+        val pageable = PageRequest.of(page - 1, size)
+        val resultPage = userService.getFollowings(userId, pageable)
+        return success(resultPage.content)
+    }
+
+    /**
+     * 获取当前用户的粉丝列表
+     */
+    @GetMapping("/followers")
+    @Operation(summary = "获取当前用户的粉丝列表")
+    @ApiResponse(responseCode = "200", description = "粉丝列表")
+    @ApiResponse(responseCode = "404", content = [Content()])
+    @RequireJwt
+    fun getFollowers(
+        @RequestParam page: Int = 1,
+        @Max(50, message = "查询用户量不能超过50") @RequestParam size: Int = 10,
+    ): MaaResult<List<MaaUserInfo>> {
+        val userId = helper.requireUserId()
+        val pageable = PageRequest.of(page - 1, size)
+        val resultPage = userService.getFollowers(userId, pageable)
+        return success(resultPage.content)
+    }
+
+    /**
+     * 获取当前用户的关注数量
+     */
+    @GetMapping("/followings/count")
+    @Operation(summary = "获取当前用户的关注数量")
+    @ApiResponse(responseCode = "200", description = "关注数量")
+    @ApiResponse(responseCode = "404", content = [Content()])
+    @RequireJwt
+    fun getFollowingsCount(): MaaResult<Int> {
+        val userId = helper.requireUserId()
+        val count = userService.getFollowingsCount(userId)
+        return success(count)
+    }
+
+    /**
+     * 获取当前用户的粉丝数量
+     */
+    @GetMapping("/followers/count")
+    @Operation(summary = "获取当前用户的粉丝数量")
+    @ApiResponse(responseCode = "200", description = "粉丝数量")
+    @ApiResponse(responseCode = "404", content = [Content()])
+    @RequireJwt
+    fun getFollowersCount(): MaaResult<Int> {
+        val userId = helper.requireUserId()
+        val count = userService.getFollowersCount(userId)
+        return success(count)
+    }
+
+    /**
+     * 是否关注了某个用户
+     */
+    @GetMapping("/isFollowing")
+    @Operation(summary = "是否关注了某个用户")
+    @ApiResponse(responseCode = "200", description = "是否关注")
+    @ApiResponse(responseCode = "404", content = [Content()])
+    @RequireJwt
+    fun isFollowing(@RequestParam userId: String): MaaResult<Boolean> {
+        val currentUserId = helper.requireUserId()
+        val isFollowing = userService.isFollowing(currentUserId, userId)
+        return success(isFollowing)
+    }
 }

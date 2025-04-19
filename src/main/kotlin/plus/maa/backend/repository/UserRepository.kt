@@ -23,4 +23,11 @@ interface UserRepository : MongoRepository<MaaUser, String> {
 
     @Query("{ 'userName': { '\$regex': ?0, '\$options': 'i' }, 'status': 1 }")
     fun searchUsers(userName: String, pageable: Pageable): Page<MaaUserInfo>
+
+    /**
+     * 查找多个用户ID对应的用户信息
+     * 用于批量获取关注或粉丝列表中的用户
+     */
+    @Query("{ 'userId': { '\$in': ?0 } }")
+    fun findByUserIdIn(userIds: Collection<String>, pageable: Pageable): Page<MaaUser>
 }
