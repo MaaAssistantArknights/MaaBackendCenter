@@ -80,7 +80,7 @@ class CopilotController(
      * 获取关注用户的作业列表
      */
     @Operation(summary = "获取关注用户的作业列表")
-    @ApiResponse(description = "作业信息")
+    @ApiResponse(description = "关注用户的作业信息")
     @RequireJwt
     @GetMapping("/queryfollowing")
     fun queriesFollowingCopilots(
