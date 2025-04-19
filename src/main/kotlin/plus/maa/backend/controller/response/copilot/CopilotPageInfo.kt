@@ -14,4 +14,13 @@ data class CopilotPageInfo(
     val page: Int,
     val total: Long,
     val data: List<CopilotInfo>,
-) : Serializable
+) : Serializable {
+    companion object {
+        fun empty(page: Int = 1) = CopilotPageInfo(
+            hasNext = false,
+            page = 1,
+            total = 0,
+            data = emptyList()
+        )
+    }
+}

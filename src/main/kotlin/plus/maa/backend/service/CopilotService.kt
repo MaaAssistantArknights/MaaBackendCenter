@@ -71,6 +71,7 @@ class CopilotService(
     private val sensitiveWordService: SensitiveWordService,
     private val objectMapper: ObjectMapper,
     private val segmentService: SegmentService,
+    private val userFlowService: UserFlowService,
 ) {
     private val log = KotlinLogging.logger { }
 
@@ -357,6 +358,179 @@ class CopilotService(
             // 缓存数据
             redisCache.setCache(cacheKey.get()!!, data, cacheTimeout.get())
         }
+        return data
+    }
+
+    /**
+     * 分页查询关注用户的作业列表
+     * 会缓存默认状态下热度和访问量排序的结果
+     *
+     * @param userId 当前登录用户ID
+     * @param request 模糊查询
+     * @return CopilotPageInfo
+     */
+    fun queriesFollowingCopilot(userId: String, request: CopilotQueriesRequest): CopilotPageInfo {
+        // 查询后取消关注可能会导致缓存覆盖新的结果,需要额外在取消关注处清空缓存
+        // 现阶段简单实现，故当前先不实现缓存
+        /*
+                val cacheTimeout = AtomicLong()
+                val cacheKey = AtomicReference<String?>()
+                val setKey = AtomicReference<String>()
+
+
+                // 只缓存默认状态下热度和访问量排序的结果，并且最多只缓存前三页
+                if (request.page <= 3 &&
+                    request.document.isNullOrBlank() &&
+                    request.levelKeyword.isNullOrBlank() &&
+                    request.uploaderId.isNullOrBlank() &&
+                    request.operator.isNullOrBlank() &&
+                    request.copilotIds.isNullOrEmpty()
+                ) {
+                    // 注意缓存键和查询所有作业的缓存键不同
+                    request.orderBy?.takeIf { orderBy -> orderBy.isNotBlank() }
+                        ?.let { key -> HOME_PAGE_CACHE_CONFIG[key] }
+                        ?.let { t ->
+                            cacheTimeout.set(t)
+                            setKey.set(String.format("following:%s:copilotIds", request.orderBy))
+                            cacheKey.set(String.format("following:%s:%s:%s", request.orderBy, userId, request.hashCode()))
+                            redisCache.getCache(cacheKey.get()!!, CopilotPageInfo::class.java)
+                        }?.let { return it }
+                }
+        */
+        // 获取关注的用户ID集合
+        val followingIds = userFlowService.getAllFollowingIdSet(userId)
+        if (followingIds.isEmpty()) {
+            return CopilotPageInfo.empty()
+        }
+
+        // 排序设置
+        val sortOrder = Sort.Order(
+            if (request.desc) Sort.Direction.DESC else Sort.Direction.ASC,
+            request.orderBy?.takeIf(String::isNotBlank).let { ob ->
+                when (ob) {
+                    "hot" -> "hotScore"
+                    "id" -> "copilotId"
+                    else -> request.orderBy
+                }
+            } ?: "copilotId",
+        )
+
+        // 判断是否有值 无值则为默认
+        val page = if (request.page > 0) request.page else 1
+        val limit = if (request.limit > 0) request.limit else 10
+        val pageable: Pageable = PageRequest.of(page - 1, limit, Sort.by(sortOrder))
+
+        val criteriaObj = Criteria()
+        val andQueries: MutableSet<Criteria> = HashSet()
+        val norQueries: MutableSet<Criteria> = HashSet()
+        val orQueries: MutableSet<Criteria> = HashSet()
+
+        // 基本条件：未删除且公开的作业
+        andQueries.add(Criteria.where("delete").`is`(false))
+        andQueries.add(Criteria.where("status").`is`(CopilotSetStatus.PUBLIC))
+
+        // 关注用户条件
+        andQueries.add(Criteria.where("uploaderId").`in`(followingIds))
+
+        // 关卡名、关卡类型、关卡编号
+        request.levelKeyword?.takeIf(String::isNotBlank)?.let { keyword ->
+            val levelInfo = levelService.queryLevelInfosByKeyword(keyword)
+            val c = if (levelInfo.isEmpty()) {
+                Criteria.where("stageName").regex(keyword.toPattern(Pattern.CASE_INSENSITIVE))
+            } else {
+                Criteria.where("stageName").`in`(levelInfo.map(ArkLevelInfo::stageId))
+            }
+            andQueries.add(c)
+        }
+
+        // 作业id列表
+        request.copilotIds?.takeIf { it.isNotEmpty() }.let { ids ->
+            andQueries.add(Criteria.where("copilotId").`in`(ids))
+        }
+
+        // 包含或排除干员
+        var oper = request.operator
+        if (!oper.isNullOrBlank()) {
+            oper = oper.replace("[“\"”]".toRegex(), "")
+            val operators = oper.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            for (operator in operators) {
+                if (operator.startsWith("~")) {
+                    val exclude = operator.substring(1)
+                    // 排除查询指定干员
+                    norQueries.add(Criteria.where("opers.name").`is`(exclude))
+                } else {
+                    // 模糊匹配查询指定干员
+                    andQueries.add(Criteria.where("opers.name").`is`(operator))
+                }
+            }
+        }
+
+        // 封装查询
+        if (andQueries.isNotEmpty()) {
+            criteriaObj.andOperator(andQueries)
+        }
+        if (norQueries.isNotEmpty()) {
+            criteriaObj.norOperator(norQueries)
+        }
+        if (orQueries.isNotEmpty()) {
+            criteriaObj.orOperator(orQueries)
+        }
+
+        // 标题、描述、神秘代码
+        val queryObj = Query().addCriteria(criteriaObj)
+
+        segmentService.getSegment(request.document).takeIf { it.isNotEmpty() }?.let { words ->
+            val c = TextCriteria.forDefaultLanguage().apply {
+                words.forEach { word -> matchingPhrase(word) }
+            }
+            queryObj.addCriteria(c)
+        }
+
+        // 去除large fields
+        queryObj.fields().exclude("content", "actions", "segment")
+
+        // 查询总数
+        val count = mongoTemplate.count(queryObj, Copilot::class.java)
+
+        // 分页排序查询
+        val copilots = mongoTemplate.find(queryObj.with(pageable), Copilot::class.java)
+
+        // 填充前端所需信息
+        val copilotIds = copilots.mapNotNull { it.copilotId }
+        val maaUsers = userRepository.findByUsersId(copilots.mapNotNull { it.uploaderId })
+        val commentsCount = commentsAreaRepository.findByCopilotIdInAndDelete(copilotIds, false)
+            .groupBy { it.copilotId }
+            .mapValues { it.value.size.toLong() }
+
+        val infos = copilots.map { copilot ->
+            copilot.apply {
+                content = assembleProtocolInfo(copilot)
+            }
+            formatCopilot(
+                copilot,
+                null,
+                maaUsers.getOrDefault(copilot.uploaderId!!).userName,
+                commentsCount[copilot.copilotId] ?: 0,
+            )
+        }
+
+        // 计算页面
+        val pageNumber = ceil(count.toDouble() / limit).toInt()
+
+        // 判断是否存在下一页
+        val hasNext = count - page.toLong() * limit > 0
+
+        // 封装数据
+        val data = CopilotPageInfo(hasNext, pageNumber, count, infos)
+        /*
+                // 决定是否缓存
+                if (cacheKey.get() != null) {
+                    // 记录存在的作业id
+                    redisCache.addSet(setKey.get(), copilotIds, cacheTimeout.get())
+                    // 缓存数据
+                    redisCache.setCache(cacheKey.get()!!, data, cacheTimeout.get())
+                }
+         */
         return data
     }
 
