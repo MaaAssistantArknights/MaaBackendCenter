@@ -16,6 +16,7 @@ import java.time.Instant
 data class MaaUser(
     @Id
     val userId: String? = null,
+    @Indexed
     var userName: String,
     @Indexed(unique = true)
     val email: String,
