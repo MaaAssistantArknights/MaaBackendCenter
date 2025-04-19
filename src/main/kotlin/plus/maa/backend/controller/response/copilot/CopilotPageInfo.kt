@@ -20,7 +20,7 @@ data class CopilotPageInfo(
             hasNext = false,
             page = 1,
             total = 0,
-            data = emptyList()
+            data = emptyList(),
         )
     }
 }

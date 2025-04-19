@@ -13,7 +13,7 @@ import java.time.LocalDateTime
 @Service
 class UserFlowService(
     private val userFlowRepository: UserFlowRepository,
-    private val userService: UserService
+    private val userService: UserService,
 ) {
     /**
      * 关注用户
@@ -23,7 +23,7 @@ class UserFlowService(
 
         // 检查被关注用户是否存在
         val userOrDefault = userService.findByUserIdOrDefault(followUserId)
-        if (userOrDefault == MaaUser.UNKNOWN){
+        if (userOrDefault == MaaUser.UNKNOWN) {
             throw MaaResultException(404, "目标用户不存在")
         }
 
@@ -33,10 +33,9 @@ class UserFlowService(
             return
         }
 
-
         val userFlow = UserFlow(
             userId = userId,
-            followUserId = followUserId
+            followUserId = followUserId,
         )
         userFlowRepository.save(userFlow)
     }

@@ -22,7 +22,7 @@ import plus.maa.backend.service.UserFlowService
 @RequestMapping("/user/flow")
 class UserFlowController(
     private val userFlowService: UserFlowService,
-    private val helper: AuthenticationHelper
+    private val helper: AuthenticationHelper,
 ) {
     @Operation(summary = "关注用户")
     @ApiResponse(description = "关注结果")

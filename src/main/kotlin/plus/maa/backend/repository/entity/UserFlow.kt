@@ -9,7 +9,7 @@ import java.time.LocalDateTime
 @Document("maa_user_flow")
 @CompoundIndexes(
     CompoundIndex(name = "idx_user_follow", def = "{'userId': 1, 'followUserId': 1, 'status': 1}"),
-    CompoundIndex(name = "idx_follow_user", def = "{'followUserId': 1, 'status': 1}")
+    CompoundIndex(name = "idx_follow_user", def = "{'followUserId': 1, 'status': 1}"),
 )
 data class UserFlow(
     @Id
@@ -38,5 +38,5 @@ data class UserFlow(
     /**
      * 取消关注时间
      */
-    var updateTime: LocalDateTime? = null
+    var updateTime: LocalDateTime? = null,
 )

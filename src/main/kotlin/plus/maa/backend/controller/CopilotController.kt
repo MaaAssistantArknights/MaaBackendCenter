@@ -83,9 +83,7 @@ class CopilotController(
     @ApiResponse(description = "关注用户的作业信息")
     @RequireJwt
     @GetMapping("/queryfollowing")
-    fun queriesFollowingCopilots(
-        @Parameter(description = "分页查询参数") request: CopilotQueriesRequest
-    ): MaaResult<CopilotPageInfo> {
+    fun queriesFollowingCopilots(@Parameter(description = "分页查询参数") request: CopilotQueriesRequest): MaaResult<CopilotPageInfo> {
         return success(copilotService.queriesFollowingCopilot(helper.requireUserId(), request))
     }
 
