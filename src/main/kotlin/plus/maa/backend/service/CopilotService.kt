@@ -265,7 +265,7 @@ class CopilotService(
         // 标题、描述、神秘代码
         val queryObj = Query().addCriteria(criteriaObj)
 
-        segmentService.getSegment(request.document).let { words ->
+        segmentService.getSegment(request.document).takeIf { it.isNotEmpty() }?.let { words ->
             val c = TextCriteria.forDefaultLanguage().apply {
                 words.forEach { word -> matchingPhrase(word) }
             }
