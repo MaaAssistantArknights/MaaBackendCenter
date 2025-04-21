@@ -23,6 +23,8 @@ data class MaaUser(
     var password: String,
     var status: Int = 0,
     var pwdUpdateTime: Instant = Instant.MIN,
+    var followingCount: Int = 0,
+    var fansCount: Int = 0,
 ) : Serializable {
 
     companion object {
