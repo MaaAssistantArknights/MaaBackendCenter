@@ -18,6 +18,7 @@ import plus.maa.backend.controller.request.copilotset.CopilotSetUpdateReq
 import plus.maa.backend.controller.response.copilotset.CopilotSetPageRes
 import plus.maa.backend.controller.response.copilotset.CopilotSetRes
 import plus.maa.backend.repository.CopilotSetRepository
+import plus.maa.backend.repository.UserFollowingRepository
 import plus.maa.backend.repository.entity.CopilotSet
 import plus.maa.backend.service.model.CopilotSetStatus
 import java.time.LocalDateTime
@@ -31,6 +32,7 @@ import java.util.regex.Pattern
 class CopilotSetService(
     private val idComponent: IdComponent,
     private val converter: CopilotSetConverter,
+    private val userFollowingRepository: UserFollowingRepository,
     private val repository: CopilotSetRepository,
     private val userService: UserService,
     private val mongoTemplate: MongoTemplate,
@@ -123,6 +125,17 @@ class CopilotSetService(
         }
         andList.add(permissionCriterion)
         andList.add(Criteria.where("delete").`is`(false))
+
+        if (req.onlyFollowing == true && userId != null) {
+            val userFollowing = userFollowingRepository.findByUserId(userId)
+            val followingIds = userFollowing?.followList?.map { it.id } ?: emptyList()
+            if (followingIds.isEmpty()) {
+                return CopilotSetPageRes(false, 0, 0, mutableListOf())
+            }
+
+            andList.add(Criteria.where("creatorId").`in`(followingIds))
+        }
+
         if (!req.copilotIds.isNullOrEmpty()) {
             andList.add(Criteria.where("copilotIds").all(req.copilotIds))
         }
