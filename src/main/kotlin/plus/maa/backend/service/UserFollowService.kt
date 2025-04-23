@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import plus.maa.backend.controller.response.MaaResultException
@@ -15,7 +16,7 @@ import plus.maa.backend.repository.UserFollowingRepository
 import plus.maa.backend.repository.entity.MaaUser
 import plus.maa.backend.repository.entity.UserFans
 import plus.maa.backend.repository.entity.UserFollowing
-import java.time.LocalDateTime
+import java.time.Instant
 
 @Service
 class UserFollowService(
@@ -34,121 +35,160 @@ class UserFollowService(
             throw MaaResultException(404, "目标用户不存在")
         }
 
-        // 获取当前用户信息
-        val currentUser = userService.findByUserIdOrDefault(userId)
-
-        // 将 MaaUser 转换为 MaaUserInfo
-        val targetUserInfo = MaaUserInfo(
-            id = targetUser.userId!!,
-            userName = targetUser.userName,
-            activated = targetUser.status == 1,
-            followingCount = targetUser.followingCount,
-            fansCount = targetUser.fansCount,
+        // 检查是否已经关注
+        val followQuery = Query.query(
+            Criteria.where("userId").`is`(userId)
+                .and("followList").`in`(followUserId),
         )
-        val currentUserInfo = MaaUserInfo(
-            id = currentUser.userId!!,
-            userName = currentUser.userName,
-            activated = currentUser.status == 1,
-            followingCount = currentUser.followingCount,
-            fansCount = currentUser.fansCount,
-        )
+        if (mongoTemplate.exists(followQuery, UserFollowing::class.java)) {
+            print("已关注 不可重复关注！")
+            return
+        }
 
         // 更新关注列表
-        val following = userFollowingRepository.findByUserId(userId)
-            ?: UserFollowing(userId = userId)
-        if (!following.followList.any { it.id == followUserId }) {
-            following.followList.add(targetUserInfo)
-            following.updatedAt = LocalDateTime.now()
-            userFollowingRepository.save(following)
+        val followUpdate = Update()
+            .addToSet("followList", followUserId)
+            .set("updatedAt", Instant.now())
 
-            // 更新当前用户的关注数（基于集合大小）
-            val currentUserQuery = Query.query(Criteria.where("userId").`is`(userId))
-            val currentUserUpdate = org.springframework.data.mongodb.core.query.Update().set("followingCount", following.followList.size)
-            mongoTemplate.updateFirst(currentUserQuery, currentUserUpdate, MaaUser::class.java)
-        }
+        mongoTemplate.upsert(
+            Query.query(Criteria.where("userId").`is`(userId)),
+            followUpdate,
+            UserFollowing::class.java,
+        )
 
         // 更新粉丝列表
-        val fans = userFansRepository.findByUserId(followUserId)
-            ?: UserFans(userId = followUserId)
-        if (!fans.fansList.any { it.id == userId }) {
-            fans.fansList.add(currentUserInfo)
-            fans.updatedAt = LocalDateTime.now()
-            userFansRepository.save(fans)
+        val fansUpdate = Update()
+            .addToSet("fansList", userId)
+            .set("updatedAt", Instant.now())
 
-            // 更新目标用户的粉丝数（基于集合大小）
-            val targetUserQuery = Query.query(Criteria.where("userId").`is`(followUserId))
-            val targetUserUpdate = org.springframework.data.mongodb.core.query.Update().set("fansCount", fans.fansList.size)
-            mongoTemplate.updateFirst(targetUserQuery, targetUserUpdate, MaaUser::class.java)
-        }
+        mongoTemplate.upsert(
+            Query.query(Criteria.where("userId").`is`(followUserId)),
+            fansUpdate,
+            UserFans::class.java,
+        )
+
+        // 更新关注数量和粉丝数量
+
+        val followingCount = userFollowingRepository.findByUserId(userId)?.followList?.size ?: 0
+        val fansCount = userFansRepository.findByUserId(followUserId)?.fansList?.size ?: 0
+
+        mongoTemplate.updateFirst(
+            Query.query(Criteria.where("userId").`is`(userId)),
+            Update().set("followingCount", followingCount),
+            MaaUser::class.java,
+        )
+
+        mongoTemplate.updateFirst(
+            Query.query(Criteria.where("userId").`is`(followUserId)),
+            Update().set("fansCount", fansCount),
+            MaaUser::class.java,
+        )
     }
 
     @Transactional
     fun unfollow(userId: String, followUserId: String) {
         require(userId != followUserId) { "不能取关自己" }
 
-        // 更新关注列表
-        userFollowingRepository.findByUserId(userId)?.let { following ->
-            if (following.followList.removeIf { it.id == followUserId }) {
-                following.updatedAt = LocalDateTime.now()
-                userFollowingRepository.save(following)
-
-                // 更新当前用户的关注数（基于集合大小）
-                val currentUserQuery = Query.query(Criteria.where("userId").`is`(userId))
-                val currentUserUpdate = org.springframework.data.mongodb.core.query.Update().set(
-                    "followingCount",
-                    following.followList.size,
-                )
-                mongoTemplate.updateFirst(currentUserQuery, currentUserUpdate, MaaUser::class.java)
-            }
+        // 检查是否已经关注
+        val followQuery = Query.query(
+            Criteria.where("userId").`is`(userId)
+                .and("followList").`in`(followUserId),
+        )
+        if (!mongoTemplate.exists(followQuery, UserFollowing::class.java)) {
+            return
         }
+
+        // 更新关注列表
+        val followUpdate = Update()
+            .pull("followList", followUserId)
+            .set("updatedAt", Instant.now())
+
+        mongoTemplate.updateFirst(
+            Query.query(Criteria.where("userId").`is`(userId)),
+            followUpdate,
+            UserFollowing::class.java,
+        )
 
         // 更新粉丝列表
-        userFansRepository.findByUserId(followUserId)?.let { fans ->
-            if (fans.fansList.removeIf { it.id == userId }) {
-                fans.updatedAt = LocalDateTime.now()
-                userFansRepository.save(fans)
+        val fansUpdate = Update()
+            .pull("fansList", userId)
+            .set("updatedAt", Instant.now())
 
-                // 更新目标用户的粉丝数（基于集合大小）
-                val targetUserQuery = Query.query(Criteria.where("userId").`is`(followUserId))
-                val targetUserUpdate = org.springframework.data.mongodb.core.query.Update().set("fansCount", fans.fansList.size)
-                mongoTemplate.updateFirst(targetUserQuery, targetUserUpdate, MaaUser::class.java)
-            }
-        }
+        mongoTemplate.updateFirst(
+            Query.query(Criteria.where("userId").`is`(followUserId)),
+            fansUpdate,
+            UserFans::class.java,
+        )
+
+        // 更新关注数量和粉丝数量
+
+        val followingCount = userFollowingRepository.findByUserId(userId)?.followList?.size ?: 0
+        val fansCount = userFansRepository.findByUserId(followUserId)?.fansList?.size ?: 0
+
+        mongoTemplate.updateFirst(
+            Query.query(Criteria.where("userId").`is`(userId)),
+            Update().set("followingCount", followingCount),
+            MaaUser::class.java,
+        )
+
+        mongoTemplate.updateFirst(
+            Query.query(Criteria.where("userId").`is`(followUserId)),
+            Update().set("fansCount", fansCount),
+            MaaUser::class.java,
+        )
     }
 
     fun getFollowingList(userId: String, pageable: Pageable): Page<MaaUserInfo> {
         val following = userFollowingRepository.findByUserId(userId)
             ?: return Page.empty(pageable)
 
-        val totalElements = following.followList.size.toLong()
-        val start = pageable.pageNumber * pageable.pageSize
-        val end = minOf(start + pageable.pageSize, totalElements.toInt())
+        val followIds = following.followList
+        val total = followIds.size.toLong()
+        val start = pageable.offset.coerceAtMost(total)
+        val end = (start + pageable.pageSize).coerceAtMost(total)
 
-        if (start >= totalElements) {
+        if (start >= total) {
             return Page.empty(pageable)
         }
 
-        val content = following.followList.toMutableList()
-            .subList(start, end)
+        val pageIds = followIds.subList(start.toInt(), end.toInt())
+        val users = mongoTemplate.find(
+            Query.query(Criteria.where("userId").`in`(pageIds)), // 注意这里用 userId 字段查询
+            MaaUser::class.java,
+        )
 
-        return PageImpl(content, pageable, totalElements)
+        val userMap = users.associateBy { it.userId }
+        val userInfos = pageIds.mapNotNull { id ->
+            userMap[id]?.let { MaaUserInfo(it) }
+        }
+
+        return PageImpl(userInfos, pageable, total)
     }
 
     fun getFansList(userId: String, pageable: Pageable): Page<MaaUserInfo> {
         val fans = userFansRepository.findByUserId(userId)
             ?: return Page.empty(pageable)
 
-        val totalElements = fans.fansList.size.toLong()
-        val start = pageable.pageNumber * pageable.pageSize
-        val end = minOf(start + pageable.pageSize, totalElements.toInt())
+        val fanIds = fans.fansList
+        val total = fanIds.size.toLong()
+        val start = pageable.offset.coerceAtMost(total)
+        val end = (start + pageable.pageSize).coerceAtMost(total)
 
-        if (start >= totalElements) {
+        if (start >= total) {
             return Page.empty(pageable)
         }
 
-        val content = fans.fansList.toMutableList()
-            .subList(start, end)
+        val pageIds = fanIds.subList(start.toInt(), end.toInt())
+        val users = mongoTemplate.find(
+            Query.query(Criteria.where("userId").`in`(pageIds)),
+            MaaUser::class.java,
+        )
 
-        return PageImpl(content, pageable, totalElements)
+        val userMap = users.associateBy { it.userId }
+        val userInfos = pageIds.mapNotNull { id ->
+            userMap[id]?.let { MaaUserInfo(it) }
+        }
+
+        return PageImpl(userInfos, pageable, total)
     }
 }

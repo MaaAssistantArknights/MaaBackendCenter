@@ -11,8 +11,14 @@ data class MaaUserInfo(
     val id: String,
     val userName: String,
     val activated: Boolean = false,
-    var followingCount: Int = 0,
-    var fansCount: Int = 0,
+    val followingCount: Int = 0,
+    val fansCount: Int = 0,
 ) {
-    constructor(user: MaaUser) : this(user.userId!!, user.userName, user.status == 1)
+    constructor(user: MaaUser) : this(
+        id = user.userId!!,
+        userName = user.userName,
+        activated = user.status == 1,
+        followingCount = user.followingCount,
+        fansCount = user.fansCount,
+    )
 }

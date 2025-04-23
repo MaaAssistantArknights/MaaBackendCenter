@@ -128,7 +128,7 @@ class CopilotSetService(
 
         if (req.onlyFollowing == true && userId != null) {
             val userFollowing = userFollowingRepository.findByUserId(userId)
-            val followingIds = userFollowing?.followList?.map { it.id } ?: emptyList()
+            val followingIds = userFollowing?.followList ?: emptyList()
             if (followingIds.isEmpty()) {
                 return CopilotSetPageRes(false, 0, 0, mutableListOf())
             }
