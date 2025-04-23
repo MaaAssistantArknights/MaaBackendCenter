@@ -22,7 +22,7 @@ data class CopilotSetQuery(
     val keyword: String? = null,
     @Schema(title = "创建者id")
     val creatorId: String? = null,
-    @Schema(title="仅查询关注者的作业集")
+    @Schema(title = "仅查询关注者的作业集")
     var onlyFollowing: Boolean? = false,
     @Schema(title = "需要包含的作业id列表")
     val copilotIds: List<Long>? = null,
