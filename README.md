@@ -1,6 +1,6 @@
-# MaaBackendCenter
+# PrtsPlusBackendCenter
 
-使用 Kotlin 编写的 MAA 作业服务器后端
+使用 Kotlin 编写的 PRTS Plus 服务器后端
 
 ## 开发技术栈
 
