@@ -3,8 +3,6 @@ package plus.maa.backend.controller
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
-import jakarta.validation.constraints.Max
-import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -12,13 +10,14 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import plus.maa.backend.common.controller.PagedDTO
+import plus.maa.backend.common.controller.toDto
 import plus.maa.backend.config.doc.RequireJwt
 import plus.maa.backend.config.security.AuthenticationHelper
 import plus.maa.backend.controller.response.MaaResult
-import plus.maa.backend.controller.response.MaaResult.Companion.fail
 import plus.maa.backend.controller.response.MaaResult.Companion.success
 import plus.maa.backend.controller.response.user.MaaUserInfo
-import plus.maa.backend.service.UserFollowService
+import plus.maa.backend.service.follow.UserFollowService
 
 @RestController
 @RequestMapping("/follow")
@@ -48,39 +47,17 @@ class UserFollowController(
     @ApiResponse(description = "关注列表")
     @RequireJwt
     @GetMapping("/followingList")
-    fun getFollowingList(
-        @RequestParam page: Int = 1,
-        @RequestParam @Max(value = 50, message = "单页大小不得超过50") size: Int = 10): MaaResult<Page<MaaUserInfo>> {
-        // 之前的API约定分页从1开始，与Spring默认约定不同，在此转换
-        if (page < 1) {
-            return fail(422, "页数请从1开始")
-        }
-        val realPageable = PageRequest.of(
-            page - 1,
-            size,
-        )
-        return success(
-            userFollowService.getFollowingList(helper.requireUserId(), realPageable),
-        )
+    fun getFollowingList(@RequestParam page: Int = 1, @RequestParam size: Int = 10): MaaResult<PagedDTO<MaaUserInfo>> {
+        val realPageable = PageRequest.of((page - 1).coerceAtLeast(0), size)
+        return success(userFollowService.getFollowingList(helper.requireUserId(), realPageable).toDto())
     }
 
     @Operation(summary = "获取粉丝列表")
     @ApiResponse(description = "粉丝列表")
     @RequireJwt
     @GetMapping("/fansList")
-    fun getFansList(
-        @RequestParam page: Int = 1,
-        @RequestParam @Max(value = 50, message = "单页大小不得超过50") size: Int = 10): MaaResult<Page<MaaUserInfo>> {
-        // 之前的API约定分页从1开始，与Spring默认约定不同，在此转换
-        if (page < 1) {
-            return fail(422, "页数请从1开始")
-        }
-        val realPageable = PageRequest.of(
-            page - 1,
-            size,
-        )
-        return success(
-            userFollowService.getFansList(helper.requireUserId(), realPageable),
-        )
+    fun getFansList(@RequestParam page: Int = 1, @RequestParam size: Int = 10): MaaResult<PagedDTO<MaaUserInfo>> {
+        val realPageable = PageRequest.of((page - 1).coerceAtLeast(0), size)
+        return success(userFollowService.getFansList(helper.requireUserId(), realPageable).toDto())
     }
 }
