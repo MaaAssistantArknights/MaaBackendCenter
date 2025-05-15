@@ -51,7 +51,7 @@ class SegmentService(
                 set.add(lex.lexemeText)
             }
         }
-        return set.filterNot(String::isBlank)
+        return set.filter { it.isNotEmpty() && it.length > 1 }
     }
 
     /**
