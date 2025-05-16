@@ -9,8 +9,9 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.TextCriteria
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.inValues
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Service
 import plus.maa.backend.common.extensions.blankAsNull
 import plus.maa.backend.common.extensions.removeQuotes
@@ -112,8 +113,9 @@ class CopilotService(
         request.content,
         request.status,
     ).run {
-        segment = segmentService.getSegmentStr(doc?.title, doc?.details)
-        copilotRepository.insert(this).copilotId!!
+        copilotRepository.insert(this).copilotId!!.also {
+            segmentService.updateIndex(it, doc?.title, doc?.details)
+        }
     }
 
     /**
@@ -265,12 +267,20 @@ class CopilotService(
         // 标题、描述、神秘代码
         val queryObj = Query().addCriteria(criteriaObj)
 
-        segmentService.getSegment(request.document).takeIf { it.isNotEmpty() }?.let { words ->
-            val c = TextCriteria.forDefaultLanguage().apply {
-                words.forEach { word -> matchingPhrase(word) }
+        segmentService.getSegment(request.document)
+            .takeIf { it.isNotEmpty() }
+            ?.let { words ->
+                val idList = words.mapNotNull(segmentService::fetchIndexInfo)
+                val result = HashSet(idList.first())
+                (1..<idList.size).forEach {
+                    result.retainAll(idList[it])
+                }
+                if (result.isEmpty()) {
+                    queryObj.addCriteria(Copilot::id isEqualTo "NONE")
+                } else {
+                    queryObj.addCriteria(Copilot::copilotId inValues result)
+                }
             }
-            queryObj.addCriteria(c)
-        }
 
         // 去除large fields
         queryObj.fields().exclude("content", "actions", "segment")
@@ -341,7 +351,7 @@ class CopilotService(
                 request.status,
             )
             uploadTime = LocalDateTime.now()
-            segment = segmentService.getSegmentStr(doc?.title, doc?.details)
+            segmentService.updateIndex(copilotId!!, doc?.title, doc?.details)
         }
 
         cIdToDeleteCache?.run(::deleteCacheWhenMatchCopilotId)
