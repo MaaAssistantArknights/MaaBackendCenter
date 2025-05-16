@@ -271,14 +271,18 @@ class CopilotService(
             .takeIf { it.isNotEmpty() }
             ?.let { words ->
                 val idList = words.mapNotNull(segmentService::fetchIndexInfo)
-                val result = HashSet(idList.first())
-                (1..<idList.size).forEach {
-                    result.retainAll(idList[it])
+
+                val intersection = when {
+                    idList.isEmpty() -> emptySet()
+                    else -> idList.reduce { acc, set ->
+                        acc.toMutableSet().apply { retainAll(set) }
+                    }
                 }
-                if (result.isEmpty()) {
+
+                if (intersection.isEmpty()) {
                     queryObj.addCriteria(Copilot::id isEqualTo "NONE")
                 } else {
-                    queryObj.addCriteria(Copilot::copilotId inValues result)
+                    queryObj.addCriteria(Copilot::copilotId inValues intersection)
                 }
             }
 
