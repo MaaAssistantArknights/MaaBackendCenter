@@ -283,8 +283,6 @@ class CopilotService(
                         result
                     }
                 }
-                println(intersection)
-                println(words)
 
                 if (intersection.isEmpty()) {
                     queryObj.addCriteria(Copilot::id isEqualTo "NONE")
