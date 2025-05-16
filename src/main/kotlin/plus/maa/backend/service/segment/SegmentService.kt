@@ -60,7 +60,7 @@ class SegmentService(
         }
     }
 
-    fun fetchIndexInfo(word: String) = INDEX.get(word)
+    fun fetchIndexInfo(word: String) = INDEX.getOrDefault(word, emptySet())
 
     override fun afterPropertiesSet() {
         val segUpdateAt = Instant.now()

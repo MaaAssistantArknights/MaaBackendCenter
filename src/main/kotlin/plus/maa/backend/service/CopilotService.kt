@@ -270,14 +270,21 @@ class CopilotService(
         segmentService.getSegment(request.document)
             .takeIf { it.isNotEmpty() }
             ?.let { words ->
-                val idList = words.mapNotNull(segmentService::fetchIndexInfo)
+                val idList = words.map(segmentService::fetchIndexInfo)
 
                 val intersection = when {
                     idList.isEmpty() -> emptySet()
-                    else -> idList.reduce { acc, set ->
-                        acc.toMutableSet().apply { retainAll(set) }
+                    else -> {
+                        val iterator = idList.iterator()
+                        val result = HashSet(iterator.next())
+                        while (iterator.hasNext()) {
+                            result.retainAll(iterator.next())
+                        }
+                        result
                     }
                 }
+                println(intersection)
+                println(words)
 
                 if (intersection.isEmpty()) {
                     queryObj.addCriteria(Copilot::id isEqualTo "NONE")
