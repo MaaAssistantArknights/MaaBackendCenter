@@ -6,6 +6,7 @@ import org.springframework.context.ApplicationContext
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Service
 import org.wltea.analyzer.cfg.Configuration
 import org.wltea.analyzer.cfg.DefaultConfig
@@ -44,7 +45,9 @@ class SegmentService(
                 set.add(lex.lexemeText)
             }
         }
-        return set.filterNot(String::isBlank)
+        return set.filter {
+            it.isNotBlank() && it !in properties.segmentInfo.filteredWordInfo
+        }
     }
 
     companion object {
@@ -68,6 +71,7 @@ class SegmentService(
 
         val query = Query().apply {
             fields().include("id", "doc", "copilotId")
+            addCriteria(Copilot::delete isEqualTo false)
         }
         // small data, fetch all info
         val fetched = mongoTemplate.find<Copilot>(query)
