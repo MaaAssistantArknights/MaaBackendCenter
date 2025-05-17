@@ -6,7 +6,7 @@ import plus.maa.backend.service.model.CopilotSetStatus
 
 /**
  * @author LoMu
- * Date  2022-12-26 2:48
+ * Date 2022-12-26 2:48
  */
 data class CopilotQueriesRequest(
     val page: Int = 0,
@@ -22,4 +22,5 @@ data class CopilotQueriesRequest(
     val language: String? = null,
     @BindParam("copilot_ids") var copilotIds: List<Long>? = null,
     val status: CopilotSetStatus? = null,
+    val onlyFollowing: Boolean = false,
 )
