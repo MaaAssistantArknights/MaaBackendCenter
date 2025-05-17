@@ -171,8 +171,9 @@ class CopilotService(
         val cacheKey = AtomicReference<String?>()
         val setKey = AtomicReference<String>()
         // 只缓存默认状态下热度和访问量排序的结果，并且最多只缓存前三页
+        val keyword = request.document
         if (request.page <= 3 &&
-            request.document.isNullOrBlank() &&
+            keyword.isNullOrBlank() &&
             request.levelKeyword.isNullOrBlank() &&
             request.uploaderId.isNullOrBlank() &&
             request.operator.isNullOrBlank() &&
@@ -267,29 +268,40 @@ class CopilotService(
         // 标题、描述、神秘代码
         val queryObj = Query().addCriteria(criteriaObj)
 
-        segmentService.getSegment(request.document)
-            .takeIf { it.isNotEmpty() }
-            ?.let { words ->
-                val idList = words.map(segmentService::fetchIndexInfo)
-
-                val intersection = when {
-                    idList.isEmpty() -> emptySet()
-                    else -> {
-                        val iterator = idList.iterator()
-                        val result = HashSet(iterator.next())
-                        while (iterator.hasNext()) {
-                            result.retainAll(iterator.next())
+        if (!(keyword?.length == 1 && keyword[0].isLetterOrDigit())) {
+            segmentService.getSegment(keyword)
+                .takeIf {
+                    it.isNotEmpty()
+                }
+                ?.let { words ->
+                    val idList = words.mapNotNull {
+                        val result = segmentService.fetchIndexInfo(it)
+                        if (it.lowercase() == keyword?.lowercase() && result.isEmpty()) {
+                            null
+                        } else {
+                            result
                         }
-                        result
+                    }
+
+                    val intersection = when {
+                        idList.isEmpty() -> emptySet()
+                        else -> {
+                            val iterator = idList.iterator()
+                            val result = HashSet(iterator.next())
+                            while (iterator.hasNext()) {
+                                result.retainAll(iterator.next())
+                            }
+                            result
+                        }
+                    }
+
+                    if (intersection.isEmpty()) {
+                        queryObj.addCriteria(Copilot::id isEqualTo "NONE")
+                    } else {
+                        queryObj.addCriteria(Copilot::copilotId inValues intersection)
                     }
                 }
-
-                if (intersection.isEmpty()) {
-                    queryObj.addCriteria(Copilot::id isEqualTo "NONE")
-                } else {
-                    queryObj.addCriteria(Copilot::copilotId inValues intersection)
-                }
-            }
+        }
 
         // 去除large fields
         queryObj.fields().exclude("content", "actions", "segment")

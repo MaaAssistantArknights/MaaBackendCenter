@@ -47,7 +47,6 @@ class SegmentService(
         }
         return set.filter {
             it.isNotBlank()
-                && !(it.length == 1 && it[0].isLetterOrDigit())
                 && it !in properties.segmentInfo.filteredWordInfo
         }
     }
