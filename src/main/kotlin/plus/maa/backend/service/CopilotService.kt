@@ -351,6 +351,8 @@ class CopilotService(
         var cIdToDeleteCache: Long? = null
 
         userEditCopilot(loginUserId, request.id) {
+            segmentService.removeIndex(copilotId!!, doc?.title, doc?.details)
+
             // 从公开改为隐藏时，如果数据存在缓存中则需要清除缓存
             if (status == CopilotSetStatus.PUBLIC && request.status == CopilotSetStatus.PRIVATE) cIdToDeleteCache = copilotId
             copilotConverter.updateCopilotFromDto(
@@ -360,6 +362,7 @@ class CopilotService(
                 request.status,
             )
             uploadTime = LocalDateTime.now()
+        }.apply {
             segmentService.updateIndex(copilotId!!, doc?.title, doc?.details)
         }
 
