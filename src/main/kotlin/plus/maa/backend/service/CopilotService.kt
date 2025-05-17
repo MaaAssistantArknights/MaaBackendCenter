@@ -9,8 +9,8 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.TextCriteria
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.stereotype.Service
 import plus.maa.backend.common.extensions.blankAsNull
 import plus.maa.backend.common.extensions.removeQuotes
@@ -112,8 +112,9 @@ class CopilotService(
         request.content,
         request.status,
     ).run {
-        segment = segmentService.getSegmentStr(doc?.title, doc?.details)
-        copilotRepository.insert(this).copilotId!!
+        copilotRepository.insert(this).copilotId!!.also {
+            segmentService.updateIndex(it, doc?.title, doc?.details)
+        }
     }
 
     /**
@@ -169,8 +170,9 @@ class CopilotService(
         val cacheKey = AtomicReference<String?>()
         val setKey = AtomicReference<String>()
         // 只缓存默认状态下热度和访问量排序的结果，并且最多只缓存前三页
+        val keyword = request.document?.trim()
         if (request.page <= 3 &&
-            request.document.isNullOrBlank() &&
+            keyword.isNullOrEmpty() &&
             request.levelKeyword.isNullOrBlank() &&
             request.uploaderId.isNullOrBlank() &&
             request.operator.isNullOrBlank() &&
@@ -265,11 +267,38 @@ class CopilotService(
         // 标题、描述、神秘代码
         val queryObj = Query().addCriteria(criteriaObj)
 
-        segmentService.getSegment(request.document).takeIf { it.isNotEmpty() }?.let { words ->
-            val c = TextCriteria.forDefaultLanguage().apply {
-                words.forEach { word -> matchingPhrase(word) }
-            }
-            queryObj.addCriteria(c)
+        if (!(keyword?.length == 1 && keyword[0].isLetterOrDigit())) {
+            segmentService.getSegment(keyword)
+                .takeIf {
+                    it.isNotEmpty()
+                }
+                ?.let { words ->
+                    val idList = words.mapNotNull {
+                        val result = segmentService.fetchIndexInfo(it)
+                        if (it.lowercase() == keyword?.lowercase() && result.isEmpty()) {
+                            null
+                        } else {
+                            result
+                        }
+                    }
+
+                    val intersection = when {
+                        idList.isEmpty() -> emptySet()
+                        else -> {
+                            val iterator = idList.iterator()
+                            val result = HashSet(iterator.next())
+                            while (iterator.hasNext()) {
+                                result.retainAll(iterator.next())
+                            }
+                            result
+                        }
+                    }
+
+                    if (intersection.isEmpty()) {
+                        return CopilotPageInfo(false, 1, 0, emptyList())
+                    }
+                    queryObj.addCriteria(Copilot::copilotId inValues intersection)
+                }
         }
 
         // 去除large fields
@@ -332,6 +361,8 @@ class CopilotService(
         var cIdToDeleteCache: Long? = null
 
         userEditCopilot(loginUserId, request.id) {
+            segmentService.removeIndex(copilotId!!, doc?.title, doc?.details)
+
             // 从公开改为隐藏时，如果数据存在缓存中则需要清除缓存
             if (status == CopilotSetStatus.PUBLIC && request.status == CopilotSetStatus.PRIVATE) cIdToDeleteCache = copilotId
             copilotConverter.updateCopilotFromDto(
@@ -341,7 +372,8 @@ class CopilotService(
                 request.status,
             )
             uploadTime = LocalDateTime.now()
-            segment = segmentService.getSegmentStr(doc?.title, doc?.details)
+        }.apply {
+            segmentService.updateIndex(copilotId!!, doc?.title, doc?.details)
         }
 
         cIdToDeleteCache?.run(::deleteCacheWhenMatchCopilotId)
