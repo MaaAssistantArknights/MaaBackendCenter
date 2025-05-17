@@ -11,7 +11,6 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.inValues
-import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Service
 import plus.maa.backend.common.extensions.blankAsNull
 import plus.maa.backend.common.extensions.removeQuotes
@@ -171,9 +170,9 @@ class CopilotService(
         val cacheKey = AtomicReference<String?>()
         val setKey = AtomicReference<String>()
         // 只缓存默认状态下热度和访问量排序的结果，并且最多只缓存前三页
-        val keyword = request.document
+        val keyword = request.document?.trim()
         if (request.page <= 3 &&
-            keyword.isNullOrBlank() &&
+            keyword.isNullOrEmpty() &&
             request.levelKeyword.isNullOrBlank() &&
             request.uploaderId.isNullOrBlank() &&
             request.operator.isNullOrBlank() &&
@@ -296,10 +295,9 @@ class CopilotService(
                     }
 
                     if (intersection.isEmpty()) {
-                        queryObj.addCriteria(Copilot::id isEqualTo "NONE")
-                    } else {
-                        queryObj.addCriteria(Copilot::copilotId inValues intersection)
+                        return CopilotPageInfo(false, 1, 0, emptyList())
                     }
+                    queryObj.addCriteria(Copilot::copilotId inValues intersection)
                 }
         }
 

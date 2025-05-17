@@ -66,7 +66,7 @@ class SegmentService(
 
     fun removeIndex(id: Long, vararg content: String?) {
         getSegment(*content).forEach { word ->
-            INDEX.get(word)?.remove(id)
+            INDEX[word]?.remove(id)
         }
     }
 
