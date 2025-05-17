@@ -51,7 +51,17 @@ class SegmentService(
                 set.add(lex.lexemeText)
             }
         }
-        return set.filter { it.isNotEmpty() && it.length > 1 }
+        return segmentGeneratorPostProcess(set)
+    }
+
+    fun segmentGeneratorPostProcess(segment: java.util.HashSet<String>): List<String> {
+        return segment.stream()
+            .filter { it.isNotEmpty() }
+            // 移除单个ascii字符，比如"1 a b c 9"类似
+            .filter { !(it.length == 1 && (it[0] in '0'..'9' || it[0] in 'a'..'z' || it[0] in 'A'..'Z')) }
+            // 将连字符换成下划线
+            .map { it.replace('-', '_') }
+            .toList()
     }
 
     /**
