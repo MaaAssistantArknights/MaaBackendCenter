@@ -2,6 +2,7 @@ package plus.maa.backend.service
 
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.github.benmanes.caffeine.cache.Caffeine
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
@@ -127,34 +128,40 @@ class CopilotService(
         // 删除作业时，如果被删除的项在 Redis 首页缓存中存在，则清空对应的首页缓存
         // 新增作业就不必，因为新作业显然不会那么快就登上热度榜和浏览量榜
         deleteCacheWhenMatchCopilotId(copilotId!!)
+        INNER_COPILOT_CACHE.invalidate(copilotId!!)
     }
 
     /**
      * 指定查询
      */
     fun getCopilotById(userIdOrIpAddress: String, id: Long): CopilotInfo? {
-        val copilot = copilotRepository.findByCopilotIdAndDeleteIsFalse(id) ?: return null
 
-        // 60分钟内限制同一个用户对访问量的增加
-        val viewCacheKey = "views:$userIdOrIpAddress"
-        val viewCache = redisCache.getCache(viewCacheKey, RatingCache::class.java)
-        if (viewCache?.copilotIds?.contains(id) != true) {
-            val query = Query.query(Criteria.where("copilotId").`is`(id))
-            val update = Update()
-            update.inc("views")
-            mongoTemplate.updateFirst(query, update, Copilot::class.java)
-            // 实际上读写并没有锁，因此是否调用 update 意义都不大
-            val vc = viewCache ?: RatingCache(mutableSetOf())
-            vc.copilotIds.add(id)
-            redisCache.setCache(viewCacheKey, vc, 60, TimeUnit.MINUTES)
+        val result = INNER_COPILOT_CACHE.get(id) {
+            copilotRepository.findByCopilotIdAndDeleteIsFalse(id)?.let {
+                val maaUser = userRepository.findByUserIdOrDefault(it.uploaderId!!)
+                it.format(
+                    ratingService.findPersonalRatingOfCopilot(userIdOrIpAddress, id),
+                    maaUser.userName,
+                    commentsAreaRepository.countByCopilotIdAndDelete(it.copilotId!!, false),
+                )
+            }
         }
 
-        val maaUser = userRepository.findByUserIdOrDefault(copilot.uploaderId!!)
-        return copilot.format(
-            ratingService.findPersonalRatingOfCopilot(userIdOrIpAddress, id),
-            maaUser.userName,
-            commentsAreaRepository.countByCopilotIdAndDelete(copilot.copilotId!!, false),
-        )
+        return result?.apply {
+            // 60分钟内限制同一个用户对访问量的增加
+            val viewCacheKey = "views:$userIdOrIpAddress"
+            val viewCache = redisCache.getCache(viewCacheKey, RatingCache::class.java)
+            if (viewCache?.copilotIds?.contains(id) != true) {
+                val query = Query.query(Criteria.where("copilotId").`is`(id))
+                val update = Update()
+                update.inc("views")
+                mongoTemplate.updateFirst(query, update, Copilot::class.java)
+                // 实际上读写并没有锁，因此是否调用 update 意义都不大
+                val vc = viewCache ?: RatingCache(mutableSetOf())
+                vc.copilotIds.add(id)
+                redisCache.setCache(viewCacheKey, vc, 60, TimeUnit.MINUTES)
+            }
+        }
     }
 
     /**
@@ -387,7 +394,11 @@ class CopilotService(
             segmentService.updateIndex(copilotId!!, doc?.title, doc?.details)
         }
 
-        cIdToDeleteCache?.run(::deleteCacheWhenMatchCopilotId)
+        cIdToDeleteCache?.let {
+            deleteCacheWhenMatchCopilotId(it)
+            INNER_COPILOT_CACHE.invalidate(it)
+        }
+
     }
 
     /**
@@ -495,6 +506,11 @@ class CopilotService(
     }
 
     companion object {
+
+        private val INNER_COPILOT_CACHE = Caffeine.newBuilder()
+            .softValues()
+            .build<Long, CopilotInfo?>()
+
         /**
          * 首页分页查询缓存配置
          * 格式为：需要缓存的 orderBy 类型（也就是榜单类型） -> 缓存时间
