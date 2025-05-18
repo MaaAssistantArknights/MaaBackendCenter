@@ -304,9 +304,7 @@ class CopilotService(
         // 去除large fields
         queryObj.fields().exclude("content", "actions", "segment")
 
-        // 查询总数
-        val count = mongoTemplate.count(queryObj, Copilot::class.java)
-
+        val countQueryObj = Query.of(queryObj)
         // 分页排序查询
         val copilots = mongoTemplate.find(queryObj.with(pageable), Copilot::class.java)
 
@@ -335,14 +333,27 @@ class CopilotService(
             )
         }
 
-        // 计算页面
-        val pageNumber = ceil(count.toDouble() / limit).toInt()
+        // 作者页需要返回作业数目
+        val (count, hasNext) = if (keyword.isNullOrEmpty() &&
+            request.levelKeyword.isNullOrBlank() &&
+            request.uploaderId != null &&
+            request.uploaderId != "me" &&
+            request.operator.isNullOrBlank() &&
+            request.copilotIds.isNullOrEmpty()
+        ) {
+            // 查询总数
+            val count = mongoTemplate.count(countQueryObj, Copilot::class.java)
+            val pageNumber = ceil(count.toDouble() / limit).toInt()
+            // 判断是否存在下一页
+            val hasNext = count - pageNumber.toLong() * limit > 0
+            count to hasNext
+        } else {
+            0L to infos.isNotEmpty()
+        }
 
-        // 判断是否存在下一页
-        val hasNext = count - page.toLong() * limit > 0
 
         // 封装数据
-        val data = CopilotPageInfo(hasNext, pageNumber, count, infos)
+        val data = CopilotPageInfo(hasNext, page, count, infos)
 
         // 决定是否缓存
         if (cacheKey.get() != null) {
