@@ -26,6 +26,7 @@ import plus.maa.backend.controller.request.copilot.CopilotRatingReq
 import plus.maa.backend.controller.response.MaaResultException
 import plus.maa.backend.controller.response.copilot.ArkLevelInfo
 import plus.maa.backend.controller.response.copilot.CopilotInfo
+import plus.maa.backend.controller.response.copilot.CopilotInnerCacheInfo
 import plus.maa.backend.controller.response.copilot.CopilotPageInfo
 import plus.maa.backend.repository.CommentsAreaRepository
 import plus.maa.backend.repository.CopilotRepository
@@ -36,14 +37,13 @@ import plus.maa.backend.repository.entity.Rating
 import plus.maa.backend.service.level.ArkLevelService
 import plus.maa.backend.service.model.CommentStatus
 import plus.maa.backend.service.model.CopilotSetStatus
-import plus.maa.backend.service.model.RatingCache
 import plus.maa.backend.service.model.RatingType
 import plus.maa.backend.service.segment.SegmentService
 import plus.maa.backend.service.sensitiveword.SensitiveWordService
 import java.math.RoundingMode
+import java.time.Duration
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import java.util.regex.Pattern
@@ -143,24 +143,31 @@ class CopilotService(
                     ratingService.findPersonalRatingOfCopilot(userIdOrIpAddress, id),
                     maaUser.userName,
                     commentsAreaRepository.countByCopilotIdAndDelete(it.copilotId!!, false),
-                )
+                ).run {
+                    CopilotInnerCacheInfo(this)
+                }
             }
         }
 
         return result?.apply {
             // 60分钟内限制同一个用户对访问量的增加
-            val viewCacheKey = "views:$userIdOrIpAddress"
-            val viewCache = redisCache.getCache(viewCacheKey, RatingCache::class.java)
-            if (viewCache?.copilotIds?.contains(id) != true) {
-                val query = Query.query(Criteria.where("copilotId").`is`(id))
-                val update = Update()
-                update.inc("views")
-                mongoTemplate.updateFirst(query, update, Copilot::class.java)
-                // 实际上读写并没有锁，因此是否调用 update 意义都不大
-                val vc = viewCache ?: RatingCache(mutableSetOf())
-                vc.copilotIds.add(id)
-                redisCache.setCache(viewCacheKey, vc, 60, TimeUnit.MINUTES)
+            val viewCacheKey = "views:${id}:$userIdOrIpAddress"
+            val visitResult = redisCache.redisTemplate.opsForValue()
+                .setIfAbsent(viewCacheKey, "1", Duration.ofHours(1))
+            if (visitResult == true) {
+                // 单机
+                view.incrementAndGet()
+                // 丢到调度队列中, 一致性要求不高
+                Thread.startVirtualThread {
+                    val query = Query.query(Criteria.where("copilotId").`is`(id))
+                    val update = Update().apply {
+                        inc("views")
+                    }
+                    mongoTemplate.updateFirst(query, update, Copilot::class.java)
+                }
             }
+        }?.run {
+            info.copy(views = view.get())
         }
     }
 
@@ -509,7 +516,7 @@ class CopilotService(
 
         private val INNER_COPILOT_CACHE = Caffeine.newBuilder()
             .softValues()
-            .build<Long, CopilotInfo?>()
+            .build<Long, CopilotInnerCacheInfo?>()
 
         /**
          * 首页分页查询缓存配置

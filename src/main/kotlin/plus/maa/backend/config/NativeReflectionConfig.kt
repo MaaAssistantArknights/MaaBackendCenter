@@ -12,7 +12,6 @@ import plus.maa.backend.repository.entity.gamedata.ArkTilePos
 import plus.maa.backend.repository.entity.gamedata.ArkTilePos.Tile
 import plus.maa.backend.repository.entity.gamedata.ArkTower
 import plus.maa.backend.repository.entity.gamedata.ArkZone
-import plus.maa.backend.service.model.RatingCache
 
 /**
  * 添加所有需要用到反射的类到此处，用于 native image
@@ -31,7 +30,6 @@ import plus.maa.backend.service.model.RatingCache
     ArkTower::class,
     ArkZone::class,
     CopilotDTO::class,
-    RatingCache::class,
     PropertyNamingStrategies.SnakeCaseStrategy::class,
     LowerCamelCaseStrategy::class,
 )
