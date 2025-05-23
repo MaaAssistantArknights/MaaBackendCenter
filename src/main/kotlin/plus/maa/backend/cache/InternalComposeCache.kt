@@ -7,16 +7,19 @@ import plus.maa.backend.repository.entity.MaaUser
 class InternalComposeCache {
     // copilotId -> info
     val copilotCache = Caffeine.newBuilder()
+        .recordStats()
         .softValues()
         .build<Long, Copilot?>()
 
     // copilotId -> info
     val maaUserCache = Caffeine.newBuilder()
+        .recordStats()
         .softValues()
         .build<String, MaaUser>()
 
     // copilotId -> count
     val commentCountCache = Caffeine.newBuilder()
+        .recordStats()
         .softValues()
         .build<Long, Long>()
 
