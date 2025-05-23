@@ -163,7 +163,7 @@ class CopilotSetService(
     }
 
     fun get(id: Long): CopilotSetRes = repository.findById(id).map { copilotSet: CopilotSet ->
-        val userName = userService.findByUserIdOrDefault(copilotSet.creatorId).userName
+        val userName = userService.findByUserIdOrDefaultInCache(copilotSet.creatorId).userName
         converter.convertDetail(copilotSet, userName)
     }.orElseThrow { IllegalArgumentException("作业不存在") }
 }

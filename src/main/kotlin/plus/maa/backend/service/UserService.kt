@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import plus.maa.backend.cache.InternalComposeCache.Companion.Cache
 import plus.maa.backend.common.MaaStatusCode
 import plus.maa.backend.controller.request.user.LoginDTO
 import plus.maa.backend.controller.request.user.PasswordResetDTO
@@ -92,7 +93,9 @@ class UserService(
             maaUser.status = 1
         }
         maaUser.pwdUpdateTime = Instant.now()
-        userRepository.save(maaUser)
+        userRepository.save(maaUser).let {
+            Cache.invalidateMaaUserById(it.userId)
+        }
     }
 
     /**
@@ -121,7 +124,9 @@ class UserService(
             pwdUpdateTime = Instant.now(),
         )
         return try {
-            userRepository.save(user).run(::MaaUserInfo)
+            userRepository.save(user).run(::MaaUserInfo).also {
+                Cache.invalidateMaaUserById(it.id)
+            }
         } catch (_: DuplicateKeyException) {
             throw MaaResultException(MaaStatusCode.MAA_USER_EXISTS)
         }
@@ -147,6 +152,7 @@ class UserService(
         }
         maaUser.userName = newName
         userRepository.save(maaUser)
+        Cache.invalidateMaaUserById(userId)
     }
 
     /**
@@ -228,6 +234,10 @@ class UserService(
     }
 
     fun findByUserIdOrDefault(id: String) = userRepository.findByUserId(id) ?: MaaUser.UNKNOWN
+
+    fun findByUserIdOrDefaultInCache(id: String): MaaUser {
+        return Cache.maaUserCache.get(id, ::findByUserIdOrDefault)
+    }
 
     fun findByUsersId(ids: Iterable<String>): UserDict {
         return userRepository.findAllById(ids).let(::UserDict)

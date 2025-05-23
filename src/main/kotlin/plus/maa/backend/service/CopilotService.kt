@@ -2,7 +2,6 @@ package plus.maa.backend.service
 
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.github.benmanes.caffeine.cache.Caffeine
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
@@ -13,6 +12,8 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.stereotype.Service
+import plus.maa.backend.cache.InternalComposeCache.Companion.Cache
+import plus.maa.backend.cache.transfer.CopilotInnerCacheInfo
 import plus.maa.backend.common.extensions.blankAsNull
 import plus.maa.backend.common.extensions.removeQuotes
 import plus.maa.backend.common.extensions.requireNotNull
@@ -26,7 +27,6 @@ import plus.maa.backend.controller.request.copilot.CopilotRatingReq
 import plus.maa.backend.controller.response.MaaResultException
 import plus.maa.backend.controller.response.copilot.ArkLevelInfo
 import plus.maa.backend.controller.response.copilot.CopilotInfo
-import plus.maa.backend.controller.response.copilot.CopilotInnerCacheInfo
 import plus.maa.backend.controller.response.copilot.CopilotPageInfo
 import plus.maa.backend.repository.CommentsAreaRepository
 import plus.maa.backend.repository.CopilotRepository
@@ -128,30 +128,35 @@ class CopilotService(
         // 删除作业时，如果被删除的项在 Redis 首页缓存中存在，则清空对应的首页缓存
         // 新增作业就不必，因为新作业显然不会那么快就登上热度榜和浏览量榜
         deleteCacheWhenMatchCopilotId(copilotId!!)
-        INNER_COPILOT_CACHE.invalidate(copilotId!!)
+        Cache.invalidateCopilotInfoByCid(copilotId)
     }
 
     /**
      * 指定查询
      */
     fun getCopilotById(userIdOrIpAddress: String, id: Long): CopilotInfo? {
+        val result = Cache.copilotCache.get(
+            id,
+            copilotRepository::findByCopilotIdAndDeleteIsFalse,
+        )?.let {
+            val maaUser = userRepository.findByUserIdOrDefaultInCache(it.uploaderId!!)
 
-        val result = INNER_COPILOT_CACHE.get(id) {
-            copilotRepository.findByCopilotIdAndDeleteIsFalse(id)?.let {
-                val maaUser = userRepository.findByUserIdOrDefault(it.uploaderId!!)
-                it.format(
-                    ratingService.findPersonalRatingOfCopilot(userIdOrIpAddress, id),
-                    maaUser.userName,
-                    commentsAreaRepository.countByCopilotIdAndDelete(it.copilotId!!, false),
-                ).run {
-                    CopilotInnerCacheInfo(this)
-                }
+            val commentsCount = Cache.commentCountCache.get(it.copilotId!!) { cid ->
+                commentsAreaRepository.countByCopilotIdAndDelete(cid, false)
+            } ?: 0
+
+            it.format(
+                ratingService.findPersonalRatingOfCopilot(userIdOrIpAddress, id),
+                maaUser.userName,
+                commentsCount,
+            ).run {
+                CopilotInnerCacheInfo(this)
             }
         }
 
         return result?.apply {
             // 60分钟内限制同一个用户对访问量的增加
-            val viewCacheKey = "views:${id}:$userIdOrIpAddress"
+            val viewCacheKey = "views:$id:$userIdOrIpAddress"
             val visitResult = redisCache.redisTemplate.opsForValue()
                 .setIfAbsent(viewCacheKey, "1", Duration.ofHours(1))
             if (visitResult == true) {
@@ -365,7 +370,6 @@ class CopilotService(
             0L to infos.isNotEmpty()
         }
 
-
         // 封装数据
         val data = CopilotPageInfo(hasNext, page, count, infos)
 
@@ -403,9 +407,8 @@ class CopilotService(
 
         cIdToDeleteCache?.let {
             deleteCacheWhenMatchCopilotId(it)
-            INNER_COPILOT_CACHE.invalidate(it)
+            Cache.invalidateCopilotInfoByCid(it)
         }
-
     }
 
     /**
@@ -513,10 +516,6 @@ class CopilotService(
     }
 
     companion object {
-
-        private val INNER_COPILOT_CACHE = Caffeine.newBuilder()
-            .softValues()
-            .build<Long, CopilotInnerCacheInfo?>()
 
         /**
          * 首页分页查询缓存配置

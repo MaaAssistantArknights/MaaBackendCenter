@@ -8,6 +8,7 @@ import org.springframework.data.mongodb.core.query.exists
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
+import plus.maa.backend.cache.InternalComposeCache.Companion.Cache
 import plus.maa.backend.common.extensions.addAndCriteria
 import plus.maa.backend.common.extensions.findPage
 import plus.maa.backend.common.extensions.requireNotNull
@@ -77,7 +78,11 @@ class CommentsAreaService(
             message = commentsAddDTO.message,
             notification = commentsAddDTO.notification,
         )
-        commentsAreaRepository.insert(comment)
+        commentsAreaRepository.insert(comment).let {
+            copilot.let { c ->
+                Cache.invalidateCommentCountById(c.copilotId)
+            }
+        }
     }
 
     private fun notifyRelatedUser(replierId: String, message: String, copilot: Copilot, parentComment: CommentsArea?) {
@@ -117,7 +122,11 @@ class CommentsAreaService(
                 ca.delete = true
             }
         }
-        commentsAreaRepository.saveAll(comments)
+        commentsAreaRepository.saveAll(comments).let {
+            copilot?.let { c ->
+                Cache.invalidateCommentCountById(c.copilotId)
+            }
+        }
     }
 
     /**
