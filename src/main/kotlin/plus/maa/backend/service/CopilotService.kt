@@ -33,6 +33,7 @@ import plus.maa.backend.repository.CopilotRepository
 import plus.maa.backend.repository.RedisCache
 import plus.maa.backend.repository.entity.Copilot
 import plus.maa.backend.repository.entity.Copilot.OperationGroup
+import plus.maa.backend.repository.entity.MaaUser
 import plus.maa.backend.repository.entity.Rating
 import plus.maa.backend.service.level.ArkLevelService
 import plus.maa.backend.service.model.CommentStatus
@@ -143,7 +144,7 @@ class CopilotService(
 
             val commentsCount = Cache.commentCountCache.get(it.copilotId!!) { cid ->
                 commentsAreaRepository.countByCopilotIdAndDelete(cid, false)
-            } ?: 0
+            }
 
             it.format(
                 ratingService.findPersonalRatingOfCopilot(userIdOrIpAddress, id),
@@ -327,12 +328,44 @@ class CopilotService(
         // 分页排序查询
         val copilots = mongoTemplate.find(queryObj.with(pageable), Copilot::class.java)
 
+        val userIds = copilots.mapNotNull { it.uploaderId }
+
         // 填充前端所需信息
+        val maaUsers = hashMapOf<String, MaaUser>()
+        val remainingUserIds = userIds.filter { userId ->
+            val info = Cache.maaUserCache.getIfPresent(userId)?.also {
+                maaUsers[userId] = it
+            }
+            info == null
+        }.toList()
+        if (remainingUserIds.isNotEmpty()) {
+            userRepository.findByUsersId(remainingUserIds).entries().forEach {
+                maaUsers.put(it.key, it.value)
+                Cache.maaUserCache.put(it.key, it.value)
+            }
+        }
+
+
         val copilotIds = copilots.mapNotNull { it.copilotId }
-        val maaUsers = userRepository.findByUsersId(copilots.mapNotNull { it.uploaderId })
-        val commentsCount = commentsAreaRepository.findByCopilotIdInAndDelete(copilotIds, false)
-            .groupBy { it.copilotId }
-            .mapValues { it.value.size.toLong() }
+        val commentsCount = hashMapOf<Long, Long>()
+        val remainingCopilotIds = copilotIds.filter { copilotId ->
+            val c = Cache.commentCountCache.getIfPresent(copilotId)?.also {
+                commentsCount[copilotId] = it
+            }
+            c == null
+        }.toList()
+
+        if (remainingCopilotIds.isNotEmpty()) {
+            val existedCount = commentsAreaRepository.findByCopilotIdInAndDelete(copilotIds, false)
+                .groupBy { it.copilotId }
+                .mapValues { it.value.size.toLong() }
+            copilotIds.forEach { copilotId ->
+                val count = existedCount[copilotId] ?: 0
+                commentsCount[copilotId] = count
+                Cache.commentCountCache.put(copilotId, count)
+            }
+
+        }
 
         // 新版评分系统
         // 反正目前首页和搜索不会直接展示当前用户有没有点赞，干脆直接不查，要用户点进作业才显示自己是否点赞
@@ -347,7 +380,7 @@ class CopilotService(
             ).run(mapper::writeValueAsString)
             copilot.format(
                 null,
-                maaUsers.getOrDefault(copilot.uploaderId!!).userName,
+                maaUsers.getOrDefault(copilot.uploaderId!!, MaaUser.UNKNOWN).userName,
                 commentsCount[copilot.copilotId] ?: 0,
             )
         }

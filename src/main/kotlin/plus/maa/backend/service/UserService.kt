@@ -244,7 +244,8 @@ class UserService(
     }
 
     class UserDict(users: List<MaaUser>) {
-        private val userMap = users.associateBy { it.userId }
+        private val userMap = users.associateBy { it.userId!! }
+        fun entries() = userMap.entries
         operator fun get(id: String): MaaUser? = userMap[id]
         fun getOrDefault(id: String) = get(id) ?: MaaUser.UNKNOWN
     }
