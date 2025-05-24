@@ -14,8 +14,8 @@ services:
     restart: always
     networks:
       - maa
-  maa_backend:
-    image: ghcr.io/maaassistantarknights/maabackendcenter:dev
+  zootplusbackend:
+    image: ghcr.io/zoot-plus/zootplusbackend:latest
     container_name: maa-backend
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb://mongo/MaaBackend

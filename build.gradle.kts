@@ -11,14 +11,14 @@ plugins {
     id("org.hidetake.swagger.generator") version "2.19.2"
     id("com.gorylenko.gradle-git-properties") version "2.4.2"
 
-    kotlin("jvm") version "2.1.10"
-    kotlin("plugin.spring") version "2.1.10"
-    kotlin("kapt") version "2.1.10"
+    kotlin("jvm") version "2.1.21"
+    kotlin("plugin.spring") version "2.1.21"
+    kotlin("kapt") version "2.1.21"
 
     id("org.jlleitschuh.gradle.ktlint") version "12.2.0"
 }
 
-group = "plus.maa"
+group = "plus.zoot"
 version = "2.0"
 
 java {

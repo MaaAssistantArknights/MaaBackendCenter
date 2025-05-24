@@ -14,9 +14,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.set
 import org.springframework.data.util.Pair
 import plus.maa.backend.repository.entity.Copilot
-import java.io.File
 import java.time.Instant
-import java.time.format.DateTimeFormatter
 
 @SpringBootTest
 class SegmentServiceTest {
@@ -32,11 +30,13 @@ class SegmentServiceTest {
     fun generateSegments() {
         var count = 0L
         while (true) {
-            val fetched = mongoTemplate.find<Copilot>(Query().apply {
-                addCriteria(Copilot::delete isEqualTo false)
-                skip(count)
-                limit(20)
-            })
+            val fetched = mongoTemplate.find<Copilot>(
+                Query().apply {
+                    addCriteria(Copilot::delete isEqualTo false)
+                    skip(count)
+                    limit(20)
+                },
+            )
             if (fetched.isEmpty()) break
 
             val ops = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, Copilot::class.java)
@@ -56,6 +56,5 @@ class SegmentServiceTest {
         }
 
         log.info { "Segments updated: $count" }
-
     }
 }

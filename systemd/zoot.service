@@ -1,16 +1,16 @@
 # Systemd >235
 [Unit]
-Description=MAABackendCenter
+Description=ZootPlusBackend
 After=network.target
 
 [Service]
 Type=simple
 DynamicUser=yes
 # 工作目录
-WorkingDirectory=/opt/maa
+WorkingDirectory=/opt/zoot
 # 记得更改 JAR 名
-ExecStart=/usr/bin/java -jar MaaBackendCenter.jar --spring.profiles.active=prod
-RuntimeDirectory=maa
+ExecStart=/usr/bin/java -jar ZootPlusBackend.jar --spring.profiles.active=prod
+RuntimeDirectory=zoot
 SuccessExitStatus=143
 
 [Install]

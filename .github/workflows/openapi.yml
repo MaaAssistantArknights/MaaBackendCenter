@@ -103,17 +103,17 @@ jobs:
           name: ts-client
           path: ./build/clients/ts-fetch-client/*
 
-      - name: Checkout maa-copilot-client-ts
+      - name: Checkout zoot-plus-client-ts
         uses: actions/checkout@v4
         with:
-          repository: MaaAssistantArknights/maa-copilot-client-ts
-          path: maa-copilot-client-ts
+          repository: ZOOT-Plus/zoot-plus-client-ts
+          path: zoot-plus-client-ts
           token: ${{ secrets.TS_CLIENT_PAT }}
 
-      - name: Update maa-copilot-client-ts and push to remote
+      - name: Update zoot-plus-client-ts and push to remote
         run: |
-          cp -rf build/clients/ts-fetch-client/* maa-copilot-client-ts/
-          cd maa-copilot-client-ts
+          cp -rf build/clients/ts-fetch-client/* zoot-plus-client-ts/
+          cd zoot-plus-client-ts
 
           git diff --quiet && exit 0
 
@@ -121,7 +121,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add .
           git commit -m "release: ${{ steps.version.outputs.version }}"\
-                     -m "Generated from https://github.com/MaaAssistantArknights/MaaBackendCenter/actions/runs/${{ github.run_id }}"
+                     -m "Generated from https://github.com/ZOOT-Plus/ZootPlusBackend/actions/runs/${{ github.run_id }}"
           git tag ${{ steps.version.outputs.version }}
           git push
           git push --tags

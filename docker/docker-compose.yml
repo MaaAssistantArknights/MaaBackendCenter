@@ -15,10 +15,10 @@ services:
     ports:
       - "27017:27017"
     restart: always
-  maa:
-    image: ghcr.io/MaaAssistantArknights/maabackendcenter:latest
-    container_name: maa
-    command: --spring.profiles.active=prod 
+  zootplusbackend:
+    image: ghcr.io/zoot-plus/zootplusbackend:latest
+    container_name: ZootPlusBackend
+    command: --spring.profiles.active=prod
     ports:
       - "8080:8080"
     volumes:

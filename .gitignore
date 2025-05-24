@@ -29,6 +29,7 @@ mvnw*
 ### generated files ###
 bin/
 gen/
+.kotlin
 
 ### MAC ###
 .DS_Store
