@@ -104,7 +104,7 @@ class CopilotScoreRefreshTask(
             ) {
                 // 非开放关卡打入冷宫
 
-                hotScore /= 3.0
+                hotScore /= 100.0
             }
             copilot.hotScore = hotScore
         }
