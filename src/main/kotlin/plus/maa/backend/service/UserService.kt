@@ -6,7 +6,6 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
-import plus.maa.backend.cache.InternalComposeCache.Companion.Cache
 import plus.maa.backend.common.MaaStatusCode
 import plus.maa.backend.controller.request.user.LoginDTO
 import plus.maa.backend.controller.request.user.PasswordResetDTO
@@ -23,6 +22,7 @@ import plus.maa.backend.service.jwt.JwtInvalidException
 import plus.maa.backend.service.jwt.JwtService
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import plus.maa.backend.cache.InternalComposeCache as Cache
 
 /**
  * @author AnselYuki
@@ -93,9 +93,8 @@ class UserService(
             maaUser.status = 1
         }
         maaUser.pwdUpdateTime = Instant.now()
-        userRepository.save(maaUser).let {
-            Cache.invalidateMaaUserById(it.userId)
-        }
+        userRepository.save(maaUser)
+        Cache.invalidateMaaUserById(maaUser.userId)
     }
 
     /**
@@ -236,7 +235,7 @@ class UserService(
     fun findByUserIdOrDefault(id: String) = userRepository.findByUserId(id) ?: MaaUser.UNKNOWN
 
     fun findByUserIdOrDefaultInCache(id: String): MaaUser {
-        return Cache.maaUserCache.get(id, ::findByUserIdOrDefault)
+        return Cache.getMaaUserCache(id, ::findByUserIdOrDefault)
     }
 
     fun findByUsersId(ids: Iterable<String>): UserDict {

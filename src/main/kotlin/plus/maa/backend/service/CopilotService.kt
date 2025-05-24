@@ -12,7 +12,6 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.stereotype.Service
-import plus.maa.backend.cache.InternalComposeCache.Companion.Cache
 import plus.maa.backend.cache.transfer.CopilotInnerCacheInfo
 import plus.maa.backend.common.extensions.blankAsNull
 import plus.maa.backend.common.extensions.removeQuotes
@@ -42,15 +41,16 @@ import plus.maa.backend.service.model.RatingType
 import plus.maa.backend.service.segment.SegmentService
 import plus.maa.backend.service.sensitiveword.SensitiveWordService
 import java.math.RoundingMode
-import java.time.Duration
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import java.util.regex.Pattern
 import kotlin.math.ceil
 import kotlin.math.ln
 import kotlin.math.max
+import plus.maa.backend.cache.InternalComposeCache as Cache
 
 /**
  * @author LoMu
@@ -136,13 +136,13 @@ class CopilotService(
      * 指定查询
      */
     fun getCopilotById(userIdOrIpAddress: String, id: Long): CopilotInfo? {
-        val result = Cache.copilotCache.get(
+        val result = Cache.getCopilotCache(
             id,
             copilotRepository::findByCopilotIdAndDeleteIsFalse,
         )?.let {
             val maaUser = userRepository.findByUserIdOrDefaultInCache(it.uploaderId!!)
 
-            val commentsCount = Cache.commentCountCache.get(it.copilotId!!) { cid ->
+            val commentsCount = Cache.getCommentCountCache(it.copilotId!!) { cid ->
                 commentsAreaRepository.countByCopilotIdAndDelete(cid, false)
             }
 
@@ -158,9 +158,13 @@ class CopilotService(
         return result?.apply {
             // 60分钟内限制同一个用户对访问量的增加
             val viewCacheKey = "views:$id:$userIdOrIpAddress"
-            val visitResult = redisCache.redisTemplate.opsForValue()
-                .setIfAbsent(viewCacheKey, "1", Duration.ofHours(1))
-            if (visitResult == true) {
+            val visitResult = redisCache.setCacheIfAbsent(
+                viewCacheKey,
+                VISITED_FLAG,
+                1,
+                TimeUnit.HOURS,
+            )
+            if (visitResult) {
                 // 单机
                 view.incrementAndGet()
                 // 丢到调度队列中, 一致性要求不高
@@ -333,7 +337,7 @@ class CopilotService(
         // 填充前端所需信息
         val maaUsers = hashMapOf<String, MaaUser>()
         val remainingUserIds = userIds.filter { userId ->
-            val info = Cache.maaUserCache.getIfPresent(userId)?.also {
+            val info = Cache.getMaaUserCache(userId)?.also {
                 maaUsers[userId] = it
             }
             info == null
@@ -341,15 +345,14 @@ class CopilotService(
         if (remainingUserIds.isNotEmpty()) {
             userRepository.findByUsersId(remainingUserIds).entries().forEach {
                 maaUsers.put(it.key, it.value)
-                Cache.maaUserCache.put(it.key, it.value)
+                Cache.setMaaUserCache(it.key, it.value)
             }
         }
-
 
         val copilotIds = copilots.mapNotNull { it.copilotId }
         val commentsCount = hashMapOf<Long, Long>()
         val remainingCopilotIds = copilotIds.filter { copilotId ->
-            val c = Cache.commentCountCache.getIfPresent(copilotId)?.also {
+            val c = Cache.getCommentCountCache(copilotId)?.also {
                 commentsCount[copilotId] = it
             }
             c == null
@@ -362,9 +365,8 @@ class CopilotService(
             copilotIds.forEach { copilotId ->
                 val count = existedCount[copilotId] ?: 0
                 commentsCount[copilotId] = count
-                Cache.commentCountCache.put(copilotId, count)
+                Cache.setCommentCountCache(copilotId, count)
             }
-
         }
 
         // 新版评分系统
@@ -549,6 +551,8 @@ class CopilotService(
     }
 
     companion object {
+
+        private const val VISITED_FLAG = "1"
 
         /**
          * 首页分页查询缓存配置
