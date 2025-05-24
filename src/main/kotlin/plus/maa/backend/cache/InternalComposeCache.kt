@@ -18,7 +18,7 @@ object InternalComposeCache {
         .build<String, MaaUser>()
 
     // copilotId -> count
-    val commentCountCache = Caffeine.newBuilder()
+    private val commentCountCache = Caffeine.newBuilder()
         .recordStats()
         .softValues()
         .build<Long, Long>()
