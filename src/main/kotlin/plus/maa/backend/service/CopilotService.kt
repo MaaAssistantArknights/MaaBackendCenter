@@ -402,7 +402,7 @@ class CopilotService(
             val hasNext = count - pageNumber.toLong() * limit > 0
             count to hasNext
         } else {
-            0L to infos.isNotEmpty()
+            0L to (infos.size >= limit)
         }
 
         // 封装数据
