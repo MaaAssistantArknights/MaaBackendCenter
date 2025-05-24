@@ -28,6 +28,7 @@ import plus.maa.backend.service.model.CommentStatus
 import plus.maa.backend.service.model.RatingType
 import plus.maa.backend.service.sensitiveword.SensitiveWordService
 import java.time.LocalDateTime
+import plus.maa.backend.cache.InternalComposeCache as Cache
 
 /**
  * @author LoMu
@@ -78,6 +79,7 @@ class CommentsAreaService(
             notification = commentsAddDTO.notification,
         )
         commentsAreaRepository.insert(comment)
+        Cache.invalidateCommentCountById(copilotId)
     }
 
     private fun notifyRelatedUser(replierId: String, message: String, copilot: Copilot, parentComment: CommentsArea?) {
@@ -118,6 +120,7 @@ class CommentsAreaService(
             }
         }
         commentsAreaRepository.saveAll(comments)
+        Cache.invalidateCommentCountById(commentsArea.copilotId)
     }
 
     /**

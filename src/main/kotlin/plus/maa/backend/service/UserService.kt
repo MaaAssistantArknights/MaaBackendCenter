@@ -22,6 +22,7 @@ import plus.maa.backend.service.jwt.JwtInvalidException
 import plus.maa.backend.service.jwt.JwtService
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import plus.maa.backend.cache.InternalComposeCache as Cache
 
 /**
  * @author AnselYuki
@@ -93,6 +94,7 @@ class UserService(
         }
         maaUser.pwdUpdateTime = Instant.now()
         userRepository.save(maaUser)
+        Cache.invalidateMaaUserById(maaUser.userId)
     }
 
     /**
@@ -121,7 +123,9 @@ class UserService(
             pwdUpdateTime = Instant.now(),
         )
         return try {
-            userRepository.save(user).run(::MaaUserInfo)
+            userRepository.save(user).run(::MaaUserInfo).also {
+                Cache.invalidateMaaUserById(it.id)
+            }
         } catch (_: DuplicateKeyException) {
             throw MaaResultException(MaaStatusCode.MAA_USER_EXISTS)
         }
@@ -147,6 +151,7 @@ class UserService(
         }
         maaUser.userName = newName
         userRepository.save(maaUser)
+        Cache.invalidateMaaUserById(userId)
     }
 
     /**
@@ -229,12 +234,17 @@ class UserService(
 
     fun findByUserIdOrDefault(id: String) = userRepository.findByUserId(id) ?: MaaUser.UNKNOWN
 
+    fun findByUserIdOrDefaultInCache(id: String): MaaUser {
+        return Cache.getMaaUserCache(id, ::findByUserIdOrDefault)
+    }
+
     fun findByUsersId(ids: Iterable<String>): UserDict {
         return userRepository.findAllById(ids).let(::UserDict)
     }
 
     class UserDict(users: List<MaaUser>) {
-        private val userMap = users.associateBy { it.userId }
+        private val userMap = users.associateBy { it.userId!! }
+        fun entries() = userMap.entries
         operator fun get(id: String): MaaUser? = userMap[id]
         fun getOrDefault(id: String) = get(id) ?: MaaUser.UNKNOWN
     }

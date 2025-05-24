@@ -12,6 +12,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.stereotype.Service
+import plus.maa.backend.cache.transfer.CopilotInnerCacheInfo
 import plus.maa.backend.common.extensions.blankAsNull
 import plus.maa.backend.common.extensions.removeQuotes
 import plus.maa.backend.common.extensions.requireNotNull
@@ -31,11 +32,11 @@ import plus.maa.backend.repository.CopilotRepository
 import plus.maa.backend.repository.RedisCache
 import plus.maa.backend.repository.entity.Copilot
 import plus.maa.backend.repository.entity.Copilot.OperationGroup
+import plus.maa.backend.repository.entity.MaaUser
 import plus.maa.backend.repository.entity.Rating
 import plus.maa.backend.service.level.ArkLevelService
 import plus.maa.backend.service.model.CommentStatus
 import plus.maa.backend.service.model.CopilotSetStatus
-import plus.maa.backend.service.model.RatingCache
 import plus.maa.backend.service.model.RatingType
 import plus.maa.backend.service.segment.SegmentService
 import plus.maa.backend.service.sensitiveword.SensitiveWordService
@@ -49,6 +50,7 @@ import java.util.regex.Pattern
 import kotlin.math.ceil
 import kotlin.math.ln
 import kotlin.math.max
+import plus.maa.backend.cache.InternalComposeCache as Cache
 
 /**
  * @author LoMu
@@ -127,34 +129,56 @@ class CopilotService(
         // 删除作业时，如果被删除的项在 Redis 首页缓存中存在，则清空对应的首页缓存
         // 新增作业就不必，因为新作业显然不会那么快就登上热度榜和浏览量榜
         deleteCacheWhenMatchCopilotId(copilotId!!)
+        Cache.invalidateCopilotInfoByCid(copilotId)
     }
 
     /**
      * 指定查询
      */
     fun getCopilotById(userIdOrIpAddress: String, id: Long): CopilotInfo? {
-        val copilot = copilotRepository.findByCopilotIdAndDeleteIsFalse(id) ?: return null
+        val result = Cache.getCopilotCache(
+            id,
+            copilotRepository::findByCopilotIdAndDeleteIsFalse,
+        )?.let {
+            val maaUser = userRepository.findByUserIdOrDefaultInCache(it.uploaderId!!)
 
-        // 60分钟内限制同一个用户对访问量的增加
-        val viewCacheKey = "views:$userIdOrIpAddress"
-        val viewCache = redisCache.getCache(viewCacheKey, RatingCache::class.java)
-        if (viewCache?.copilotIds?.contains(id) != true) {
-            val query = Query.query(Criteria.where("copilotId").`is`(id))
-            val update = Update()
-            update.inc("views")
-            mongoTemplate.updateFirst(query, update, Copilot::class.java)
-            // 实际上读写并没有锁，因此是否调用 update 意义都不大
-            val vc = viewCache ?: RatingCache(mutableSetOf())
-            vc.copilotIds.add(id)
-            redisCache.setCache(viewCacheKey, vc, 60, TimeUnit.MINUTES)
+            val commentsCount = Cache.getCommentCountCache(it.copilotId!!) { cid ->
+                commentsAreaRepository.countByCopilotIdAndDelete(cid, false)
+            }
+
+            it.format(
+                ratingService.findPersonalRatingOfCopilot(userIdOrIpAddress, id),
+                maaUser.userName,
+                commentsCount,
+            ).run {
+                CopilotInnerCacheInfo(this)
+            }
         }
 
-        val maaUser = userRepository.findByUserIdOrDefault(copilot.uploaderId!!)
-        return copilot.format(
-            ratingService.findPersonalRatingOfCopilot(userIdOrIpAddress, id),
-            maaUser.userName,
-            commentsAreaRepository.countByCopilotIdAndDelete(copilot.copilotId!!, false),
-        )
+        return result?.apply {
+            // 60分钟内限制同一个用户对访问量的增加
+            val viewCacheKey = "views:$id:$userIdOrIpAddress"
+            val visitResult = redisCache.setCacheIfAbsent(
+                viewCacheKey,
+                VISITED_FLAG,
+                1,
+                TimeUnit.HOURS,
+            )
+            if (visitResult) {
+                // 单机
+                view.incrementAndGet()
+                // 丢到调度队列中, 一致性要求不高
+                Thread.startVirtualThread {
+                    val query = Query.query(Criteria.where("copilotId").`is`(id))
+                    val update = Update().apply {
+                        inc("views")
+                    }
+                    mongoTemplate.updateFirst(query, update, Copilot::class.java)
+                }
+            }
+        }?.run {
+            info.copy(views = view.get())
+        }
     }
 
     /**
@@ -304,18 +328,46 @@ class CopilotService(
         // 去除large fields
         queryObj.fields().exclude("content", "actions", "segment")
 
-        // 查询总数
-        val count = mongoTemplate.count(queryObj, Copilot::class.java)
-
+        val countQueryObj = Query.of(queryObj)
         // 分页排序查询
         val copilots = mongoTemplate.find(queryObj.with(pageable), Copilot::class.java)
 
+        val userIds = copilots.mapNotNull { it.uploaderId }
+
         // 填充前端所需信息
+        val maaUsers = hashMapOf<String, MaaUser>()
+        val remainingUserIds = userIds.filter { userId ->
+            val info = Cache.getMaaUserCache(userId)?.also {
+                maaUsers[userId] = it
+            }
+            info == null
+        }.toList()
+        if (remainingUserIds.isNotEmpty()) {
+            userRepository.findByUsersId(remainingUserIds).entries().forEach {
+                maaUsers.put(it.key, it.value)
+                Cache.setMaaUserCache(it.key, it.value)
+            }
+        }
+
         val copilotIds = copilots.mapNotNull { it.copilotId }
-        val maaUsers = userRepository.findByUsersId(copilots.mapNotNull { it.uploaderId })
-        val commentsCount = commentsAreaRepository.findByCopilotIdInAndDelete(copilotIds, false)
-            .groupBy { it.copilotId }
-            .mapValues { it.value.size.toLong() }
+        val commentsCount = hashMapOf<Long, Long>()
+        val remainingCopilotIds = copilotIds.filter { copilotId ->
+            val c = Cache.getCommentCountCache(copilotId)?.also {
+                commentsCount[copilotId] = it
+            }
+            c == null
+        }.toList()
+
+        if (remainingCopilotIds.isNotEmpty()) {
+            val existedCount = commentsAreaRepository.findByCopilotIdInAndDelete(copilotIds, false)
+                .groupBy { it.copilotId }
+                .mapValues { it.value.size.toLong() }
+            copilotIds.forEach { copilotId ->
+                val count = existedCount[copilotId] ?: 0
+                commentsCount[copilotId] = count
+                Cache.setCommentCountCache(copilotId, count)
+            }
+        }
 
         // 新版评分系统
         // 反正目前首页和搜索不会直接展示当前用户有没有点赞，干脆直接不查，要用户点进作业才显示自己是否点赞
@@ -330,19 +382,31 @@ class CopilotService(
             ).run(mapper::writeValueAsString)
             copilot.format(
                 null,
-                maaUsers.getOrDefault(copilot.uploaderId!!).userName,
+                maaUsers.getOrDefault(copilot.uploaderId!!, MaaUser.UNKNOWN).userName,
                 commentsCount[copilot.copilotId] ?: 0,
             )
         }
 
-        // 计算页面
-        val pageNumber = ceil(count.toDouble() / limit).toInt()
-
-        // 判断是否存在下一页
-        val hasNext = count - page.toLong() * limit > 0
+        // 作者页需要返回作业数目
+        val (count, hasNext) = if (keyword.isNullOrEmpty() &&
+            request.levelKeyword.isNullOrBlank() &&
+            request.uploaderId != null &&
+            request.uploaderId != "me" &&
+            request.operator.isNullOrBlank() &&
+            request.copilotIds.isNullOrEmpty()
+        ) {
+            // 查询总数
+            val count = mongoTemplate.count(countQueryObj, Copilot::class.java)
+            val pageNumber = ceil(count.toDouble() / limit).toInt()
+            // 判断是否存在下一页
+            val hasNext = count - pageNumber.toLong() * limit > 0
+            count to hasNext
+        } else {
+            0L to (infos.size >= limit)
+        }
 
         // 封装数据
-        val data = CopilotPageInfo(hasNext, pageNumber, count, infos)
+        val data = CopilotPageInfo(hasNext, page, count, infos)
 
         // 决定是否缓存
         if (cacheKey.get() != null) {
@@ -376,7 +440,10 @@ class CopilotService(
             segmentService.updateIndex(copilotId!!, doc?.title, doc?.details)
         }
 
-        cIdToDeleteCache?.run(::deleteCacheWhenMatchCopilotId)
+        cIdToDeleteCache?.let {
+            deleteCacheWhenMatchCopilotId(it)
+            Cache.invalidateCopilotInfoByCid(it)
+        }
     }
 
     /**
@@ -484,6 +551,9 @@ class CopilotService(
     }
 
     companion object {
+
+        private const val VISITED_FLAG = "1"
+
         /**
          * 首页分页查询缓存配置
          * 格式为：需要缓存的 orderBy 类型（也就是榜单类型） -> 缓存时间
