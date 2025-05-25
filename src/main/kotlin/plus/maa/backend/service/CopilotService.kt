@@ -136,23 +136,22 @@ class CopilotService(
      * 指定查询
      */
     fun getCopilotById(userIdOrIpAddress: String, id: Long): CopilotInfo? {
-        val result = Cache.getCopilotCache(
-            id,
-            copilotRepository::findByCopilotIdAndDeleteIsFalse,
-        )?.let {
-            val maaUser = userRepository.findByUserIdOrDefaultInCache(it.uploaderId!!)
+        val result = Cache.getCopilotCache(id) {
+            copilotRepository.findByCopilotIdAndDeleteIsFalse(it)?.run {
+                CopilotInnerCacheInfo(this)
+            }
+        }?.let { it ->
+            val copilot = it.info
+            val maaUser = userRepository.findByUserIdOrDefaultInCache(copilot.uploaderId!!)
 
-            val commentsCount = Cache.getCommentCountCache(it.copilotId!!) { cid ->
+            val commentsCount = Cache.getCommentCountCache(copilot.copilotId!!) { cid ->
                 commentsAreaRepository.countByCopilotIdAndDelete(cid, false)
             }
-
-            it.format(
+            copilot.format(
                 ratingService.findPersonalRatingOfCopilot(userIdOrIpAddress, id),
                 maaUser.userName,
                 commentsCount,
-            ).run {
-                CopilotInnerCacheInfo(this)
-            }
+            ) to it.view
         }
 
         return result?.apply {
@@ -166,7 +165,7 @@ class CopilotService(
             )
             if (visitResult) {
                 // 单机
-                view.incrementAndGet()
+                second.incrementAndGet()
                 // 丢到调度队列中, 一致性要求不高
                 Thread.startVirtualThread {
                     val query = Query.query(Criteria.where("copilotId").`is`(id))
@@ -177,7 +176,7 @@ class CopilotService(
                 }
             }
         }?.run {
-            info.copy(views = view.get())
+            first.copy(views = second.get())
         }
     }
 

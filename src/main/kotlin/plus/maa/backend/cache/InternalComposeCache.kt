@@ -1,7 +1,7 @@
 package plus.maa.backend.cache
 
 import com.github.benmanes.caffeine.cache.Caffeine
-import plus.maa.backend.repository.entity.Copilot
+import plus.maa.backend.cache.transfer.CopilotInnerCacheInfo
 import plus.maa.backend.repository.entity.MaaUser
 
 object InternalComposeCache {
@@ -9,7 +9,7 @@ object InternalComposeCache {
     private val copilotCache = Caffeine.newBuilder()
         .recordStats()
         .softValues()
-        .build<Long, Copilot?>()
+        .build<Long, CopilotInnerCacheInfo?>()
 
     // copilotId -> info
     private val maaUserCache = Caffeine.newBuilder()
@@ -23,11 +23,11 @@ object InternalComposeCache {
         .softValues()
         .build<Long, Long>()
 
-    fun getCopilotCache(cid: Long, f: (Long) -> Copilot?): Copilot? {
+    fun getCopilotCache(cid: Long, f: (Long) -> CopilotInnerCacheInfo?): CopilotInnerCacheInfo? {
         return copilotCache.get(cid, f)
     }
 
-    fun getCopilotCache(cid: Long): Copilot? {
+    fun getCopilotCache(cid: Long): CopilotInnerCacheInfo? {
         return copilotCache.getIfPresent(cid)
     }
 
