@@ -90,6 +90,7 @@ class SecurityConfig(
                 "/",
                 "/error",
                 "/version",
+                "/cache/stat",
                 "/user/info",
                 "/user/search",
                 "/user/activateAccount",

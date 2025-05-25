@@ -1,6 +1,7 @@
 package plus.maa.backend.cache
 
 import com.github.benmanes.caffeine.cache.Caffeine
+import com.github.benmanes.caffeine.cache.stats.CacheStats
 import plus.maa.backend.cache.transfer.CopilotInnerCacheInfo
 import plus.maa.backend.repository.entity.MaaUser
 
@@ -8,20 +9,25 @@ object InternalComposeCache {
     // copilotId -> info
     private val copilotCache = Caffeine.newBuilder()
         .recordStats()
-        .softValues()
+        .expireAfterAccess(java.time.Duration.ofDays(3))
+        .maximumSize(3000)
         .build<Long, CopilotInnerCacheInfo?>()
 
     // copilotId -> info
     private val maaUserCache = Caffeine.newBuilder()
         .recordStats()
-        .softValues()
+        .expireAfterAccess(java.time.Duration.ofDays(3))
         .build<String, MaaUser>()
 
     // copilotId -> count
     private val commentCountCache = Caffeine.newBuilder()
         .recordStats()
-        .softValues()
+        .expireAfterAccess(java.time.Duration.ofDays(3))
         .build<Long, Long>()
+
+    fun getCopilotCacheStat(): CacheStats {
+        return copilotCache.stats()
+    }
 
     fun getCopilotCache(cid: Long, f: (Long) -> CopilotInnerCacheInfo?): CopilotInnerCacheInfo? {
         return copilotCache.get(cid, f)
@@ -39,6 +45,10 @@ object InternalComposeCache {
         return maaUserCache.getIfPresent(userId)
     }
 
+    fun getMaaUserCacheStat(): CacheStats {
+        return maaUserCache.stats()
+    }
+
     fun setMaaUserCache(userId: String, info: MaaUser) {
         maaUserCache.put(userId, info)
     }
@@ -49,6 +59,10 @@ object InternalComposeCache {
 
     fun getCommentCountCache(cid: Long): Long? {
         return commentCountCache.getIfPresent(cid)
+    }
+
+    fun getCommentCountStat(): CacheStats {
+        return commentCountCache.stats()
     }
 
     fun setCommentCountCache(cid: Long, count: Long) {
