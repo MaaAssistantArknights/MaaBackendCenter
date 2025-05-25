@@ -437,12 +437,12 @@ class CopilotService(
             )
             uploadTime = LocalDateTime.now()
         }.apply {
+            Cache.invalidateCopilotInfoByCid(copilotId)
             segmentService.updateIndex(copilotId!!, doc?.title, doc?.details)
         }
 
         cIdToDeleteCache?.let {
             deleteCacheWhenMatchCopilotId(it)
-            Cache.invalidateCopilotInfoByCid(it)
         }
     }
 
