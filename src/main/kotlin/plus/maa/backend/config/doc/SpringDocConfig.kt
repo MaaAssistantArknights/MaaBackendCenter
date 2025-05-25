@@ -40,7 +40,7 @@ class SpringDocConfig(
         externalDocs(
             ExternalDocumentation().apply {
                 description("GitHub repo")
-                url("https://github.com/MaaAssistantArknights/MaaBackendCenter")
+                url("https://github.com/ZOOT-Plus/ZootPlusBackend")
             },
         )
         components(

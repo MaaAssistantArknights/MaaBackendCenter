@@ -44,10 +44,10 @@
 2. clone 此项目 `git clone https://github.com/ZOOT-Plus/ZootPlusBackend.git`
 3. 进入此项目目录 `cd ZootPlusBackend`
 4. 编译项目 `./gradlew bootJar`，windows 环境下请使用 `gradlew.bat bootJar`
-5. 获得编译后的 jar 文件 `cp ./build/libs/MaaBackendCenter-1.0-SNAPSHOT.jar .`
+5. 获得编译后的 jar 文件 `cp ./build/libs/ZootPlusBackend-1.0-SNAPSHOT.jar .`
 6. 复制一份配置文件 `cp ./build/resources/main/application-template.yml ./application-prod.yml`
 7. 修改配置文件 `application-prod.yml`
-8. 运行项目 `java -jar MaaBackendCenter-1.0-SNAPSHOT.jar --spring.profiles.active=prod`
+8. 运行项目 `java -jar ZootPlusBackend-2.0.jar --spring.profiles.active=prod`
 
 ## native 编译（暂时废弃，如果希望协助维护，请查看native分支）
 

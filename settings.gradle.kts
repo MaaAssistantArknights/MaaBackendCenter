@@ -1,1 +1,1 @@
-rootProject.name = "MaaBackendCenter"
+rootProject.name = "ZootPlusBackend"
