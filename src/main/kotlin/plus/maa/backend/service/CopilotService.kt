@@ -47,7 +47,6 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import java.util.regex.Pattern
-import kotlin.math.ceil
 import kotlin.math.ln
 import kotlin.math.max
 import plus.maa.backend.cache.InternalComposeCache as Cache
@@ -396,9 +395,7 @@ class CopilotService(
         ) {
             // 查询总数
             val count = mongoTemplate.count(countQueryObj, Copilot::class.java)
-            val pageNumber = ceil(count.toDouble() / limit).toInt()
-            // 判断是否存在下一页
-            val hasNext = count - pageNumber.toLong() * limit > 0
+            val hasNext = count.toInt() > (page * limit)
             count to hasNext
         } else {
             0L to (infos.size >= limit)
