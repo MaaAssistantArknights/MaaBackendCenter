@@ -358,7 +358,7 @@ class CopilotService(
         }.toList()
 
         if (remainingCopilotIds.isNotEmpty()) {
-            val existedCount = commentsAreaRepository.findByCopilotIdInAndDelete(copilotIds, false)
+            val existedCount = commentsAreaRepository.findByCopilotIdInAndDelete(remainingCopilotIds, false)
                 .groupBy { it.copilotId }
                 .mapValues { it.value.size.toLong() }
             copilotIds.forEach { copilotId ->
