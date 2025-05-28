@@ -41,11 +41,6 @@ class Copilot(
     var likeCount: Long = 0,
     var dislikeCount: Long = 0,
 
-    // 分词信息 空格作为stop word
-    @TextIndexed
-    var segment: String? = null,
-
-    var segmentUpdateAt: Instant? = null,
     // 热度
     @Indexed
     var hotScore: Double = 0.0,

@@ -324,7 +324,7 @@ class CopilotService(
         }
 
         // 去除large fields
-        queryObj.fields().exclude("content", "actions", "segment")
+        queryObj.fields().exclude("content", "actions")
 
         val countQueryObj = Query.of(queryObj)
         // 分页排序查询
