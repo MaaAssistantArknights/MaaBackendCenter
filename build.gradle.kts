@@ -4,18 +4,17 @@ import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
 
 plugins {
     java
-    id("org.springframework.boot") version "3.4.3"
+    id("org.springframework.boot") version "3.4.6"
     id("io.spring.dependency-management") version "1.1.7"
     id("org.springdoc.openapi-gradle-plugin") version "1.9.0"
-//    id("org.graalvm.buildtools.native") version "0.10.5"
     id("org.hidetake.swagger.generator") version "2.19.2"
-    id("com.gorylenko.gradle-git-properties") version "2.4.2"
+    id("com.gorylenko.gradle-git-properties") version "2.5.0"
 
     kotlin("jvm") version "2.1.21"
     kotlin("plugin.spring") version "2.1.21"
     kotlin("kapt") version "2.1.21"
 
-    id("org.jlleitschuh.gradle.ktlint") version "12.2.0"
+    id("org.jlleitschuh.gradle.ktlint") version "12.3.0"
 }
 
 group = "plus.zoot"
@@ -47,12 +46,12 @@ repositories {
 }
 
 dependencies {
-    val hutoolVersion = "5.8.36"
+    val hutoolVersion = "5.8.38"
     val mapstructVersion = "1.6.3"
 
     kapt("org.springframework.boot:spring-boot-configuration-processor")
 
-    testImplementation("io.mockk:mockk:1.13.17")
+    testImplementation("io.mockk:mockk:1.14.2")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -63,7 +62,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-cache")
 
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.3")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
     implementation("com.github.therapi:therapi-runtime-javadoc:0.15.0")
     kapt("com.github.therapi:therapi-runtime-javadoc-scribe:0.15.0")
 
@@ -75,7 +74,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
 
     // kotlin-logging
-    implementation("io.github.oshai:kotlin-logging-jvm:7.0.5")
+    implementation("io.github.oshai:kotlin-logging-jvm:7.0.7")
 
     // hutool 的邮箱工具类依赖
     implementation("com.sun.mail:javax.mail:1.6.2")
@@ -93,18 +92,16 @@ dependencies {
     implementation("org.eclipse.jgit:org.eclipse.jgit.ssh.apache.agent:7.1.0.202411261347-r")
     implementation("org.freemarker:freemarker:2.3.34")
     implementation("com.github.ben-manes.caffeine:caffeine:3.2.0")
-    implementation("com.github.erosb:everit-json-schema:1.14.5") {
+    implementation("com.github.erosb:everit-json-schema:1.14.6") {
         exclude("commons-logging")
     }
-    implementation("com.google.guava:guava:33.4.0-jre")
-    implementation("org.aspectj:aspectjweaver:1.9.22.1")
+    implementation("com.google.guava:guava:33.4.8-jre")
 
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
-    swaggerCodegen("org.openapitools:openapi-generator-cli:7.10.0")
+    swaggerCodegen("org.openapitools:openapi-generator-cli:7.13.0")
 
     implementation("com.belerweb:pinyin4j:2.5.0")
-    implementation("com.github.houbb:opencc4j:1.8.1")
 }
 
 val swaggerOutputDir = layout.buildDirectory.dir("docs")
@@ -166,9 +163,6 @@ swaggerSources {
 }
 
 tasks {
-    forkedSpringBootRun {
-        doNotTrackState("See https://github.com/springdoc/springdoc-openapi-gradle-plugin/issues/102")
-    }
     test {
         useJUnitPlatform()
     }

@@ -6,12 +6,10 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.Transient
 import org.springframework.data.mongodb.core.index.Indexed
-import org.springframework.data.mongodb.core.index.TextIndexed
 import org.springframework.data.mongodb.core.mapping.Document
 import plus.maa.backend.service.model.CommentStatus
 import plus.maa.backend.service.model.CopilotSetStatus
 import java.io.Serializable
-import java.time.Instant
 import java.time.LocalDateTime
 
 /**
