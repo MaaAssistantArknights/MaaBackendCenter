@@ -30,6 +30,7 @@ import plus.maa.backend.controller.response.copilot.CopilotPageInfo
 import plus.maa.backend.repository.CommentsAreaRepository
 import plus.maa.backend.repository.CopilotRepository
 import plus.maa.backend.repository.RedisCache
+import plus.maa.backend.repository.UserFollowingRepository
 import plus.maa.backend.repository.entity.Copilot
 import plus.maa.backend.repository.entity.Copilot.OperationGroup
 import plus.maa.backend.repository.entity.MaaUser
@@ -70,6 +71,7 @@ class CopilotService(
     private val copilotConverter: CopilotConverter,
     private val sensitiveWordService: SensitiveWordService,
     private val segmentService: SegmentService,
+    private val userFollowingRepository: UserFollowingRepository,
 ) {
     private val log = KotlinLogging.logger { }
 
@@ -198,7 +200,8 @@ class CopilotService(
             request.levelKeyword.isNullOrBlank() &&
             request.uploaderId.isNullOrBlank() &&
             request.operator.isNullOrBlank() &&
-            request.copilotIds.isNullOrEmpty()
+            request.copilotIds.isNullOrEmpty() &&
+            !request.onlyFollowing
         ) {
             request.orderBy?.blankAsNull()
                 ?.let { key -> HOME_PAGE_CACHE_CONFIG[key] }
@@ -234,6 +237,16 @@ class CopilotService(
 
         andQueries.add(Criteria.where("delete").`is`(false))
 
+        if (request.onlyFollowing && userId != null) {
+            val userFollowing = userFollowingRepository.findByUserId(userId)
+            val followingIds = userFollowing?.followList ?: emptyList()
+
+            if (followingIds.isEmpty()) {
+                return CopilotPageInfo(false, 0, 0, emptyList())
+            }
+            // 添加查询范围为关注者
+            andQueries.add(Criteria.where("uploaderId").`in`(followingIds))
+        }
         // 仅查询自己的作业时才展示所有数据，否则只查询公开作业
         if (request.uploaderId == "me" && userId != null) {
             if (request.status != null) {

@@ -3,6 +3,7 @@ package plus.maa.backend.controller
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.constraints.Max
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.web.bind.annotation.GetMapping
@@ -47,7 +48,9 @@ class UserFollowController(
     @ApiResponse(description = "关注列表")
     @RequireJwt
     @GetMapping("/followingList")
-    fun getFollowingList(@RequestParam page: Int = 1, @RequestParam size: Int = 10): MaaResult<Page<MaaUserInfo>> {
+    fun getFollowingList(
+        @RequestParam page: Int = 1,
+        @RequestParam @Max(value = 50, message = "单页大小不得超过50") size: Int = 10): MaaResult<Page<MaaUserInfo>> {
         // 之前的API约定分页从1开始，与Spring默认约定不同，在此转换
         if (page < 1) {
             return fail(422, "页数请从1开始")
@@ -65,7 +68,9 @@ class UserFollowController(
     @ApiResponse(description = "粉丝列表")
     @RequireJwt
     @GetMapping("/fansList")
-    fun getFansList(@RequestParam page: Int = 1, @RequestParam size: Int = 10): MaaResult<Page<MaaUserInfo>> {
+    fun getFansList(
+        @RequestParam page: Int = 1,
+        @RequestParam @Max(value = 50, message = "单页大小不得超过50") size: Int = 10): MaaResult<Page<MaaUserInfo>> {
         // 之前的API约定分页从1开始，与Spring默认约定不同，在此转换
         if (page < 1) {
             return fail(422, "页数请从1开始")
