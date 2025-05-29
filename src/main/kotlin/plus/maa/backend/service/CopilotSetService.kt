@@ -9,13 +9,14 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.support.PageableExecutionUtils
 import org.springframework.stereotype.Service
+import plus.maa.backend.common.controller.PagedDTO
 import plus.maa.backend.common.utils.IdComponent
 import plus.maa.backend.common.utils.converter.CopilotSetConverter
 import plus.maa.backend.controller.request.copilotset.CopilotSetCreateReq
 import plus.maa.backend.controller.request.copilotset.CopilotSetModCopilotsReq
 import plus.maa.backend.controller.request.copilotset.CopilotSetQuery
 import plus.maa.backend.controller.request.copilotset.CopilotSetUpdateReq
-import plus.maa.backend.controller.response.copilotset.CopilotSetPageRes
+import plus.maa.backend.controller.response.copilotset.CopilotSetListRes
 import plus.maa.backend.controller.response.copilotset.CopilotSetRes
 import plus.maa.backend.repository.CopilotSetRepository
 import plus.maa.backend.repository.UserFollowingRepository
@@ -113,7 +114,7 @@ class CopilotSetService(
         repository.save(copilotSet)
     }
 
-    fun query(req: CopilotSetQuery, userId: String?): CopilotSetPageRes {
+    fun query(req: CopilotSetQuery, userId: String?): PagedDTO<CopilotSetListRes> {
         val pageRequest = PageRequest.of(req.page - 1, req.limit, defaultSort)
 
         val andList = ArrayList<Criteria>()
@@ -130,7 +131,7 @@ class CopilotSetService(
             val userFollowing = userFollowingRepository.findByUserId(userId)
             val followingIds = userFollowing?.followList ?: emptyList()
             if (followingIds.isEmpty()) {
-                return CopilotSetPageRes(false, 0, 0, mutableListOf())
+                return PagedDTO(false, 0, 0, emptyList())
             }
 
             andList.add(Criteria.where("creatorId").`in`(followingIds))
@@ -164,7 +165,7 @@ class CopilotSetService(
         }
         val userIds = copilotSets.map { obj: CopilotSet -> obj.creatorId }.distinct().toList()
         val userById = userService.findByUsersId(userIds)
-        return CopilotSetPageRes(
+        return PagedDTO(
             copilotSets.hasNext(),
             copilotSets.totalPages,
             copilotSets.totalElements,

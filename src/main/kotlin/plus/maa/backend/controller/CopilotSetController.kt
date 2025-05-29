@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import plus.maa.backend.common.controller.PagedDTO
 import plus.maa.backend.config.doc.RequireJwt
 import plus.maa.backend.config.security.AuthenticationHelper
 import plus.maa.backend.controller.request.CommonIdReq
@@ -20,7 +21,7 @@ import plus.maa.backend.controller.request.copilotset.CopilotSetQuery
 import plus.maa.backend.controller.request.copilotset.CopilotSetUpdateReq
 import plus.maa.backend.controller.response.MaaResult
 import plus.maa.backend.controller.response.MaaResult.Companion.success
-import plus.maa.backend.controller.response.copilotset.CopilotSetPageRes
+import plus.maa.backend.controller.response.copilotset.CopilotSetListRes
 import plus.maa.backend.controller.response.copilotset.CopilotSetRes
 import plus.maa.backend.service.CopilotSetService
 
@@ -38,7 +39,7 @@ class CopilotSetController(
     @Operation(summary = "查询作业集列表")
     @ApiResponse(description = "作业集id")
     @PostMapping("/query")
-    fun querySets(@RequestBody req: @Valid CopilotSetQuery): MaaResult<CopilotSetPageRes> =
+    fun querySets(@RequestBody req: @Valid CopilotSetQuery): MaaResult<PagedDTO<CopilotSetListRes>> =
         success(service.query(req, helper.obtainUserId()))
 
     @Operation(summary = "查询作业集列表")
