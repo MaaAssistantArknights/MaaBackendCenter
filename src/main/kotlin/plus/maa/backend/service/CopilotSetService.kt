@@ -127,7 +127,7 @@ class CopilotSetService(
         andList.add(permissionCriterion)
         andList.add(Criteria.where("delete").`is`(false))
 
-        if (req.onlyFollowing == true && userId != null) {
+        if (req.onlyFollowing && userId != null) {
             val userFollowing = userFollowingRepository.findByUserId(userId)
             val followingIds = userFollowing?.followList ?: emptyList()
             if (followingIds.isEmpty()) {
