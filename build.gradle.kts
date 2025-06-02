@@ -4,17 +4,18 @@ import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
 
 plugins {
     java
-    id("org.springframework.boot") version "3.4.6"
-    id("io.spring.dependency-management") version "1.1.7"
-    id("org.springdoc.openapi-gradle-plugin") version "1.9.0"
-    id("org.hidetake.swagger.generator") version "2.19.2"
-    id("com.gorylenko.gradle-git-properties") version "2.5.0"
 
     kotlin("jvm") version "2.1.21"
     kotlin("plugin.spring") version "2.1.21"
     kotlin("kapt") version "2.1.21"
 
+    id("org.springframework.boot") version "3.4.6"
+    id("io.spring.dependency-management") version "1.1.7"
+    id("org.springdoc.openapi-gradle-plugin") version "1.9.0"
+    id("org.hidetake.swagger.generator") version "2.19.2"
+    id("com.gorylenko.gradle-git-properties") version "2.5.0"
     id("org.jlleitschuh.gradle.ktlint") version "12.3.0"
+    id("com.kotlinorm.kronos-gradle-plugin") version "0.0.2"
 }
 
 group = "plus.zoot"
@@ -75,6 +76,12 @@ dependencies {
 
     // kotlin-logging
     implementation("io.github.oshai:kotlin-logging-jvm:7.0.7")
+
+    // kronos ORM and JDBC with PG
+    implementation("com.kotlinorm:kronos-core:0.0.2")
+    implementation("com.kotlinorm:kronos-jdbc-wrapper:0.0.2")
+    implementation("com.zaxxer:HikariCP:6.3.0")
+    runtimeOnly("org.postgresql:postgresql")
 
     // hutool 的邮箱工具类依赖
     implementation("com.sun.mail:javax.mail:1.6.2")
