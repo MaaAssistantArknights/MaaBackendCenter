@@ -1,32 +1,25 @@
 package plus.maa.backend.repository.entity
 
 import com.kotlinorm.annotations.ColumnType
-import com.kotlinorm.annotations.Necessary
+import com.kotlinorm.annotations.PrimaryKey
 import com.kotlinorm.annotations.Table
 import com.kotlinorm.enums.KColumnType
 import com.kotlinorm.interfaces.KPojo
 import java.io.Serializable
-import java.sql.Timestamp
+import java.time.Instant
 
 @Table("user")
 data class UserEntity(
     // 迁移时不标记为主键防止生成
-//    @PrimaryKey(uuid = true)
-    val userId: String? = null,
-    @Necessary
+    @PrimaryKey
+    var userId: String? = null,
     var userName: String? = null,
-    @Necessary
-    val email: String? = null,
-    @Necessary
+    var email: String? = null,
     var password: String? = null,
-    @Necessary
-    var status: Int? = 0,
-    @Necessary
-    @ColumnType(KColumnType.TEXT)
-    var pwdUpdateTime: Timestamp? = Timestamp(0L),
-    @Necessary
-    var followingCount: Int? = 0,
-    @Necessary
-    var fansCount: Int? = 0,
+    var status: Int? = null,
+    @ColumnType(type = KColumnType.TIMESTAMP)
+    var pwdUpdateTime: Instant? = null,
+    var followingCount: Int? = null,
+    var fansCount: Int? = null,
 ) : Serializable, KPojo
 

@@ -38,6 +38,7 @@ object EnumTransformer : ValueTransformer {
     ): Any = mapping[targetKotlinType]!!.invoke(value as String)
 }
 
+
 @Configuration
 class DataSourceConfig : InitializingBean {
     @Bean
