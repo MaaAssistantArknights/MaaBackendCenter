@@ -44,6 +44,7 @@ repositories {
     maven(url = "https://maven.aliyun.com/repository/spring-plugin")
     maven(url = "https://maven.aliyun.com/repository/gradle-plugin")
     mavenCentral()
+    maven(url = "https://central.sonatype.com/repository/maven-snapshots/")
 }
 
 dependencies {

@@ -22,4 +22,6 @@ interface CopilotRepository : MongoRepository<Copilot, String> {
     fun existsCopilotsByCopilotId(copilotId: Long): Boolean
 
     fun findAllByUploadTimeAfterOrDeleteTimeAfter(d1: LocalDateTime, d2: LocalDateTime): List<Copilot>
+
+    fun findByContentIsNotNull(): List<Copilot>
 }

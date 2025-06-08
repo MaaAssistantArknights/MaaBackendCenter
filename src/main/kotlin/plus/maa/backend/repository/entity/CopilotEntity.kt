@@ -1,13 +1,16 @@
 package plus.maa.backend.repository.entity
 
-import com.kotlinorm.annotations.Cascade
+import com.kotlinorm.annotations.ColumnType
 import com.kotlinorm.annotations.CreateTime
+import com.kotlinorm.annotations.Default
 import com.kotlinorm.annotations.LogicDelete
 import com.kotlinorm.annotations.Necessary
 import com.kotlinorm.annotations.PrimaryKey
+import com.kotlinorm.annotations.Serialize
 import com.kotlinorm.annotations.Table
 import com.kotlinorm.annotations.TableIndex
 import com.kotlinorm.annotations.UpdateTime
+import com.kotlinorm.enums.KColumnType
 import com.kotlinorm.interfaces.KPojo
 import plus.maa.backend.service.model.CommentStatus
 import plus.maa.backend.service.model.CopilotSetStatus
@@ -21,7 +24,7 @@ import java.time.LocalDateTime
 data class CopilotEntity(
     // 迁移时不标记为主键防止生成
     // 自增数字ID
-    // @PrimaryKey(identity = true)
+    @PrimaryKey
     var copilotId: Long? = null,
     // 关卡名
     @Necessary
@@ -31,25 +34,25 @@ data class CopilotEntity(
     var uploaderId: String? = null,
     // 查看次数
     @Necessary
-    var views: Long = 0L,
+    var views: Long? = null,
     // 评级
     @Necessary
-    var ratingLevel: Int = 0,
+    var ratingLevel: Int? = null,
     // 评级比率 十分之一代表半星
     @Necessary
-    var ratingRatio: Double = 0.0,
+    var ratingRatio: Double? = null,
     @Necessary
-    var likeCount: Long = 0,
+    var likeCount: Long? = null,
     @Necessary
-    var dislikeCount: Long = 0,
+    var dislikeCount: Long? = null,
 
     // 热度
     @Necessary
-    var hotScore: Double = 0.0,
+    var hotScore: Double? = null,
 
     // 指定干员
-    @Cascade(["copilot_id"], ["copilot_id"])
-    var opers: List<OperatorEntity>?,
+//    @Cascade(["copilotId"], ["copilotId"])
+//    var opers: List<OperatorEntity>? = null,
 
     // 文档字段，用于搜索，提取到Copilot类型上
     @Necessary
@@ -70,21 +73,30 @@ data class CopilotEntity(
      * [plus.maa.backend.service.model.CopilotSetStatus]
      */
     @Necessary
-    var status: CopilotSetStatus? = CopilotSetStatus.PUBLIC,
+    @Serialize
+    @ColumnType(KColumnType.TEXT)
+    var status: CopilotSetStatus? = null,
     /**
      * 评论状态
      */
     @Necessary
-    var commentStatus: CommentStatus? = CommentStatus.ENABLED,
+    @Serialize
+    @ColumnType(KColumnType.TEXT)
+    var commentStatus: CommentStatus? = null,
 
     @LogicDelete
-    var delete: Boolean? = false,
+    @Default("false")
+    @ColumnType(KColumnType.BIT)
+    var delete: Boolean? = null,
     var deleteTime: LocalDateTime? = null,
+    @Default("false")
+    @ColumnType(KColumnType.BIT)
     var notification: Boolean? = null
 
 ) : Serializable, KPojo
 
 @Table("copilot_operator")
+@TableIndex("idx_operator_name", ["name"])
 @TableIndex("idx_operator_copilot_id", ["copilot_id"])
 data class OperatorEntity(
     @PrimaryKey(identity = true)

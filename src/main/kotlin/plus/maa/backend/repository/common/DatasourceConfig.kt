@@ -3,6 +3,7 @@ package plus.maa.backend.repository.common
 import com.kotlinorm.Kronos
 import com.kotlinorm.KronosBasicWrapper
 import com.kotlinorm.beans.transformers.TransformerManager.registerValueTransformer
+import com.kotlinorm.interfaces.KronosSerializeProcessor
 import com.kotlinorm.interfaces.ValueTransformer
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
@@ -38,6 +39,23 @@ object EnumTransformer : ValueTransformer {
     ): Any = mapping[targetKotlinType]!!.invoke(value as String)
 }
 
+object EnumProcessor : KronosSerializeProcessor {
+    override fun deserialize(serializedStr: String, kClass: KClass<*>): Any {
+        val jClass = kClass.java
+        if (jClass.isEnum) {
+            return kClass.java.enumConstants.first { (it as Enum<*>).name == serializedStr }
+        }
+        return serializedStr
+    }
+
+    override fun serialize(obj: Any): String {
+        if (obj is Enum<*>) {
+            return obj.name
+        }
+        return obj.toString()
+    }
+}
+
 
 @Configuration
 class DataSourceConfig : InitializingBean {
@@ -48,8 +66,9 @@ class DataSourceConfig : InitializingBean {
         val wrapper by lazy {
             KronosBasicWrapper(HikariDataSource(dataSource()))
         }
-        registerValueTransformer(EnumTransformer)
         Kronos.init {
+            registerValueTransformer(EnumTransformer)
+            serializeProcessor = EnumProcessor
             tableNamingStrategy = lineHumpNamingStrategy
             fieldNamingStrategy = lineHumpNamingStrategy
             timeZone = ZoneId.systemDefault()

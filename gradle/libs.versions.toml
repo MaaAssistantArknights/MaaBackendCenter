@@ -18,7 +18,7 @@ git-properties = "2.5.0"
 ktlint-plugin = "12.3.0"
 
 # Database & persistence
-kronos = "0.0.4"
+kronos = "0.0.5-SNAPSHOT"
 hikaricp = "6.3.0"
 postgresql = "42.7.6"
 
