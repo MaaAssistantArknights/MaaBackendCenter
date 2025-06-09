@@ -21,5 +21,14 @@ data class UserEntity(
     var pwdUpdateTime: Instant? = null,
     var followingCount: Int? = null,
     var fansCount: Int? = null,
-) : Serializable, KPojo
+) : Serializable, KPojo {
+    companion object {
+        val UNKNOWN: UserEntity = UserEntity(
+            userId = "",
+            userName = "未知用户:(",
+            email = "unknown@unkown.unkown",
+            password = "unknown",
+        )
+    }
+}
 
