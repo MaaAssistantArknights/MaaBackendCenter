@@ -53,12 +53,19 @@ class DataMigration(
             log.info { "用户对象已经完成迁移" }
             return
         }
-        val users = userRepository.findAll()
-        log.info { "迁移用户，用户数量：${users.size}" }
+        val users = userRepository.findAllBy()
+        log.info { "迁移用户" }
         var migratedSize = 0
-        users.chunked(400).forEach { chunk ->
-            log.info { "迁移用户，当前处理：${migratedSize}/${users.size}" }
-            chunk.map { user ->
+        val chunkList = ArrayList<UserEntity>()
+
+        users.forEach { user ->
+            if (chunkList.size == 400) {
+                migratedSize += 400
+                log.info { "迁移用户，当前处理：${migratedSize}" }
+                chunkList.insert().execute()
+                chunkList.clear()
+            }
+            chunkList.add(
                 UserEntity(
                     userId = user.userId,
                     userName = user.userName,
@@ -69,9 +76,10 @@ class DataMigration(
                     followingCount = user.followingCount,
                     fansCount = user.fansCount
                 )
-            }.insert().execute()
-            migratedSize += chunk.size
+            )
         }
+        // 插入剩余数据
+        chunkList.insert().execute()
     }
 
     fun migrateCopilot() {
@@ -81,11 +89,19 @@ class DataMigration(
             return
         }
         val copilots = copilotRepository.findByContentIsNotNull()
-        log.info { "迁移作业列表，作业数量：${copilots.size}" }
+        log.info { "开始迁移作业列表" }
         var migratedSize = 0
-        copilots.chunked(400).forEach { chunk ->
-            log.info { "迁移作业列表，当前处理：${migratedSize}/${copilots.size}" }
-            val chunkRes = chunk.map { copilot ->
+        val chunkList = ArrayList<Pair<CopilotEntity, List<OperatorEntity>?>>()
+        copilots.forEach { copilot ->
+            if (chunkList.size == 400) {
+                migratedSize += 400
+                log.info { "迁移作业列表，当前处理：${migratedSize}" }
+                chunkList.map { it.first }.insert().execute()
+                chunkList.mapNotNull { it.second }
+                    .flatMap { it }.insert().execute()
+                chunkList.clear()
+            }
+            chunkList.add(
                 CopilotEntity(
                     copilotId = copilot.copilotId,
                     stageName = copilot.stageName,
@@ -106,19 +122,16 @@ class DataMigration(
                     delete = copilot.delete,
                     deleteTime = copilot.deleteTime,
                     notification = copilot.notification
-                ) to
-                    copilot.opers?.map { oper ->
-                        OperatorEntity(
-                            copilotId = copilot.copilotId,
-                            name = oper.name
-                        )
-                    }
-            }
-            chunkRes.map { it.first }.insert().execute()
-            chunkRes.mapNotNull { it.second }
-                .flatMap { it }.insert().execute()
-            migratedSize += chunk.size
+                ) to copilot.opers?.map { oper ->
+                    OperatorEntity(
+                        copilotId = copilot.copilotId,
+                        name = oper.name
+                    )
+                })
         }
+        chunkList.map { it.first }.insert().execute()
+        chunkList.mapNotNull { it.second }
+            .flatMap { it }.insert().execute()
         log.info { "migration successfully" }
     }
 

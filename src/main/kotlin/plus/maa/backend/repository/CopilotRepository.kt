@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.mongodb.repository.MongoRepository
 import plus.maa.backend.repository.entity.Copilot
 import java.time.LocalDateTime
+import java.util.stream.Stream
 
 /**
  * @author LoMu
@@ -23,5 +24,5 @@ interface CopilotRepository : MongoRepository<Copilot, String> {
 
     fun findAllByUploadTimeAfterOrDeleteTimeAfter(d1: LocalDateTime, d2: LocalDateTime): List<Copilot>
 
-    fun findByContentIsNotNull(): List<Copilot>
+    fun findByContentIsNotNull(): Stream<Copilot>
 }
